@@ -13,7 +13,7 @@ export default function Home() {
       {/* 메인 콘텐츠 */}
       <main className="flex flex-col items-center text-center p-6">
         <h1 className="text-3xl font-bold mb-4">
-          가입만 해도 최대 <span className="text-blue-500">10만원</span> 지급!
+          <span className="text-blue-500"> 가입만 해도 최대 10만원</span> 지급!
         </h1>
         <p className="text-lg text-gray-400 mb-6">
           친구 초대하면 추가 보너스! 지금 바로 참여하세요.
