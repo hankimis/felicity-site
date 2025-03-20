@@ -11,7 +11,7 @@ export default function InstagramReview() {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 p-6">
-      <h1 className="text-3xl font-bold mb-6 text-pink-600">인스타 후기 신청 📸</h1>
+      <h1 className="text-3xl font-bold mb-6 text-pink-600">인스타 후기 신청 </h1>
 
       <form onSubmit={handleSubmit} className="bg-white shadow-lg rounded-lg p-6 w-full max-w-md">
         <label className="block mb-2 text-gray-700">인스타 후기 링크</label>
