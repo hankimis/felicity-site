@@ -24,7 +24,7 @@ export default function InstagramReview() {
         />
 
         <button type="submit" className="w-full bg-pink-500 hover:bg-pink-600 text-white p-3 rounded-lg font-bold">
-          후기 제출하기 🚀
+          후기 제출하기 
         </button>
       </form>
     </div>
