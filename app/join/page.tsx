@@ -65,7 +65,7 @@ export default function Join() {
         <input type="text" className="w-full p-2 border rounded-lg mb-4" value={referralCode} onChange={(e) => setReferralCode(e.target.value)} />
 
         <button type="submit" className="w-full bg-blue-500 hover:bg-blue-600 text-white p-3 rounded-lg font-bold">
-          가입 신청하기 🚀
+          가입 신청하기 
         </button>
       </form>
     </div>
