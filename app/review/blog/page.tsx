@@ -11,7 +11,7 @@ export default function BlogReview() {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 p-6">
-      <h1 className="text-3xl font-bold mb-6 text-yellow-600">블로그 후기 신청 ✍️</h1>
+      <h1 className="text-3xl font-bold mb-6 text-yellow-600">블로그 후기 신청 </h1>
 
       <form onSubmit={handleSubmit} className="bg-white shadow-lg rounded-lg p-6 w-full max-w-md">
         <label className="block mb-2 text-gray-700">블로그 후기 링크</label>
