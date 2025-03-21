@@ -5,7 +5,13 @@ import { doc, getDoc } from "firebase/firestore";
 import { useSearchParams } from "next/navigation";
 
 export default function UserDetail() {
-  const [user, setUser] = useState<any>(null);
+  type User = {
+  name: string;
+  phone: string;
+  birthDate: string;
+};
+
+const [user, setUser] = useState<User | null>(null);
   const searchParams = useSearchParams();
   const userId = searchParams.get("id");
 
