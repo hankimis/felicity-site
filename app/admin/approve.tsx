@@ -5,7 +5,13 @@ import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { useSearchParams, useRouter } from "next/navigation";
 
 export default function ApproveUser() {
-  const [user, setUser] = useState<any>(null);
+  type User = {
+  name: string;
+  phone: string;
+  birthDate: string;
+};
+
+const [user, setUser] = useState<User | null>(null);
   const searchParams = useSearchParams();
   const userId = searchParams.get("id");
   const router = useRouter();
