@@ -4,8 +4,14 @@ import { db } from "@/lib/firebaseConfig";
 import { collection, getDocs } from "firebase/firestore";
 
 export default function AdminDashboard() {
-  const [users, setUsers] = useState<any[]>([]); // ✅ 가입 신청자 목록을 저장할 상태
+  type User = {
+  id: string;
+  name: string;
+  phone: string;
+  birthDate: string;
+};
 
+const [users, setUsers] = useState<User[]>([]);
   useEffect(() => {
     fetchUsers();
   }, []);
