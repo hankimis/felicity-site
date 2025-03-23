@@ -1,10 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
-import { exportToExcel } from '../../lib/exportExcel';
-import { db } from '../../lib/firebase';
-import { collection, getDocs, query, where } from 'firebase/firestore';
 
 export default function Home() {
   return (
