@@ -1,28 +1,46 @@
-"use client";
-import { useState } from "react";
+'use client';
+import { useState } from 'react';
+import { db } from '../lib/firebase';
+import { collection, addDoc } from 'firebase/firestore';
 
 export default function Join() {
-  const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
-  const [birthDate, setBirthDate] = useState("");
-  const [trafficSource, setTrafficSource] = useState("");
-  const [callTime, setCallTime] = useState("");
-  const [referralCode, setReferralCode] = useState("");
+  const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [birthDate, setBirthDate] = useState('');
+  const [trafficSource, setTrafficSource] = useState('');
+  const [callTime, setCallTime] = useState('');
+  const [referralCode, setReferralCode] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // 사용자가 입력한 데이터를 콘솔에 출력
-    console.log("사용자 입력 데이터:", {
-      성함: name,
-      연락처: phone,
-      생년월일: birthDate,
-      유입경로: trafficSource,
-      통화가능시간: callTime,
-      추천인코드: referralCode || "없음",
-    });
+    const newUser = {
+      name,
+      phone,
+      birthDate,
+      trafficSource,
+      callTime,
+      referralCode: referralCode || '없음',
+      createdAt: new Date().toISOString(),
+    };
 
-    alert("가입 신청 완료! 콘솔에서 데이터를 확인하세요.");
+    try {
+      setLoading(true);
+      await addDoc(collection(db, 'joinUsers'), newUser); // Firestore에 저장
+      alert('가입 신청이 완료되었습니다!');
+      setName('');
+      setPhone('');
+      setBirthDate('');
+      setTrafficSource('');
+      setCallTime('');
+      setReferralCode('');
+    } catch (error) {
+      console.error('Error saving to Firestore:', error);
+      alert('오류가 발생했습니다. 다시 시도해주세요.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -64,8 +82,12 @@ export default function Join() {
         <label className="block mb-2 text-gray-700">추천인 코드 (선택)</label>
         <input type="text" className="w-full p-2 border rounded-lg mb-4" value={referralCode} onChange={(e) => setReferralCode(e.target.value)} />
 
-        <button type="submit" className="w-full bg-blue-500 hover:bg-blue-600 text-white p-3 rounded-lg font-bold">
-          가입 신청하기 
+        <button
+          type="submit"
+          className="w-full bg-blue-500 hover:bg-blue-600 text-white p-3 rounded-lg font-bold disabled:opacity-50"
+          disabled={loading}
+        >
+          {loading ? '처리 중...' : '가입 신청하기'}
         </button>
       </form>
     </div>
