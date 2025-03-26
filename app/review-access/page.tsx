@@ -17,7 +17,11 @@ export default function ReviewAccessPage() {
     setLoading(true);
     setError('');
 
-    try {
+    if (!db) {
+      alert('데이터베이스에 연결할 수 없습니다.');
+      return;
+    }
+    
       const q = query(
         collection(db, 'joinUsers'),
         where('name', '==', name),
