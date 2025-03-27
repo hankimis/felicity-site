@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { db } from '../../lib/firebase';
-import { collection, addDoc } from 'firebase/firestore';
+import { collection, addDoc, Firestore } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 
 export default function InstagramReview() {
@@ -30,7 +30,11 @@ export default function InstagramReview() {
 
     setLoading(true);
     try {
-      await addDoc(collection(db, 'instagramReviews'), {
+      if (!db) {
+        throw new Error('데이터베이스 연결에 실패했습니다.');
+      }
+
+      await addDoc(collection(db as Firestore, 'instagramReviews'), {
         name: userInfo.name,
         phone: userInfo.phone,
         account: userInfo.account,

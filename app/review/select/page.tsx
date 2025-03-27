@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { db } from '../../lib/firebase';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { collection, query, where, getDocs, Firestore } from 'firebase/firestore';
 
 export default function ReviewStepPage() {
   const [name, setName] = useState('');
@@ -26,8 +26,12 @@ export default function ReviewStepPage() {
     }
 
     try {
+      if (!db) {
+        throw new Error('데이터베이스 연결에 실패했습니다.');
+      }
+
       const q = query(
-        collection(db, 'joinUsers'),
+        collection(db as Firestore, 'joinUsers'),
         where('name', '==', name),
         where('phone', '==', phone),
         where('approved', '==', true)

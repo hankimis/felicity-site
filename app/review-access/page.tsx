@@ -1,8 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { db } from '../lib/firebase'; // ✅ 수정된 부분
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { db } from '../lib/firebase';
+import { collection, query, where, getDocs, Firestore } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 
 export default function ReviewAccessPage() {
@@ -17,9 +17,15 @@ export default function ReviewAccessPage() {
     setLoading(true);
     setError('');
 
+    if (!db) {
+      setError('데이터베이스 연결에 실패했습니다.');
+      setLoading(false);
+      return;
+    }
+
     try {
       const q = query(
-        collection(db, 'joinUsers'),
+        collection(db as Firestore, 'joinUsers'),
         where('name', '==', name),
         where('phone', '==', phone)
       );
