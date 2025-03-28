@@ -7,6 +7,12 @@ import { collection, addDoc } from 'firebase/firestore';
 import { toast } from 'react-hot-toast';
 import { motion } from 'framer-motion';
 
+interface PageProps {
+  params: {
+    type: string;
+  };
+}
+
 type ReviewType = {
   id: string;
   title: string;
@@ -55,13 +61,6 @@ const reviewTypes: { [key: string]: ReviewType } = {
     color: 'from-pink-500 to-purple-500'
   }
 };
-
-interface PageProps {
-  params: {
-    type: string;
-  };
-  searchParams: { [key: string]: string | string[] | undefined };
-}
 
 export default function ReviewPage({ params }: PageProps) {
   const router = useRouter();
@@ -234,4 +233,4 @@ export default function ReviewPage({ params }: PageProps) {
       </div>
     </div>
   );
-} 
+}
