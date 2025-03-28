@@ -98,7 +98,8 @@ export default function Dashboard() {
   const [adminEmail, setAdminEmail] = useState<string | null>(null);
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>({
     isConnected: false,
-    lastChecked: INITIAL_DATE
+    lastChecked: INITIAL_DATE,
+    collections: {}
   });
   const [autoRefresh, setAutoRefresh] = useState(true);
 
@@ -321,114 +322,178 @@ export default function Dashboard() {
     });
   }, []);
 
-  // Firebase connection status check
+  // Enhanced connection check
   const checkConnection = async (): Promise<boolean> => {
-    if (isLoading) return false; // 이미 로딩 중이면 중복 실행 방지
-    
-    console.log("파이어베이스 연결 상태 확인 중...");
-    
-    // Firestore가 초기화되지 않았으면 즉시 실패 처리
     if (!db) {
-      console.error("Firestore가 초기화되지 않았습니다");
-      updateConnectionStatus(false, new Error("Firestore가 초기화되지 않았습니다"));
+      console.error('Firebase not initialized');
+      setConnectionStatus(prev => ({
+        ...prev,
+        isConnected: false,
+        error: 'Firebase not initialized'
+      }));
       return false;
     }
-    
+
     try {
-      // 실제 연결 테스트 (빈 쿼리 실행)
-      console.log("연결 테스트 중...");
-      const testRef = collection(db, 'joinUsers');
+      // Enable network
+      await enableNetwork(db);
+      
+      // Test connection with a simple query
+      const testRef = collection(db, 'users');
       const testQuery = query(testRef, limit(1));
       const snapshot = await getDocs(testQuery);
       
-      console.log("연결 테스트 성공, 결과:", snapshot.docs.length, "건");
-      
-      // 연결 성공
-      updateConnectionStatus(true);
-      setIsOnline(true);
-      setError(null);
-      
+      // Check collections existence
+      const collections = await Promise.all(
+        ['users', 'paymentInfo', 'joinEventReviews', 'cafeReviews', 'blogReviews', 'instaReviews']
+          .map(async (collectionName) => {
+            try {
+              if (!db) return { exists: false, count: 0 };
+              const ref = collection(db, collectionName);
+              const q = query(ref, limit(1));
+              const docs = await getDocs(q);
+              return {
+                exists: true,
+                count: docs.size
+              };
+            } catch (error) {
+              console.error(`Error checking collection ${collectionName}:`, error);
+              return {
+                exists: false,
+                count: 0
+              };
+            }
+          })
+      );
+
+      const collectionsStatus = {
+        users: collections[0],
+        paymentInfo: collections[1],
+        joinEventReviews: collections[2],
+        cafeReviews: collections[3],
+        blogReviews: collections[4],
+        instaReviews: collections[5]
+      };
+
+      setConnectionStatus({
+        isConnected: true,
+        lastChecked: new Date().toISOString(),
+        collections: collectionsStatus
+      });
+
       return true;
-    } catch (testError: any) {
-      // 쿼리 실행 실패
-      console.error("연결 테스트 실패:", testError);
-      updateConnectionStatus(false, testError);
-      setError(`연결 테스트 실패: ${testError.message || '알 수 없는 오류'}`);
+    } catch (error) {
+      console.error('Connection check failed:', error);
+      setConnectionStatus(prev => ({
+        ...prev,
+        isConnected: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      }));
       return false;
     }
   };
-  
-  // 연결 오류 시 자동 복구 시도 기능
-  useEffect(() => {
-    // 연결 오류 상태에서 일정 시간마다 자동 재연결 시도
-    if (!isOnline && autoRefresh) {
-      console.log(`${CONNECTION_RETRY_INTERVAL/1000}초 후 자동 재연결 시도 예약됨...`);
-      const recoveryTimer = setTimeout(() => {
-        console.log('자동 재연결 시도 중...');
-        // 불필요한 중복 시도 방지
-        if (!isLoading) {
-          reconnectAndLoad().catch(err => {
-            console.error('자동 재연결 실패:', err);
-          });
-        } else {
-          console.log('이미 로딩 중입니다. 자동 재연결 취소');
-        }
-      }, CONNECTION_RETRY_INTERVAL); // 앞서 정의한 간격으로 시도
-      
-      return () => clearTimeout(recoveryTimer);
-    }
-  }, [isOnline, autoRefresh, isLoading]);
-  
-  // Reconnect and load data - 간소화
+
+  // Enhanced reconnect logic
   const reconnectAndLoad = async () => {
-    if (isLoading) {
-      console.log('이미 로딩 중입니다. 재연결 작업 취소');
-      return false;
+    if (!isOnline) {
+      console.log('Device is offline, skipping reconnection');
+      return;
     }
-    
+
+    if (retryCount >= RETRY_LIMIT) {
+      console.log('Max retry attempts reached');
+      setError('최대 재시도 횟수를 초과했습니다. 페이지를 새로고침해주세요.');
+      return;
+    }
+
     setIsLoading(true);
-    setError(null);
-    toast.loading('파이어베이스에 연결 중...');
-    
+    setRetryCount(prev => prev + 1);
+
     try {
-      // 먼저 네트워크 연결 상태 확인
-      if (!navigator.onLine) {
-        toast.dismiss();
-        toast.error('오프라인 상태입니다. 인터넷 연결을 확인해주세요.');
-        throw new Error('오프라인 상태입니다');
-      }
+      // Test connection first
+      const isConnected = await checkConnection();
       
-      // 파이어베이스 재연결 시도
-      console.log('Firebase 재연결 시도...');
-      const { success } = await reconnectFirebase();
-      
-      if (success && db) {
-        toast.dismiss();
-        toast.success('파이어베이스에 연결되었습니다!');
-        
-        // 데이터 로드 시도
-        console.log('데이터 로드 시작...');
-        const dataResult = await loadRealData();
-        await fetchReviews();
-        
-        return dataResult;
-      } else {
-        // 연결 실패 시 샘플 데이터 표시
-        toast.dismiss();
-        toast.error('파이어베이스 연결 실패. 샘플 데이터를 사용합니다.');
-        loadSampleData();
-        return false;
+      if (!isConnected) {
+        throw new Error('Failed to establish connection');
       }
-    } catch (err) {
-      console.error('재연결 시도 중 오류:', err);
-      toast.dismiss();
-      toast.error('연결 시도 중 오류가 발생했습니다.');
-      loadSampleData();
-      return false;
+
+      // Reset retry count on successful connection
+      setRetryCount(0);
+      
+      // Load data based on current tab
+      await loadTabData();
+      
+      // Update connection status
+      setConnectionStatus(prev => ({
+        ...prev,
+        isConnected: true,
+        lastChecked: new Date().toISOString()
+      }));
+    } catch (error) {
+      console.error('Reconnection failed:', error);
+      setError(error instanceof Error ? error.message : '연결에 실패했습니다.');
+      
+      // Schedule next retry
+      setTimeout(() => {
+        reconnectAndLoad();
+      }, CONNECTION_RETRY_INTERVAL);
     } finally {
       setIsLoading(false);
     }
   };
+
+  // Enhanced data loading
+  const loadTabData = async () => {
+    if (!db) {
+      throw new Error('Firebase not initialized');
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      switch (tab) {
+        case 'join':
+          await loadRealData();
+          break;
+        case 'account':
+          await loadAccountData();
+          break;
+        case 'joinEvent':
+        case 'cafeReview':
+        case 'blogReview':
+        case 'instaReview':
+          await loadReviewData();
+          break;
+      }
+    } catch (error) {
+      console.error(`Error loading ${tab} data:`, error);
+      setError(error instanceof Error ? error.message : '데이터 로딩 중 오류가 발생했습니다.');
+      
+      // Attempt to reconnect on error
+      if (!isLoading) {
+        await reconnectAndLoad();
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Add connection status monitoring
+  useEffect(() => {
+    const monitorConnection = async () => {
+      if (!autoRefresh) return;
+      
+      const isConnected = await checkConnection();
+      if (!isConnected) {
+        console.log('Connection lost, attempting to reconnect...');
+        await reconnectAndLoad();
+      }
+    };
+
+    const connectionMonitor = setInterval(monitorConnection, CONNECTION_RETRY_INTERVAL);
+    return () => clearInterval(connectionMonitor);
+  }, [autoRefresh]);
 
   // Sample data load function
   const loadSampleData = () => {
@@ -1318,6 +1383,59 @@ export default function Dashboard() {
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
   }, [tab, currentPage, tabOptions]);
+
+  // Add loadAccountData function
+  const loadAccountData = async () => {
+    if (!db) {
+      throw new Error('Firebase not initialized');
+    }
+
+    try {
+      const accountRef = collection(db, 'paymentInfo');
+      const accountSnapshot = await getDocs(accountRef);
+      const accountData = accountSnapshot.docs.map(doc => ({
+        id: doc.id,
+        phone: doc.data().phone as string,
+        bank: doc.data().bank as string,
+        accountNumber: doc.data().accountNumber as string
+      })) as AccountData[];
+
+      // Merge with user data
+      const userRef = collection(db, 'users');
+      const userSnapshot = await getDocs(userRef);
+      const userData = userSnapshot.docs.map(doc => ({
+        id: doc.id,
+        name: doc.data().name as string,
+        phone: doc.data().phone as string,
+        email: doc.data().email as string,
+        birthDate: doc.data().birthDate as string,
+        gender: doc.data().gender as string,
+        trafficSource: doc.data().trafficSource as string,
+        callTime: doc.data().callTime as string,
+        referralCode: doc.data().referralCode as string,
+        createdAt: doc.data().createdAt as string,
+        approved: doc.data().approved as boolean,
+        phoneCarrier: doc.data().phoneCarrier as string | undefined
+      })) as UserData[];
+
+      const mergedData = accountData.map(account => {
+        const user = userData.find(u => u.phone === account.phone);
+        if (!user) {
+          console.warn(`No user found for account with phone: ${account.phone}`);
+          return null;
+        }
+        return {
+          ...account,
+          ...user
+        } as MergedAccountData;
+      }).filter((data): data is MergedAccountData => data !== null);
+
+      setAccounts(mergedData);
+    } catch (error) {
+      console.error('Error loading account data:', error);
+      throw error;
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
