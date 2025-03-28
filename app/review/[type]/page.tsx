@@ -5,6 +5,16 @@ import { useRouter } from 'next/navigation';
 import { db } from '../../lib/firebase';
 import { collection, addDoc } from 'firebase/firestore';
 import { toast } from 'react-hot-toast';
+import { motion } from 'framer-motion';
+
+type ReviewType = {
+  id: string;
+  title: string;
+  description: string;
+  placeholder: string;
+  icon: string;
+  color: string;
+};
 
 interface ReviewUser {
   name: string;
@@ -12,31 +22,47 @@ interface ReviewUser {
   userId: string;
 }
 
-interface PageProps {
-  params: {
-    type: string;
-  };
+// Next.js 13+ 동적 라우트 타입 정의
+interface PageParams {
+  type: string;
+  searchParams?: { [key: string]: string | string[] | undefined };
 }
 
-const reviewTypes = {
+const reviewTypes: { [key: string]: ReviewType } = {
+  joinEvent: {
+    id: 'joinEvent',
+    title: '가입 이벤트 신청',
+    description: '계좌번호 확인 및 본인인증 후 신청 가능합니다.',
+    placeholder: '계좌번호를 입력해주세요',
+    icon: '💰',
+    color: 'from-green-500 to-emerald-500'
+  },
   cafeReview: {
+    id: 'cafeReview',
     title: '카페 후기 이벤트 신청',
-    description: '카페에 작성한 후기 링크를 첨부해주세요.',
-    placeholder: '카페 후기 링크를 입력해주세요'
+    description: '카페에 작성한 후기 링크를 첨부해주세요. (90일 동안 삭제 불가)',
+    placeholder: '카페 후기 링크를 입력해주세요',
+    icon: '☕',
+    color: 'from-orange-500 to-amber-500'
   },
   blogReview: {
+    id: 'blogReview',
     title: '블로그 후기 이벤트 신청',
-    description: '블로그에 작성한 후기 링크를 첨부해주세요.',
-    placeholder: '블로그 후기 링크를 입력해주세요'
+    description: '블로그에 작성한 후기 링크를 첨부해주세요. (90일 동안 삭제 불가)',
+    placeholder: '블로그 후기 링크를 입력해주세요',
+    icon: '📝',
+    color: 'from-blue-500 to-indigo-500'
   },
   instaReview: {
-    title: '인스타그램 후기 이벤트 신청',
-    description: '인스타그램에 작성한 후기 링크를 첨부해주세요.',
-    placeholder: '인스타그램 후기 링크를 입력해주세요'
+    id: 'instaReview',
+    title: '인스타 후기 이벤트 신청',
+    description: '인스타그램에 작성한 후기 링크를 첨부해주세요. (90일 동안 삭제 불가)',
+    icon: '📸',
+    color: 'from-pink-500 to-purple-500'
   }
 };
 
-export default function ReviewPage({ params }: PageProps) {
+export default function ReviewPage({ params }: { params: PageParams }) {
   const router = useRouter();
   const [user, setUser] = useState<ReviewUser | null>(null);
   const [reviewLink, setReviewLink] = useState('');
@@ -46,13 +72,11 @@ export default function ReviewPage({ params }: PageProps) {
   const reviewType = reviewTypes[params.type as keyof typeof reviewTypes];
 
   useEffect(() => {
-    // 유효하지 않은 리뷰 타입인 경우 리다이렉트
     if (!reviewType) {
       router.replace('/review');
       return;
     }
 
-    // 세션에서 사용자 정보 확인
     const userStr = sessionStorage.getItem('reviewUser');
     if (!userStr) {
       toast.error('먼저 본인 확인이 필요합니다.');
@@ -96,7 +120,6 @@ export default function ReviewPage({ params }: PageProps) {
     setIsLoading(true);
 
     try {
-      // 이벤트 신청 정보 저장
       const eventRef = collection(db, `${params.type}s`);
       await addDoc(eventRef, {
         userId: user.userId,
@@ -127,7 +150,7 @@ export default function ReviewPage({ params }: PageProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-2xl mx-auto">
         <div className="text-center mb-12">
           <h1 className="text-3xl font-extrabold text-gray-900">
@@ -200,11 +223,7 @@ export default function ReviewPage({ params }: PageProps) {
               <button
                 type="submit"
                 disabled={isLoading || !termsAccepted}
-                className={`px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white ${
-                  isLoading || !termsAccepted
-                    ? 'bg-gray-400 cursor-not-allowed'
-                    : 'bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500'
-                }`}
+                className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-gray-600 bg-gray-50 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
               >
                 {isLoading ? '처리 중...' : '신청하기'}
               </button>
