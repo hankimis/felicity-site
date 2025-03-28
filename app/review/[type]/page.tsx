@@ -56,13 +56,14 @@ const reviewTypes: { [key: string]: ReviewType } = {
   }
 };
 
-type Props = {
+interface PageProps {
   params: {
     type: string;
   };
-};
+  searchParams: { [key: string]: string | string[] | undefined };
+}
 
-export default function ReviewPage({ params }: Props) {
+export default function ReviewPage({ params }: PageProps) {
   const router = useRouter();
   const [user, setUser] = useState<ReviewUser | null>(null);
   const [reviewLink, setReviewLink] = useState('');
