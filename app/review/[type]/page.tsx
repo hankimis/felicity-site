@@ -11,7 +11,7 @@ type ReviewType = {
   id: string;
   title: string;
   description: string;
-  placeholder: string;
+  placeholder?: string;
   icon: string;
   color: string;
 };
@@ -20,12 +20,6 @@ interface ReviewUser {
   name: string;
   phone: string;
   userId: string;
-}
-
-// Next.js 13+ 동적 라우트 타입 정의
-interface PageParams {
-  type: string;
-  searchParams?: { [key: string]: string | string[] | undefined };
 }
 
 const reviewTypes: { [key: string]: ReviewType } = {
@@ -62,7 +56,13 @@ const reviewTypes: { [key: string]: ReviewType } = {
   }
 };
 
-export default function ReviewPage({ params }: { params: PageParams }) {
+type Props = {
+  params: {
+    type: string;
+  };
+};
+
+export default function ReviewPage({ params }: Props) {
   const router = useRouter();
   const [user, setUser] = useState<ReviewUser | null>(null);
   const [reviewLink, setReviewLink] = useState('');
