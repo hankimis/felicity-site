@@ -62,7 +62,7 @@ const reviewTypes: { [key: string]: ReviewType } = {
   }
 };
 
-export default function ReviewPage({ params }: PageProps) {
+export default async function ReviewPage({ params }: { params: { type: string } }) {
   const router = useRouter();
   const [user, setUser] = useState<ReviewUser | null>(null);
   const [reviewLink, setReviewLink] = useState('');
