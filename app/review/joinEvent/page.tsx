@@ -49,7 +49,10 @@ export default function JoinEventPage() {
   }, [router]);
 
   const checkExistingAccount = async (userData: ReviewUser) => {
-    if (!db) return;
+    if (!db) {
+      console.error('Database connection failed');
+      return;
+    }
 
     try {
       const accountRef = collection(db, 'paymentInfo');
@@ -99,6 +102,9 @@ export default function JoinEventPage() {
 
     try {
       // 이벤트 신청 정보 저장
+      if (!db) {
+        throw new Error('Database connection failed');
+      }
       const eventRef = collection(db, 'joinEventReviews');
       await addDoc(eventRef, {
         userId: user.userId,
