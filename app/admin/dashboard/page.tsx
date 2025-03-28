@@ -63,6 +63,13 @@ const CONNECTION_RETRY_INTERVAL = 1 * 60 * 1000; // 1분
 // SSR 하이드레이션 오류 방지를 위한 초기 시간 고정
 const INITIAL_DATE = '2023-01-01T00:00:00.000Z';
 
+interface PageProps {
+  params: {
+    type: string;
+  };
+  searchParams?: { [key: string]: string | string[] | undefined };
+}
+
 export default function Dashboard() {
   const router = useRouter();
   const [tab, setTab] = useState<string>('join');
