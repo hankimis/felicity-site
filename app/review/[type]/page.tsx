@@ -7,11 +7,7 @@ import { collection, addDoc } from 'firebase/firestore';
 import { toast } from 'react-hot-toast';
 import { motion } from 'framer-motion';
 
-interface PageProps {
-  params: {
-    type: string;
-  };
-}
+type PageParams = Promise<{ type: string }>;
 
 type ReviewType = {
   id: string;
@@ -62,14 +58,15 @@ const reviewTypes: { [key: string]: ReviewType } = {
   }
 };
 
-export default async function ReviewPage({ params }: { params: { type: string } }) {
+export default async function ReviewPage({ params }: { params: PageParams }) {
+  const { type } = await params;
   const router = useRouter();
   const [user, setUser] = useState<ReviewUser | null>(null);
   const [reviewLink, setReviewLink] = useState('');
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const reviewType = reviewTypes[params.type as keyof typeof reviewTypes];
+  const reviewType = reviewTypes[type as keyof typeof reviewTypes];
 
   useEffect(() => {
     if (!reviewType) {
@@ -120,7 +117,7 @@ export default async function ReviewPage({ params }: { params: { type: string } 
     setIsLoading(true);
 
     try {
-      const eventRef = collection(db, `${params.type}s`);
+      const eventRef = collection(db, `${type}s`);
       await addDoc(eventRef, {
         userId: user.userId,
         name: user.name,
