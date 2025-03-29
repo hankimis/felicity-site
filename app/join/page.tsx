@@ -1,14 +1,18 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { db } from '../lib/firebase';
-import { collection, addDoc } from 'firebase/firestore';
+import { collection, addDoc, getDocs, query, where, limit } from 'firebase/firestore';
 import { toast } from 'react-hot-toast';
 import { motion } from 'framer-motion';
 
 export default function Join() {
   const router = useRouter();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isOnline, setIsOnline] = useState(true);
+  const [retryCount, setRetryCount] = useState(0);
+  const MAX_RETRIES = 3;
 
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
@@ -20,13 +24,48 @@ export default function Join() {
   const [trafficSource, setTrafficSource] = useState('');
   const [callTime, setCallTime] = useState('');
   const [referralCode, setReferralCode] = useState('');
-  const [loading, setLoading] = useState(false);
-
-  // 입력 필드 유효성 검사
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  // 네트워크 상태 모니터링
   useEffect(() => {
-    sessionStorage.setItem('joinStep1', 'true'); // ✅ 첫 단계 진입 시 세션 설정
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  // Firebase 연결 상태 확인 - 단순화된 버전
+  const checkFirebaseConnection = useCallback(async () => {
+    if (!db) {
+      console.error('Firebase가 초기화되지 않았습니다.');
+      return false;
+    }
+
+    try {
+      // 간단한 쿼리로 연결 테스트
+      const testRef = collection(db, 'joinUsers');
+      const testQuery = query(testRef, limit(1));
+      await getDocs(testQuery);
+      return true;
+    } catch (error) {
+      console.error('Firebase 연결 오류:', error);
+      return false;
+    }
+  }, []);
+
+  // 세션 스토리지 초기화
+  useEffect(() => {
+    try {
+      sessionStorage.setItem('joinStep1', 'true');
+    } catch (error) {
+      console.error('세션 스토리지 초기화 오류:', error);
+    }
   }, []);
 
   const handleBirthDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -42,13 +81,11 @@ export default function Join() {
     setIsUnderage(!isAdult);
   };
 
-  // 유효성 검사 함수
-  const validateForm = () => {
+  const validateForm = useCallback(() => {
     const newErrors: Record<string, string> = {};
 
     if (!name.trim()) newErrors.name = '이름을 입력해주세요';
     
-    // 전화번호 형식 검사 (010-XXXX-XXXX)
     const phoneRegex = /^01[0-9]-\d{3,4}-\d{4}$/;
     if (!phone.trim()) {
       newErrors.phone = '전화번호를 입력해주세요';
@@ -58,7 +95,6 @@ export default function Join() {
     
     if (!phoneCarrier) newErrors.phoneCarrier = '통신사를 선택해주세요';
     
-    // 이메일 형식 검사
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!email.trim()) {
       newErrors.email = '이메일을 입력해주세요';
@@ -73,7 +109,7 @@ export default function Join() {
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  };
+  }, [name, phone, phoneCarrier, email, birthDate, gender, trafficSource, callTime]);
 
   const handleNext = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -83,47 +119,71 @@ export default function Join() {
       return;
     }
 
-    const newUser = {
-      name,
-      phone,
-      phoneCarrier,
-      email,
-      birthDate,
-      gender,
-      trafficSource,
-      callTime,
-      referralCode: referralCode || '없음',
-      createdAt: new Date().toISOString(),
-    };
+    if (!isOnline) {
+      toast.error('인터넷 연결을 확인해주세요.');
+      return;
+    }
+
+    if (isSubmitting) {
+      return; // 중복 제출 방지
+    }
+
+    setIsSubmitting(true);
 
     try {
-      setLoading(true);
-      console.log('Firestore에 데이터 저장 시도:', newUser);
-      
-      // 연결 상태 확인
-      if (!db) {
-        throw new Error('Firebase 데이터베이스가 초기화되지 않았습니다.');
+      // 1. Firebase 연결 확인
+      const isConnected = await checkFirebaseConnection();
+      if (!isConnected) {
+        throw new Error('서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요.');
       }
+
+      // 2. 중복 가입 체크
+      if (!db) throw new Error('Firebase가 초기화되지 않았습니다.');
+      const userRef = collection(db, 'joinUsers');
+      const duplicateQuery = query(userRef, where('phone', '==', phone));
+      const duplicateCheck = await getDocs(duplicateQuery);
       
-      if (!navigator.onLine) {
-        throw new Error('오프라인 상태입니다. 인터넷 연결을 확인해주세요.');
+      if (!duplicateCheck.empty) {
+        throw new Error('이미 가입된 전화번호입니다.');
       }
-      
+
+      // 3. 새 사용자 데이터 생성
+      const newUser = {
+        name,
+        phone,
+        phoneCarrier,
+        email,
+        birthDate,
+        gender,
+        trafficSource,
+        callTime,
+        referralCode: referralCode || '없음',
+        createdAt: new Date().toISOString(),
+        status: 'pending',
+      };
+
+      // 4. Firestore에 데이터 저장
       const docRef = await addDoc(collection(db, 'joinUsers'), newUser);
-      console.log('Firestore에 데이터 저장 성공. 문서 ID:', docRef.id);
-      
-      // sessionStorage에 저장
-      sessionStorage.setItem('joinStep2', 'true');
-      sessionStorage.setItem('joinPhone', phone);
-      sessionStorage.setItem('joinDocId', docRef.id); // 문서 ID도 저장
-      
+
+      // 5. 세션 스토리지 저장
+      try {
+        sessionStorage.setItem('joinStep2', 'true');
+        sessionStorage.setItem('joinPhone', phone);
+        sessionStorage.setItem('joinDocId', docRef.id);
+      } catch (storageError) {
+        console.error('세션 스토리지 저장 오류:', storageError);
+        // 세션 스토리지 오류는 무시하고 진행
+      }
+
       toast.success('정보가 성공적으로 저장되었습니다!');
       router.push('/join/gift-receiver');
     } catch (error: any) {
-      console.error('Firestore 저장 중 오류 발생:', error);
+      console.error('가입 처리 오류:', error);
       
       let errorMessage = '오류가 발생했습니다. 다시 시도해주세요.';
-      if (error.code === 'unavailable') {
+      if (error.message) {
+        errorMessage = error.message;
+      } else if (error.code === 'unavailable') {
         errorMessage = '서버에 연결할 수 없습니다. 인터넷 연결을 확인해주세요.';
       } else if (error.code === 'permission-denied') {
         errorMessage = '데이터 저장 권한이 없습니다. 관리자에게 문의하세요.';
@@ -131,7 +191,7 @@ export default function Join() {
       
       toast.error(errorMessage);
     } finally {
-      setLoading(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -386,9 +446,9 @@ export default function Join() {
             <button
               type="submit"
               className="sm:w-1/2 bg-blue-600 hover:bg-blue-700 text-white font-medium py-3.5 px-6 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed shadow-sm transition-colors flex justify-center items-center"
-              disabled={loading || isUnderage}
+              disabled={isSubmitting || isUnderage}
             >
-              {loading ? (
+              {isSubmitting ? (
                 <>
                   <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>

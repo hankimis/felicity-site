@@ -608,117 +608,68 @@ export default function Dashboard() {
 
   // Real data load function 
   const loadRealData = async () => {
-    if (isLoading && !isOnline) return false; // 이미 로딩 중이거나 오프라인 상태면 중복 실행 방지
-    console.log('실제 데이터 로드 시작...');
-    
-    try {
-      // Firestore가 초기화되지 않았으면 재초기화 시도
-      if (!db) {
-        console.log('Firestore 초기화되지 않음, 재초기화 시도');
-        const reconnectResult = await reconnectFirebase();
-        if (!reconnectResult.success || !db) {
-          console.error('Firestore 재초기화 실패');
-          return false;
-        }
-        console.log('Firestore 재초기화 성공');
-      }
-      
-      // 1. user collection 로드
-      console.log('사용자 데이터 로드 중...');
-      try {
-        const joinRef = collection(db, 'joinUsers');
-            const joinSnap = await getDocs(joinRef);
-        console.log('사용자 데이터 로드 성공:', joinSnap.docs.length, '건');
-            
-            if (joinSnap.docs.length > 0) {
-          // 사용자 데이터 변환
-          const userList = joinSnap.docs.map((doc: QueryDocumentSnapshot<DocumentData>) => {
-                  const data = doc.data();
-                  return {
-                    id: doc.id,
-                    name: data.name || '',
-                    phone: data.phone || '',
-                    email: data.email || '',
-                    birthDate: data.birthDate || '',
-                    gender: data.gender || '',
-                    trafficSource: data.trafficSource || '',
-                    callTime: data.callTime || '',
-                    referralCode: data.referralCode || '',
-                    createdAt: data.createdAt || new Date().toISOString(),
-              phoneCarrier: data.phoneCarrier || '',
-              approved: data.approved || false
-                  } as UserData;
-                });
-                
-          // 상태 업데이트
-          console.log('사용자 상태 업데이트:', userList.length, '건');
-          setUsers(userList);
-          
-          // 2. 계좌 정보 로드
-          try {
-            console.log('계좌 정보 로드 중...');
-            const paymentRef = collection(db, 'paymentInfo');
-            const paymentSnap = await getDocs(paymentRef);
-            console.log('계좌 정보 로드 성공:', paymentSnap.docs.length, '건');
-            
-            const accList = paymentSnap.docs.map((doc: QueryDocumentSnapshot<DocumentData>) => {
-                  const data = doc.data();
-                  return {
-                    phone: data.phone || '',
-                    bank: data.bank || '',
-                    accountNumber: data.accountNumber || '',
-                  } as AccountData;
-                });
-                
-            // Create merged data
-            const merged = userList.map((user: UserData) => {
-                  const account = accList.find(acc => acc.phone === user.phone) || {
-                    phone: user.phone,
-                    bank: '',
-                    accountNumber: ''
-                  };
-                  return {
-                    ...user,
-                    ...account
-                  } as MergedAccountData;
-                });
-                
-            // 상태 업데이트
-            console.log('계좌 정보 상태 업데이트:', merged.length, '건');
-                setAccounts(merged);
-            toast.success('데이터 로드 완료');
-          } catch (accountError) {
-            console.error('계좌 정보 로드 실패:', accountError);
-            // 계좌 정보 로드 실패해도 사용자 정보는 유지
-            toast.error('계좌 정보 로드 실패');
-          }
-          
-          // Connection status update
-          updateConnectionStatus(true);
-          setIsOnline(true);
-          setError(null);
-          
-          return true;
-              } else {
-          // 빈 컬렉션인 경우 (데이터 없음)
-          console.log('사용자 데이터가 없습니다.');
-          setUsers([]);
-          setAccounts([]);
-          toast('등록된 사용자 데이터가 없습니다.');
-          return true;
-        }
-      } catch (userQueryError: any) {
-        console.error('사용자 데이터 쿼리 실패:', userQueryError);
-        toast.error(`사용자 데이터 로드 실패: ${userQueryError.message || '알 수 없는 오류'}`);
-        throw userQueryError;
-      }
-    } catch (err: any) {
-      console.error('실제 데이터 로드 실패:', err);
-      
-      // 연결 오류 시 오류 표시
-      toast.error(`데이터 로드 실패: ${err.message || '알 수 없는 오류'}`);
-      updateConnectionStatus(false, err);
+    if (!db) {
+      console.error('Firestore가 초기화되지 않았습니다');
       return false;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const usersRef = collection(db, 'joinUsers');
+      const q = query(usersRef, 
+        orderBy('createdAt', 'desc'),
+        limit(itemsPerPage)
+      );
+      
+      const snapshot = await getDocs(q);
+      const userData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as UserData[];
+
+      setUsers(userData);
+      setLastVisible(snapshot.docs[snapshot.docs.length - 1]);
+      
+      console.log(`${userData.length}건의 데이터 로드 완료`);
+      return true;
+    } catch (error) {
+      console.error('데이터 로드 중 오류:', error);
+      setError('데이터를 불러오는데 실패했습니다.');
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // 페이지네이션 처리를 위한 함수
+  const loadMoreData = async () => {
+    if (!db || !lastVisible) return;
+
+    setIsLoading(true);
+    try {
+      const usersRef = collection(db, 'joinUsers');
+      const q = query(usersRef,
+        orderBy('createdAt', 'desc'),
+        startAfter(lastVisible),
+        limit(itemsPerPage)
+      );
+
+      const snapshot = await getDocs(q);
+      const newUserData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as UserData[];
+
+      setUsers(prev => [...prev, ...newUserData]);
+      setLastVisible(snapshot.docs[snapshot.docs.length - 1]);
+      setCurrentPage(prev => prev + 1);
+    } catch (error) {
+      console.error('추가 데이터 로드 중 오류:', error);
+      toast.error('데이터를 더 불러오는데 실패했습니다.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -881,7 +832,7 @@ export default function Dashboard() {
 
   // Review data load function
   const loadReviewData = async () => {
-    if (isLoading && !isOnline) return;
+    if (isLoading && !isOnline) return false;
     
     try {
       if (!db) {
@@ -891,7 +842,7 @@ export default function Dashboard() {
           console.error('Firestore 재초기화 실패');
           toast.error('Firebase 연결 실패');
           setError('Firebase 연결 실패');
-          return;
+          return false;
         }
       }
       
@@ -910,7 +861,7 @@ export default function Dashboard() {
         const collectionName = collectionMapping[tab];
         if (!collectionName) {
           console.error('잘못된 탭 이름:', tab);
-          return;
+          return false;
         }
         
         const reviewRef = collection(db, collectionName);
@@ -920,7 +871,7 @@ export default function Dashboard() {
           console.log(`${collectionName} 컬렉션에 데이터가 없습니다`);
           setReviews([]);
           toast(`${tabOptions.find(option => option.value === tab)?.label || tab} 데이터가 없습니다`);
-          return;
+          return true;
         }
         
         console.log(`${collectionName}에서 ${reviewSnap.docs.length}건의 데이터 로드 완료`);
@@ -946,10 +897,12 @@ export default function Dashboard() {
         toast.success(`${tabOptions.find(option => option.value === tab)?.label || tab} 데이터 로드 완료`);
         
         updateConnectionStatus(true);
+        return true;
       } catch (err: any) {
         console.error(`${tab} 데이터를 불러오는 중 오류 발생:`, err);
         setError(`${tab} 데이터를 불러오는 중 오류가 발생했습니다.`);
         toast.error(`데이터 로드 실패: ${err.message || '알 수 없는 오류'}`);
+        return false;
       } finally {
         setIsLoading(false);
       }
@@ -957,87 +910,7 @@ export default function Dashboard() {
       console.error('데이터 로드 중 오류:', err);
       setError(`데이터 로드 중 오류가 발생했습니다: ${err.message || '알 수 없는 오류'}`);
       setIsLoading(false);
-    }
-  };
-
-  // Review management functions
-  const handleApproveReview = async (id: string) => {
-    if (!db) {
-      toast.error('Firebase not initialized');
-      return;
-    }
-    
-    try {
-      const collectionMapping: { [key: string]: string } = {
-        'joinEvent': 'joinEventReviews',
-        'cafeReview': 'cafeReviews',
-        'blogReview': 'blogReviews',
-        'instaReview': 'instaReviews'
-      };
-      
-      const collectionName = collectionMapping[tab];
-      if (!collectionName) {
-        console.error('Invalid tab name:', tab);
-        return;
-      }
-      
-      const reviewRef = doc(db, collectionName, id);
-      await updateDoc(reviewRef, { 
-        status: 'approved',
-        updatedAt: new Date().toISOString()
-      });
-      
-      // Update local state
-      setReviews(prev => prev.map(review => 
-        review.id === id 
-          ? { ...review, status: 'approved' } 
-          : review
-      ));
-      
-      toast.success('리뷰가 승인되었습니다');
-    } catch (error) {
-      console.error('Error approving review:', error);
-      toast.error('승인 처리 중 오류가 발생했습니다');
-    }
-  };
-  
-  const handleRejectReview = async (id: string) => {
-    if (!db) {
-      toast.error('Firebase not initialized');
-      return;
-    }
-    
-    try {
-      const collectionMapping: { [key: string]: string } = {
-        'joinEvent': 'joinEventReviews',
-        'cafeReview': 'cafeReviews',
-        'blogReview': 'blogReviews',
-        'instaReview': 'instaReviews'
-      };
-      
-      const collectionName = collectionMapping[tab];
-      if (!collectionName) {
-        console.error('Invalid tab name:', tab);
-        return;
-      }
-      
-      const reviewRef = doc(db, collectionName, id);
-      await updateDoc(reviewRef, { 
-        status: 'rejected',
-        updatedAt: new Date().toISOString()
-      });
-      
-      // Update local state
-      setReviews(prev => prev.map(review => 
-        review.id === id 
-          ? { ...review, status: 'rejected' } 
-          : review
-      ));
-      
-      toast.success('리뷰가 거절되었습니다');
-    } catch (error) {
-      console.error('Error rejecting review:', error);
-      toast.error('거절 처리 중 오류가 발생했습니다');
+      return false;
     }
   };
 
@@ -1123,6 +996,87 @@ export default function Dashboard() {
       toast.error(`리뷰 데이터 로드 실패: ${error.message || '알 수 없는 오류'}`);
       setError('리뷰 데이터 로드 중 오류가 발생했습니다');
       return false;
+    }
+  };
+
+  // Review management functions
+  const handleApproveReview = async (id: string) => {
+    if (!db) {
+      toast.error('Firebase not initialized');
+      return;
+    }
+    
+    try {
+      const collectionMapping: { [key: string]: string } = {
+        'joinEvent': 'joinEventReviews',
+        'cafeReview': 'cafeReviews',
+        'blogReview': 'blogReviews',
+        'instaReview': 'instaReviews'
+      };
+      
+      const collectionName = collectionMapping[tab];
+      if (!collectionName) {
+        console.error('Invalid tab name:', tab);
+        return;
+      }
+      
+      const reviewRef = doc(db, collectionName, id);
+      await updateDoc(reviewRef, { 
+        status: 'approved',
+        updatedAt: new Date().toISOString()
+      });
+      
+      // Update local state
+      setReviews(prev => prev.map(review => 
+        review.id === id 
+          ? { ...review, status: 'approved' } 
+          : review
+      ));
+      
+      toast.success('리뷰가 승인되었습니다');
+    } catch (error) {
+      console.error('Error approving review:', error);
+      toast.error('승인 처리 중 오류가 발생했습니다');
+    }
+  };
+  
+  const handleRejectReview = async (id: string) => {
+    if (!db) {
+      toast.error('Firebase not initialized');
+      return;
+    }
+    
+    try {
+      const collectionMapping: { [key: string]: string } = {
+        'joinEvent': 'joinEventReviews',
+        'cafeReview': 'cafeReviews',
+        'blogReview': 'blogReviews',
+        'instaReview': 'instaReviews'
+      };
+      
+      const collectionName = collectionMapping[tab];
+      if (!collectionName) {
+        console.error('Invalid tab name:', tab);
+        return;
+      }
+      
+      const reviewRef = doc(db, collectionName, id);
+      await updateDoc(reviewRef, { 
+        status: 'rejected',
+        updatedAt: new Date().toISOString()
+      });
+      
+      // Update local state
+      setReviews(prev => prev.map(review => 
+        review.id === id 
+          ? { ...review, status: 'rejected' } 
+          : review
+      ));
+      
+      toast.success('리뷰가 거절되었습니다');
+    } catch (error) {
+      console.error('Error rejecting review:', error);
+      toast.error('거절 처리 중 오류가 발생했습니다');
     }
   };
 

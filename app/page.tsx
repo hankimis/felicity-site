@@ -62,8 +62,6 @@ export default function Home() {
             </span>
           </h1>
           <p className="text-xl text-gray-300 mb-8 font-normal">펠리시티와 함께하는 특별한 혜택</p>
-
-          <div className="mt-4 inline-block border border-purple-500/30 bg-purple-500/10 backdrop-blur-sm rounded-full px-5 py-1.5 text-sm mb-8">홈피드 특별 프로모션</div>
         </motion.div>
 
         {/* Main Image */}
@@ -75,10 +73,6 @@ export default function Home() {
         >
           <div className="absolute -top-4 -left-4 w-20 h-20 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 blur-2xl opacity-40"></div>
           <div className="absolute -bottom-4 -right-4 w-20 h-20 rounded-full bg-gradient-to-br from-purple-400 to-pink-500 blur-2xl opacity-40"></div>
-          
-          <div className="relative z-10 overflow-hidden rounded-2xl shadow-2xl border border-white/10">
-            <img src="/event-bg.png" alt="이벤트 배경" className="w-full rounded-2xl transform hover:scale-105 transition-transform duration-700" />
-          </div>
         </motion.div>
 
         {/* 이벤트 배너 */}
