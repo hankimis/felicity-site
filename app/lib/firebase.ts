@@ -1,7 +1,7 @@
 import { initializeApp, FirebaseOptions, getApps, getApp } from "firebase/app";
 import { getAuth, connectAuthEmulator, Auth, signInWithEmailAndPassword } from 'firebase/auth';
 import { getFirestore, enableIndexedDbPersistence, connectFirestoreEmulator, initializeFirestore, Firestore, CACHE_SIZE_UNLIMITED, persistentLocalCache, persistentMultipleTabManager, enableNetwork, disableNetwork, collection, getDocs, query, limit } from 'firebase/firestore';
-import { getAnalytics } from "firebase/analytics";
+import { getAnalytics, isSupported } from "firebase/analytics";
 
 // Vercel 환경과 로컬 환경을 위한 Firebase 구성
 const firebaseConfig = {
@@ -67,7 +67,7 @@ export async function ensureFirebaseInitialized() {
   initializationAttempts++;
   
   try {
-    const result = initializeFirebase();
+    const result = await initializeFirebase();
     isInitializing = false;
     return result;
   } catch (error) {
@@ -145,7 +145,7 @@ export async function testDbConnection(): Promise<{
 }
 
 // Vercel 환경에서 안정적으로 작동하는 Firebase 초기화 함수
-function initializeFirebase() {
+async function initializeFirebase() {
   // 이미 초기화된 경우
   if (app && db && firestoreInitialized) {
     console.log('Firebase가 이미 초기화되어 있습니다.');
@@ -188,7 +188,7 @@ function initializeFirebase() {
         
         // 오프라인 지원 활성화
         if (typeof window !== 'undefined') {
-          enableIndexedDbPersistence(db)
+          await enableIndexedDbPersistence(db)
             .then(() => {
               console.log('Firestore 오프라인 지원 활성화 완료');
             })
@@ -220,12 +220,10 @@ function initializeFirebase() {
 
     // 분석 초기화 (브라우저에서만)
     if (typeof window !== 'undefined' && !analytics) {
-      try {
+      const analyticsSupported = await isSupported();
+      if (analyticsSupported) {
         analytics = getAnalytics(app);
         console.log('Firebase Analytics 초기화 완료');
-      } catch (err) {
-        console.error('Analytics 초기화 실패:', err);
-        // Analytics 실패는 치명적이지 않음
       }
     }
 

@@ -395,6 +395,8 @@ export default function Dashboard() {
 
   // Enhanced reconnect logic
   const reconnectAndLoad = async () => {
+    console.log('reconnectAndLoad 시작...');
+    
     if (!isOnline) {
       console.log('Device is offline, skipping reconnection');
       return;
@@ -410,13 +412,22 @@ export default function Dashboard() {
     setRetryCount(prev => prev + 1);
 
     try {
-      // Test connection first
-      const isConnected = await checkConnection();
+      // Firebase 재초기화 시도
+      const reconnectResult = await reconnectFirebase();
+      if (!reconnectResult.success) {
+        throw new Error('Failed to reconnect to Firebase');
+      }
       
+      console.log('Firebase 재연결 성공');
+      
+      // 연결 상태 확인
+      const isConnected = await checkConnection();
       if (!isConnected) {
         throw new Error('Failed to establish connection');
       }
 
+      console.log('연결 상태 확인 완료');
+      
       // Reset retry count on successful connection
       setRetryCount(0);
       
@@ -429,14 +440,17 @@ export default function Dashboard() {
         isConnected: true,
         lastChecked: new Date().toISOString()
       }));
+      
+      console.log('데이터 로드 완료');
     } catch (error) {
       console.error('Reconnection failed:', error);
       setError(error instanceof Error ? error.message : '연결에 실패했습니다.');
       
-      // Schedule next retry
+      // Schedule next retry with exponential backoff
+      const retryDelay = Math.min(1000 * Math.pow(2, retryCount), 10000);
       setTimeout(() => {
         reconnectAndLoad();
-      }, CONNECTION_RETRY_INTERVAL);
+      }, retryDelay);
     } finally {
       setIsLoading(false);
     }
@@ -608,31 +622,50 @@ export default function Dashboard() {
 
   // Real data load function 
   const loadRealData = async () => {
+    console.log('loadRealData 시작...');
+    
     if (!db) {
       console.error('Firestore가 초기화되지 않았습니다');
-      return false;
+      await new Promise(resolve => setTimeout(resolve, 1000)); // 잠시 대기
+      
+      // Firebase 재초기화 시도
+      const reconnectResult = await reconnectFirebase();
+      if (!reconnectResult.success) {
+        console.error('Firebase 재연결 실패');
+        setError('Firebase 연결에 실패했습니다.');
+        return false;
+      }
     }
 
     setIsLoading(true);
     setError(null);
 
     try {
+      console.log('Firestore 쿼리 시작...');
       const usersRef = collection(db, 'joinUsers');
-      const q = query(usersRef, 
-        orderBy('createdAt', 'desc'),
-        limit(itemsPerPage)
-      );
+      
+      // 쿼리 수정: orderBy 제거하고 기본 쿼리로 시도
+      const q = query(usersRef, limit(itemsPerPage));
+      console.log('쿼리 생성 완료');
       
       const snapshot = await getDocs(q);
+      console.log(`데이터 스냅샷 받음: ${snapshot.size}건`);
+      
+      if (snapshot.empty) {
+        console.log('데이터가 없습니다');
+        setUsers([]);
+        return true;
+      }
+      
       const userData = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       })) as UserData[];
 
+      console.log(`${userData.length}건의 데이터 로드 완료`);
       setUsers(userData);
       setLastVisible(snapshot.docs[snapshot.docs.length - 1]);
       
-      console.log(`${userData.length}건의 데이터 로드 완료`);
       return true;
     } catch (error) {
       console.error('데이터 로드 중 오류:', error);
