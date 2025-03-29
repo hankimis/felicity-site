@@ -637,12 +637,20 @@ export default function Dashboard() {
       }
     }
 
+    // db가 여전히 null인지 한번 더 체크
+    if (!db) {
+      setError('Firebase 연결이 불가능합니다.');
+      return false;
+    }
+
     setIsLoading(true);
     setError(null);
 
     try {
       console.log('Firestore 쿼리 시작...');
-      const usersRef = collection(db, 'joinUsers');
+      // db가 null이 아님을 TypeScript에 알림
+      const firestore = db as Firestore;
+      const usersRef = collection(firestore, 'joinUsers');
       
       // 쿼리 수정: orderBy 제거하고 기본 쿼리로 시도
       const q = query(usersRef, limit(itemsPerPage));
@@ -878,6 +886,12 @@ export default function Dashboard() {
           return false;
         }
       }
+
+      // db가 여전히 null인지 한번 더 체크
+      if (!db) {
+        setError('Firebase 연결이 불가능합니다.');
+        return false;
+      }
       
       setIsLoading(true);
       
@@ -897,7 +911,8 @@ export default function Dashboard() {
           return false;
         }
         
-        const reviewRef = collection(db, collectionName);
+        const firestore = db as Firestore;
+        const reviewRef = collection(firestore, collectionName);
         const reviewSnap = await getDocs(reviewRef);
         
         if (reviewSnap.empty) {
@@ -960,7 +975,14 @@ export default function Dashboard() {
           return false;
         }
       }
+
+      // db가 여전히 null인지 한번 더 체크
+      if (!db) {
+        setError('Firebase 연결이 불가능합니다.');
+        return false;
+      }
       
+      const firestore = db as Firestore;
       const reviewTypes = ['joinEvent', 'cafeReview', 'blogReview', 'instaReview'];
       const allReviews: ReviewData[] = [];
       let loadingErrors = false;
@@ -977,7 +999,7 @@ export default function Dashboard() {
           const collectionName = collectionMapping[type];
           console.log(`${collectionName} 데이터 로드 중...`);
           
-          const reviewRef = collection(db, collectionName);
+          const reviewRef = collection(firestore, collectionName);
           const snapshot = await getDocs(reviewRef);
           
           const reviewList = snapshot.docs.map(doc => {
@@ -1378,7 +1400,8 @@ export default function Dashboard() {
     }
 
     try {
-      const accountRef = collection(db, 'paymentInfo');
+      const firestore = db as Firestore;
+      const accountRef = collection(firestore, 'paymentInfo');
       const accountSnapshot = await getDocs(accountRef);
       const accountData = accountSnapshot.docs.map(doc => ({
         id: doc.id,
