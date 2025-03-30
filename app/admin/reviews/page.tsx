@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState } from 'react';
 import { doc, updateDoc } from 'firebase/firestore';
 import { toast } from 'react-hot-toast';
