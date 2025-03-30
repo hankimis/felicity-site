@@ -21,7 +21,8 @@ const nextConfig = {
                 https://*.firebaseio.com 
                 https://*.firebase.com
                 https://*.vercel.app
-                https://*.vercel.com;
+                https://*.vercel.com
+                https://www.googletagmanager.com;
               style-src 'self' 'unsafe-inline' 
                 https://fonts.googleapis.com 
                 https://*.vercel.app
@@ -31,7 +32,8 @@ const nextConfig = {
                 https://*.gstatic.com 
                 https://*.google.com
                 https://*.vercel.app
-                https://*.vercel.com;
+                https://*.vercel.com
+                https://www.google.com;
               font-src 'self' data: 
                 https://fonts.gstatic.com
                 https://*.vercel.app
@@ -45,7 +47,11 @@ const nextConfig = {
                 https://*.firebase.com
                 https://*.firebaseapp.com
                 https://*.firebase.database.app
+                https://firebase.googleapis.com
+                https://firebaseinstallations.googleapis.com
+                https://firestore.googleapis.com
                 wss://*.firebaseio.com
+                wss://*.firestore.googleapis.com
                 wss://*.firebase.database.app
                 https://*.vercel.app
                 https://*.vercel.com
@@ -61,6 +67,9 @@ const nextConfig = {
                 https://*.vercel.app
                 https://*.vercel.com;
               manifest-src 'self';
+              object-src 'none';
+              base-uri 'self';
+              form-action 'self';
             `.replace(/\s+/g, ' ').trim()
           },
           {
