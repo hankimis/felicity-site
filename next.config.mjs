@@ -13,42 +13,15 @@ const nextConfig = {
           {
             key: 'Content-Security-Policy',
             value: `
-              default-src 'self';
-              script-src 'self' 'unsafe-inline' 'unsafe-eval' 
-                https://*.googleapis.com 
-                https://*.gstatic.com 
-                https://*.google.com 
-                https://*.googletagmanager.com 
-                https://*.google-analytics.com 
-                https://*.firebaseio.com 
-                https://*.firebase.com
-                https://www.googletagmanager.com;
-              style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
-              img-src 'self' blob: data: 
-                https://*.googleapis.com 
-                https://*.gstatic.com 
-                https://*.google.com 
-                https://www.google.com
-                https://www.googletagmanager.com;
-              font-src 'self' data: https://fonts.gstatic.com;
-              connect-src 'self' 
-                https://*.firebaseio.com 
-                https://*.googleapis.com 
-                https://firebase.googleapis.com
-                https://firebaseinstallations.googleapis.com
-                https://firestore.googleapis.com
-                https://*.google.com 
-                https://*.google-analytics.com
-                https://*.analytics.google.com
-                https://*.gstatic.com 
-                https://*.cloudfunctions.net
-                https://*.firebase.com
-                https://*.firebaseapp.com
-                wss://*.firebaseio.com
-                wss://*.firestore.googleapis.com;
-              frame-src 'self' https://*.firebaseapp.com https://*.google.com;
+              default-src 'self' https: data: 'unsafe-inline' 'unsafe-eval';
+              script-src 'self' 'unsafe-inline' 'unsafe-eval' https:;
+              style-src 'self' 'unsafe-inline' https:;
+              img-src 'self' blob: data: https:;
+              font-src 'self' data: https:;
+              connect-src 'self' https: wss:;
+              frame-src 'self' https:;
               worker-src 'self' blob:;
-              media-src 'self';
+              media-src 'self' https:;
               manifest-src 'self';
               object-src 'none';
               base-uri 'self';
