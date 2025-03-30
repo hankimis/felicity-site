@@ -177,10 +177,12 @@ export default function GiftReceiver() {
           {/* 계좌정보 */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="block font-medium text-gray-700 dark:text-gray-200">은행</label>
+              <label htmlFor="bank" className="block font-medium text-gray-700 dark:text-gray-200">은행</label>
               <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">필수</span>
             </div>
             <select
+              id="bank"
+              name="bank"
               value={bank}
               onChange={(e) => setBank(e.target.value)}
               required
@@ -203,11 +205,13 @@ export default function GiftReceiver() {
 
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="block font-medium text-gray-700 dark:text-gray-200">계좌번호</label>
+              <label htmlFor="accountNumber" className="block font-medium text-gray-700 dark:text-gray-200">계좌번호</label>
               <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">필수</span>
             </div>
             <input
               type="text"
+              id="accountNumber"
+              name="accountNumber"
               value={accountNumber}
               onChange={(e) => setAccountNumber(e.target.value)}
               required

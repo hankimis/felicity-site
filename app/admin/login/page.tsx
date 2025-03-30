@@ -91,8 +91,10 @@ export default function AdminLogin() {
         {error && <p className="text-red-500 mb-4 text-center">{error}</p>}
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
-            <label className="block text-gray-700 text-sm font-bold mb-2">이메일</label>
+            <label htmlFor="email" className="block text-gray-700 text-sm font-bold mb-2">이메일</label>
             <input
+              id="email"
+              name="email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -101,8 +103,10 @@ export default function AdminLogin() {
             />
           </div>
           <div className="mb-6">
-            <label className="block text-gray-700 text-sm font-bold mb-2">비밀번호</label>
+            <label htmlFor="password" className="block text-gray-700 text-sm font-bold mb-2">비밀번호</label>
             <input
+              id="password"
+              name="password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
