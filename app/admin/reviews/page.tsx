@@ -1,9 +1,21 @@
 'use client';
 
 import React, { useState } from 'react';
-import { doc, updateDoc } from 'firebase/firestore';
+import { doc, updateDoc, Firestore } from 'firebase/firestore';
 import { toast } from 'react-hot-toast';
-import { db } from '@/firebase/firebaseConfig';
+import { db } from '../../lib/firebase';
+
+interface Review {
+  id: string;
+  name: string;
+  status: string;
+  isPaid: boolean;
+  phone: string;
+  reviewLink: string;
+  createdAt: string;
+  type: string;
+  paidAt?: string;
+}
 
 const handlePaymentComplete = async (reviewId: string) => {
   try {
@@ -30,7 +42,7 @@ const fetchReviews = () => {
 };
 
 const ReviewsPage: React.FC = () => {
-  const [reviews, setReviews] = useState([]);
+  const [reviews, setReviews] = useState<Review[]>([]);
 
   return (
     <div className="space-y-4">
