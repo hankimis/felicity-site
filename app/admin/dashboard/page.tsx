@@ -1,16 +1,17 @@
 'use client';
 
-import { useEffect, useState, useRef, useCallback, useMemo, memo } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { db, auth, analytics, signInWithEmail, testDbConnection, reconnectFirebase } from '../../lib/firebase';
-import { collection, getDocs, updateDoc, deleteDoc, doc, query, orderBy, DocumentData, onSnapshot, enableNetwork, disableNetwork, setLogLevel, Firestore, limit, startAfter, QueryDocumentSnapshot } from 'firebase/firestore';
-import { exportToExcel } from '../../lib/exportExcel';
-import { useSessionTimeout } from '../../hooks/useSessionTimeout';
-import Cookies from 'js-cookie';
+import { 
+  db, 
+  initializeFirebase,
+  enableFirestoreNetwork 
+} from '../../lib/firebase';
+import { collection, getDocs, query, orderBy, Firestore, onSnapshot, doc, updateDoc, deleteDoc, where, Timestamp } from 'firebase/firestore';
 import { toast } from 'react-hot-toast';
-import { onAuthStateChanged } from 'firebase/auth';
+import Cookies from 'js-cookie';
 
-interface UserData extends DocumentData {
+interface UserData {
   id: string;
   name: string;
   phone: string;
@@ -19,1920 +20,859 @@ interface UserData extends DocumentData {
   gender: string;
   trafficSource: string;
   callTime: string;
-  referralCode: string;
-  createdAt: string;
+  referralCode?: string;
   approved: boolean;
-  phoneCarrier?: string;
+  createdAt: Timestamp | { seconds: number; nanoseconds: number } | null;
+  phoneCarrier: string;
 }
 
 interface AccountData {
-  phone: string;
-  bank: string;
-  accountNumber: string;
-}
-
-interface MergedAccountData extends UserData, AccountData {}
-
-interface ReviewData extends DocumentData {
   id: string;
-  name: string;
-  phone: string;
+  userId: string;
+  bankName: string;
   accountNumber: string;
-  reviewLink: string;
-  createdAt: string;
-  service: string;
-  status: 'pending' | 'approved' | 'rejected';
-  termsAccepted: boolean;
-  verificationStatus: boolean;
-  updatedAt?: string;
-}
-
-interface ConnectionStatus {
-  isConnected: boolean;
-  lastChecked: string;
-  collections?: Record<string, { exists: boolean, count: number }>;
-  error?: any;
-}
-
-const itemsPerPage = 20;
-const SESSION_TIMEOUT = 30 * 60 * 1000; // 30 minutes
-const RETRY_LIMIT = 3;
-const AUTO_REFRESH_INTERVAL = 5 * 60 * 1000; // 5분으로 변경
-const CONNECTION_RETRY_INTERVAL = 1 * 60 * 1000; // 1분
-
-// SSR 하이드레이션 오류 방지를 위한 초기 시간 고정
-const INITIAL_DATE = '2023-01-01T00:00:00.000Z';
-
-interface PageProps {
-  params: {
-    type: string;
+  accountHolder: string;
+  reviewStatus: {
+    cafe: 'approved' | 'pending' | 'rejected';
+    blog: 'approved' | 'pending' | 'rejected';
+    insta: 'approved' | 'pending' | 'rejected';
   };
-  searchParams?: { [key: string]: string | string[] | undefined };
+  reviewLinks: {
+    cafe: string;
+    blog: string;
+    insta: string;
+  };
+  paymentStatus: 'completed' | 'pending';
+  paymentCompletedAt?: string;
+}
+
+interface DateFilter {
+  startDate: Date | null;
+  endDate: Date | null;
 }
 
 export default function Dashboard() {
   const router = useRouter();
-  const [tab, setTab] = useState<string>('join');
-  const tabOptions = [
-    { value: 'join', label: '가입 신청' },
-    { value: 'account', label: '계좌 정보' },
-    { value: 'joinEvent', label: '가입 이벤트' },
-    { value: 'cafeReview', label: '카페 후기' },
-    { value: 'blogReview', label: '블로그 후기' },
-    { value: 'instaReview', label: '인스타 후기' }
-  ];
+  const [activeTab, setActiveTab] = useState('applications');
   const [users, setUsers] = useState<UserData[]>([]);
-  const [accounts, setAccounts] = useState<MergedAccountData[]>([]);
-  const [reviews, setReviews] = useState<ReviewData[]>([]);
-  const [search, setSearch] = useState('');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [accounts, setAccounts] = useState<AccountData[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isOnline, setIsOnline] = useState(true);
-  const [retryCount, setRetryCount] = useState(0);
-  const [lastVisible, setLastVisible] = useState<any>(null);
-  const authCheckComplete = useRef(false);
-  const [authFailed, setAuthFailed] = useState(false);
-  const [adminEmail, setAdminEmail] = useState<string | null>(null);
-  const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>({
-    isConnected: false,
-    lastChecked: INITIAL_DATE,
-    collections: {}
+  const [dateFilter, setDateFilter] = useState<DateFilter>({
+    startDate: null,
+    endDate: null
   });
-  const [autoRefresh, setAutoRefresh] = useState(true);
+  const [statusFilter, setStatusFilter] = useState<'all' | 'approved' | 'pending'>('all');
 
-  // Session timeout hook
-  useSessionTimeout(SESSION_TIMEOUT, () => {
-    Cookies.remove('adminAuth');
-    Cookies.remove('adminEmail');
-    toast.error('세션이 만료되었습니다. 다시 로그인해주세요.');
-    router.replace('/admin/login');
-  });
-
-  // Auto refresh feature
-  useEffect(() => {
-    let refreshTimerRef: NodeJS.Timeout | null = null;
-    
-    if (autoRefresh) {
-      console.log(`자동 연결 확인 활성화: ${AUTO_REFRESH_INTERVAL/1000}초 간격`);
-      
-      refreshTimerRef = setInterval(() => {
-        // 이미 로딩 중이거나 오프라인인 경우 스킵
-        if (isLoading || !navigator.onLine) {
-          console.log('자동 연결 확인 스킵: ' + 
-            (isLoading ? '로딩 중' : '오프라인 상태'));
-          return;
-        }
-        
-        console.log('자동 연결 확인 실행...');
-        checkConnection().catch(err => {
-          console.error('자동 연결 확인 실패:', err);
-        });
-      }, AUTO_REFRESH_INTERVAL);
-    }
-    
-    return () => {
-      if (refreshTimerRef) {
-        clearInterval(refreshTimerRef);
-      }
-    };
-  }, [autoRefresh, isLoading]);
-
-  // Network status monitoring
-  useEffect(() => {
-    const handleOnline = () => {
-      console.log('Online status');
-      setIsOnline(true);
-      reconnectAndLoad();
-    };
-    
-    const handleOffline = () => {
-      console.log('Offline status');
-      setIsOnline(false);
-      setError('Offline status. Please check your internet connection.');
-    };
-    
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-    
-    // Initial network status check
-    setIsOnline(navigator.onLine);
-    
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
-  }, []);
-
-  // Authentication status check
-  useEffect(() => {
-    let authCheckPerformed = false;
-    
-    const checkAuth = async () => {
-      // 중복 체크 방지
-      if (authCheckPerformed) return;
-      authCheckPerformed = true;
-      
-      try {
-        // Cookie check
-        const isAuth = Cookies.get('adminAuth') === 'true';
-        const savedEmail = Cookies.get('adminEmail');
-        
-        if (!isAuth) {
-          console.log('No auth cookie, redirect to login page');
-          router.replace('/admin/login');
-          return;
-        }
-        
-        setAdminEmail(savedEmail || null);
-        
-        // Firebase authentication status check
-        if (auth) {
-          // 강제 세션 유지 처리
-          if (savedEmail) {
-            console.log('Admin email found in cookie, keeping session:', savedEmail);
-            setAuthFailed(false);
-            authCheckComplete.current = true;
-            return;
-          }
-          
-          const unsubscribe = onAuthStateChanged(auth, (user) => {
-            if (!user) {
-              console.log('Firebase authentication status not found');
-              
-              // 중요: 로컬 쿠키가 있는 경우 세션 유지
-              if (isAuth && savedEmail) {
-                console.log('Local session active, keeping access:', savedEmail);
-                setAuthFailed(false);
-                setAdminEmail(savedEmail);
-              } else {
-                setAuthFailed(true);
-                // 세션이 없는 경우에만 쿠키 제거 및 리디렉션
-                Cookies.remove('adminAuth');
-                Cookies.remove('adminEmail');
-                router.replace('/admin/login');
-              }
-            } else {
-              console.log('Firebase authentication confirmed:', user.email);
-              setAuthFailed(false);
-              setAdminEmail(user.email);
-            }
-            authCheckComplete.current = true;
-          });
-          
-          return () => unsubscribe();
-        }
-      } catch (err) {
-        console.error('Authentication check error:', err);
-        // 오류 발생 시 세션 유지 (로그아웃되지 않도록)
-        authCheckComplete.current = true;
-      }
-    };
-    
-    checkAuth();
-  }, [router]);
-
-  // Page load data load
-  useEffect(() => {
-    // 클라이언트 사이드에서만 실행
-    if (typeof window === 'undefined') return;
-    
-    let dataLoadAttempted = false;
-    
-    // Firebase 데이터 로드
-    const initialLoad = async () => {
-      // 중복 로드 방지
-      if (dataLoadAttempted || isLoading) {
-        console.log('이미 데이터 로드 시도 중 또는 완료됨');
-        return;
-      }
-      
-      dataLoadAttempted = true;
-      setIsLoading(true);
-      
-      try {
-        // 실제 파이어베이스 데이터 로드 시도
-        console.log('파이어베이스 데이터 로드 시도 중...');
-        
-        if (db) {
-          // 파이어베이스 연결 확인
-          const connected = await checkConnection();
-          
-          if (connected) {
-            console.log('파이어베이스 연결 성공, 실제 데이터 로드 중...');
-            
-            // 데이터 로드 시도
-            const userDataLoaded = await loadRealData();
-            await fetchReviews();
-            
-            if (userDataLoaded) {
-              console.log('파이어베이스 데이터 로드 성공');
-              setIsLoading(false);
-              return;
-            }
-          }
-        }
-        
-        // 연결 실패 또는 데이터 로드 실패 시 샘플 데이터 사용
-        console.log('파이어베이스 데이터 로드 실패, 샘플 데이터 사용');
-        loadSampleData();
-      } catch (error) {
-        console.error('초기 데이터 로드 중 오류:', error);
-        loadSampleData();
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
-    // 초기 로드 실행
-    initialLoad();
-  }, []);
-
-  // Tab change data load
-  useEffect(() => {
-    const loadTabData = async () => {
-      if (isLoading) return;
-      
-      setIsLoading(true);
-      try {
-        if (tab === 'join' || tab === 'account') {
-          await loadRealData();
-        } else if (tab === 'joinEvent' || tab === 'cafeReview' || tab === 'blogReview' || tab === 'instaReview') {
-          await loadReviewData();
-        }
-      } catch (err) {
-        console.error('탭 데이터 로드 실패:', err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
-    loadTabData();
-  }, [tab]);
-
-  // Connection status update helper function (일관된 방식으로 상태 업데이트)
-  const updateConnectionStatus = useCallback((isConnected: boolean, error?: any) => {
-    const now = new Date().toISOString();
-    setConnectionStatus({
-      isConnected,
-      lastChecked: now,
-      error: error || null
-    });
-  }, []);
-
-  // Enhanced connection check
-  const checkConnection = async (): Promise<boolean> => {
-    if (!db) {
-      console.error('Firebase not initialized');
-      setConnectionStatus(prev => ({
-        ...prev,
-        isConnected: false,
-        error: 'Firebase not initialized'
-      }));
-      return false;
-    }
-
+  // 날짜 변환 함수
+  const convertToDate = (timestamp: Timestamp | { seconds: number; nanoseconds: number } | string | null): Date | null => {
+    if (!timestamp) return null;
     try {
-      // Enable network
-      await enableNetwork(db);
-      
-      // Test connection with a simple query
-      const testRef = collection(db, 'users');
-      const testQuery = query(testRef, limit(1));
-      const snapshot = await getDocs(testQuery);
-      
-      // Check collections existence
-      const collections = await Promise.all(
-        ['users', 'paymentInfo', 'joinEventReviews', 'cafeReviews', 'blogReviews', 'instaReviews']
-          .map(async (collectionName) => {
-            try {
-              if (!db) return { exists: false, count: 0 };
-              const ref = collection(db, collectionName);
-              const q = query(ref, limit(1));
-              const docs = await getDocs(q);
-              return {
-                exists: true,
-                count: docs.size
-              };
-            } catch (error) {
-              console.error(`Error checking collection ${collectionName}:`, error);
-              return {
-                exists: false,
-                count: 0
-              };
-            }
-          })
-      );
+      if (timestamp instanceof Timestamp) {
+        return timestamp.toDate();
+      }
+      if (typeof timestamp === 'object' && 'seconds' in timestamp) {
+        return new Date(timestamp.seconds * 1000);
+      }
+      return new Date(timestamp);
+    } catch (error) {
+      console.error('날짜 변환 오류:', error);
+      return null;
+    }
+  };
 
-      const collectionsStatus = {
-        users: collections[0],
-        paymentInfo: collections[1],
-        joinEventReviews: collections[2],
-        cafeReviews: collections[3],
-        blogReviews: collections[4],
-        instaReviews: collections[5]
+  // 날짜 포맷 함수
+  const formatDate = (timestamp: Timestamp | { seconds: number; nanoseconds: number } | string | null) => {
+    if (!timestamp) return '-';
+    try {
+      const date = convertToDate(timestamp);
+      if (!date) return '-';
+      
+      const options: Intl.DateTimeFormatOptions = {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
       };
-
-      setConnectionStatus({
-        isConnected: true,
-        lastChecked: new Date().toISOString(),
-        collections: collectionsStatus
-      });
-
-      return true;
+      return date.toLocaleDateString('ko-KR', options);
     } catch (error) {
-      console.error('Connection check failed:', error);
-      setConnectionStatus(prev => ({
-        ...prev,
-        isConnected: false,
-        error: error instanceof Error ? error.message : 'Unknown error'
-      }));
-      return false;
+      console.error('날짜 변환 오류:', error);
+      return '-';
     }
   };
 
-  // Enhanced reconnect logic
-  const reconnectAndLoad = async () => {
-    console.log('reconnectAndLoad 시작...');
-    
-    if (!isOnline) {
-      console.log('Device is offline, skipping reconnection');
-      return;
-    }
-
-    if (retryCount >= RETRY_LIMIT) {
-      console.log('Max retry attempts reached');
-      setError('최대 재시도 횟수를 초과했습니다. 페이지를 새로고침해주세요.');
-      return;
-    }
-
-    setIsLoading(true);
-    setRetryCount(prev => prev + 1);
-
-    try {
-      // Firebase 재초기화 시도
-      const reconnectResult = await reconnectFirebase();
-      if (!reconnectResult.success) {
-        throw new Error('Failed to reconnect to Firebase');
-      }
-      
-      console.log('Firebase 재연결 성공');
-      
-      // 연결 상태 확인
-      const isConnected = await checkConnection();
-      if (!isConnected) {
-        throw new Error('Failed to establish connection');
-      }
-
-      console.log('연결 상태 확인 완료');
-      
-      // Reset retry count on successful connection
-      setRetryCount(0);
-      
-      // Load data based on current tab
-      await loadTabData();
-      
-      // Update connection status
-      setConnectionStatus(prev => ({
-        ...prev,
-        isConnected: true,
-        lastChecked: new Date().toISOString()
-      }));
-      
-      console.log('데이터 로드 완료');
-    } catch (error) {
-      console.error('Reconnection failed:', error);
-      setError(error instanceof Error ? error.message : '연결에 실패했습니다.');
-      
-      // Schedule next retry with exponential backoff
-      const retryDelay = Math.min(1000 * Math.pow(2, retryCount), 10000);
-      setTimeout(() => {
-        reconnectAndLoad();
-      }, retryDelay);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Enhanced data loading
-  const loadTabData = async () => {
-    if (!db) {
-      throw new Error('Firebase not initialized');
-    }
-
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      switch (tab) {
-        case 'join':
-          await loadRealData();
-          break;
-        case 'account':
-          await loadAccountData();
-          break;
-        case 'joinEvent':
-        case 'cafeReview':
-        case 'blogReview':
-        case 'instaReview':
-          await loadReviewData();
-          break;
-      }
-    } catch (error) {
-      console.error(`Error loading ${tab} data:`, error);
-      setError(error instanceof Error ? error.message : '데이터 로딩 중 오류가 발생했습니다.');
-      
-      // Attempt to reconnect on error
-      if (!isLoading) {
-        await reconnectAndLoad();
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Add connection status monitoring
+  // Firebase 실시간 구독 설정
   useEffect(() => {
-    const monitorConnection = async () => {
-      if (!autoRefresh) return;
-      
-      const isConnected = await checkConnection();
-      if (!isConnected) {
-        console.log('Connection lost, attempting to reconnect...');
-        await reconnectAndLoad();
-      }
-    };
+    if (!db) return;
 
-    const connectionMonitor = setInterval(monitorConnection, CONNECTION_RETRY_INTERVAL);
-    return () => clearInterval(connectionMonitor);
-  }, [autoRefresh]);
+    console.log('실시간 데이터 구독 설정...');
+    const firestore = db as Firestore;
 
-  // Sample data load function
-  const loadSampleData = () => {
-    console.log('샘플 데이터 로드 중...');
-    
-    try {
-      // Sample user data
-    const sampleUsers = [
-      {
-        id: '1',
-          name: 'Hong Gil Dong',
-        phone: '010-1234-5678',
-        email: 'hong@example.com',
-        birthDate: '1990-01-01',
-          gender: 'Male',
-          trafficSource: 'Naver Search',
-          callTime: 'Afternoon',
-        referralCode: '',
-        createdAt: '2025-03-20T15:00:00.000Z',
-        approved: false
-      },
-      {
-        id: '2',
-          name: 'Kim Chul Su',
-        phone: '010-9876-5432',
-        email: 'kim@example.com',
-        birthDate: '1985-05-05',
-          gender: 'Male',
-          trafficSource: 'Recommendation',
-          callTime: 'Morning',
-        referralCode: 'FRIEND1',
-        createdAt: '2025-03-22T10:00:00.000Z',
-        approved: true
-      },
-      {
-        id: '3',
-          name: 'Lee Young Hee',
-        phone: '010-2222-3333',
-        email: 'lee@example.com',
-        birthDate: '1995-12-25',
-          gender: 'Female',
-          trafficSource: 'Instagram',
-          callTime: 'Evening',
-        referralCode: '',
-        createdAt: '2025-03-25T18:30:00.000Z',
-        approved: false
-      }
-    ];
-    
-      // Sample account data
-    const sampleAccounts = sampleUsers.map(user => ({
-      ...user,
-        bank: ['KB Bank', 'Shinhan Bank', 'Woori Bank'][Math.floor(Math.random() * 3)],
-      accountNumber: '123-45-678901'
-    }));
-    
-      // Sample review data
-      const sampleReviews: ReviewData[] = [
-      {
-        id: '1',
-          name: 'Park Ji Sung',
-        phone: '010-5555-6666',
-        accountNumber: '111-22-333333',
-        reviewLink: 'https://example.com/review1',
-          createdAt: '2025-03-18T14:00:00.000Z',
-          service: 'cafeReview',
-          status: 'pending',
-          termsAccepted: true,
-          verificationStatus: true
-      },
-      {
-        id: '2',
-          name: 'Son Heung Min',
-        phone: '010-7777-8888',
-        accountNumber: '444-55-666666',
-        reviewLink: 'https://example.com/review2',
-          createdAt: '2025-03-21T09:00:00.000Z',
-          service: 'blogReview',
-          status: 'approved',
-          termsAccepted: true,
-          verificationStatus: true
-        }
-      ];
-      
-      // Data setting
-      console.log('샘플 사용자 데이터 설정:', sampleUsers.length);
-    setUsers(sampleUsers);
-      
-      console.log('샘플 계좌 데이터 설정:', sampleAccounts.length);
-    setAccounts(sampleAccounts);
-      
-      console.log('샘플 리뷰 데이터 설정:', sampleReviews.length);
-    setReviews(sampleReviews);
-    
-      // Connection status display
-      updateConnectionStatus(false, new Error('샘플 데이터 사용 중 - 실제 연결 없음'));
-      
-      // Loading complete
-    setIsLoading(false);
-    setIsOnline(false);
-      setError('파이어베이스 연결 불가능. 샘플 데이터 사용 중. 네트워크 연결을 확인하세요.');
-    
-    console.log('샘플 데이터 로드 완료');
-      return true;
-    } catch (error) {
-      console.error('샘플 데이터 로드 실패:', error);
-      setIsLoading(false);
-      setError('샘플 데이터 로드 실패. 페이지를 새로고침하세요.');
-      return false;
-    }
-  };
-
-  // Real data load function 
-  const loadRealData = async () => {
-    console.log('loadRealData 시작...');
-    
-    if (!db) {
-      console.error('Firestore가 초기화되지 않았습니다');
-      await new Promise(resolve => setTimeout(resolve, 1000)); // 잠시 대기
-      
-      // Firebase 재초기화 시도
-      const reconnectResult = await reconnectFirebase();
-      if (!reconnectResult.success) {
-        console.error('Firebase 재연결 실패');
-        setError('Firebase 연결에 실패했습니다.');
-        return false;
-      }
-    }
-
-    // db가 여전히 null인지 한번 더 체크
-    if (!db) {
-      setError('Firebase 연결이 불가능합니다.');
-      return false;
-    }
-
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      console.log('Firestore 쿼리 시작...');
-      // db가 null이 아님을 TypeScript에 알림
-      const firestore = db as Firestore;
-      const usersRef = collection(firestore, 'joinUsers');
-      
-      // 쿼리 수정: orderBy 제거하고 기본 쿼리로 시도
-      const q = query(usersRef, limit(itemsPerPage));
-      console.log('쿼리 생성 완료');
-      
-      const snapshot = await getDocs(q);
-      console.log(`데이터 스냅샷 받음: ${snapshot.size}건`);
-      
-      if (snapshot.empty) {
-        console.log('데이터가 없습니다');
-        setUsers([]);
-        return true;
-      }
-      
-      const userData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as UserData[];
-
-      console.log(`${userData.length}건의 데이터 로드 완료`);
-      setUsers(userData);
-      setLastVisible(snapshot.docs[snapshot.docs.length - 1]);
-      
-      return true;
-    } catch (error) {
-      console.error('데이터 로드 중 오류:', error);
-      setError('데이터를 불러오는데 실패했습니다.');
-      return false;
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // 페이지네이션 처리를 위한 함수
-  const loadMoreData = async () => {
-    if (!db || !lastVisible) return;
-
-    setIsLoading(true);
-    try {
-      const usersRef = collection(db, 'joinUsers');
-      const q = query(usersRef,
-        orderBy('createdAt', 'desc'),
-        startAfter(lastVisible),
-        limit(itemsPerPage)
-      );
-
-      const snapshot = await getDocs(q);
-      const newUserData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as UserData[];
-
-      setUsers(prev => [...prev, ...newUserData]);
-      setLastVisible(snapshot.docs[snapshot.docs.length - 1]);
-      setCurrentPage(prev => prev + 1);
-    } catch (error) {
-      console.error('추가 데이터 로드 중 오류:', error);
-      toast.error('데이터를 더 불러오는데 실패했습니다.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Local version of modified processing functions
-  const approveUser = async (id: string) => {
-    try {
-      // Local data update
-      if (authFailed) {
-        setUsers(prev => prev.map(user => 
-          user.id === id ? { ...user, approved: true } : user
-        ));
-        toast.success('User approved.');
-        return;
-      }
-      
-      // Firebase processing (if connected)
-      if (!db) {
-        toast.error('Firebase not initialized.');
-        return;
-      }
-      const userRef = doc(db, 'joinUsers', id);
-      await updateDoc(userRef, { approved: true });
-      setUsers(prev => prev.map(user => user.id === id ? { ...user, approved: true } : user));
-      toast.success('User approved.');
-    } catch (error) {
-      console.error('Error approving user:', error);
-      toast.error('Error occurred during approval processing.');
-    }
-  };
-
-  const deleteUser = async (id: string) => {
-    if (!confirm('Are you sure you want to delete? This operation cannot be undone.')) return;
-    
-    try {
-      // Local data update
-      if (authFailed) {
-        setUsers(prev => prev.filter(user => user.id !== id));
-        toast.success('User deleted.');
-        return;
-      }
-      
-      // Firebase processing (if connected)
-      if (!db) {
-        toast.error('Firebase not initialized.');
-        return;
-      }
-      await deleteDoc(doc(db, 'joinUsers', id));
-      setUsers(prev => prev.filter(user => user.id !== id));
-      toast.success('User deleted.');
-    } catch (error) {
-      console.error('Error deleting user:', error);
-      toast.error('Error occurred during deletion processing.');
-    }
-  };
-
-  // 데이터 필터링 함수 - useMemo로 최적화
-  const filterData = useCallback((list: any[]) => {
-    return list.filter(item => {
-      const matchText = search === '' || 
-        (item.name?.toLowerCase().includes(search.toLowerCase()) || 
-        item.phone?.includes(search));
-      const matchStart = startDate ? new Date(item.createdAt) >= new Date(startDate) : true;
-      const matchEnd = endDate ? new Date(item.createdAt) <= new Date(endDate) : true;
-      return matchText && matchStart && matchEnd;
-    });
-  }, [search, startDate, endDate]);
-
-  // 필터링된 데이터 계산 - useMemo로 최적화
-  const dataToShow = useMemo(() => {
-    const sourceData = tab === 'join' 
-      ? users 
-      : tab === 'account' 
-      ? accounts 
-      : reviews.filter(r => r.service === tab);
-    
-    return filterData(sourceData);
-  }, [tab, users, accounts, reviews, filterData]);
-
-  // 페이지네이션된 데이터 - useMemo로 최적화
-  const paginatedData = useMemo(() => {
-    return dataToShow.slice(
-      (currentPage - 1) * itemsPerPage, 
-      currentPage * itemsPerPage
-    );
-  }, [dataToShow, currentPage]);
-
-  // 총 페이지 수 - useMemo로 최적화
-  const totalPages = useMemo(() => {
-    return Math.ceil(dataToShow.length / itemsPerPage);
-  }, [dataToShow.length]);
-
-  const exportData = useCallback(() => {
-    try {
-      toast.loading('엑셀 파일 생성 중...');
-      
-      // 현재 필터링된 데이터 사용
-      exportToExcel(
-        dataToShow, 
-        tab === 'join' 
-          ? '가입 신청자' 
-          : tab === 'account' 
-            ? '계좌 정보' 
-            : `${tabOptions.find(option => option.value === tab)?.label || tab} 후기`
-      );
-      
-      toast.dismiss();
-      toast.success('엑셀 파일이 다운로드되었습니다.');
-    } catch (error) {
-      toast.dismiss();
-      console.error('엑셀 내보내기 오류:', error);
-      toast.error('엑셀 다운로드 중 오류가 발생했습니다.');
-    }
-  }, [tab, dataToShow, tabOptions]);
-
-  const handleLogout = () => {
-    Cookies.remove('adminAuth');
-    Cookies.remove('adminEmail');
-    // Force page move
-    window.location.href = '/admin/login';
-  };
-
-  const handleRetryConnection = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-    toast('파이어베이스에 재연결 시도 중...');
-    
-    try {
-      const reconnectResult = await reconnectFirebase();
-      
-      if (reconnectResult.success) {
-        toast.success('파이어베이스에 성공적으로 재연결되었습니다!');
-        setIsOnline(true);
-        updateConnectionStatus(true, reconnectResult.error);
-        
-        // 데이터 다시 로드
-        await Promise.all([
-          loadRealData(),
-          fetchReviews()
-        ]);
-      } else {
-        toast.error('파이어베이스 재연결 실패. 샘플 데이터를 사용합니다.');
-        setIsOnline(false);
-        updateConnectionStatus(false, reconnectResult.error);
-        
-        // 샘플 데이터 로드
-        loadSampleData();
-      }
-    } catch (err) {
-      console.error('재연결 시도 오류:', err);
-      toast.error('재연결 실패, 샘플 데이터를 사용합니다.');
-      setIsOnline(false);
-      updateConnectionStatus(false, err);
-      
-      // 샘플 데이터 로드
-      loadSampleData();
-    } finally {
-        setIsLoading(false);
-    }
-  }, []);
-
-  // Review data load function
-  const loadReviewData = async () => {
-    if (isLoading && !isOnline) return false;
-    
-    try {
-      if (!db) {
-        console.log('Firestore 초기화되지 않음, 재초기화 시도');
-        const reconnectResult = await reconnectFirebase();
-        if (!reconnectResult.success || !db) {
-          console.error('Firestore 재초기화 실패');
-          toast.error('Firebase 연결 실패');
-          setError('Firebase 연결 실패');
-          return false;
-        }
-      }
-
-      // db가 여전히 null인지 한번 더 체크
-      if (!db) {
-        setError('Firebase 연결이 불가능합니다.');
-        return false;
-      }
-      
-      setIsLoading(true);
-      
-      try {
-        console.log(`${tab} 리뷰 데이터 로드 중...`);
-        
-        const collectionMapping: { [key: string]: string } = {
-          'joinEvent': 'joinEventReviews',
-          'cafeReview': 'cafeReviews',
-          'blogReview': 'blogReviews',
-          'instaReview': 'instaReviews'
-        };
-        
-        const collectionName = collectionMapping[tab];
-        if (!collectionName) {
-          console.error('잘못된 탭 이름:', tab);
-          return false;
-        }
-        
-        const firestore = db as Firestore;
-        const reviewRef = collection(firestore, collectionName);
-        const reviewSnap = await getDocs(reviewRef);
-        
-        if (reviewSnap.empty) {
-          console.log(`${collectionName} 컬렉션에 데이터가 없습니다`);
-          setReviews([]);
-          toast(`${tabOptions.find(option => option.value === tab)?.label || tab} 데이터가 없습니다`);
-          return true;
-        }
-        
-        console.log(`${collectionName}에서 ${reviewSnap.docs.length}건의 데이터 로드 완료`);
-        const reviewList: ReviewData[] = reviewSnap.docs.map(doc => {
+    // 가입 신청자 구독
+    const unsubscribeUsers = onSnapshot(
+      query(collection(firestore, 'joinUsers'), orderBy('createdAt', 'desc')),
+      (snapshot) => {
+        const userData = snapshot.docs.map(doc => {
           const data = doc.data();
           return {
             id: doc.id,
             name: data.name || '',
             phone: data.phone || '',
-            accountNumber: data.accountNumber || '',
-            reviewLink: data.reviewLink || '',
-            createdAt: data.createdAt || new Date().toISOString(),
-            service: tab,
-            status: data.status || 'pending',
-            termsAccepted: data.termsAccepted || false,
-            verificationStatus: data.verificationStatus || false
-          };
+            email: data.email || '',
+            birthDate: data.birthDate || '',
+            gender: data.gender || '',
+            trafficSource: data.trafficSource || '',
+            callTime: data.callTime || '',
+            createdAt: data.createdAt || null,
+            approved: data.approved || false,
+            phoneCarrier: data.phoneCarrier || ''
+          } as UserData;
         });
-        
-        setReviews(reviewList);
-        setIsOnline(true);
-        setError(null);
-        toast.success(`${tabOptions.find(option => option.value === tab)?.label || tab} 데이터 로드 완료`);
-        
-        updateConnectionStatus(true);
-        return true;
-      } catch (err: any) {
-        console.error(`${tab} 데이터를 불러오는 중 오류 발생:`, err);
-        setError(`${tab} 데이터를 불러오는 중 오류가 발생했습니다.`);
-        toast.error(`데이터 로드 실패: ${err.message || '알 수 없는 오류'}`);
-        return false;
-      } finally {
-        setIsLoading(false);
+        setUsers(userData);
+        console.log(`${userData.length}건의 가입 신청 데이터 업데이트`);
+      },
+      (error) => {
+        console.error('가입 신청 데이터 구독 오류:', error);
+        toast.error('가입 신청 데이터 로드 실패');
       }
-    } catch (err: any) {
-      console.error('데이터 로드 중 오류:', err);
-      setError(`데이터 로드 중 오류가 발생했습니다: ${err.message || '알 수 없는 오류'}`);
-      setIsLoading(false);
-      return false;
-    }
-  };
+    );
 
-  // Add fetchReviews function to load the correct review types
-  const fetchReviews = async () => {
-    if (isLoading && !isOnline) return false;
+    // 계좌 정보 및 리뷰 상태 구독
+    const unsubscribeAccounts = onSnapshot(
+      query(collection(firestore, 'accounts'), orderBy('createdAt', 'desc')),
+      async (snapshot) => {
+        const accountsData = snapshot.docs.map(doc => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            userId: data.userId || '',
+            bankName: data.bank || '',
+            accountNumber: data.accountNumber || '',
+            accountHolder: data.accountHolder || '',
+            reviewStatus: {
+              cafe: data.reviewStatus?.cafe || 'pending',
+              blog: data.reviewStatus?.blog || 'pending',
+              insta: data.reviewStatus?.insta || 'pending'
+            },
+            reviewLinks: {
+              cafe: data.reviewLinks?.cafe || '',
+              blog: data.reviewLinks?.blog || '',
+              insta: data.reviewLinks?.insta || ''
+            },
+            paymentStatus: data.paymentStatus || 'pending',
+            paymentCompletedAt: data.paymentCompletedAt || undefined
+          } as AccountData;
+        });
+        setAccounts(accountsData);
+        console.log(`${accountsData.length}건의 계좌 정보 데이터 업데이트`);
+      },
+      (error) => {
+        console.error('계좌 정보 데이터 구독 오류:', error);
+        toast.error('계좌 정보 데이터 로드 실패');
+      }
+    );
+
+    setIsLoading(false);
     
-    try {
-      if (!db) {
-        console.log('Firestore 초기화되지 않음, 재초기화 시도');
-        const reconnectResult = await reconnectFirebase();
-        if (!reconnectResult.success || !db) {
-          console.error('Firestore 재초기화 실패');
-          return false;
-        }
-      }
-
-      // db가 여전히 null인지 한번 더 체크
-      if (!db) {
-        setError('Firebase 연결이 불가능합니다.');
-        return false;
-      }
-      
-      const firestore = db as Firestore;
-      const reviewTypes = ['joinEvent', 'cafeReview', 'blogReview', 'instaReview'];
-      const allReviews: ReviewData[] = [];
-      let loadingErrors = false;
-      
-      for (const type of reviewTypes) {
-        try {
-          const collectionMapping: { [key: string]: string } = {
-            'joinEvent': 'joinEventReviews',
-            'cafeReview': 'cafeReviews',
-            'blogReview': 'blogReviews',
-            'instaReview': 'instaReviews'
-          };
-          
-          const collectionName = collectionMapping[type];
-          console.log(`${collectionName} 데이터 로드 중...`);
-          
-          const reviewRef = collection(firestore, collectionName);
-          const snapshot = await getDocs(reviewRef);
-          
-          const reviewList = snapshot.docs.map(doc => {
-            const data = doc.data();
-            return {
-              id: doc.id,
-              name: data.name || '',
-              phone: data.phone || '',
-              accountNumber: data.accountNumber || '',
-              reviewLink: data.reviewLink || '',
-              createdAt: data.createdAt || new Date().toISOString(),
-              service: type,
-              status: data.status || 'pending',
-              termsAccepted: data.termsAccepted || false,
-              verificationStatus: data.verificationStatus || false
-            } as ReviewData;
-          });
-          
-          allReviews.push(...reviewList);
-          console.log(`${type} 리뷰 ${reviewList.length}건 로드 완료`);
-        } catch (err) {
-          console.error(`${type} 리뷰 로드 실패:`, err);
-          loadingErrors = true;
-        }
-      }
-      
-      if (allReviews.length > 0) {
-        console.log(`총 ${allReviews.length}건의 리뷰 데이터 로드 완료`);
-        setReviews(allReviews);
-        
-        updateConnectionStatus(true);
-        setIsOnline(true);
-        setError(null);
-        
-        if (loadingErrors) {
-          toast('일부 리뷰 데이터 로드 실패');
-        } else {
-          toast.success('모든 리뷰 데이터 로드 완료');
-        }
-        return true;
-      } else {
-        console.log('리뷰 데이터가 없습니다');
-        setReviews([]);
-        toast('등록된 리뷰 데이터가 없습니다');
-        return true;
-      }
-    } catch (error: any) {
-      console.error('리뷰 데이터 로드 중 오류:', error);
-      toast.error(`리뷰 데이터 로드 실패: ${error.message || '알 수 없는 오류'}`);
-      setError('리뷰 데이터 로드 중 오류가 발생했습니다');
-      return false;
-    }
+    return () => {
+      unsubscribeUsers();
+      unsubscribeAccounts();
   };
+  }, []);
 
-  // Review management functions
-  const handleApproveReview = async (id: string) => {
+  // 사용자 승인 처리
+  const handleApprove = async (userId: string) => {
     if (!db) {
-      toast.error('Firebase not initialized');
+      toast.error('데이터베이스 연결 오류');
       return;
     }
     
     try {
-      const collectionMapping: { [key: string]: string } = {
-        'joinEvent': 'joinEventReviews',
-        'cafeReview': 'cafeReviews',
-        'blogReview': 'blogReviews',
-        'instaReview': 'instaReviews'
-      };
-      
-      const collectionName = collectionMapping[tab];
-      if (!collectionName) {
-        console.error('Invalid tab name:', tab);
-        return;
-      }
-      
-      const reviewRef = doc(db, collectionName, id);
-      await updateDoc(reviewRef, { 
-        status: 'approved',
+      const userRef = doc(db, 'joinUsers', userId);
+      await updateDoc(userRef, {
+        approved: true,
         updatedAt: new Date().toISOString()
       });
-      
-      // Update local state
-      setReviews(prev => prev.map(review => 
-        review.id === id 
-          ? { ...review, status: 'approved' } 
-          : review
-      ));
-      
-      toast.success('리뷰가 승인되었습니다');
+      toast.success('사용자가 승인되었습니다');
     } catch (error) {
-      console.error('Error approving review:', error);
+      console.error('승인 처리 오류:', error);
       toast.error('승인 처리 중 오류가 발생했습니다');
     }
   };
-  
-  const handleRejectReview = async (id: string) => {
+
+  // 리뷰 승인 처리
+  const handleReviewApprove = async (accountId: string, reviewType: 'cafe' | 'blog' | 'insta') => {
     if (!db) {
-      toast.error('Firebase not initialized');
+      toast.error('데이터베이스 연결 오류');
       return;
     }
-    
+
     try {
-      const collectionMapping: { [key: string]: string } = {
-        'joinEvent': 'joinEventReviews',
-        'cafeReview': 'cafeReviews',
-        'blogReview': 'blogReviews',
-        'instaReview': 'instaReviews'
-      };
-      
-      const collectionName = collectionMapping[tab];
-      if (!collectionName) {
-        console.error('Invalid tab name:', tab);
-        return;
-      }
-      
-      const reviewRef = doc(db, collectionName, id);
-      await updateDoc(reviewRef, { 
-        status: 'rejected',
+      const accountRef = doc(db, 'accounts', accountId);
+      await updateDoc(accountRef, {
+        [`reviewStatus.${reviewType}`]: 'approved',
         updatedAt: new Date().toISOString()
       });
-      
-      // Update local state
-      setReviews(prev => prev.map(review => 
-        review.id === id 
-          ? { ...review, status: 'rejected' } 
-          : review
-      ));
-      
-      toast.success('리뷰가 거절되었습니다');
+      toast.success(`${reviewType} 리뷰가 승인되었습니다`);
     } catch (error) {
-      console.error('Error rejecting review:', error);
+      console.error('리뷰 승인 처리 오류:', error);
+      toast.error('승인 처리 중 오류가 발생했습니다');
+    }
+  };
+
+  // 리뷰 거절 처리
+  const handleReviewReject = async (accountId: string, reviewType: 'cafe' | 'blog' | 'insta') => {
+    if (!db) {
+      toast.error('데이터베이스 연결 오류');
+      return;
+    }
+
+    try {
+      const accountRef = doc(db, 'accounts', accountId);
+      await updateDoc(accountRef, {
+        [`reviewStatus.${reviewType}`]: 'rejected',
+        updatedAt: new Date().toISOString()
+      });
+      toast.success(`${reviewType} 리뷰가 거절되었습니다`);
+    } catch (error) {
+      console.error('리뷰 거절 처리 오류:', error);
       toast.error('거절 처리 중 오류가 발생했습니다');
     }
   };
 
-  // 로그인 상태 초기화 함수 - 필요할 때 호출하여 로그인 상태 복구
-  const initializeAuthState = useCallback(async () => {
-    const isAuth = Cookies.get('adminAuth') === 'true';
-    const savedEmail = Cookies.get('adminEmail');
-    
-    if (isAuth && savedEmail) {
-      console.log('Restoring auth state from cookies');
-      setAdminEmail(savedEmail);
-      setAuthFailed(false);
-      
-      // 세션 타임아웃 리셋
-      Cookies.set('adminAuth', 'true', { expires: 1 }); // 1일 유지
-      Cookies.set('adminEmail', savedEmail, { expires: 1 });
-      
-      return true;
-    }
-    
-    return false;
-  }, []);
-  
-  // 쿠키 만료 시간 연장 - 정기적으로 호출
-  useEffect(() => {
-    // 페이지 활성화 상태에서 15분마다 쿠키 갱신
-    const refreshCookies = () => {
-      const isAuth = Cookies.get('adminAuth') === 'true';
-      const savedEmail = Cookies.get('adminEmail');
-      
-      if (isAuth && savedEmail) {
-        console.log('Refreshing auth cookies');
-        Cookies.set('adminAuth', 'true', { expires: 1 }); // 1일 유지
-        Cookies.set('adminEmail', savedEmail, { expires: 1 });
-      }
-    };
-    
-    const intervalId = setInterval(refreshCookies, 15 * 60 * 1000); // 15분마다 갱신
-    
-    return () => clearInterval(intervalId);
-  }, []);
-  
-  // 자동 로그인 시도 - 페이지 로드 시 한 번 실행
-  useEffect(() => {
-    const attemptAutoLogin = async () => {
-      if (authFailed) {
-        const restored = await initializeAuthState();
-        
-        if (restored) {
-          console.log('Auto-login successful');
-          checkConnection().then(connected => {
-            if (connected) {
-              Promise.all([loadRealData(), fetchReviews()])
-                .catch(err => console.error('Initial data load failed:', err));
-            }
-          });
-        }
-      }
-    };
-    
-    attemptAutoLogin();
-  }, [authFailed, initializeAuthState]);
+  // 로그아웃 처리
+  const handleLogout = () => {
+    Cookies.remove('adminAuth');
+    Cookies.remove('adminEmail');
+      router.replace('/admin/login');
+  };
 
-  // 서버 시작 후 Firebase 상태 모니터링 및 자동 복구
-  useEffect(() => {
-    let checkAttempted = false;
-    
-    // Firebase가 특정 시간 후에도 초기화되지 않았는지 확인 (단 한 번만 실행)
-    const checkFirebaseInitialization = setTimeout(() => {
-      if (checkAttempted) return;
-      checkAttempted = true;
-      
-      if (!db || !auth) {
-        console.warn('Firebase 서비스가 아직 초기화되지 않음, 샘플 데이터 사용');
-        // 연결 시도 없이 샘플 데이터 로드
-        loadSampleData();
-      }
-    }, 5000); // 5초 후에 확인
-    
-    return () => clearTimeout(checkFirebaseInitialization);
-  }, []);
-  
-  // 인증 오류 복구 메커니즘
-  useEffect(() => {
-    if (authFailed) {
-      console.log('인증 오류 발생, 복구 시도');
-      
-      // 쿠키에서 인증 정보 확인
-      const savedEmail = Cookies.get('adminEmail');
-      const isAuth = Cookies.get('adminAuth') === 'true';
-      
-      if (isAuth && savedEmail) {
-        // 쿠키 기반으로 세션 재설정
-        console.log('쿠키에서 세션 복구 시도', savedEmail);
-        setAdminEmail(savedEmail);
-        setAuthFailed(false);
-        
-        // 세션 갱신
-        Cookies.set('adminAuth', 'true', { expires: 1 });
-        Cookies.set('adminEmail', savedEmail, { expires: 1 });
-        
-        // 데이터 로드 시도
-        checkConnection().then(connected => {
-          if (connected) {
-            Promise.all([loadRealData(), fetchReviews()])
-              .catch(err => console.error('데이터 로드 실패:', err));
-          }
-        });
-      } else {
-        // 복구 실패 시 로그인 페이지로 리디렉션
-        console.error('세션 복구 실패, 로그인 필요');
-        router.replace('/admin/login');
-      }
-    }
-  }, [authFailed, router]);
-
-  // 실시간 데이터 자동 새로고침 (서버 실행 중 유지)
-  useEffect(() => {
-    let refreshTimerId: NodeJS.Timeout | null = null;
-    
-    // 자동 새로고침 함수
-    const periodicRefresh = async () => {
-      // 이미 로딩 중이거나 오프라인 상태면 스킵
-      if (isLoading || !navigator.onLine) {
-        console.log('자동 데이터 새로고침 스킵: ' + (isLoading ? '로딩 중' : '오프라인 상태'));
-        return;
-      }
-      
-      console.log('자동 데이터 새로고침 실행');
-      
-      // 먼저 연결 상태 확인
-      try {
-        const isConnected = await checkConnection();
-        if (!isConnected) {
-          console.log('연결 상태 불량, 새로고침 스킵');
-          return;
-        }
-        
-        // 현재 선택된 탭에 따라 필요한 데이터만 새로고침
-        if (tab === 'join' || tab === 'account') {
-          await loadRealData();
-        } else if (tab === 'joinEvent' || tab === 'cafeReview' || tab === 'blogReview' || tab === 'instaReview') {
-          await loadReviewData();
-        }
-      } catch (err) {
-        console.error('자동 새로고침 오류:', err);
-      }
-    };
-    
-    if (isOnline && autoRefresh && !isLoading) {
-      console.log(`자동 데이터 새로고침 활성화: ${AUTO_REFRESH_INTERVAL/1000}초 간격`);
-      refreshTimerId = setInterval(periodicRefresh, AUTO_REFRESH_INTERVAL);
-    }
-    
-    return () => {
-      if (refreshTimerId) {
-        clearInterval(refreshTimerId);
-      }
-    };
-  }, [isOnline, autoRefresh, isLoading, tab]);
-
-  // 서버 시작 시 자동 연결 및 데이터 로드 기능
-  useEffect(() => {
-    // 클라이언트 사이드에서만 실행
-    if (typeof window === 'undefined') return;
-    
-    let initialized = false;
-    
-    // 서버 시작 시 한 번만 실행되는 초기화 로직
-    const initializeOnServerStart = async () => {
-      // 중복 실행 방지
-      if (initialized || isLoading) {
-        console.log('이미 초기화 중이거나 완료됨');
-        return;
-      }
-      
-      initialized = true;
-      console.log('서버 시작 - 파이어베이스 연결 및 데이터 로드 시작');
-      setIsLoading(true);
-      
-      try {
-        // 인증 상태 복구
-        const adminEmail = Cookies.get('adminEmail');
-        if (adminEmail) {
-          setAdminEmail(adminEmail);
-          setAuthFailed(false);
-          Cookies.set('adminAuth', 'true', { expires: 1 });
-          Cookies.set('adminEmail', adminEmail, { expires: 1 });
-        }
-        
-        // 파이어베이스 연결 시도
-        if (db) {
-          try {
-            // 연결 상태 확인
-            const connected = await checkConnection();
-            if (!connected) {
-              console.log('파이어베이스 연결 실패, 재연결 시도');
-              const reconnectResult = await reconnectFirebase();
-              if (!reconnectResult.success) {
-                throw new Error('파이어베이스 재연결 실패');
-              }
-            }
-            
-            console.log('파이어베이스 연결 성공, 데이터 로드 시도');
-            // 실제 데이터 로드
-            const dataLoaded = await loadRealData();
-            await fetchReviews();
-            
-            if (dataLoaded) {
-              toast.success('데이터 로드 성공');
-              setIsLoading(false);
-              return;
-            }
-          } catch (loadError) {
-            console.error('파이어베이스 데이터 로드 실패:', loadError);
-          }
-        }
-        
-        // 연결 또는 데이터 로드 실패 시 샘플 데이터 사용
-        console.log('실제 데이터 로드 실패, 샘플 데이터 사용');
-        loadSampleData();
-      } catch (err) {
-        console.error('초기화 중 오류 발생:', err);
-        loadSampleData();
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
-    // 클라이언트 사이드에서만 초기화 실행
-    initializeOnServerStart();
-  }, []);
-
-  // 브라우저 새로고침 감지 및 상태 저장 (별도 분리)
-  useEffect(() => {
-    // 브라우저 새로고침 감지 및 상태 저장
-    const handleBeforeUnload = () => {
-      // 중요 상태 저장
-      sessionStorage.setItem('dashboard_tab', tab);
-      sessionStorage.setItem('dashboard_page', currentPage.toString());
-    };
-    
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    
-    // 페이지 로드 시 저장된 상태 복원
-    const savedTab = sessionStorage.getItem('dashboard_tab');
-    const savedPage = sessionStorage.getItem('dashboard_page');
-    
-    if (savedTab && tabOptions.some(opt => opt.value === savedTab)) {
-      setTab(savedTab);
-    }
-    
-    if (savedPage) {
-      setCurrentPage(parseInt(savedPage, 10) || 1);
-    }
-    
-    return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-    };
-  }, [tab, currentPage, tabOptions]);
-
-  // Add loadAccountData function
-  const loadAccountData = async () => {
+  // 데이터 로드 함수
+  const loadData = async () => {
     if (!db) {
-      throw new Error('Firebase not initialized');
+      setError('데이터베이스 연결에 실패했습니다.');
+      return;
+    }
+    
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      // 가입 신청자 데이터 로드
+      const usersRef = collection(db as Firestore, 'joinUsers');
+      const usersSnapshot = await getDocs(usersRef);
+      const usersData = usersSnapshot.docs.map(doc => ({
+                id: doc.id,
+        ...doc.data()
+      })) as UserData[];
+      setUsers(usersData);
+
+      // 계좌 정보 데이터 로드
+      const accountsRef = collection(db as Firestore, 'accounts');
+      const accountsSnapshot = await getDocs(accountsRef);
+      const accountsData = accountsSnapshot.docs.map(doc => {
+                  const data = doc.data();
+                  return {
+                    id: doc.id,
+          userId: data.userId,
+          bankName: data.bankName,
+          accountNumber: data.accountNumber,
+          accountHolder: data.accountHolder,
+          reviewStatus: {
+            cafe: data.reviewStatus?.cafe || 'pending',
+            blog: data.reviewStatus?.blog || 'pending',
+            insta: data.reviewStatus?.insta || 'pending'
+          },
+          reviewLinks: {
+            cafe: data.reviewLinks?.cafe || '',
+            blog: data.reviewLinks?.blog || '',
+            insta: data.reviewLinks?.insta || ''
+          },
+          paymentStatus: data.paymentStatus || 'pending',
+          paymentCompletedAt: data.paymentCompletedAt || undefined
+                  } as AccountData;
+                });
+      setAccounts(accountsData);
+    } catch (error) {
+      console.error('Error loading data:', error);
+      setError('데이터를 불러오는 중 오류가 발생했습니다.');
+        } finally {
+          setIsLoading(false);
+        }
+  };
+
+  // 날짜 필터링 함수
+  const filterByDate = (items: UserData[], filterType: string): UserData[] => {
+    return items.filter(item => {
+      if (!item.createdAt) return true;
+
+      const itemDate = convertToDate(item.createdAt);
+      if (!itemDate) return true;
+
+      const now = new Date();
+      now.setHours(0, 0, 0, 0);
+
+      switch (filterType) {
+        case 'today':
+          const today = new Date(now);
+          return itemDate >= today;
+        case 'week':
+          const weekAgo = new Date(now);
+          weekAgo.setDate(weekAgo.getDate() - 7);
+          return itemDate >= weekAgo;
+        case 'month':
+          const monthAgo = new Date(now);
+          monthAgo.setDate(monthAgo.getDate() - 30);
+          return itemDate >= monthAgo;
+        case 'custom':
+          if (!dateFilter.startDate) return true;
+          const start = new Date(dateFilter.startDate);
+          start.setHours(0, 0, 0, 0);
+          const end = dateFilter.endDate ? new Date(dateFilter.endDate) : new Date();
+          end.setHours(23, 59, 59, 999);
+          return itemDate >= start && itemDate <= end;
+        default:
+          return true;
+      }
+    });
+  };
+
+  // 계정 날짜 필터링 함수
+  const filterAccountsByDate = (items: AccountData[], filterType: string): AccountData[] => {
+    return items.filter(item => {
+      const user = users.find(u => u.id === item.userId);
+      if (!user?.createdAt) return true;
+
+      const itemDate = convertToDate(user.createdAt);
+      if (!itemDate) return true;
+
+      const now = new Date();
+      now.setHours(0, 0, 0, 0);
+
+      switch (filterType) {
+        case 'today':
+          const today = new Date(now);
+          return itemDate >= today;
+        case 'week':
+          const weekAgo = new Date(now);
+          weekAgo.setDate(weekAgo.getDate() - 7);
+          return itemDate >= weekAgo;
+        case 'month':
+          const monthAgo = new Date(now);
+          monthAgo.setDate(monthAgo.getDate() - 30);
+          return itemDate >= monthAgo;
+        case 'custom':
+          if (!dateFilter.startDate) return true;
+          const start = new Date(dateFilter.startDate);
+          start.setHours(0, 0, 0, 0);
+          const end = dateFilter.endDate ? new Date(dateFilter.endDate) : new Date();
+          end.setHours(23, 59, 59, 999);
+          return itemDate >= start && itemDate <= end;
+        default:
+          return true;
+      }
+    });
+  };
+
+  // 상태 필터링 함수
+  const filterByStatus = (data: UserData[]): UserData[] => {
+    if (statusFilter === 'all') return data;
+    return data.filter(user => 
+      statusFilter === 'approved' ? user.approved : !user.approved
+    );
+  };
+
+  // 사용자 삭제 함수
+  const handleDeleteUser = async (userId: string) => {
+    if (!confirm('정말 삭제하시겠습니까?')) return;
+
+    try {
+      if (!db) {
+        toast.error('데이터베이스 연결에 실패했습니다.');
+        return;
+      }
+      
+      // joinUsers 컬렉션에서 삭제
+      const userRef = doc(db as Firestore, 'joinUsers', userId);
+      await deleteDoc(userRef);
+
+      // accounts 컬렉션에서 관련 데이터 삭제
+      const accountRef = collection(db as Firestore, 'accounts');
+      const accountQuery = query(accountRef, where('userId', '==', userId));
+      const accountSnapshot = await getDocs(accountQuery);
+      
+      if (!accountSnapshot.empty) {
+        await deleteDoc(doc(db as Firestore, 'accounts', accountSnapshot.docs[0].id));
+      }
+
+      // 리뷰 데이터 삭제
+      const reviewTypes = ['cafeReviews', 'blogReviews', 'instagramReviews'];
+      for (const type of reviewTypes) {
+        const reviewRef = collection(db as Firestore, type);
+        const reviewQuery = query(reviewRef, where('userId', '==', userId));
+        const reviewSnapshot = await getDocs(reviewQuery);
+        
+        reviewSnapshot.docs.forEach(async (doc) => {
+          await deleteDoc(doc.ref);
+        });
+      }
+
+      toast.success('사용자가 삭제되었습니다.');
+      loadData(); // 데이터 새로고침
+    } catch (error) {
+      console.error('삭제 중 오류 발생:', error);
+      toast.error('삭제 중 오류가 발생했습니다.');
+    }
+  };
+
+  // 입금 완료 처리 함수
+  const handlePaymentComplete = async (accountId: string) => {
+    if (!db) {
+      toast.error('데이터베이스 연결에 실패했습니다.');
+      return;
     }
 
     try {
-      const firestore = db as Firestore;
-      const accountRef = collection(firestore, 'paymentInfo');
-      const accountSnapshot = await getDocs(accountRef);
-      const accountData = accountSnapshot.docs.map(doc => ({
-        id: doc.id,
-        phone: doc.data().phone as string,
-        bank: doc.data().bank as string,
-        accountNumber: doc.data().accountNumber as string
-      })) as AccountData[];
+      const accountRef = doc(db, 'accounts', accountId);
+      await updateDoc(accountRef, {
+        paymentStatus: 'completed',
+        paymentCompletedAt: new Date().toISOString()
+      });
 
-      // Merge with user data
-      const userRef = collection(db, 'users');
-      const userSnapshot = await getDocs(userRef);
-      const userData = userSnapshot.docs.map(doc => ({
-        id: doc.id,
-        name: doc.data().name as string,
-        phone: doc.data().phone as string,
-        email: doc.data().email as string,
-        birthDate: doc.data().birthDate as string,
-        gender: doc.data().gender as string,
-        trafficSource: doc.data().trafficSource as string,
-        callTime: doc.data().callTime as string,
-        referralCode: doc.data().referralCode as string,
-        createdAt: doc.data().createdAt as string,
-        approved: doc.data().approved as boolean,
-        phoneCarrier: doc.data().phoneCarrier as string | undefined
-      })) as UserData[];
+      // 상태 업데이트
+      setAccounts(prevAccounts => 
+        prevAccounts.map(account => 
+          account.id === accountId 
+            ? { 
+                ...account, 
+                paymentStatus: 'completed',
+                paymentCompletedAt: new Date().toISOString()
+              } 
+            : account
+        )
+      );
 
-      const mergedData = accountData.map(account => {
-        const user = userData.find(u => u.phone === account.phone);
-        if (!user) {
-          console.warn(`No user found for account with phone: ${account.phone}`);
-          return null;
-        }
-        return {
-          ...account,
-          ...user
-        } as MergedAccountData;
-      }).filter((data): data is MergedAccountData => data !== null);
-
-      setAccounts(mergedData);
+      toast.success('입금 완료 처리되었습니다.');
     } catch (error) {
-      console.error('Error loading account data:', error);
-      throw error;
+      console.error('입금 완료 처리 중 오류:', error);
+      toast.error('입금 완료 처리 중 오류가 발생했습니다.');
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="max-w-7xl mx-auto">
+        {/* 헤더 */}
+        <div className="sticky top-0 z-10 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
+          <div className="px-4 sm:px-6 lg:px-8">
+            <div className="flex justify-between items-center h-16">
             <div className="flex items-center gap-4">
-              <h1 className="text-2xl font-bold text-gray-900">관리자 대시보드</h1>
-              <div className="flex gap-2 items-center">
-                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                  isOnline 
-                    ? 'bg-green-100 text-green-800' 
-                    : 'bg-red-100 text-red-800'
-                }`}>
-                  {isOnline ? '온라인' : '오프라인'}
-                </span>
-                {adminEmail && (
-                  <span className="text-sm text-gray-600">
-                    {adminEmail}
-                  </span>
-                )}
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">관리자 대시보드</h1>
+                <a
+                  href="/"
+                  className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-600 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                  </svg>
+                  홈으로
+                </a>
               </div>
-            </div>
-            
-            {/* Firebase 연결 상태 */}
-            <div className="flex flex-wrap items-center gap-2 text-sm bg-gray-50 rounded-lg p-2 shadow-inner">
-              <div className="flex items-center">
-                <span className={`w-3 h-3 rounded-full mr-2 ${
-                  connectionStatus.isConnected 
-                    ? 'bg-green-500' 
-                    : 'bg-red-500'
-                }`}></span>
-                <span className="font-medium mr-2">파이어베이스:</span>
-                <span>{connectionStatus.isConnected ? '연결됨' : '연결 안됨'}</span>
-              </div>
-              <div className="hidden md:flex items-center ml-4">
-                <span className="text-gray-500">마지막 확인:</span>
-                <span className="ml-1 text-gray-700">
-                  {typeof window !== 'undefined' 
-                    ? new Date(connectionStatus.lastChecked).toLocaleTimeString('ko-KR') 
-                    : ''}
-                </span>
-              </div>
-              <div className="ml-auto">
-                <label className="inline-flex items-center cursor-pointer">
-                  <input 
-                    type="checkbox" 
-                    className="sr-only peer"
-                    checked={autoRefresh}
-                    onChange={(e) => setAutoRefresh(e.target.checked)}
-                  />
-                  <div className="relative w-9 h-5 bg-gray-200 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
-                  <span className="ml-2 text-sm font-medium text-gray-500">자동 연결 확인</span>
-                </label>
-              </div>
-            </div>
-            
-            <div className="flex gap-2">
               <button 
-                onClick={reconnectAndLoad} 
-                className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
-                  isOnline 
-                    ? 'bg-gray-200 text-gray-600 hover:bg-gray-300' 
-                    : 'bg-blue-600 text-white hover:bg-blue-700'
-                }`}
-                disabled={isLoading}
+                onClick={handleLogout}
+                className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-600 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
               >
-                {isLoading ? (
-                  <span className="flex items-center">
-                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                     </svg>
-                    연결 중...
-                  </span>
-                ) : (
-                  '재연결'
-                )}
-              </button>
-              <button onClick={handleLogout} className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors">
                 로그아웃
               </button>
-              <button onClick={() => router.push('/')} className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors">
-                홈으로
-              </button>
             </div>
           </div>
         </div>
-      </header>
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
-        {/* Tabs */}
-        <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
-          <div className="flex flex-wrap gap-2">
-            {tabOptions.map((option) => (
-              <button
-                key={option.value}
-                onClick={() => setTab(option.value)}
-                className={tab === option.value ? activeTab : tabStyle}
-              >
-                {option.label}
-            </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Filters */}
-        <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
-          <div className="flex flex-wrap gap-4 items-center">
-            <div className="flex-1 min-w-[200px]">
-              <input
-                type="text"
-                placeholder="이름 또는 연락처로 검색"
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-            <div className="flex gap-2">
-              <input
-                type="date"
-                value={startDate}
-                onChange={e => setStartDate(e.target.value)}
-                className="p-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-              <input
-                type="date"
-                value={endDate}
-                onChange={e => setEndDate(e.target.value)}
-                className="p-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
+        <div className="px-4 sm:px-6 lg:px-8 py-8">
+          {/* 탭 메뉴 */}
+          <div className="flex space-x-1 bg-gray-100 dark:bg-gray-800 p-1 rounded-lg mb-8 max-w-md">
             <button
-              onClick={exportData}
-              className="inline-flex items-center px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded transition-colors"
+              onClick={() => setActiveTab('applications')}
+              className={`flex-1 px-4 py-2.5 text-sm font-medium rounded-md ${
+                activeTab === 'applications'
+                  ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow'
+                  : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+              }`}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-              </svg>
-              엑셀 다운로드
+              가입 신청 ({users.length})
+            </button>
+            <button
+              onClick={() => setActiveTab('accounts')}
+              className={`flex-1 px-4 py-2.5 text-sm font-medium rounded-md ${
+                activeTab === 'accounts'
+                  ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow'
+                  : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+              }`}
+            >
+              계좌 정보 ({accounts.length})
             </button>
           </div>
+
+          {/* 필터 영역 */}
+          <div className="mb-8 bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <div className="px-6 py-5">
+              <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4">필터</h2>
+              <div className="flex flex-wrap gap-6">
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">조회 기간</label>
+                  <select
+                    value={dateFilter.startDate ? 'custom' : 'all'}
+                    onChange={(e) => {
+                      const now = new Date();
+                      now.setHours(0, 0, 0, 0);
+                      
+                      switch (e.target.value) {
+                        case 'today':
+                          setDateFilter({
+                            startDate: now,
+                            endDate: new Date(now.getTime() + 24 * 60 * 60 * 1000 - 1)
+                          });
+                          break;
+                        case 'week':
+                          const weekAgo = new Date(now);
+                          weekAgo.setDate(weekAgo.getDate() - 7);
+                          setDateFilter({ startDate: weekAgo, endDate: now });
+                          break;
+                        case 'month':
+                          const monthAgo = new Date(now);
+                          monthAgo.setDate(monthAgo.getDate() - 30);
+                          setDateFilter({ startDate: monthAgo, endDate: now });
+                          break;
+                        case 'custom':
+                          setDateFilter({ startDate: now, endDate: now });
+                          break;
+                        default:
+                          setDateFilter({ startDate: null, endDate: null });
+                      }
+                    }}
+                    className="min-w-[140px] rounded-lg border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  >
+                    <option value="all">전체 기간</option>
+                    <option value="today">오늘</option>
+                    <option value="week">최근 7일</option>
+                    <option value="month">최근 30일</option>
+                    <option value="custom">기간 지정</option>
+                  </select>
         </div>
 
-        {/* Data Display */}
-        <div className="bg-white rounded-lg shadow-sm p-4">
-          {/* Data status display */}
-          <div className="mb-4 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <h2 className="text-lg font-semibold">{
-                tab === 'join' 
-                  ? '가입 신청자' 
-                  : tab === 'account' 
-                    ? '가입자 + 계좌정보' 
-                    : tabOptions.find(option => option.value === tab)?.label
-              } 데이터</h2>
-              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                isOnline && connectionStatus.isConnected
-                  ? 'bg-green-100 text-green-800' 
-                  : 'bg-red-100 text-red-800'
-              }`}>
-                {isOnline && connectionStatus.isConnected ? '실시간 데이터' : '샘플 데이터'}
-              </span>
+                {dateFilter.startDate && (
+                  <div className="flex flex-col gap-2">
+                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">기간 설정</label>
+                    <div className="flex items-center gap-2">
+              <input
+                type="date"
+                        value={dateFilter.startDate ? dateFilter.startDate.toISOString().split('T')[0] : ''}
+                        onChange={(e) => {
+                          const date = e.target.value ? new Date(e.target.value) : null;
+                          if (date) {
+                            date.setHours(0, 0, 0, 0);
+                            setDateFilter({ ...dateFilter, startDate: date });
+                          }
+                        }}
+                        className="rounded-lg border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                      />
+                      <span className="text-gray-500">~</span>
+              <input
+                type="date"
+                        value={dateFilter.endDate ? dateFilter.endDate.toISOString().split('T')[0] : ''}
+                        onChange={(e) => {
+                          const date = e.target.value ? new Date(e.target.value) : null;
+                          if (date) {
+                            date.setHours(23, 59, 59, 999);
+                            setDateFilter({ ...dateFilter, endDate: date });
+                          }
+                        }}
+                        min={dateFilter.startDate ? dateFilter.startDate.toISOString().split('T')[0] : ''}
+                        className="rounded-lg border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              />
             </div>
-            <div className="flex items-center gap-2">
-                <button 
-                onClick={reconnectAndLoad} 
-                className={`inline-flex items-center px-3 py-1.5 ${
-                  isLoading 
-                    ? 'bg-gray-300 cursor-not-allowed' 
-                    : connectionStatus.isConnected
-                      ? 'bg-green-600 hover:bg-green-700'
-                      : 'bg-blue-600 hover:bg-blue-700'
-                } text-white text-sm font-medium rounded transition-colors`}
-                  disabled={isLoading}
-                >
-                {isLoading ? (
-                  <span className="flex items-center">
-                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    데이터 로드 중...
-                  </span>
-                ) : (
-                  <span className="flex items-center">
-                    <svg className="mr-1 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-                    </svg>
-                    {connectionStatus.isConnected ? '데이터 새로고침' : '실시간 데이터 불러오기'}
-                  </span>
+          </div>
                 )}
-              </button>
+
+                {activeTab === 'applications' && (
+                  <div className="flex flex-col gap-2">
+                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">승인 상태</label>
+                    <select
+                      value={statusFilter}
+                      onChange={(e) => setStatusFilter(e.target.value as 'all' | 'approved' | 'pending')}
+                      className="min-w-[140px] rounded-lg border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    >
+                      <option value="all">전체</option>
+                      <option value="pending">대기중</option>
+                      <option value="approved">승인됨</option>
+                    </select>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
-          {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-              <div className="flex">
-                <div className="flex-shrink-0">
-                  <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                  </svg>
+          {/* 가입 신청 목록 */}
+          {activeTab === 'applications' && (
+            <div className="space-y-4">
+              {filterByStatus(filterByDate(users, dateFilter.startDate ? 'custom' : 'all')).map((user) => (
+                <div
+                  key={user.id}
+                  className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden hover:border-blue-500 dark:hover:border-blue-500 transition-colors duration-200"
+                >
+                  <div className="p-6">
+                    <div className="flex justify-between items-start mb-6">
+                      <div>
+                        <div className="flex items-center gap-3 mb-1">
+                          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                            {user.name}
+                          </h3>
+                          <span
+                            className={`px-2.5 py-1 text-xs font-medium rounded-full ${
+                              user.approved
+                                ? 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                                : 'bg-yellow-50 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
+                            }`}
+                          >
+                            {user.approved ? '승인됨' : '대기중'}
+                          </span>
                 </div>
-                <div className="ml-3 flex-1">
-                  <h3 className="text-sm font-medium text-red-800">{error}</h3>
-                  <div className="mt-2 flex space-x-4">
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                          신청일: {formatDate(user.createdAt)}
+                        </p>
+                      </div>
+                      <div className="flex gap-2">
+                        {!user.approved && (
                     <button
-                      onClick={() => window.location.reload()}
-                      className="inline-flex items-center text-sm font-medium text-red-600 hover:text-red-500"
+                            onClick={() => handleApprove(user.id)}
+                            className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-500 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
+                            title="승인"
                     >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                            <svg className="w-5 h-5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                       </svg>
-                      페이지 새로고침
+                            승인하기
                     </button>
+                        )}
                     <button
-                      onClick={reconnectAndLoad}
-                      className="inline-flex items-center text-sm font-medium text-blue-600 hover:text-blue-500"
+                          onClick={() => handleDeleteUser(user.id)}
+                          className="inline-flex items-center p-2 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/30"
+                          title="삭제"
                     >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                       </svg>
-                      재연결 시도
                     </button>
                   </div>
                 </div>
+                    <div className="grid grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <span className="w-20 text-sm font-medium text-gray-500 dark:text-gray-400">연락처</span>
+                          <span className="text-sm text-gray-900 dark:text-white">{user.phone}</span>
               </div>
+                        <div className="flex items-center gap-2">
+                          <span className="w-20 text-sm font-medium text-gray-500 dark:text-gray-400">이메일</span>
+                          <span className="text-sm text-gray-900 dark:text-white">{user.email}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="w-20 text-sm font-medium text-gray-500 dark:text-gray-400">생년월일</span>
+                          <span className="text-sm text-gray-900 dark:text-white">{user.birthDate}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="w-20 text-sm font-medium text-gray-500 dark:text-gray-400">성별</span>
+                          <span className="text-sm text-gray-900 dark:text-white">{user.gender}</span>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <span className="w-24 text-sm font-medium text-gray-500 dark:text-gray-400">유입경로</span>
+                          <span className="text-sm text-gray-900 dark:text-white">{user.trafficSource}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="w-24 text-sm font-medium text-gray-500 dark:text-gray-400">통화가능시간</span>
+                          <span className="text-sm text-gray-900 dark:text-white">{user.callTime}</span>
+                        </div>
+                        {user.referralCode && (
+                          <div className="flex items-center gap-2">
+                            <span className="w-24 text-sm font-medium text-gray-500 dark:text-gray-400">추천인 코드</span>
+                            <span className="text-sm text-gray-900 dark:text-white">{user.referralCode}</span>
             </div>
           )}
-          {isLoading ? (
-            <div className="flex justify-center items-center h-64">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
             </div>
-          ) : (
-            <>
-              <div className="space-y-6">
-              {tab === 'join' && (
-                  <MemoizedJoinList 
-                    data={paginatedData as UserData[]} 
-                    approveUser={approveUser} 
-                    deleteUser={deleteUser} 
-                  />
-                )}
-                {tab === 'account' && (
-                  <MemoizedAccountList 
-                    data={paginatedData as MergedAccountData[]} 
-                  />
-                )}
-                {(tab === 'joinEvent' || tab === 'cafeReview' || tab === 'blogReview' || tab === 'instaReview') && (
-                  <MemoizedReviewList 
-                    tab={tabOptions.find(option => option.value === tab)?.label || ''} 
-                    data={paginatedData as ReviewData[]}
-                    onApprove={handleApproveReview}
-                    onReject={handleRejectReview}
-                  />
-                )}
-              </div>
-              
-              {/* Pagination */}
-              {totalPages > 1 && (
-                <div className="flex justify-center mt-6 gap-2">
-                  {Array.from({ length: totalPages }, (_, i) => (
-                    <button
-                      key={i}
-                      onClick={() => setCurrentPage(i + 1)}
-                      className={`px-3 py-1 rounded ${
-                        currentPage === i + 1
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                      }`}
-                    >
-                      {i + 1}
-                    </button>
-                  ))}
+                    </div>
+                  </div>
                 </div>
-              )}
-            </>
+              ))}
+            </div>
+          )}
+
+          {/* 계좌 정보 목록 */}
+          {activeTab === 'accounts' && (
+            <div className="space-y-4">
+              {filterAccountsByDate(accounts, dateFilter.startDate ? 'custom' : 'all').map((account) => {
+                const user = users.find(u => u.id === account.userId);
+                if (!user) return null;
+
+                return (
+                  <div
+                    key={account.id}
+                    className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden hover:border-blue-500 dark:hover:border-blue-500 transition-colors duration-200"
+                  >
+                    <div className="p-6">
+                      <div className="flex justify-between items-start mb-6">
+                        <div>
+                          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">{user.name}</h3>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">
+                            {user.phone} | {user.email}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-8">
+                        <div>
+                          <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-4">계좌 정보</h4>
+                          <div className="space-y-3 bg-gray-50 dark:bg-gray-900/50 rounded-xl p-4">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <span className="w-16 text-sm font-medium text-gray-500 dark:text-gray-400">은행</span>
+                                <span className="text-sm text-gray-900 dark:text-white">{account.bankName}</span>
+                              </div>
+                              {account.paymentStatus === 'completed' ? (
+                                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400">
+                                  <svg className="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                  </svg>
+                                  입금완료
+                                </span>
+                              ) : (
+                    <button
+                                  onClick={() => handlePaymentComplete(account.id)}
+                                  className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-500 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
+                                >
+                                  <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                  </svg>
+                                  입금완료 처리
+                    </button>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="w-16 text-sm font-medium text-gray-500 dark:text-gray-400">계좌번호</span>
+                              <span className="text-sm text-gray-900 dark:text-white">{account.accountNumber}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="w-16 text-sm font-medium text-gray-500 dark:text-gray-400">예금주</span>
+                              <span className="text-sm text-gray-900 dark:text-white">{account.accountHolder}</span>
+                            </div>
+                            {account.paymentStatus === 'completed' && account.paymentCompletedAt && (
+                              <div className="flex items-center gap-2">
+                                <span className="w-16 text-sm font-medium text-gray-500 dark:text-gray-400">입금일시</span>
+                                <span className="text-sm text-gray-900 dark:text-white">
+                                  {new Date(account.paymentCompletedAt).toLocaleString('ko-KR', {
+                                    year: 'numeric',
+                                    month: 'long',
+                                    day: 'numeric',
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                  })}
+                                </span>
+                </div>
           )}
         </div>
-      </main>
+    </div>
+    <div>
+                          <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-4">리뷰 상태</h4>
+                          <div className="space-y-3">
+                            {Object.entries(account.reviewStatus).map(([type, status]) => (
+                              <div key={type} className="flex items-center justify-between bg-gray-50 dark:bg-gray-900/50 rounded-xl p-4">
+                                <div className="flex items-center gap-3">
+                                  <span className="text-sm font-medium text-gray-900 dark:text-white">
+                                    {type === 'cafe' ? '카페' : type === 'blog' ? '블로그' : '인스타그램'}
+                                  </span>
+                                  {account.reviewLinks[type as keyof typeof account.reviewLinks] ? (
+                                    <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium text-blue-700 bg-blue-50 rounded-full dark:bg-blue-900/30 dark:text-blue-400">
+                                      <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                                      </svg>
+                                      링크첨부
+                                    </span>
+                                  ) : (
+                                    <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium text-gray-600 bg-gray-100 rounded-full dark:bg-gray-800 dark:text-gray-400">
+                                      <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                                      </svg>
+                                      미첨부
+                                    </span>
+                                  )}
+              </div>
+                                <div className="flex items-center gap-3">
+                                  <span
+                                    className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
+                                      status === 'approved'
+                                        ? 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                                        : status === 'rejected'
+                                        ? 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                                        : 'bg-yellow-50 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
+                                    }`}
+                                  >
+                                    {status === 'approved' ? '승인' : status === 'rejected' ? '거절' : '대기중'}
+                                  </span>
+                                  {account.reviewLinks[type as keyof typeof account.reviewLinks] && (
+                                    <a
+                                      href={account.reviewLinks[type as keyof typeof account.reviewLinks]}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="inline-flex items-center px-2 py-1 text-sm font-medium text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/30"
+                                    >
+                                      <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                      </svg>
+                                      링크보기
+                                    </a>
+                                  )}
+                                  {status === 'pending' && (
+                                    <div className="flex gap-2">
+                                      <button
+                                        onClick={() => handleReviewApprove(account.id, type as keyof typeof account.reviewStatus)}
+                                        className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-white bg-green-600 hover:bg-green-700 dark:hover:bg-green-500 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-200"
+                                        title="승인"
+                                        disabled={!account.reviewLinks[type as keyof typeof account.reviewLinks]}
+                                      >
+                                        <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                        </svg>
+                                        승인
+                                      </button>
+                                      <button
+                                        onClick={() => handleReviewReject(account.id, type as keyof typeof account.reviewStatus)}
+                                        className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-white bg-red-600 hover:bg-red-700 dark:hover:bg-red-500 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors duration-200"
+                                        title="거절"
+                                      >
+                                        <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                        거절
+                                      </button>
+    </div>
+                                  )}
+              </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+    </div>
+  );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
-
-const tabStyle = 'px-4 py-2 bg-gray-100 rounded-lg hover:bg-gray-200 text-sm transition-colors';
-const activeTab = 'px-4 py-2 bg-blue-600 text-white rounded-lg text-sm transition-colors';
-
-const MemoizedJoinList = memo(function JoinList({ 
-  data, 
-  approveUser, 
-  deleteUser 
-}: { 
-  data: UserData[],
-  approveUser: (id: string) => Promise<void>,
-  deleteUser: (id: string) => Promise<void>
-}) {
-  return (
-    <div>
-      <h2 className="text-lg font-semibold mb-3">가입 신청자 ({data.length}명)</h2>
-      {data.length === 0 ? <p className="text-gray-500">신청 내역이 없습니다.</p> : (
-        <ul className="space-y-4">
-          {data.map((user: any) => (
-            <li key={user.id} className="bg-white dark:bg-gray-900 border rounded-lg p-4 text-sm">
-              <div className="grid grid-cols-2 gap-2">
-                <div><strong>이름:</strong> {user.name}</div>
-                <div><strong>연락처:</strong> {user.phone}</div>
-                <div><strong>이메일:</strong> {user.email}</div>
-                <div><strong>생년월일:</strong> {user.birthDate}</div>
-                <div><strong>성별:</strong> {user.gender}</div>
-                <div><strong>유입경로:</strong> {user.trafficSource}</div>
-                <div><strong>통화 가능 시간:</strong> {user.callTime}</div>
-                <div><strong>추천인 코드:</strong> {user.referralCode || '없음'}</div>
-                {user.phoneCarrier && <div><strong>통신사:</strong> {user.phoneCarrier}</div>}
-              </div>
-              <div className="text-xs text-gray-400 mt-2">신청일: {typeof window !== 'undefined' 
-                ? new Date(user.createdAt).toLocaleString('ko-KR') 
-                : ''}</div>
-              <div className="mt-3 flex gap-2">
-                <strong>승인:</strong>
-                {user.approved ? (
-                  <span className="text-green-600">승인됨</span>
-                ) : (
-                  <button onClick={() => approveUser(user.id)} className="text-sm bg-black text-white px-2 py-1 rounded">승인</button>
-                )}
-                <button onClick={() => deleteUser(user.id)} className="ml-auto text-sm bg-red-500 text-white px-2 py-1 rounded">삭제</button>
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
-  );
-});
-
-const MemoizedAccountList = memo(function AccountList({ 
-  data 
-}: { 
-  data: MergedAccountData[] 
-}) {
-  return (
-    <div>
-      <h2 className="text-lg font-semibold mb-3">가입자 + 계좌정보 ({data.length}명)</h2>
-      {data.length === 0 ? <p className="text-gray-500">데이터가 없습니다.</p> : (
-        <ul className="space-y-4">
-          {data.map((user: any, idx: number) => (
-            <li key={idx} className="bg-white dark:bg-gray-900 border rounded-lg p-4 text-sm">
-              <div className="grid grid-cols-2 gap-2">
-                <div><strong>이름:</strong> {user.name}</div>
-                <div><strong>연락처:</strong> {user.phone}</div>
-                <div><strong>은행:</strong> {user.bank}</div>
-                <div><strong>계좌번호:</strong> {user.accountNumber}</div>
-                <div><strong>승인 상태:</strong> {user.approved ? '승인됨' : '미승인'}</div>
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
-  );
-});
-
-const MemoizedReviewList = memo(function ReviewList({ 
-  tab, 
-  data,
-  onApprove,
-  onReject 
-}: { 
-  tab: string;
-  data: ReviewData[];
-  onApprove: (id: string) => Promise<void>;
-  onReject: (id: string) => Promise<void>;
-}) {
-  const getStatusBadge = (status: string) => {
-    const statusStyles = {
-      pending: 'bg-yellow-100 text-yellow-800',
-      approved: 'bg-green-100 text-green-800',
-      rejected: 'bg-red-100 text-red-800'
-    };
-    return `inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusStyles[status as keyof typeof statusStyles] || statusStyles.pending}`;
-  };
-
-  return (
-    <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <h2 className="text-lg font-semibold">{tab} ({data.length}건)</h2>
-      </div>
-      
-      {data.length === 0 ? (
-        <div className="text-center py-8">
-          <p className="text-gray-500">등록된 데이터가 없습니다</p>
-        </div>
-      ) : (
-        <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-          {data.map((item: ReviewData) => (
-            <div key={item.id} className="bg-white rounded-lg border shadow-sm p-4 hover:shadow-md transition-shadow">
-              <div className="flex justify-between items-start mb-3">
-    <div>
-                  <h3 className="font-medium">{item.name}</h3>
-                  <p className="text-sm text-gray-600">{item.phone}</p>
-                </div>
-                <span className={getStatusBadge(item.status)}>
-                  {item.status === 'approved' ? '승인됨' : 
-                   item.status === 'rejected' ? '거절됨' : '대기중'}
-                </span>
-              </div>
-              
-              <div className="space-y-2 text-sm">
-                {item.accountNumber && (
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">계좌번호:</span>
-                    <span className="font-medium">{item.accountNumber}</span>
-                  </div>
-                )}
-                
-                {item.reviewLink && (
-                  <div className="flex justify-between items-start">
-                    <span className="text-gray-600">리뷰 링크:</span>
-                    <a 
-                      href={item.reviewLink} 
-                      target="_blank" 
-                      rel="noopener noreferrer" 
-                      className="text-blue-600 hover:text-blue-800 underline break-all max-w-[200px]"
-                    >
-                      {item.reviewLink}
-                    </a>
-                  </div>
-                )}
-                
-                {item.verificationStatus !== undefined && (
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">본인인증:</span>
-                    <span className={item.verificationStatus ? 'text-green-600' : 'text-red-600'}>
-                      {item.verificationStatus ? '완료' : '미완료'}
-                    </span>
-                  </div>
-                )}
-                
-                {item.termsAccepted !== undefined && (
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">약관동의:</span>
-                    <span className={item.termsAccepted ? 'text-green-600' : 'text-red-600'}>
-                      {item.termsAccepted ? '동의' : '미동의'}
-                    </span>
-                  </div>
-                )}
-                
-                <div className="flex justify-between">
-                  <span className="text-gray-600">신청일:</span>
-                  <span className="text-gray-600">
-                    {typeof window !== 'undefined' 
-                      ? new Date(item.createdAt).toLocaleString('ko-KR', {
-                          year: 'numeric',
-                          month: '2-digit',
-                          day: '2-digit',
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        })
-                      : ''}
-                  </span>
-                </div>
-              </div>
-              
-              <div className="mt-4 flex justify-end gap-2">
-                {item.status !== 'approved' && (
-                  <button 
-                    onClick={() => onApprove(item.id)}
-                    className="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
-                  >
-                    승인
-                  </button>
-                )}
-                {item.status !== 'rejected' && (
-                  <button 
-                    onClick={() => onReject(item.id)}
-                    className="px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
-                  >
-                    거절
-                  </button>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-});

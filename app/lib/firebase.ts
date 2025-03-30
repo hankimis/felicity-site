@@ -1,6 +1,6 @@
 import { initializeApp, FirebaseOptions, getApps, getApp } from "firebase/app";
 import { getAuth, connectAuthEmulator, Auth, signInWithEmailAndPassword } from 'firebase/auth';
-import { getFirestore, enableIndexedDbPersistence, connectFirestoreEmulator, initializeFirestore, Firestore, CACHE_SIZE_UNLIMITED, persistentLocalCache, persistentMultipleTabManager, enableNetwork, disableNetwork, collection, getDocs, query, limit } from 'firebase/firestore';
+import { getFirestore, enableIndexedDbPersistence, connectFirestoreEmulator, initializeFirestore, Firestore, CACHE_SIZE_UNLIMITED, persistentLocalCache, persistentMultipleTabManager, enableNetwork, disableNetwork, collection, getDocs, query, limit, enableMultiTabIndexedDbPersistence } from 'firebase/firestore';
 import { getAnalytics, isSupported } from "firebase/analytics";
 
 // Vercel 환경과 로컬 환경을 위한 Firebase 구성
@@ -146,80 +146,69 @@ export async function testDbConnection(): Promise<{
 
 // Vercel 환경에서 안정적으로 작동하는 Firebase 초기화 함수
 async function initializeFirebase() {
-  // 이미 초기화된 경우
-  if (app && db && firestoreInitialized) {
-    console.log('Firebase가 이미 초기화되어 있습니다.');
+  if (typeof window === 'undefined') {
+    console.log('서버 사이드에서는 Firebase를 초기화하지 않습니다.');
+    return { app: null, db: null, auth: null, analytics: null };
+  }
+
+  if (isInitializing) {
+    console.log('Firebase 초기화가 이미 진행 중입니다.');
+    await new Promise(resolve => setTimeout(resolve, 1000));
     return { app, db, auth, analytics };
   }
-  
+
+  isInitializing = true;
+
   try {
-    // 이미 초기화된 앱이 있는지 확인
-    const existingApps = getApps();
-    if (existingApps.length > 0) {
-      console.log('이미 존재하는 Firebase 앱을 사용합니다.');
-      app = existingApps[0];
-    } else {
-      // Firebase 애플리케이션 초기화
-      app = initializeApp(firebaseConfig);
-      console.log('새로운 Firebase 앱 초기화 완료');
+    // 기존 앱이 있는지 확인
+    if (!app) {
+      app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
+      console.log('Firebase 앱 초기화 완료');
     }
 
-    // Firestore 초기화 - 네트워크 타임아웃 및 Vercel 최적화 설정
+    // Firestore 초기화
     if (!db) {
-      // 최신 Firestore 지속성 설정
       const firestoreSettings = {
         localCache: persistentLocalCache({
           tabManager: persistentMultipleTabManager(),
           cacheSizeBytes: CACHE_SIZE_UNLIMITED
         }),
-        experimentalAutoDetectLongPolling: true,
         ignoreUndefinedProperties: true,
-        retry: {
-          initialDelayMs: 1000,
-          maxDelayMs: 10000,
-          maxAttempts: 5
-        }
+        experimentalForceLongPolling: true,
+        useFetchStreams: false
       };
+
+      db = initializeFirestore(app, firestoreSettings);
       
+      // 오프라인 지속성 활성화
       try {
-        db = initializeFirestore(app, firestoreSettings);
-        firestoreInitialized = true;
-        console.log('Firestore 초기화 완료 (Vercel 최적화 설정)');
-        
-        // 오프라인 지원 활성화
-        if (typeof window !== 'undefined') {
-          await enableIndexedDbPersistence(db)
-            .then(() => {
-              console.log('Firestore 오프라인 지원 활성화 완료');
-            })
-            .catch((err) => {
-              if (err.code === 'failed-precondition') {
-                console.warn('Firestore 다중 탭에서 오프라인 지원을 활성화할 수 없습니다.');
-              } else if (err.code === 'unimplemented') {
-                console.warn('현재 브라우저에서 Firestore 오프라인 지원을 사용할 수 없습니다.');
-              } else {
-                console.error('Firestore 오프라인 지원 활성화 실패:', err);
-              }
-            });
+        await enableIndexedDbPersistence(db);
+        console.log('Firestore 오프라인 지속성 활성화 완료');
+      } catch (err: any) {
+        if (err.code === 'failed-precondition') {
+          console.warn('다중 탭이 열려 있어 오프라인 지속성이 제한됩니다.');
+        } else if (err.code === 'unimplemented') {
+          console.warn('현재 브라우저는 오프라인 지속성을 지원하지 않습니다.');
         }
-      } catch (firestoreError) {
-        console.error('Firestore 초기화 실패, 기본 설정으로 재시도:', firestoreError);
-        
-        // 기본 설정으로 재시도
-        db = getFirestore(app);
-        firestoreInitialized = true;
-        console.log('Firestore 기본 설정으로 초기화 완료');
+      }
+
+      // 네트워크 연결 활성화
+      try {
+        await enableNetwork(db);
+        console.log('Firestore 네트워크 연결 활성화 완료');
+      } catch (err) {
+        console.error('Firestore 네트워크 연결 활성화 실패:', err);
       }
     }
 
-    // 인증 초기화
+    // Auth 초기화
     if (!auth) {
       auth = getAuth(app);
       console.log('Firebase Auth 초기화 완료');
     }
 
-    // 분석 초기화 (브라우저에서만)
-    if (typeof window !== 'undefined' && !analytics) {
+    // Analytics 초기화 (브라우저 환경에서만)
+    if (!analytics && typeof window !== 'undefined') {
       const analyticsSupported = await isSupported();
       if (analyticsSupported) {
         analytics = getAnalytics(app);
@@ -229,9 +218,10 @@ async function initializeFirebase() {
 
     return { app, db, auth, analytics };
   } catch (error) {
-    console.error('Firebase 초기화 중 오류 발생:', error);
-    // 오류가 발생해도 사용 가능한 인스턴스 반환
-    return { app, db, auth, analytics };
+    console.error('Firebase 초기화 중 오류:', error);
+    throw error;
+  } finally {
+    isInitializing = false;
   }
 }
 
@@ -310,29 +300,34 @@ export async function reconnectFirebase(): Promise<{
   }
 }
 
-// 안전한 Firebase 초기화 실행
-try {
-  if (typeof window !== 'undefined') {
-    // 클라이언트 사이드에서만 초기화 시도
-    ensureFirebaseInitialized()
-      .then(({ app: initializedApp, db: initializedDb, auth: initializedAuth, analytics: initializedAnalytics }) => {
-        app = initializedApp;
-        db = initializedDb;
-        auth = initializedAuth;
-        analytics = initializedAnalytics;
-        
-        console.log('Firebase 초기 설정 완료');
-      })
-      .catch(err => {
-        console.error('Firebase 초기 설정 실패:', err);
-        // 크리티컬 에러가 아니므로 계속 진행 가능
-      });
-  } else {
-    console.log('서버 사이드 환경: Firebase 초기화 건너뜀');
+// 네트워크 상태 관리 함수
+export async function enableFirestoreNetwork() {
+  if (!db) return false;
+  try {
+    await enableNetwork(db);
+    return true;
+  } catch (error) {
+    console.error('Firestore 네트워크 활성화 실패:', error);
+    return false;
   }
-} catch (err) {
-  console.error('Firebase 서비스 초기화 중 치명적 오류:', err);
-  // 앱은 계속 실행 가능
 }
 
-export { db, auth, analytics };
+export async function disableFirestoreNetwork() {
+  if (!db) return false;
+  try {
+    await disableNetwork(db);
+    return true;
+  } catch (error) {
+    console.error('Firestore 네트워크 비활성화 실패:', error);
+    return false;
+  }
+}
+
+// 자동 초기화 시도 (클라이언트 사이드에서만)
+if (typeof window !== 'undefined') {
+  initializeFirebase().catch(error => {
+    console.error('Firebase 자동 초기화 실패:', error);
+  });
+}
+
+export { app, db, auth, analytics, initializeFirebase };

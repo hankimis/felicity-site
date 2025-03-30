@@ -7,6 +7,9 @@ import { collection, addDoc, getDocs, query, where, limit } from 'firebase/fires
 import { toast } from 'react-hot-toast';
 import { motion } from 'framer-motion';
 
+// 성별 타입 정의
+type Gender = '남성' | '여성' | '';
+
 export default function Join() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -20,7 +23,7 @@ export default function Join() {
   const [email, setEmail] = useState('');
   const [birthDate, setBirthDate] = useState('');
   const [isUnderage, setIsUnderage] = useState(false);
-  const [gender, setGender] = useState<'남성' | '여성' | ''>('');
+  const [gender, setGender] = useState<Gender>('');
   const [trafficSource, setTrafficSource] = useState('');
   const [callTime, setCallTime] = useState('');
   const [referralCode, setReferralCode] = useState('');
@@ -107,9 +110,42 @@ export default function Join() {
     if (!trafficSource) newErrors.trafficSource = '유입경로를 선택해주세요';
     if (!callTime) newErrors.callTime = '통화 가능 시간을 선택해주세요';
     
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    return newErrors;
   }, [name, phone, phoneCarrier, email, birthDate, gender, trafficSource, callTime]);
+
+  // 입력값이 변경될 때마다 해당 필드의 에러만 업데이트
+  const handleInputChange = (field: string, value: string) => {
+    const fieldErrors = validateForm();
+    setErrors(prev => ({
+      ...prev,
+      [field]: fieldErrors[field] || ''
+    }));
+  };
+
+  // 폼 제출 시에만 전체 유효성 검사
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const formErrors = validateForm();
+    setErrors(formErrors);
+
+    if (Object.keys(formErrors).length === 0) {
+      // 폼 제출 로직
+    }
+  };
+
+  // 전화번호 포맷팅 함수
+  const formatPhoneNumber = (value: string) => {
+    const numbers = value.replace(/[^\d]/g, '');
+    if (numbers.length <= 3) return numbers;
+    if (numbers.length <= 7) return `${numbers.slice(0, 3)}-${numbers.slice(3)}`;
+    return `${numbers.slice(0, 3)}-${numbers.slice(3, 7)}-${numbers.slice(7, 11)}`;
+  };
+
+  // 전화번호 입력 핸들러
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatPhoneNumber(e.target.value);
+    setPhone(formatted);
+  };
 
   const handleNext = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -210,7 +246,7 @@ export default function Join() {
       <div className="max-w-lg mx-auto bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 md:p-8">
         {/* 진행 과정 표시바 */}
         <div className="flex justify-center mb-8 space-x-2 text-sm text-gray-500 dark:text-gray-300">
-          <div className="text-blue-600 font-medium flex items-center">
+          <div className="text-blue-600 font-bold flex items-center">
             <span className="w-6 h-6 rounded-full bg-blue-600 text-white inline-flex items-center justify-center mr-1 text-xs">1</span>
             정보입력
           </div>
@@ -227,110 +263,74 @@ export default function Join() {
         </div>
 
         <h2 className="text-2xl font-bold mb-6 text-center text-gray-800 dark:text-white">
-          가입자 정보를 입력해주세요
+          가입 신청
         </h2>
 
-        <form onSubmit={handleNext} className="space-y-5">
-          {/* 고객 구분 */}
-          <div className="border-b border-gray-100 dark:border-gray-700 pb-4 mb-2">
-            <div className="flex items-center justify-between mb-2">
-              <label className="block font-medium text-gray-700 dark:text-gray-200">고객 구분</label>
-              <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">필수</span>
-            </div>
-            <div className="bg-blue-50/70 dark:bg-blue-900/30 rounded-lg py-3 px-4 text-blue-600 dark:text-blue-300 border border-blue-100 dark:border-blue-800 font-medium text-center">
-              크리에이터
-            </div>
-          </div>
+        <div className="bg-blue-50 dark:bg-blue-900/30 text-sm text-blue-600 dark:text-blue-300 p-4 rounded-lg mb-6 border border-blue-100 dark:border-blue-800 flex items-start">
+          <svg className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd"></path>
+          </svg>
+          <span>입력하신 정보는 안전하게 보호되며,<br />담당자 확인 후 연락드리겠습니다.</span>
+        </div>
 
-          {/* 이름 */}
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <label className="block font-medium text-gray-700 dark:text-gray-200">가입자명</label>
+        <form onSubmit={handleNext} className="space-y-6">
+          {/* 기본 정보 */}
+          <div className="border-b border-gray-100 dark:border-gray-700 pb-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-medium text-gray-900 dark:text-white">기본 정보</h3>
               <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">필수</span>
             </div>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-              className={`w-full border rounded-lg p-3 bg-white dark:bg-gray-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors ${
-                errors.name ? 'border-red-500' : 'border-gray-200 dark:border-gray-700'
-              }`}
-              placeholder="이름을 입력하세요"
-            />
-            {errors.name && <p className="text-sm text-red-500 mt-1">{errors.name}</p>}
-          </div>
-
-          {/* 생년월일 */}
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <label className="block font-medium text-gray-700 dark:text-gray-200">생년월일</label>
-              <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">필수</span>
-            </div>
-            <input
-              type="date"
-              value={birthDate}
-              onChange={handleBirthDateChange}
-              required
-              className={`w-full border rounded-lg p-3 bg-white dark:bg-gray-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors ${
-                errors.birthDate || isUnderage ? 'border-red-500' : 'border-gray-200 dark:border-gray-700'
-              }`}
-            />
-            {errors.birthDate && <p className="text-sm text-red-500 mt-1">{errors.birthDate}</p>}
-            {isUnderage && (
-              <p className="text-sm text-red-500 mt-1 bg-red-50 dark:bg-red-900/30 p-2 rounded-md">
-                미성년자는 가입이 불가능합니다.
-              </p>
-            )}
-          </div>
-
-          {/* 성별 */}
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <label className="block font-medium text-gray-700 dark:text-gray-200">성별</label>
-              <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">필수</span>
-            </div>
-            <div className="flex gap-2">
-              {['남성', '여성'].map((option) => (
-                <button
-                  key={option}
-                  type="button"
-                  onClick={() => setGender(option as '남성' | '여성')}
-                  className={`flex-1 border rounded-lg py-3 px-4 font-medium transition-all ${
-                    gender === option
-                      ? 'text-blue-600 border-blue-500 bg-blue-50/70 dark:bg-blue-900/30 dark:border-blue-700'
-                      : 'text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
+            
+            <div className="space-y-4">
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-200">이름</label>
+                  <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">필수</span>
+                </div>
+                <input
+                  type="text"
+                  id="name"
+                  name="name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required
+                  className={`w-full border rounded-lg p-3 bg-white dark:bg-gray-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors ${
+                    errors.name ? 'border-red-500' : 'border-gray-200 dark:border-gray-700'
                   }`}
-                >
-                  {option}
-                </button>
-              ))}
-            </div>
-            {errors.gender && <p className="text-sm text-red-500 mt-1">{errors.gender}</p>}
-          </div>
+                  placeholder="홍길동"
+                />
+                {errors.name && <p className="mt-1 text-sm text-red-500">{errors.name}</p>}
+              </div>
 
-          {/* 연락처 + 통신사 */}
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <label className="block font-medium text-gray-700 dark:text-gray-200">가입자 명의 연락처</label>
-              <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">필수</span>
-            </div>
-            <div className="flex gap-2">
-              <div className="w-2/3">
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label htmlFor="phone" className="block text-sm font-medium text-gray-700 dark:text-gray-200">연락처</label>
+                  <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">필수</span>
+                </div>
                 <input
                   type="tel"
+                  id="phone"
+                  name="phone"
                   value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
+                  onChange={handlePhoneChange}
                   required
+                  maxLength={13}
                   className={`w-full border rounded-lg p-3 bg-white dark:bg-gray-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors ${
                     errors.phone ? 'border-red-500' : 'border-gray-200 dark:border-gray-700'
                   }`}
-                  placeholder="010-1234-5678"
+                  placeholder="010-0000-0000"
                 />
-                {errors.phone && <p className="text-sm text-red-500 mt-1">{errors.phone}</p>}
+                {errors.phone && <p className="mt-1 text-sm text-red-500">{errors.phone}</p>}
               </div>
-              <div className="w-1/3">
+
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label htmlFor="phoneCarrier" className="block text-sm font-medium text-gray-700 dark:text-gray-200">통신사</label>
+                  <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">필수</span>
+                </div>
                 <select
+                  id="phoneCarrier"
+                  name="phoneCarrier"
                   value={phoneCarrier}
                   onChange={(e) => setPhoneCarrier(e.target.value)}
                   required
@@ -338,44 +338,107 @@ export default function Join() {
                     errors.phoneCarrier ? 'border-red-500' : 'border-gray-200 dark:border-gray-700'
                   }`}
                 >
-                  <option value="">통신사</option>
+                  <option value="">선택해주세요</option>
                   <option value="SKT">SKT</option>
                   <option value="KT">KT</option>
-                  <option value="LG U+">LG U+</option>
-                  <option value="알뜰폰">알뜰폰</option>
+                  <option value="LGU+">LGU+</option>
                 </select>
-                {errors.phoneCarrier && <p className="text-sm text-red-500 mt-1">{errors.phoneCarrier}</p>}
+                {errors.phoneCarrier && <p className="mt-1 text-sm text-red-500">{errors.phoneCarrier}</p>}
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-200">이메일</label>
+                  <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">필수</span>
+                </div>
+                <input
+                  type="email"
+                  id="email"
+                  name="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  className={`w-full border rounded-lg p-3 bg-white dark:bg-gray-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors ${
+                    errors.email ? 'border-red-500' : 'border-gray-200 dark:border-gray-700'
+                  }`}
+                  placeholder="example@email.com"
+                />
+                {errors.email && <p className="mt-1 text-sm text-red-500">{errors.email}</p>}
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label htmlFor="birthDate" className="block text-sm font-medium text-gray-700 dark:text-gray-200">생년월일</label>
+                  <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">필수</span>
+                </div>
+                <input
+                  type="date"
+                  id="birthDate"
+                  name="birthDate"
+                  value={birthDate}
+                  onChange={handleBirthDateChange}
+                  required
+                  className={`w-full border rounded-lg p-3 bg-white dark:bg-gray-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors ${
+                    errors.birthDate ? 'border-red-500' : 'border-gray-200 dark:border-gray-700'
+                  }`}
+                />
+                {errors.birthDate && <p className="mt-1 text-sm text-red-500">{errors.birthDate}</p>}
+                {isUnderage && (
+                  <p className="mt-1 text-sm text-red-500">만 19세 이상만 가입이 가능합니다</p>
+                )}
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">성별</label>
+                  <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">필수</span>
+                </div>
+                <div className="flex gap-4">
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name="gender"
+                      value="남성"
+                      checked={gender === '남성'}
+                      onChange={(e) => setGender(e.target.value as Gender)}
+                      required
+                      className="w-5 h-5 text-blue-600 border-gray-300 focus:ring-blue-500"
+                    />
+                    <span className="ml-2 text-gray-700 dark:text-gray-300">남성</span>
+                  </label>
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name="gender"
+                      value="여성"
+                      checked={gender === '여성'}
+                      onChange={(e) => setGender(e.target.value as Gender)}
+                      required
+                      className="w-5 h-5 text-blue-600 border-gray-300 focus:ring-blue-500"
+                    />
+                    <span className="ml-2 text-gray-700 dark:text-gray-300">여성</span>
+                  </label>
+                </div>
+                {errors.gender && <p className="mt-1 text-sm text-red-500">{errors.gender}</p>}
               </div>
             </div>
           </div>
 
-          {/* 이메일 */}
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <label className="block font-medium text-gray-700 dark:text-gray-200">이메일</label>
+          {/* 추가 정보 */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-medium text-gray-900 dark:text-white">추가 정보</h3>
               <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">필수</span>
             </div>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className={`w-full border rounded-lg p-3 bg-white dark:bg-gray-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors ${
-                errors.email ? 'border-red-500' : 'border-gray-200 dark:border-gray-700'
-              }`}
-              placeholder="example@email.com"
-            />
-            {errors.email && <p className="text-sm text-red-500 mt-1">{errors.email}</p>}
-          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            {/* 유입경로 */}
             <div>
               <div className="flex items-center justify-between mb-2">
-                <label className="block font-medium text-gray-700 dark:text-gray-200">유입경로</label>
+                <label htmlFor="trafficSource" className="block text-sm font-medium text-gray-700 dark:text-gray-200">유입경로</label>
                 <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">필수</span>
               </div>
               <select
+                id="trafficSource"
+                name="trafficSource"
                 value={trafficSource}
                 onChange={(e) => setTrafficSource(e.target.value)}
                 required
@@ -383,23 +446,25 @@ export default function Join() {
                   errors.trafficSource ? 'border-red-500' : 'border-gray-200 dark:border-gray-700'
                 }`}
               >
-                <option value="">유입경로 선택</option>
-                <option value="Google 검색">Google 검색</option>
-                <option value="네이버 검색">네이버 검색</option>
-                <option value="SNS 광고">SNS 광고</option>
-                <option value="지인 추천">지인 추천</option>
-                <option value="기타">기타</option>
+                <option value="">선택해주세요</option>
+                <option value="Naver Search">네이버 검색</option>
+                <option value="Google Search">구글 검색</option>
+                <option value="Instagram">인스타그램</option>
+                <option value="Facebook">페이스북</option>
+                <option value="Recommendation">지인 추천</option>
+                <option value="Other">기타</option>
               </select>
-              {errors.trafficSource && <p className="text-sm text-red-500 mt-1">{errors.trafficSource}</p>}
+              {errors.trafficSource && <p className="mt-1 text-sm text-red-500">{errors.trafficSource}</p>}
             </div>
 
-            {/* 통화 가능 시간 */}
             <div>
               <div className="flex items-center justify-between mb-2">
-                <label className="block font-medium text-gray-700 dark:text-gray-200">통화 가능 시간</label>
+                <label htmlFor="callTime" className="block text-sm font-medium text-gray-700 dark:text-gray-200">통화 가능 시간</label>
                 <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">필수</span>
               </div>
               <select
+                id="callTime"
+                name="callTime"
                 value={callTime}
                 onChange={(e) => setCallTime(e.target.value)}
                 required
@@ -407,34 +472,33 @@ export default function Join() {
                   errors.callTime ? 'border-red-500' : 'border-gray-200 dark:border-gray-700'
                 }`}
               >
-                <option value="">시간 선택</option>
-                <option value="09:00 - 10:00">09:00 - 10:00</option>
-                <option value="10:00 - 11:00">10:00 - 11:00</option>
-                <option value="11:00 - 12:00">11:00 - 12:00</option>
-                <option value="13:00 - 14:00">13:00 - 14:00</option>
-                <option value="14:00 - 15:00">14:00 - 15:00</option>
-                <option value="15:00 - 16:00">15:00 - 16:00</option>
-                <option value="16:00 - 17:00">16:00 - 17:00</option>
+                <option value="">선택해주세요</option>
+                <option value="Morning">오전 (9:00-12:00)</option>
+                <option value="Afternoon">오후 (12:00-18:00)</option>
+                <option value="Evening">저녁 (18:00-22:00)</option>
               </select>
-              {errors.callTime && <p className="text-sm text-red-500 mt-1">{errors.callTime}</p>}
+              {errors.callTime && <p className="mt-1 text-sm text-red-500">{errors.callTime}</p>}
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label htmlFor="referralCode" className="block text-sm font-medium text-gray-700 dark:text-gray-200">
+                  추천인 코드 <span className="text-gray-500">(선택사항)</span>
+                </label>
+              </div>
+              <input
+                type="text"
+                id="referralCode"
+                name="referralCode"
+                value={referralCode}
+                onChange={(e) => setReferralCode(e.target.value)}
+                className="w-full border rounded-lg p-3 bg-white dark:bg-gray-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors border-gray-200 dark:border-gray-700"
+                placeholder="추천인 코드를 입력해주세요"
+              />
             </div>
           </div>
 
-          {/* 추천인 코드 */}
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <label className="block font-medium text-gray-700 dark:text-gray-200">추천인 코드</label>
-              <span className="text-xs text-gray-500 dark:text-gray-400">선택</span>
-            </div>
-            <input
-              type="text"
-              value={referralCode}
-              onChange={(e) => setReferralCode(e.target.value)}
-              className="w-full border border-gray-200 dark:border-gray-700 rounded-lg p-3 bg-white dark:bg-gray-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors"
-              placeholder="추천인 코드가 있으면 입력하세요"
-            />
-          </div>
-
+          {/* 버튼 영역 */}
           <div className="flex flex-col sm:flex-row justify-between gap-3 pt-6 mt-6 border-t border-gray-100 dark:border-gray-700">
             <button
               type="button"
@@ -445,8 +509,8 @@ export default function Join() {
             </button>
             <button
               type="submit"
+              disabled={isSubmitting || Object.keys(validateForm()).length > 0}
               className="sm:w-1/2 bg-blue-600 hover:bg-blue-700 text-white font-medium py-3.5 px-6 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed shadow-sm transition-colors flex justify-center items-center"
-              disabled={isSubmitting || isUnderage}
             >
               {isSubmitting ? (
                 <>
@@ -454,10 +518,10 @@ export default function Join() {
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
-                  처리 중...
+                  저장 중...
                 </>
               ) : (
-                '다음 단계로'
+                '다음 단계'
               )}
             </button>
           </div>
