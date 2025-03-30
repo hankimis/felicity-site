@@ -104,82 +104,133 @@ export default function Dashboard() {
 
   // Firebase 실시간 구독 설정
   useEffect(() => {
-    if (!db) return;
+    const initializeFirebaseAndLoadData = async () => {
+      try {
+        if (!db) {
+          console.error('데이터베이스가 초기화되지 않았습니다.');
+          return;
+        }
 
-    console.log('실시간 데이터 구독 설정...');
-    const firestore = db as Firestore;
+        // Firebase 네트워크 연결 활성화
+        await enableFirestoreNetwork();
+        console.log('Firebase 네트워크 연결이 활성화되었습니다.');
 
-    // 가입 신청자 구독
-    const unsubscribeUsers = onSnapshot(
-      query(collection(firestore, 'joinUsers'), orderBy('createdAt', 'desc')),
-      (snapshot) => {
-        const userData = snapshot.docs.map(doc => {
-          const data = doc.data();
-          return {
-            id: doc.id,
-            name: data.name || '',
-            phone: data.phone || '',
-            email: data.email || '',
-            birthDate: data.birthDate || '',
-            gender: data.gender || '',
-            trafficSource: data.trafficSource || '',
-            callTime: data.callTime || '',
-            createdAt: data.createdAt || null,
-            approved: data.approved || false,
-            phoneCarrier: data.phoneCarrier || ''
-          } as UserData;
-        });
-        setUsers(userData);
-        console.log(`${userData.length}건의 가입 신청 데이터 업데이트`);
-      },
-      (error) => {
-        console.error('가입 신청 데이터 구독 오류:', error);
-        toast.error('가입 신청 데이터 로드 실패');
+        setIsLoading(true);
+        const firestore = db as Firestore;
+
+        // 가입 신청자 구독
+        const unsubscribeUsers = onSnapshot(
+          query(collection(firestore, 'joinUsers'), orderBy('createdAt', 'desc')),
+          (snapshot) => {
+            const userData = snapshot.docs.map(doc => {
+              const data = doc.data();
+              return {
+                id: doc.id,
+                name: data.name || '',
+                phone: data.phone || '',
+                email: data.email || '',
+                birthDate: data.birthDate || '',
+                gender: data.gender || '',
+                trafficSource: data.trafficSource || '',
+                callTime: data.callTime || '',
+                createdAt: data.createdAt || null,
+                approved: data.approved || false,
+                phoneCarrier: data.phoneCarrier || ''
+              } as UserData;
+            });
+            setUsers(userData);
+            console.log(`${userData.length}건의 가입 신청 데이터 업데이트`);
+          },
+          (error) => {
+            console.error('가입 신청 데이터 구독 오류:', error);
+            toast.error('가입 신청 데이터 로드 실패');
+          }
+        );
+
+        // 계좌 정보 및 리뷰 상태 구독
+        const unsubscribeAccounts = onSnapshot(
+          query(collection(firestore, 'accounts'), orderBy('createdAt', 'desc')),
+          async (snapshot) => {
+            const accountsData = snapshot.docs.map(doc => {
+              const data = doc.data();
+              return {
+                id: doc.id,
+                userId: data.userId || '',
+                bankName: data.bank || '',
+                accountNumber: data.accountNumber || '',
+                accountHolder: data.accountHolder || '',
+                reviewStatus: {
+                  cafe: data.reviewStatus?.cafe || 'pending',
+                  blog: data.reviewStatus?.blog || 'pending',
+                  insta: data.reviewStatus?.insta || 'pending'
+                },
+                reviewLinks: {
+                  cafe: data.reviewLinks?.cafe || '',
+                  blog: data.reviewLinks?.blog || '',
+                  insta: data.reviewLinks?.insta || ''
+                },
+                paymentStatus: data.paymentStatus || 'pending',
+                paymentCompletedAt: data.paymentCompletedAt || undefined
+              } as AccountData;
+            });
+            setAccounts(accountsData);
+            console.log(`${accountsData.length}건의 계좌 정보 데이터 업데이트`);
+          },
+          (error) => {
+            console.error('계좌 정보 데이터 구독 오류:', error);
+            toast.error('계좌 정보 데이터 로드 실패');
+          }
+        );
+
+        setIsLoading(false);
+        
+        return () => {
+          unsubscribeUsers();
+          unsubscribeAccounts();
+        };
+      } catch (error) {
+        console.error('Firebase 초기화 오류:', error);
+        setError('데이터베이스 연결에 실패했습니다.');
+        setIsLoading(false);
       }
-    );
+    };
 
-    // 계좌 정보 및 리뷰 상태 구독
-    const unsubscribeAccounts = onSnapshot(
-      query(collection(firestore, 'accounts'), orderBy('createdAt', 'desc')),
-      async (snapshot) => {
-        const accountsData = snapshot.docs.map(doc => {
-          const data = doc.data();
-          return {
-            id: doc.id,
-            userId: data.userId || '',
-            bankName: data.bank || '',
-            accountNumber: data.accountNumber || '',
-            accountHolder: data.accountHolder || '',
-            reviewStatus: {
-              cafe: data.reviewStatus?.cafe || 'pending',
-              blog: data.reviewStatus?.blog || 'pending',
-              insta: data.reviewStatus?.insta || 'pending'
-            },
-            reviewLinks: {
-              cafe: data.reviewLinks?.cafe || '',
-              blog: data.reviewLinks?.blog || '',
-              insta: data.reviewLinks?.insta || ''
-            },
-            paymentStatus: data.paymentStatus || 'pending',
-            paymentCompletedAt: data.paymentCompletedAt || undefined
-          } as AccountData;
-        });
-        setAccounts(accountsData);
-        console.log(`${accountsData.length}건의 계좌 정보 데이터 업데이트`);
-      },
-      (error) => {
-        console.error('계좌 정보 데이터 구독 오류:', error);
-        toast.error('계좌 정보 데이터 로드 실패');
-      }
-    );
-
-    setIsLoading(false);
-    
-    return () => {
-      unsubscribeUsers();
-      unsubscribeAccounts();
-  };
+    initializeFirebaseAndLoadData();
   }, []);
+
+  // 로딩 상태 표시
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <p className="text-gray-600 dark:text-gray-300">데이터를 불러오는 중...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // 에러 상태 표시
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-red-500 mb-4">
+            <svg className="h-12 w-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          </div>
+          <p className="text-gray-600 dark:text-gray-300">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+          >
+            다시 시도
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   // 사용자 승인 처리
   const handleApprove = async (userId: string) => {
