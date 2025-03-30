@@ -108,14 +108,14 @@ export default function Dashboard() {
       try {
         if (!db) {
           console.error('데이터베이스가 초기화되지 않았습니다.');
-          return;
-        }
-
+      return;
+    }
+    
         // Firebase 네트워크 연결 활성화
         await enableFirestoreNetwork();
         console.log('Firebase 네트워크 연결이 활성화되었습니다.');
-
-        setIsLoading(true);
+  
+      setIsLoading(true);
         const firestore = db as Firestore;
 
         // 가입 신청자 구독
@@ -123,21 +123,21 @@ export default function Dashboard() {
           query(collection(firestore, 'joinUsers'), orderBy('createdAt', 'desc')),
           (snapshot) => {
             const userData = snapshot.docs.map(doc => {
-              const data = doc.data();
-              return {
-                id: doc.id,
-                name: data.name || '',
-                phone: data.phone || '',
-                email: data.email || '',
-                birthDate: data.birthDate || '',
-                gender: data.gender || '',
-                trafficSource: data.trafficSource || '',
-                callTime: data.callTime || '',
+                  const data = doc.data();
+                  return {
+                    id: doc.id,
+                    name: data.name || '',
+                    phone: data.phone || '',
+                    email: data.email || '',
+                    birthDate: data.birthDate || '',
+                    gender: data.gender || '',
+                    trafficSource: data.trafficSource || '',
+                    callTime: data.callTime || '',
                 createdAt: data.createdAt || null,
-                approved: data.approved || false,
+                    approved: data.approved || false,
                 phoneCarrier: data.phoneCarrier || ''
-              } as UserData;
-            });
+                  } as UserData;
+                });
             setUsers(userData);
             console.log(`${userData.length}건의 가입 신청 데이터 업데이트`);
           },
@@ -152,12 +152,12 @@ export default function Dashboard() {
           query(collection(firestore, 'accounts'), orderBy('createdAt', 'desc')),
           async (snapshot) => {
             const accountsData = snapshot.docs.map(doc => {
-              const data = doc.data();
-              return {
+                  const data = doc.data();
+                  return {
                 id: doc.id,
                 userId: data.userId || '',
                 bankName: data.bank || '',
-                accountNumber: data.accountNumber || '',
+                    accountNumber: data.accountNumber || '',
                 accountHolder: data.accountHolder || '',
                 reviewStatus: {
                   cafe: data.reviewStatus?.cafe || 'pending',
@@ -171,8 +171,8 @@ export default function Dashboard() {
                 },
                 paymentStatus: data.paymentStatus || 'pending',
                 paymentCompletedAt: data.paymentCompletedAt || undefined
-              } as AccountData;
-            });
+                  } as AccountData;
+                });
             setAccounts(accountsData);
             console.log(`${accountsData.length}건의 계좌 정보 데이터 업데이트`);
           },
@@ -254,10 +254,10 @@ export default function Dashboard() {
 
   // 리뷰 승인 처리
   const handleReviewApprove = async (accountId: string, reviewType: 'cafe' | 'blog' | 'insta') => {
-    if (!db) {
+      if (!db) {
       toast.error('데이터베이스 연결 오류');
-      return;
-    }
+        return;
+      }
 
     try {
       const accountRef = doc(db, 'accounts', accountId);
@@ -301,10 +301,10 @@ export default function Dashboard() {
 
   // 데이터 로드 함수
   const loadData = async () => {
-    if (!db) {
+      if (!db) {
       setError('데이터베이스 연결에 실패했습니다.');
-      return;
-    }
+        return;
+      }
     
     try {
       setIsLoading(true);
