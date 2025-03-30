@@ -371,17 +371,65 @@ export default function Join() {
                   <label htmlFor="birthDate" className="block text-sm font-medium text-gray-700 dark:text-gray-200">생년월일</label>
                   <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">필수</span>
                 </div>
-                <input
-                  type="date"
-                  id="birthDate"
-                  name="birthDate"
-                  value={birthDate}
-                  onChange={handleBirthDateChange}
-                  required
-                  className={`w-full border rounded-lg p-3 bg-white dark:bg-gray-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors ${
-                    errors.birthDate ? 'border-red-500' : 'border-gray-200 dark:border-gray-700'
-                  }`}
-                />
+                <div className="flex gap-2">
+                  <select
+                    id="birthYear"
+                    name="birthYear"
+                    value={birthDate.split('-')[0] || ''}
+                    onChange={(e) => {
+                      const year = e.target.value;
+                      const [_, month, day] = birthDate.split('-');
+                      setBirthDate(`${year}-${month || '01'}-${day || '01'}`);
+                    }}
+                    required
+                    className={`w-1/3 border rounded-lg p-3 bg-white dark:bg-gray-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors ${
+                      errors.birthDate ? 'border-red-500' : 'border-gray-200 dark:border-gray-700'
+                    }`}
+                  >
+                    <option value="">년도</option>
+                    {Array.from({ length: 100 }, (_, i) => new Date().getFullYear() - i).map(year => (
+                      <option key={year} value={year}>{year}년</option>
+                    ))}
+                  </select>
+                  <select
+                    id="birthMonth"
+                    name="birthMonth"
+                    value={birthDate.split('-')[1] || ''}
+                    onChange={(e) => {
+                      const month = e.target.value.padStart(2, '0');
+                      const [year, _, day] = birthDate.split('-');
+                      setBirthDate(`${year || new Date().getFullYear()}-${month}-${day || '01'}`);
+                    }}
+                    required
+                    className={`w-1/3 border rounded-lg p-3 bg-white dark:bg-gray-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors ${
+                      errors.birthDate ? 'border-red-500' : 'border-gray-200 dark:border-gray-700'
+                    }`}
+                  >
+                    <option value="">월</option>
+                    {Array.from({ length: 12 }, (_, i) => i + 1).map(month => (
+                      <option key={month} value={month.toString().padStart(2, '0')}>{month}월</option>
+                    ))}
+                  </select>
+                  <select
+                    id="birthDay"
+                    name="birthDay"
+                    value={birthDate.split('-')[2] || ''}
+                    onChange={(e) => {
+                      const day = e.target.value.padStart(2, '0');
+                      const [year, month] = birthDate.split('-');
+                      setBirthDate(`${year || new Date().getFullYear()}-${month || '01'}-${day}`);
+                    }}
+                    required
+                    className={`w-1/3 border rounded-lg p-3 bg-white dark:bg-gray-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors ${
+                      errors.birthDate ? 'border-red-500' : 'border-gray-200 dark:border-gray-700'
+                    }`}
+                  >
+                    <option value="">일</option>
+                    {Array.from({ length: 31 }, (_, i) => i + 1).map(day => (
+                      <option key={day} value={day.toString().padStart(2, '0')}>{day}일</option>
+                    ))}
+                  </select>
+                </div>
                 {errors.birthDate && <p className="mt-1 text-sm text-red-500">{errors.birthDate}</p>}
                 {isUnderage && (
                   <p className="mt-1 text-sm text-red-500">만 19세 이상만 가입이 가능합니다</p>
@@ -393,31 +441,29 @@ export default function Join() {
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">성별</label>
                   <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">필수</span>
                 </div>
-                <div className="flex gap-4">
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      name="gender"
-                      value="남성"
-                      checked={gender === '남성'}
-                      onChange={(e) => setGender(e.target.value as Gender)}
-                      required
-                      className="w-5 h-5 text-blue-600 border-gray-300 focus:ring-blue-500"
-                    />
-                    <span className="ml-2 text-gray-700 dark:text-gray-300">남성</span>
-                  </label>
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      name="gender"
-                      value="여성"
-                      checked={gender === '여성'}
-                      onChange={(e) => setGender(e.target.value as Gender)}
-                      required
-                      className="w-5 h-5 text-blue-600 border-gray-300 focus:ring-blue-500"
-                    />
-                    <span className="ml-2 text-gray-700 dark:text-gray-300">여성</span>
-                  </label>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setGender('남성')}
+                    className={`flex items-center justify-center p-3 rounded-lg border ${
+                      gender === '남성'
+                        ? 'bg-blue-50 border-blue-500 text-blue-700 dark:bg-blue-900/50 dark:border-blue-400 dark:text-blue-300'
+                        : 'border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:border-blue-500 dark:hover:border-blue-400'
+                    }`}
+                  >
+                    남성
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setGender('여성')}
+                    className={`flex items-center justify-center p-3 rounded-lg border ${
+                      gender === '여성'
+                        ? 'bg-blue-50 border-blue-500 text-blue-700 dark:bg-blue-900/50 dark:border-blue-400 dark:text-blue-300'
+                        : 'border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:border-blue-500 dark:hover:border-blue-400'
+                    }`}
+                  >
+                    여성
+                  </button>
                 </div>
                 {errors.gender && <p className="mt-1 text-sm text-red-500">{errors.gender}</p>}
               </div>
@@ -473,9 +519,19 @@ export default function Join() {
                 }`}
               >
                 <option value="">선택해주세요</option>
-                <option value="Morning">오전 (9:00-12:00)</option>
-                <option value="Afternoon">오후 (12:00-18:00)</option>
-                <option value="Evening">저녁 (18:00-22:00)</option>
+                <option value="09:00-10:00">09:00-10:00</option>
+                <option value="10:00-11:00">10:00-11:00</option>
+                <option value="11:00-12:00">11:00-12:00</option>
+                <option value="12:00-13:00">12:00-13:00</option>
+                <option value="13:00-14:00">13:00-14:00</option>
+                <option value="14:00-15:00">14:00-15:00</option>
+                <option value="15:00-16:00">15:00-16:00</option>
+                <option value="16:00-17:00">16:00-17:00</option>
+                <option value="17:00-18:00">17:00-18:00</option>
+                <option value="18:00-19:00">18:00-19:00</option>
+                <option value="19:00-20:00">19:00-20:00</option>
+                <option value="20:00-21:00">20:00-21:00</option>
+                <option value="21:00-22:00">21:00-22:00</option>
               </select>
               {errors.callTime && <p className="mt-1 text-sm text-red-500">{errors.callTime}</p>}
             </div>
