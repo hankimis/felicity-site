@@ -161,25 +161,6 @@ export default function ReviewPage() {
           </button>
         </div>
 
-        {/* 가입 이벤트 배너 */}
-        <div className="mb-8 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl p-6 text-white shadow-lg">
-          <div className="flex justify-between items-center">
-            <div>
-              <h2 className="text-2xl font-bold mb-2">가입 이벤트 진행중! 🎉</h2>
-              <p className="text-blue-100">지금 가입하시고 특별한 혜택을 받아가세요.</p>
-            </div>
-            <button
-              onClick={() => {
-                router.push('/review/complete');
-                setTimeout(() => router.push('/'), 2000);
-              }}
-              className="px-6 py-3 bg-white text-blue-600 rounded-lg font-semibold hover:bg-blue-50 transition-colors shadow-sm"
-            >
-              가입 신청하기
-            </button>
-          </div>
-        </div>
-
         <div className="max-w-lg mx-auto bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 md:p-8">
           {/* 진행 과정 표시바 */}
           <div className="flex justify-center mb-8 space-x-2 text-sm text-gray-500 dark:text-gray-300">
@@ -203,6 +184,51 @@ export default function ReviewPage() {
             {selectedEvent ? '리뷰 링크 입력' : '이벤트 신청'}
           </h2>
 
+          {!selectedEvent && (
+            <>
+              {/* 가입 이벤트 배너 */}
+              <div className="mb-6 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl p-6 text-white">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h2 className="text-xl font-bold mb-2">가입 이벤트 진행중! 🎉</h2>
+                    <p className="text-blue-100 text-sm">지금 가입하시고 특별한 혜택을 받아가세요.</p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      router.push('/review/complete');
+                      sessionStorage.setItem('eventJoin', 'true');
+                    }}
+                    className="px-4 py-2 bg-white text-blue-600 rounded-lg font-medium hover:bg-blue-50 transition-colors text-sm"
+                  >
+                    가입 신청하기
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                {eventTypes.map((event) => (
+                  <div
+                    key={event.id}
+                    className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:border-blue-500 dark:hover:border-blue-400 transition-colors cursor-pointer"
+                    onClick={() => handleEventSelect(event.id)}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                          {event.title}
+                        </h3>
+                        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                          {event.description}
+                        </p>
+                      </div>
+                      <span className="text-2xl">{event.icon}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+
           <div className="bg-blue-50 dark:bg-blue-900/30 text-sm text-blue-600 dark:text-blue-300 p-4 rounded-lg mb-6 border border-blue-100 dark:border-blue-800 flex items-start">
             <svg className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
               <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd"></path>
@@ -214,29 +240,7 @@ export default function ReviewPage() {
             </span>
           </div>
 
-          {!selectedEvent ? (
-            <div className="space-y-4">
-              {eventTypes.map((event) => (
-                <div
-                  key={event.id}
-                  className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:border-blue-500 dark:hover:border-blue-400 transition-colors cursor-pointer"
-                  onClick={() => handleEventSelect(event.id)}
-                >
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                        {event.title}
-                      </h3>
-                      <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                        {event.description}
-                      </p>
-                    </div>
-                    <span className="text-2xl">{event.icon}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
+          {selectedEvent && (
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
                 <div className="flex items-center justify-between mb-2">
