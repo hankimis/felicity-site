@@ -48,18 +48,33 @@ interface AccountData {
     cafe: 'completed' | 'pending';
     blog: 'completed' | 'pending';
     insta: 'completed' | 'pending';
+    broadcast: 'completed' | 'pending';
   };
   paymentCompletedAt: {
     account: string | null;
     cafe: string | null;
     blog: string | null;
     insta: string | null;
+    broadcast: string | null;
   };
 }
 
 interface DateFilter {
   startDate: Date | null;
   endDate: Date | null;
+}
+
+// 통계 데이터 타입 정의
+interface Stats {
+  totalUsers: number;
+  totalReviews: number;
+  totalAccounts: number;
+  approvedUsers: number;
+  approvedReviews: number;
+  approvedAccounts: number;
+  pendingUsers: number;
+  pendingReviews: number;
+  pendingAccounts: number;
 }
 
 export default function Dashboard() {
@@ -74,6 +89,148 @@ export default function Dashboard() {
     endDate: null
   });
   const [statusFilter, setStatusFilter] = useState<'all' | 'approved' | 'pending'>('all');
+  const [stats, setStats] = useState<Stats>({
+    totalUsers: 0,
+    totalReviews: 0,
+    totalAccounts: 0,
+    approvedUsers: 0,
+    approvedReviews: 0,
+    approvedAccounts: 0,
+    pendingUsers: 0,
+    pendingReviews: 0,
+    pendingAccounts: 0
+  });
+
+  // 통계 데이터 업데이트 함수
+  const updateStats = (users: UserData[], reviews: any[], accounts: AccountData[]) => {
+    const newStats: Stats = {
+      totalUsers: users.length,
+      totalReviews: reviews.length,
+      totalAccounts: accounts.length,
+      approvedUsers: users.filter(user => user.approved).length,
+      approvedReviews: reviews.filter(review => review.approved).length,
+      approvedAccounts: accounts.filter(account => account.paymentStatus.account === 'completed').length,
+      pendingUsers: users.filter(user => !user.approved).length,
+      pendingReviews: reviews.filter(review => !review.approved).length,
+      pendingAccounts: accounts.filter(account => account.paymentStatus.account === 'pending').length
+    };
+    setStats(newStats);
+  };
+
+  // Firebase 초기화 및 데이터 로드
+  useEffect(() => {
+    let unsubscribeUsers: (() => void) | undefined;
+    let isMounted = true;
+
+    const initializeFirebaseAndLoadData = async () => {
+      setIsLoading(true);
+      try {
+        // Firebase 초기화
+        await initializeFirebase();
+        
+        if (!db) {
+          throw new Error('데이터베이스가 초기화되지 않았습니다.');
+        }
+
+        // Firebase 네트워크 연결 활성화
+        await enableFirestoreNetwork();
+        console.log('Firebase 네트워크 연결이 활성화되었습니다.');
+
+        const firestore = db as Firestore;
+
+        // 가입 신청자 구독
+        unsubscribeUsers = onSnapshot(
+          query(collection(firestore, 'joinUsers'), orderBy('createdAt', 'desc')),
+          (snapshot) => {
+            if (!isMounted) return;
+            
+            const joinData = snapshot.docs.map(doc => {
+              const data = doc.data();
+              return {
+                id: doc.id,
+                name: data.name || '',
+                phone: data.phone || '',
+                email: data.email || '',
+                birthDate: data.birthDate || '',
+                gender: data.gender || '',
+                trafficSource: data.trafficSource || '',
+                callTime: data.callTime || '',
+                createdAt: data.createdAt || null,
+                approved: data.approved || false,
+                phoneCarrier: data.phoneCarrier || ''
+              } as UserData;
+            });
+            setUsers(joinData);
+            console.log(`${joinData.length}건의 가입 신청 데이터 업데이트`);
+          },
+          (error) => {
+            console.error('가입 신청 데이터 구독 오류:', error);
+            toast.error('가입 신청 데이터 로드 실패');
+          }
+        );
+
+        // 계정 데이터 로드
+        const accountQuery = query(
+          collection(firestore, 'accounts'),
+          orderBy('createdAt', 'desc')
+        );
+        const accountSnapshot = await getDocs(accountQuery);
+        const accountData = accountSnapshot.docs.map(doc => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            userId: data.userId || '',
+            bankName: data.bank || '',
+            accountNumber: data.accountNumber || '',
+            accountHolder: data.accountHolder || '',
+            reviewStatus: {
+              cafe: data.reviewStatus?.cafe || 'pending',
+              blog: data.reviewStatus?.blog || 'pending',
+              insta: data.reviewStatus?.insta || 'pending'
+            },
+            reviewLinks: {
+              cafe: data.reviewLinks?.cafe || '',
+              blog: data.reviewLinks?.blog || '',
+              insta: data.reviewLinks?.insta || ''
+            },
+            paymentStatus: {
+              account: data.paymentStatus || 'pending',
+              cafe: data.paymentStatus?.cafe || 'pending',
+              blog: data.paymentStatus?.blog || 'pending',
+              insta: data.paymentStatus?.insta || 'pending',
+              broadcast: data.paymentStatus?.broadcast || 'pending'
+            },
+            paymentCompletedAt: {
+              account: data.paymentCompletedAt || null,
+              cafe: data.paymentCompletedAt?.cafe || null,
+              blog: data.paymentCompletedAt?.blog || null,
+              insta: data.paymentCompletedAt?.insta || null,
+              broadcast: data.paymentCompletedAt?.broadcast || null
+            }
+          } as AccountData;
+        });
+        setAccounts(accountData);
+
+        // 통계 데이터 업데이트
+        updateStats(users, [], accountData);
+
+        setIsLoading(false);
+      } catch (error) {
+        console.error('데이터 로드 중 오류 발생:', error);
+        toast.error('데이터베이스 연결에 실패했습니다.');
+        setIsLoading(false);
+      }
+    };
+
+    initializeFirebaseAndLoadData();
+
+    return () => {
+      isMounted = false;
+      if (unsubscribeUsers) {
+        unsubscribeUsers();
+      }
+    };
+  }, []);
 
   // 날짜 변환 함수
   const convertToDate = (timestamp: Timestamp | { seconds: number; nanoseconds: number } | string | null): Date | null => {
@@ -112,112 +269,6 @@ export default function Dashboard() {
       return '-';
     }
   };
-
-  // Firebase 실시간 구독 설정
-  useEffect(() => {
-    const initializeFirebaseAndLoadData = async () => {
-      try {
-        if (!db) {
-          console.error('데이터베이스가 초기화되지 않았습니다.');
-      return;
-    }
-    
-        // Firebase 네트워크 연결 활성화
-        await enableFirestoreNetwork();
-        console.log('Firebase 네트워크 연결이 활성화되었습니다.');
-  
-      setIsLoading(true);
-        const firestore = db as Firestore;
-
-        // 가입 신청자 구독
-        const unsubscribeUsers = onSnapshot(
-          query(collection(firestore, 'joinUsers'), orderBy('createdAt', 'desc')),
-          (snapshot) => {
-            const userData = snapshot.docs.map(doc => {
-                  const data = doc.data();
-                  return {
-                    id: doc.id,
-                    name: data.name || '',
-                    phone: data.phone || '',
-                    email: data.email || '',
-                    birthDate: data.birthDate || '',
-                    gender: data.gender || '',
-                    trafficSource: data.trafficSource || '',
-                    callTime: data.callTime || '',
-                createdAt: data.createdAt || null,
-                    approved: data.approved || false,
-                phoneCarrier: data.phoneCarrier || ''
-                  } as UserData;
-                });
-            setUsers(userData);
-            console.log(`${userData.length}건의 가입 신청 데이터 업데이트`);
-          },
-          (error) => {
-            console.error('가입 신청 데이터 구독 오류:', error);
-            toast.error('가입 신청 데이터 로드 실패');
-          }
-        );
-
-        // 계좌 정보 및 리뷰 상태 구독
-        const unsubscribeAccounts = onSnapshot(
-          query(collection(firestore, 'accounts'), orderBy('createdAt', 'desc')),
-          async (snapshot) => {
-            const accountsData = snapshot.docs.map(doc => {
-                  const data = doc.data();
-                  return {
-                id: doc.id,
-                userId: data.userId || '',
-                bankName: data.bank || '',
-                    accountNumber: data.accountNumber || '',
-                accountHolder: data.accountHolder || '',
-                reviewStatus: {
-                  cafe: data.reviewStatus?.cafe || 'pending',
-                  blog: data.reviewStatus?.blog || 'pending',
-                  insta: data.reviewStatus?.insta || 'pending'
-                },
-                reviewLinks: {
-                  cafe: data.reviewLinks?.cafe || '',
-                  blog: data.reviewLinks?.blog || '',
-                  insta: data.reviewLinks?.insta || ''
-                },
-                paymentStatus: {
-                  account: data.paymentStatus || 'pending',
-                  cafe: data.paymentStatus?.cafe || 'pending',
-                  blog: data.paymentStatus?.blog || 'pending',
-                  insta: data.paymentStatus?.insta || 'pending'
-                },
-                paymentCompletedAt: {
-                  account: data.paymentCompletedAt || null,
-                  cafe: data.paymentCompletedAt?.cafe || null,
-                  blog: data.paymentCompletedAt?.blog || null,
-                  insta: data.paymentCompletedAt?.insta || null
-                }
-                  } as AccountData;
-                });
-            setAccounts(accountsData);
-            console.log(`${accountsData.length}건의 계좌 정보 데이터 업데이트`);
-          },
-          (error) => {
-            console.error('계좌 정보 데이터 구독 오류:', error);
-            toast.error('계좌 정보 데이터 로드 실패');
-          }
-        );
-
-        setIsLoading(false);
-        
-        return () => {
-          unsubscribeUsers();
-          unsubscribeAccounts();
-        };
-      } catch (error) {
-        console.error('Firebase 초기화 오류:', error);
-        setError('데이터베이스 연결에 실패했습니다.');
-        setIsLoading(false);
-      }
-    };
-
-    initializeFirebaseAndLoadData();
-  }, []);
 
   // 로딩 상태 표시
   if (isLoading) {
@@ -322,35 +373,35 @@ export default function Dashboard() {
 
   // 데이터 로드 함수
   const loadData = async () => {
-      if (!db) {
-      setError('데이터베이스 연결에 실패했습니다.');
-        return;
-      }
-    
-    try {
-      setIsLoading(true);
-      setError(null);
+    if (!db) return;
 
-      // 가입 신청자 데이터 로드
-      const usersRef = collection(db as Firestore, 'joinUsers');
-      const usersSnapshot = await getDocs(usersRef);
-      const usersData = usersSnapshot.docs.map(doc => ({
-                id: doc.id,
+    try {
+      // 가입 신청 데이터 로드 (최신순)
+      const joinQuery = query(
+        collection(db, 'joinUsers'),
+        orderBy('createdAt', 'desc')
+      );
+      const joinSnapshot = await getDocs(joinQuery);
+      const joinData = joinSnapshot.docs.map(doc => ({
+        id: doc.id,
         ...doc.data()
       })) as UserData[];
-      setUsers(usersData);
+      setUsers(joinData);
 
-      // 계좌 정보 데이터 로드
-      const accountsRef = collection(db as Firestore, 'accounts');
-      const accountsSnapshot = await getDocs(accountsRef);
-      const accountsData = accountsSnapshot.docs.map(doc => {
-                  const data = doc.data();
-                  return {
-                    id: doc.id,
-          userId: data.userId,
-          bankName: data.bankName,
-          accountNumber: data.accountNumber,
-          accountHolder: data.accountHolder,
+      // 계정 데이터 로드 (최신순)
+      const accountQuery = query(
+        collection(db, 'accounts'),
+        orderBy('createdAt', 'desc')
+      );
+      const accountSnapshot = await getDocs(accountQuery);
+      const accountData = accountSnapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          userId: data.userId || '',
+          bankName: data.bank || '',
+          accountNumber: data.accountNumber || '',
+          accountHolder: data.accountHolder || '',
           reviewStatus: {
             cafe: data.reviewStatus?.cafe || 'pending',
             blog: data.reviewStatus?.blog || 'pending',
@@ -365,23 +416,26 @@ export default function Dashboard() {
             account: data.paymentStatus || 'pending',
             cafe: data.paymentStatus?.cafe || 'pending',
             blog: data.paymentStatus?.blog || 'pending',
-            insta: data.paymentStatus?.insta || 'pending'
+            insta: data.paymentStatus?.insta || 'pending',
+            broadcast: data.paymentStatus?.broadcast || 'pending'
           },
           paymentCompletedAt: {
             account: data.paymentCompletedAt || null,
             cafe: data.paymentCompletedAt?.cafe || null,
             blog: data.paymentCompletedAt?.blog || null,
-            insta: data.paymentCompletedAt?.insta || null
+            insta: data.paymentCompletedAt?.insta || null,
+            broadcast: data.paymentCompletedAt?.broadcast || null
           }
-                  } as AccountData;
-                });
-      setAccounts(accountsData);
+        } as AccountData;
+      });
+      setAccounts(accountData);
+
+      // 통계 데이터 업데이트
+      updateStats(joinData, [], accountData);
     } catch (error) {
-      console.error('Error loading data:', error);
-      setError('데이터를 불러오는 중 오류가 발생했습니다.');
-        } finally {
-          setIsLoading(false);
-        }
+      console.error('데이터 로드 오류:', error);
+      toast.error('데이터를 불러오는 중 오류가 발생했습니다.');
+    }
   };
 
   // 날짜 필터링 함수
@@ -509,7 +563,7 @@ export default function Dashboard() {
   };
 
   // 입금 완료 처리 함수
-  const handlePaymentComplete = async (accountId: string, type: 'account' | 'cafe' | 'blog' | 'insta') => {
+  const handlePaymentComplete = async (accountId: string, type: 'account' | 'cafe' | 'blog' | 'insta' | 'broadcast') => {
     if (!db) {
       toast.error('데이터베이스 연결에 실패했습니다.');
       return;
@@ -520,7 +574,7 @@ export default function Dashboard() {
       const account = accounts.find(a => a.id === accountId);
       
       // 리뷰 타입인 경우 승인 상태 확인
-      if (type !== 'account') {
+      if (type !== 'account' && type !== 'broadcast') {
         const reviewStatus = account?.reviewStatus[type];
         if (reviewStatus !== 'approved') {
           toast.error('리뷰가 승인된 후에만 입금 처리가 가능합니다.');
@@ -587,6 +641,56 @@ export default function Dashboard() {
         </svg>
         입금완료
       </button>
+    );
+  };
+
+  // 방송 시간 체크 함수
+  const checkBroadcastTime = (createdAt: Timestamp | { seconds: number; nanoseconds: number } | null) => {
+    if (!createdAt) return false;
+    
+    const createdDate = convertToDate(createdAt);
+    if (!createdDate) return false;
+    
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - createdDate.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    return diffDays <= 7;
+  };
+
+  // 방송 시간 표시 컴포넌트
+  const renderBroadcastTime = (createdAt: Timestamp | { seconds: number; nanoseconds: number } | null, account: AccountData) => {
+    const isWithin7Days = checkBroadcastTime(createdAt);
+    const createdDate = convertToDate(createdAt);
+    const remainingDays = createdDate ? Math.max(0, 7 - Math.ceil((new Date().getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24))) : 0;
+    
+    return (
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">방송 시간</span>
+          <span className="text-sm text-gray-900 dark:text-white">7일 15시간</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => toast.success('방송 시간이 확인되었습니다.')}
+            className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm"
+          >
+            <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            확인
+          </button>
+          <button
+            onClick={() => handlePaymentComplete(account.id, 'broadcast')}
+            className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg shadow-sm"
+          >
+            <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            입금완료
+          </button>
+        </div>
+      </div>
     );
   };
 
@@ -703,40 +807,6 @@ export default function Dashboard() {
                     <option value="custom">기간 지정</option>
                   </select>
                 </div>
-
-                {dateFilter.startDate && (
-                  <div className="flex flex-col gap-2">
-                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">기간 설정</label>
-                    <div className="flex items-center gap-2">
-              <input
-                type="date"
-                        value={dateFilter.startDate ? dateFilter.startDate.toISOString().split('T')[0] : ''}
-                        onChange={(e) => {
-                          const date = e.target.value ? new Date(e.target.value) : null;
-                          if (date) {
-                            date.setHours(0, 0, 0, 0);
-                            setDateFilter({ ...dateFilter, startDate: date });
-                          }
-                        }}
-                        className="rounded-lg border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                      />
-                      <span className="text-gray-500">~</span>
-              <input
-                type="date"
-                        value={dateFilter.endDate ? dateFilter.endDate.toISOString().split('T')[0] : ''}
-                        onChange={(e) => {
-                          const date = e.target.value ? new Date(e.target.value) : null;
-                          if (date) {
-                            date.setHours(23, 59, 59, 999);
-                            setDateFilter({ ...dateFilter, endDate: date });
-                          }
-                        }}
-                        min={dateFilter.startDate ? dateFilter.startDate.toISOString().split('T')[0] : ''}
-                        className="rounded-lg border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500"
-              />
-            </div>
-          </div>
-                )}
 
                 {activeTab === 'applications' && (
                   <div className="flex flex-col gap-2">
@@ -925,80 +995,10 @@ export default function Dashboard() {
                                 </div>
                               </div>
                             </div>
-
-                            {/* 리뷰 상태 */}
+                            {/* 방송 시간 체크 섹션 */}
                             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
-                              <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-4">리뷰 상태</h4>
-                              <div className="space-y-4">
-                                {Object.entries(account.reviewStatus).map(([type, status]) => (
-                                  <div key={type} className="flex flex-col gap-3 p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg">
-                                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                                      <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-                                        <span className="text-sm font-medium text-gray-900 dark:text-white min-w-[80px]">
-                                          {type === 'cafe' ? '카페' : type === 'blog' ? '블로그' : '인스타그램'}
-                                        </span>
-                                        {(() => {
-                                          const account = accounts.find(a => a.userId === user.id);
-                                          const reviewLink = account?.reviewLinks[type as keyof typeof account.reviewLinks];
-                                          return reviewLink ? (
-                                            <a
-                                              href={reviewLink}
-                                              target="_blank"
-                                              rel="noopener noreferrer"
-                                              className="text-blue-600 hover:text-blue-800 text-sm inline-flex items-center"
-                                            >
-                                              <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                                              </svg>
-                                              리뷰 링크
-                                            </a>
-                                          ) : (
-                                            <span className="text-sm text-gray-500">링크 미첨부</span>
-                                          );
-                                        })()}
-                                      </div>
-                                      <div className="flex flex-wrap items-center gap-2">
-                                        <span
-                                          className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
-                                            status === 'approved'
-                                              ? 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                                              : status === 'rejected'
-                                              ? 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-                                              : 'bg-yellow-50 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
-                                          }`}
-                                        >
-                                          {status === 'approved' ? '승인' : status === 'rejected' ? '거절' : '대기중'}
-                                        </span>
-                                        {status === 'pending' && (() => {
-                                          const account = accounts.find(a => a.userId === user.id);
-                                          if (!account) return null;
-                                          return (
-                                            <div className="flex gap-2 mt-2 sm:mt-0">
-                                              <button
-                                                onClick={() => handleReviewApprove(account.id, type as 'cafe' | 'blog' | 'insta')}
-                                                className="inline-flex items-center px-2 py-1 text-xs font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg shadow-sm"
-                                                disabled={!account.reviewLinks[type as keyof typeof account.reviewLinks]}
-                                              >
-                                                승인
-                                              </button>
-                                              <button
-                                                onClick={() => handleReviewReject(account.id, type as 'cafe' | 'blog' | 'insta')}
-                                                className="inline-flex items-center px-2 py-1 text-xs font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg shadow-sm"
-                                              >
-                                                거절
-                                              </button>
-                                            </div>
-                                          );
-                                        })()}
-                                        {status === 'approved' && (() => {
-                                          const account = accounts.find(a => a.userId === user.id);
-                                          return account ? renderPaymentButton(account, type as 'cafe' | 'blog' | 'insta') : null;
-                                        })()}
-                                      </div>
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
+                              <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-4">방송 시간 체크</h4>
+                              {renderBroadcastTime(user.createdAt, account)}
                             </div>
                           </div>
                         </div>

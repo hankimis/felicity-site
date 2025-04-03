@@ -145,19 +145,16 @@ export async function testDbConnection(): Promise<{
 }
 
 // Vercel 환경에서 안정적으로 작동하는 Firebase 초기화 함수
-async function initializeFirebase() {
+export async function initializeFirebase() {
   if (typeof window === 'undefined') {
     console.log('서버 사이드에서는 Firebase를 초기화하지 않습니다.');
     return { app: null, db: null, auth: null, analytics: null };
   }
 
-  if (isInitializing) {
-    console.log('Firebase 초기화가 이미 진행 중입니다.');
-    await new Promise(resolve => setTimeout(resolve, 1000));
+  if (app && db && auth) {
+    console.log('Firebase가 이미 초기화되어 있습니다.');
     return { app, db, auth, analytics };
   }
-
-  isInitializing = true;
 
   try {
     // 기존 앱이 있는지 확인
@@ -182,7 +179,7 @@ async function initializeFirebase() {
       
       // 오프라인 지속성 활성화
       try {
-        await enableIndexedDbPersistence(db);
+        await enableMultiTabIndexedDbPersistence(db);
         console.log('Firestore 오프라인 지속성 활성화 완료');
       } catch (err: any) {
         if (err.code === 'failed-precondition') {
@@ -207,21 +204,21 @@ async function initializeFirebase() {
       console.log('Firebase Auth 초기화 완료');
     }
 
-    // Analytics 초기화 (브라우저 환경에서만)
-    if (!analytics && typeof window !== 'undefined') {
-      const analyticsSupported = await isSupported();
-      if (analyticsSupported) {
-        analytics = getAnalytics(app);
-        console.log('Firebase Analytics 초기화 완료');
-      }
+    // Analytics 초기화 (브라우저 지원 여부 확인)
+    if (!analytics && (await isSupported())) {
+      analytics = getAnalytics(app);
+      console.log('Firebase Analytics 초기화 완료');
     }
+
+    firestoreInitialized = true;
+    isInitializing = false;
+    initializationAttempts = 0;
 
     return { app, db, auth, analytics };
   } catch (error) {
-    console.error('Firebase 초기화 중 오류:', error);
-    throw error;
-  } finally {
+    console.error('Firebase 초기화 중 오류 발생:', error);
     isInitializing = false;
+    throw error;
   }
 }
 
@@ -302,13 +299,20 @@ export async function reconnectFirebase(): Promise<{
 
 // 네트워크 상태 관리 함수
 export async function enableFirestoreNetwork() {
-  if (!db) return false;
+  if (!db) {
+    await initializeFirebase();
+  }
+  
+  if (!db) {
+    throw new Error('Firestore가 초기화되지 않았습니다.');
+  }
+
   try {
     await enableNetwork(db);
-    return true;
+    console.log('Firestore 네트워크 연결이 활성화되었습니다.');
   } catch (error) {
-    console.error('Firestore 네트워크 활성화 실패:', error);
-    return false;
+    console.error('Firestore 네트워크 연결 활성화 실패:', error);
+    throw error;
   }
 }
 
@@ -330,4 +334,4 @@ if (typeof window !== 'undefined') {
   });
 }
 
-export { app, db, auth, analytics, initializeFirebase };
+export { app, db, auth, analytics };

@@ -73,15 +73,26 @@ export default function Join() {
 
   const handleBirthDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
+    
+    // 생년월일이 선택된 경우에만 나이 체크
+    if (value) {
+      const today = new Date();
+      const birth = new Date(value);
+      const age = today.getFullYear() - birth.getFullYear();
+      const m = today.getMonth() - birth.getMonth();
+      const d = today.getDate() - birth.getDate();
+      const isAdult = age > 19 || (age === 19 && (m > 0 || (m === 0 && d >= 0)));
+      
+      if (!isAdult) {
+        toast.error('만 19세 이상만 가입이 가능합니다.');
+        setBirthDate('');
+        setIsUnderage(true);
+        return;
+      }
+    }
+    
     setBirthDate(value);
-
-    const today = new Date();
-    const birth = new Date(value);
-    const age = today.getFullYear() - birth.getFullYear();
-    const m = today.getMonth() - birth.getMonth();
-    const d = today.getDate() - birth.getDate();
-    const isAdult = age > 19 || (age === 19 && (m > 0 || (m === 0 && d >= 0)));
-    setIsUnderage(!isAdult);
+    setIsUnderage(false);
   };
 
   const validateForm = useCallback(() => {
@@ -164,6 +175,11 @@ export default function Join() {
       return; // 중복 제출 방지
     }
 
+    if (isUnderage) {
+      toast.error('만 19세 이상만 가입이 가능합니다.');
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -183,46 +199,35 @@ export default function Join() {
         throw new Error('이미 가입된 전화번호입니다.');
       }
 
-      // 3. 새 사용자 데이터 생성
-      const newUser = {
-        name,
-        phone,
-        phoneCarrier,
-        email,
-        birthDate,
-        gender,
-        trafficSource,
-        callTime,
-        referralCode: referralCode || '없음',
-        createdAt: new Date().toISOString(),
-        status: 'pending',
-      };
-
-      // 4. Firestore에 데이터 저장
-      const docRef = await addDoc(collection(db, 'joinUsers'), newUser);
-
-      // 5. 세션 스토리지 저장
+      // 3. 세션 스토리지에 임시 저장
       try {
-        sessionStorage.setItem('joinStep2', 'true');
-        sessionStorage.setItem('joinPhone', phone);
-        sessionStorage.setItem('joinDocId', docRef.id);
+        const userData = {
+          name,
+          phone,
+          phoneCarrier,
+          email,
+          birthDate,
+          gender,
+          trafficSource,
+          callTime,
+          referralCode: referralCode || '없음',
+          createdAt: new Date().toISOString(),
+          status: 'pending',
+        };
+        sessionStorage.setItem('joinStep1', 'true');
+        sessionStorage.setItem('joinUserData', JSON.stringify(userData));
       } catch (storageError) {
         console.error('세션 스토리지 저장 오류:', storageError);
-        // 세션 스토리지 오류는 무시하고 진행
+        throw new Error('임시 데이터 저장에 실패했습니다. 다시 시도해주세요.');
       }
 
-      toast.success('정보가 성공적으로 저장되었습니다!');
       router.push('/join/gift-receiver');
     } catch (error: any) {
-      console.error('가입 처리 오류:', error);
+      console.error('처리 오류:', error);
       
       let errorMessage = '오류가 발생했습니다. 다시 시도해주세요.';
       if (error.message) {
         errorMessage = error.message;
-      } else if (error.code === 'unavailable') {
-        errorMessage = '서버에 연결할 수 없습니다. 인터넷 연결을 확인해주세요.';
-      } else if (error.code === 'permission-denied') {
-        errorMessage = '데이터 저장 권한이 없습니다. 관리자에게 문의하세요.';
       }
       
       toast.error(errorMessage);
@@ -312,15 +317,19 @@ export default function Join() {
                   id="phone"
                   name="phone"
                   value={phone}
-                  onChange={handlePhoneChange}
+                  onChange={(e) => {
+                    const formattedNumber = formatPhoneNumber(e.target.value);
+                    setPhone(formattedNumber);
+                  }}
                   required
                   maxLength={13}
+                  placeholder="010-0000-0000"
                   className={`w-full border rounded-lg p-3 bg-white dark:bg-gray-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors ${
                     errors.phone ? 'border-red-500' : 'border-gray-200 dark:border-gray-700'
                   }`}
-                  placeholder="010-0000-0000"
                 />
                 {errors.phone && <p className="mt-1 text-sm text-red-500">{errors.phone}</p>}
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">정확한 전화번호를 입력 부탁드립니다.</p>
               </div>
 
               <div>
@@ -371,68 +380,22 @@ export default function Join() {
                   <label htmlFor="birthDate" className="block text-sm font-medium text-gray-700 dark:text-gray-200">생년월일</label>
                   <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">필수</span>
                 </div>
-                <div className="flex gap-2">
-                  <select
-                    id="birthYear"
-                    name="birthYear"
-                    value={birthDate.split('-')[0] || ''}
-                    onChange={(e) => {
-                      const year = e.target.value;
-                      const [_, month, day] = birthDate.split('-');
-                      setBirthDate(`${year}-${month || '01'}-${day || '01'}`);
-                    }}
-                    required
-                    className={`w-1/3 border rounded-lg p-3 bg-white dark:bg-gray-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors ${
-                      errors.birthDate ? 'border-red-500' : 'border-gray-200 dark:border-gray-700'
-                    }`}
-                  >
-                    <option value="">년도</option>
-                    {Array.from({ length: 100 }, (_, i) => new Date().getFullYear() - i).map(year => (
-                      <option key={year} value={year}>{year}년</option>
-                    ))}
-                  </select>
-                  <select
-                    id="birthMonth"
-                    name="birthMonth"
-                    value={birthDate.split('-')[1] || ''}
-                    onChange={(e) => {
-                      const month = e.target.value.padStart(2, '0');
-                      const [year, _, day] = birthDate.split('-');
-                      setBirthDate(`${year || new Date().getFullYear()}-${month}-${day || '01'}`);
-                    }}
-                    required
-                    className={`w-1/3 border rounded-lg p-3 bg-white dark:bg-gray-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors ${
-                      errors.birthDate ? 'border-red-500' : 'border-gray-200 dark:border-gray-700'
-                    }`}
-                  >
-                    <option value="">월</option>
-                    {Array.from({ length: 12 }, (_, i) => i + 1).map(month => (
-                      <option key={month} value={month.toString().padStart(2, '0')}>{month}월</option>
-                    ))}
-                  </select>
-                  <select
-                    id="birthDay"
-                    name="birthDay"
-                    value={birthDate.split('-')[2] || ''}
-                    onChange={(e) => {
-                      const day = e.target.value.padStart(2, '0');
-                      const [year, month] = birthDate.split('-');
-                      setBirthDate(`${year || new Date().getFullYear()}-${month || '01'}-${day}`);
-                    }}
-                    required
-                    className={`w-1/3 border rounded-lg p-3 bg-white dark:bg-gray-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors ${
-                      errors.birthDate ? 'border-red-500' : 'border-gray-200 dark:border-gray-700'
-                    }`}
-                  >
-                    <option value="">일</option>
-                    {Array.from({ length: 31 }, (_, i) => i + 1).map(day => (
-                      <option key={day} value={day.toString().padStart(2, '0')}>{day}일</option>
-                    ))}
-                  </select>
-                </div>
+                <input
+                  type="date"
+                  id="birthDate"
+                  name="birthDate"
+                  value={birthDate}
+                  onChange={handleBirthDateChange}
+                  required
+                  max={new Date().toISOString().split('T')[0]}
+                  min="1900-01-01"
+                  className={`w-full border rounded-lg p-3 bg-white dark:bg-gray-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors ${
+                    errors.birthDate ? 'border-red-500' : 'border-gray-200 dark:border-gray-700'
+                  }`}
+                />
                 {errors.birthDate && <p className="mt-1 text-sm text-red-500">{errors.birthDate}</p>}
                 {isUnderage && (
-                  <p className="mt-1 text-sm text-red-500">만 19세 이상만 가입이 가능합니다</p>
+                  <p className="mt-1 text-sm text-red-500">만 19세 이상만 가입이 가능합니다.</p>
                 )}
               </div>
 
@@ -496,7 +459,7 @@ export default function Join() {
                 <option value="Naver Search">네이버 검색</option>
                 <option value="Google Search">구글 검색</option>
                 <option value="Instagram">인스타그램</option>
-                <option value="Facebook">페이스북</option>
+                <option value="Threads">스레드</option>
                 <option value="Recommendation">지인 추천</option>
                 <option value="Other">기타</option>
               </select>

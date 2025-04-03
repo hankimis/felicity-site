@@ -128,7 +128,7 @@ export default function ReviewAccess() {
       }));
       
       toast.success('확인되었습니다.');
-      router.push('/review');
+      router.push('/review/complete');
     } catch (error) {
       console.error('확인 중 오류 발생:', error);
       toast.error('확인 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');

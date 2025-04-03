@@ -86,8 +86,8 @@ export default function Home() {
                   </svg>
                 </div>
                 <div>
-                  <h3 className="text-lg font-medium text-white">가입만 해도 최대 10만원</h3>
-                  <p className="text-sm text-blue-200">활동에 따라 추가 보상 지급</p>
+                  <h3 className="text-lg font-medium text-white">가입만 해도 5만원 지급</h3>
+                  <p className="text-sm text-blue-200">가입 후 7일동안 <br></br>15시간 방송시 5만원 추가지급</p>
                 </div>
               </div>
             </div>
@@ -118,7 +118,7 @@ export default function Home() {
             <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
               <path fillRule="evenodd" d="M5 2a1 1 0 011 1v1h8V3a1 1 0 112 0v1h1a2 2 0 012 2v10a2 2 0 01-2 2H4a2 2 0 01-2-2V6a2 2 0 012-2h1V3a1 1 0 011-1zm2 5a1 1 0 011-1h4a1 1 0 110 2H8a1 1 0 01-1-1zm0 2a1 1 0 000 2h8a1 1 0 100-2H7z" clipRule="evenodd" />
             </svg>
-            후기 신청하기
+            가입 이벤트 신청하기
           </a>
 
           <a

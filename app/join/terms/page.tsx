@@ -3,6 +3,8 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-hot-toast';
+import { addDoc, collection } from 'firebase/firestore';
+import { db } from '../../lib/firebase';
 
 // 약관 조항 타입 정의
 interface Clause {
@@ -96,14 +98,50 @@ export default function Terms() {
     });
   };
 
-  const handleSubmit = () => {
+  const handleNext = async () => {
     if (!allAgreed) {
       toast.error('모든 약관에 동의해주세요.');
       return;
     }
-    toast.success('가입이 완료되었습니다!');
-    sessionStorage.clear();
-    router.push('/');
+
+    try {
+      // 이전 단계 데이터 확인
+      const joinStep1 = sessionStorage.getItem('joinStep1');
+      const joinStep2 = sessionStorage.getItem('joinStep2');
+      const userData = sessionStorage.getItem('joinUserData');
+      const giftData = sessionStorage.getItem('giftData');
+
+      if (!joinStep1 || !joinStep2 || !userData || !giftData) {
+        toast.error('가입 정보가 유실되었습니다. 처음부터 다시 시도해주세요.');
+        router.push('/join');
+        return;
+      }
+
+      // Firebase에 최종 데이터 저장
+      const parsedUserData = JSON.parse(userData);
+      const parsedGiftData = JSON.parse(giftData);
+      
+      const finalData = {
+        ...parsedUserData,
+        ...parsedGiftData,
+        termsAgreedAt: new Date().toISOString(),
+      };
+
+      if (!db) {
+        throw new Error('데이터베이스 연결에 실패했습니다.');
+      }
+
+      const docRef = await addDoc(collection(db, 'joinUsers'), finalData);
+
+      // 세션 스토리지 정리
+      sessionStorage.clear();
+
+      toast.success('가입 신청이 완료되었습니다!');
+      router.push('/join/complete');
+    } catch (error) {
+      console.error('가입 처리 오류:', error);
+      toast.error('가입 처리 중 오류가 발생했습니다. 다시 시도해주세요.');
+    }
   };
 
   // 약관 내용 정의
@@ -111,31 +149,27 @@ export default function Terms() {
     {
       key: 'clause1',
       label: '1. 이벤트 개요 및 보상 조건',
-      content: `① 가입 보상: 크리에이터 등록 완료 시 - 50,000원
-② 블로그 후기 작성: 본인 블로그 계정에 작성 - 30,000원 (90일 유지)
-③ 맘카페 후기 작성: 맘카페 계정에 작성 - 30,000원 (90일 유지)
-④ 인스타그램 피드 업로드: 본인 인스타그램 계정 업로드 - 20,000원 (90일 유지)`,
+      content: `[중요] 보상 지급 조건
+① 가입 보상: 크리에이터 등록 완료 시 - <span class="text-blue-600 font-bold">50,000원</span>
+② 활동 보상: 가입일로부터 <span class="text-red-600 font-bold">7일 이내</span> 누적 방송 <span class="text-red-600 font-bold">15시간 이상</span> 달성 - <span class="text-blue-600 font-bold">50,000원</span>`,
     },
     {
       key: 'clause2',
       label: '2. 활동 유지 조건',
-      content: `1. 본인은 지급일로부터 최소 14일간 회사의 크리에이터로 등록 및 활동 의사를 유지해야 합니다.
-2. 활동 유지 기간 내 자발적 탈퇴, 비협조, 연락 두절, 고의적 비활동 등이 발생할 경우, 지급된 5만원은 반환 대상이 됩니다.`,
-    },
-    {
-      key: 'clause3',
-      label: '3. 콘텐츠 유지 조건',
-      content: `1. 블로그, 카페, 인스타그램 게시글은 작성일로부터 최소 90일간 삭제 없이 유지해야 합니다.
-2. 중도 삭제, 비공개 전환, 계정 삭제 등으로 인해 게시물이 확인되지 않을 경우, 해당 보상금은 회사가 환수 청구할 수 있습니다.`,
+      content: `[필수] 활동 유지 의무 사항
+1. 본인은 지급일로부터 <span class="text-red-600 font-bold">최소 14일간</span> 회사의 크리에이터로 등록 및 활동 의사를 유지해야 합니다.
+2. <span class="text-red-600 font-bold">활동 유지 기간 내 자발적 탈퇴, 고의적 비활동, 연락 두절</span> 등의 사유가 발생할 경우, 이미 지급된 보상금은 <span class="text-red-600 font-bold">전액 반환</span> 대상이 됩니다.`,
     },
     {
       key: 'clause4',
-      label: '4. 반환 동의 및 법적 고지',
-      content: `본인은 위 기간 내 자진 탈퇴 또는 활동 중단 시, 회사의 요청에 따라 지급받은 금액(5만원)을 전액 반환해야 함에 동의합니다.
+      label: '3. 반환 동의 및 법적 고지',
+      content: `[중요] 반환 의무 동의
+본인은 위 기간 내 자진 탈퇴 또는 활동 중단 시, 회사의 요청에 따라 지급받은 금액(<span class="text-blue-600 font-bold">5만원</span>)을 <span class="text-red-600 font-bold">전액 반환</span>해야 함에 동의합니다.
 
-- 민법 제390조: 의무 불이행 시 손해배상 및 반환 청구
-- 민법 제103조: 사회질서에 위배되지 않는 한 계약 유효
-- 전자서명법 및 전자거래기본법: 전자 동의의 법적 유효성 보장`,
+[법적 근거]
+- <span class="font-semibold">민법 제390조</span>: 의무 불이행 시 손해배상 및 반환 청구
+- <span class="font-semibold">민법 제103조</span>: 사회질서에 위배되지 않는 한 계약 유효
+- <span class="font-semibold">전자서명법 및 전자거래기본법</span>: 전자 동의의 법적 유효성 보장`,
     },
   ];
 
@@ -169,6 +203,16 @@ export default function Terms() {
         <h2 className="text-2xl font-bold mb-6 text-center text-gray-800 dark:text-white">
           약관에 동의해주세요
         </h2>
+
+        {/* 중요 안내사항 추가 */}
+        <div className="mb-6 bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+          <h3 className="text-yellow-800 dark:text-yellow-300 font-bold mb-2">⚠️ 중요 안내사항</h3>
+          <ul className="text-sm text-yellow-700 dark:text-yellow-200 space-y-1">
+            <li>• 모든 약관을 <span className="font-bold">반드시 확인</span>하신 후 동의해주세요.</li>
+            <li>• 약관 동의 후 <span className="font-bold">활동 조건 미이행</span> 시 보상금이 <span className="font-bold">반환</span>될 수 있습니다.</li>
+            <li>• 각 약관의 <span className="font-bold">[중요]</span> 표시 항목을 특히 유의해서 읽어주세요.</li>
+          </ul>
+        </div>
 
         <div className="space-y-4">
           {/* 전체 동의 박스 */}
@@ -249,9 +293,9 @@ export default function Terms() {
                     transition={{ duration: 0.2 }}
                     className="overflow-hidden mt-3"
                   >
-                    <div className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-line bg-white dark:bg-gray-700/50 p-4 rounded-lg border border-gray-100 dark:border-gray-700 leading-relaxed">
-                      {content}
-                    </div>
+                    <div className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-line bg-white dark:bg-gray-700/50 p-4 rounded-lg border border-gray-100 dark:border-gray-700 leading-relaxed"
+                      dangerouslySetInnerHTML={{ __html: content }}
+                    />
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -269,7 +313,7 @@ export default function Terms() {
             </button>
             <button
               type="submit"
-              onClick={handleSubmit}
+              onClick={handleNext}
               disabled={!allAgreed}
               className="sm:w-1/2 bg-blue-600 hover:bg-blue-700 text-white font-medium py-3.5 px-6 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed shadow-sm transition-colors"
             >
