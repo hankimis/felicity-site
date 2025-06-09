@@ -1,0 +1,294 @@
+body {
+  font-family: 'Pretendard', Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  color: #222;
+  background: #f7fafd;
+}
+
+.top-bar {
+  background-color: #e8f0fe;
+  padding: 8px 24px;
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.95em;
+  color: #2563eb;
+}
+.top-bar a { color: #2563eb; text-decoration: underline; }
+
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18px 32px;
+  background-color: #fff;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+.logo {
+  font-weight: bold;
+  font-size: 1.7em;
+  color: #3182f6;
+  letter-spacing: -1px;
+}
+.navbar nav ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  gap: 28px;
+}
+.navbar nav ul li a {
+  text-decoration: none;
+  color: #222;
+  font-weight: 600;
+  font-size: 1.05em;
+  transition: color 0.2s;
+}
+.navbar nav ul li a:hover {
+  color: #3182f6;
+}
+.auth-buttons button {
+  padding: 8px 18px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 1em;
+  margin-left: 8px;
+  transition: background 0.2s, color 0.2s;
+}
+.auth-buttons .login {
+  background-color: #f3f3f3;
+  color: #222;
+}
+.auth-buttons .signup {
+  background-color: #3182f6;
+  color: #fff;
+}
+.auth-buttons .signup:hover {
+  background: #2563eb;
+}
+
+.main-banner {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 60px 20px 40px 20px;
+  background: linear-gradient(90deg, #e8f0fe 60%, #fff 100%);
+  gap: 60px;
+}
+.banner-content {
+  max-width: 500px;
+}
+.banner-content h1 {
+  font-size: 2.3em;
+  line-height: 1.3;
+  margin-bottom: 18px;
+}
+.highlight { color: #3182f6; font-weight: bold; }
+.banner-content p {
+  font-size: 1.1em;
+  margin-bottom: 14px;
+  color: #444;
+}
+.main-link {
+  color: #3182f6;
+  text-decoration: underline;
+  font-size: 1em;
+}
+.banner-image {
+  text-align: center;
+}
+.banner-image img {
+  max-width: 200px;
+  border-radius: 18px;
+  margin-bottom: 18px;
+  box-shadow: 0 4px 16px rgba(30,203,108,0.08);
+}
+.banner-image p {
+  font-size: 1.1em;
+  margin-bottom: 18px;
+  color: #333;
+}
+.cta-button {
+  background-color: #3182f6;
+  color: #fff;
+  padding: 15px 32px;
+  border: none;
+  border-radius: 7px;
+  font-size: 1.15em;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.cta-button:hover {
+  background: #2563eb;
+}
+
+.exchange-list-section {
+  padding: 60px 20px 60px 20px;
+  text-align: center;
+  background: #fff;
+}
+.exchange-list-section h2 {
+  font-size: 2em;
+  margin-bottom: 8px;
+  color: #3182f6;
+}
+.exchange-list-section p {
+  font-size: 1.1em;
+  margin-bottom: 38px;
+  color: #444;
+}
+.exchange-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+.exchange-card {
+  border: 1.5px solid #e0e0e0;
+  border-radius: 13px;
+  padding: 24px 12px 20px 12px;
+  text-align: center;
+  position: relative;
+  box-shadow: 0 4px 12px rgba(30,203,108,0.04);
+  background-color: #fafbfa;
+  transition: box-shadow 0.2s, border 0.2s;
+}
+.exchange-card:hover {
+  box-shadow: 0 8px 24px rgba(30,203,108,0.10);
+  border: 1.5px solid #3182f6;
+}
+.exchange-card.hot .hot-label {
+  background-color: #ff5722;
+  color: white;
+  padding: 5px 13px;
+  border-radius: 7px;
+  font-size: 0.85em;
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  font-weight: bold;
+  letter-spacing: 1px;
+}
+.exchange-card img {
+  max-width: 100px;
+  margin-bottom: 15px;
+}
+.exchange-card h3 {
+  margin-bottom: 10px;
+  font-size: 1.25em;
+  color: #222;
+}
+.exchange-card p {
+  font-size: 0.98em;
+  color: #555;
+  margin-bottom: 5px;
+}
+.exchange-card button {
+  background-color: #3182f6;
+  color: #fff;
+  padding: 10px 22px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  margin-top: 15px;
+  font-weight: bold;
+  font-size: 1em;
+  transition: background 0.2s;
+}
+.exchange-card button:hover {
+  background: #2563eb;
+}
+
+/* 모달 스타일 */
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  left:0; top:0; width:100vw; height:100vh;
+  background:rgba(0,0,0,0.35);
+}
+.modal-content {
+  background:#fff;
+  margin:8% auto;
+  padding:32px 24px 24px 24px;
+  border-radius:13px;
+  width:90%;
+  max-width:400px;
+  position:relative;
+  box-shadow: 0 8px 32px rgba(30,203,108,0.10);
+  text-align: center;
+}
+.close {
+  position:absolute;
+  right:20px;
+  top:20px;
+  font-size:2em;
+  cursor:pointer;
+  color: #888;
+}
+.modal-content input[type="text"] {
+  width:100%;
+  padding:12px;
+  margin:12px 0;
+  border:1px solid #e0e0e0;
+  border-radius:6px;
+  font-size: 1em;
+}
+.modal-content button {
+  background-color: #3182f6;
+  color: #fff;
+  padding: 12px 28px;
+  border: none;
+  border-radius: 6px;
+  font-size: 1.1em;
+  font-weight: bold;
+  cursor: pointer;
+  margin-top: 10px;
+  transition: background 0.2s;
+}
+.modal-content button:hover {
+  background: #2563eb;
+}
+
+/* 반응형 */
+@media (max-width: 900px) {
+  .main-banner {
+    flex-direction: column;
+    gap: 30px;
+    padding: 40px 10px 30px 10px;
+  }
+  .banner-content {
+    max-width: 100%;
+  }
+}
+@media (max-width: 600px) {
+  .navbar {
+    flex-direction: column;
+    padding: 12px 8px;
+  }
+  .navbar nav ul {
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 10px;
+  }
+  .main-banner {
+    padding: 24px 4px 18px 4px;
+  }
+  .exchange-list-section {
+    padding: 30px 4px 30px 4px;
+  }
+  .exchange-cards-grid {
+    gap: 12px;
+  }
+  .modal-content {
+    padding: 18px 6px 18px 6px;
+  }
+} 
