@@ -3,122 +3,332 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>펠리시티 클론</title>
+  <title>Felicity</title>
   <link rel="stylesheet" href="style.css"/>
-  <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
 <body>
   <div class="top-bar">
     <span>10초 수수료 페이백 확인</span>
     <span>내 계좌 이체 정보 | <a href="#">문의하기</a></span>
   </div>
+
   <header class="navbar">
-    <div class="logo">Felicity</div>
+    <a href="index.html" class="logo">Felicity</a>
     <nav>
       <ul>
+        <li><a href="affiliated.html">제휴 거래소</a></li>
+        <li><a href="#">혜택</a></li>
+        <li><a href="#">페이백 테스트</a></li>
+        <li><button>앱 다운로드</button></li>
         <li><a href="#">서비스 소개</a></li>
-        <li><a href="#">거래소</a></li>
-        <li><a href="#">페이백 계정 연동</a></li>
-        <li><a href="#">마이페이지</a></li>
-        <li><a href="#">공지사항</a></li>
       </ul>
     </nav>
-    <div class="auth-buttons">
-      <button class="login">로그인</button>
-      <button class="signup">회원가입</button>
-    </div>
+    <aside class="auth-buttons">
+      <a href="#" class="login">로그인</a>
+      <a href="#" class="signup">회원가입</a>
+      <button class="icon-button" id="theme-toggle"><i class="fas fa-moon"></i></button>
+      <button class="icon-button"><i class="fas fa-globe"></i></button>
+    </aside>
   </header>
-  <main>
+
+  <main class="main-container">
     <section class="main-banner">
-      <div class="banner-content">
-        <h1>지금도 소멸되고 있는 거래 수수료,<br>이제는 <span class="highlight">펠리시티</span>에서 <span class="highlight">페이백</span>하세요!</h1>
-        <p>자주 쓰는 거래소에 페이백 계정을 만들고 수수료를 환급 받아보세요!<br>여러분이 생각보다 큰 금액이 수수료로 지불되고 있습니다.</p>
-        <a href="#" target="_blank" class="main-link">가장 똑똑하게 거래소를 이용하는 방법 felicity/</a>
+      <h1 class="main-phrase">
+        <span class="highlight-blue">수수료 페이백,</span> 아는 사람만 아는 정보
+      </h1>
+      <p class="sub-phrase">
+        벌써 많은 사람들이 <span class="highlight-blue">펠리시티에서</span>
+        환급 받고 있어요!
+      </p>
+      <div class="search-input-container">
+        <div class="search-selector">
+          <img src="https://prod-tethermax.s3.ap-northeast-2.amazonaws.com/exchange/icon/bybit.png" alt="exchange icon" class="search-exchange-icon">
+          <span>Bybit</span>
+          <i class="fas fa-chevron-down"></i>
+        </div>
+        <input type="text" placeholder="UID 입력하고 조회하기" />
       </div>
-      <div class="banner-image">
-        <img src="https://placehold.co/200x400?text=Phone+Mockup" alt="페이백 이미지"/>
-        <p>매일 500명의 이용자가<br>많은 페이백을 받고 있습니다</p>
-        <button class="cta-button" onclick="openConsultModal()">지금 바로 상담받기</button>
+      <div class="floating-coins-container">
+        <div class="floating-coin-item">
+          <img src="https://prod-tethermax.s3.ap-northeast-2.amazonaws.com/exchange/icon/bybit.png" alt="Bybit">
+          <div class="coin-name">Bybit</div>
+          <div class="payback-rate">45%</div>
+        </div>
+        <div class="floating-coin-item" style="animation-delay: 0.5s;">
+          <img src="https://prod-tethermax.s3.ap-northeast-2.amazonaws.com/exchange/logo/bitget.png" alt="Bitget">
+          <div class="coin-name">Bitget</div>
+          <div class="payback-rate">70%</div>
+        </div>
+        <div class="floating-coin-item" style="animation-delay: 1s;">
+          <img src="https://prod-tethermax.s3.ap-northeast-2.amazonaws.com/exchange/icon/okx.png" alt="OKX">
+          <div class="coin-name">OKX</div>
+          <div class="payback-rate">54%</div>
+        </div>
+        <div class="floating-coin-item" style="animation-delay: 1.5s;">
+          <img src="https://prod-tethermax.s3.ap-northeast-2.amazonaws.com/exchange/detail/fb401999-b8d8-4bbf-a5f7-b739f5c9e10d.png" alt="MEXC">
+          <div class="coin-name">MEXC</div>
+          <div class="payback-rate">50%</div>
+        </div>
       </div>
     </section>
-    <section class="exchange-list-section">
-      <h2>펠리시티 제휴 거래소</h2>
-      <p>수수료 페이백을 최다로 받아보세요!</p>
-      <div class="exchange-cards-grid">
-        <div class="exchange-card hot">
-          <div class="hot-label">HOT</div>
-          <img src="Lbank logo.png" alt="Lbank 로고" style="background:#000; border-radius:8px; max-width:200px; max-height:600px;"/>
-          <h3>Lbank</h3>
-          <p>수수료 25% 페이백</p>
-          <p>지정가 0.015%, 시장가 0.025%</p>
-          <a href="https://lbank.com/ref/53XQ3" target="_blank" rel="noopener noreferrer">
-            <button>페이백 시작하기</button>
+
+    <section class="band-banner-section">
+      <p class="band-banner-title">펠리시티의 <strong>주목할 혜택</strong>!</p>
+      <div class="benefit-banner-swiper-wrapper">
+        <button class="benefit-card" style="background-image: url('https://prod-tethermax.s3.ap-northeast-2.amazonaws.com/home/benefit/banner/a71ec09b-5788-4f73-9b30-3289429f61a6.png');">
+          <div class="text-overlay"><p class="title">매일 매일 코인뽑기</p><p class="subtitle">최대 1 BTC 뽑기</p></div>
+        </button>
+        <button class="benefit-card" style="background-image: url('https://prod-tethermax.s3.ap-northeast-2.amazonaws.com/home/benefit/banner/41b659ac-959c-4a9b-a582-1138756d3327.png');">
+          <div class="text-overlay"><p class="title">오직 펠리시티에서만</p><p class="subtitle">거래소 부스트 혜택</p></div>
+        </button>
+        <button class="benefit-card" style="background-image: url('https://prod-tethermax.s3.ap-northeast-2.amazonaws.com/home/benefit/banner/42f8fff0-ac14-4b4b-9d92-cb1c0f23abc0.png');">
+          <div class="text-overlay"><p class="title">비트코인 가격 맞추고</p><p class="subtitle">최대 $1,000 받기</p></div>
+        </button>
+        <button class="benefit-card" style="background-image: url('https://prod-tethermax.s3.ap-northeast-2.amazonaws.com/home/benefit/banner/9435367e-a7fc-4aa0-864d-3b449eeca7e6.png');">
+          <div class="text-overlay"><p class="title">페이백 쌓고</p><p class="subtitle">추가 USDT 받기</p></div>
+        </button>
+      </div>
+    </section>
+
+    <section class="affiliate-section">
+      <div class="section-header">
+        <p class="section-title">펠리시티 제휴거래소</p>
+        <button class="more-button"><i class="fas fa-arrow-right"></i></button>
+      </div>
+      <div class="affiliate-grid-container">
+        <div class="info-card">
+          <p class="card-title">펠리시티 명예의 전당</p>
+          <div class="card-rows">
+            <div class="card-row"><div class="row-left"><p class="index">1</p><img src="https://prod-tethermax.s3.ap-northeast-2.amazonaws.com/exchange/detail/fb401999-b8d8-4bbf-a5f7-b739f5c9e10d.png" alt="MEXC"><p class="exchange-name">MEXC 트레이더</p></div><p class="amount blue">81,676 USDT</p></div>
+            <div class="card-row"><div class="row-left"><p class="index">2</p><img src="https://prod-tethermax.s3.ap-northeast-2.amazonaws.com/exchange/detail/ae5bc2dc-4a5d-48f6-8570-54e1ee6809dc.png" alt="Bitget"><p class="exchange-name">Bitget 트레이더</p></div><p class="amount blue">54,715 USDT</p></div>
+            <div class="card-row"><div class="row-left"><p class="index">3</p><img src="https://prod-tethermax.s3.ap-northeast-2.amazonaws.com/exchange/detail/ae5bc2dc-4a5d-48f6-8570-54e1ee6809dc.png" alt="Bitget"><p class="exchange-name">Bitget 트레이더</p></div><p class="amount blue">45,087 USDT</p></div>
+          </div>
+        </div>
+        <div class="info-card">
+          <p class="card-title">인기 이벤트 <i class="fas fa-fire" style="color: #ff5252;"></i></p>
+          <a href="#" class="banner-link">
+            <img src="https://prod-tethermax.s3.ap-northeast-2.amazonaws.com/exchange/detail/dd393917-a0ca-44fb-9e57-6cae9fabe6a5.png" alt="banner" class="banner-image">
+            <div class="banner-content">
+                <p class="banner-card-title">Bitget 거래대회</p>
+                <p class="banner-card-desc"><strong>#Bitget</strong> 총 상금풀 80,000USDT + 페이백</p>
+            </div>
           </a>
         </div>
-        <div class="exchange-card hot">
-          <div class="hot-label">HOT</div>
-          <img src="https://placehold.co/100x40?text=LBANK" alt="LBank 로고"/>
-          <h3>Bitget</h3>
-          <h2>Coming soon</h2>
-          <p>수수료 60% 페이백</p>
-          <p>지정가 0.008%, 시장가 0.024%</p>
-          <button>페이백 시작하기</button>
+        <div class="info-card">
+          <p class="card-title">주목할 거래소 <i class="fas fa-star" style="color: #ffc107;"></i></p>
+          <a href="#" class="banner-link">
+            <img src="https://prod-tethermax.s3.ap-northeast-2.amazonaws.com/exchange/detail/bd0a97c2-2634-482f-be76-94c40e89af22.png" alt="banner" class="banner-image">
+            <div class="banner-content">
+                <p class="banner-card-title">신규 가입 이벤트</p>
+                <p class="banner-card-desc"><strong>#Bitget</strong> 신규가입하고 총 상금풀 $22,450 받아가세요</p>
+            </div>
+          </a>
         </div>
-        <div class="exchange-card hot">
-          <div class="hot-label">HOT</div>
-          <img src="https://placehold.co/100x40?text=Bitunix" alt="Bitunix 로고"/>
-          <h3>Bitunix</h3>
-          <h2>Coming soon</h2>
-          <p>수수료 65% 페이백</p>
-          <p>지정가 0.007%, 시장가 0.021%</p>
-          <button>페이백 시작하기</button>
+      </div>
+    </section>
+
+    <section class="full-exchange-table-section">
+      <div class="table-tabs swiper">
+          <div class="swiper-wrapper">
+              <div class="swiper-slide active" data-sort="all">전체</div>
+              <div class="swiper-slide" data-sort="recommended">추천</div>
+              <div class="swiper-slide" data-sort="event">대회/이벤트 진행중</div>
+              <div class="swiper-slide" data-sort="payback">페이백 많은</div>
+              <div class="swiper-slide" data-sort="maker">지정가 순</div>
+              <div class="swiper-slide" data-sort="taker">시장가 순</div>
+          </div>
+      </div>
+      <div class="exchange-table-wrapper large-table">
+        <div class="table-background">
+          <img src="https://i.imgur.com/JjJgT20.png" alt="Felicity Logo Background">
         </div>
-        <div class="exchange-card hot">
-          <div class="hot-label">HOT</div>
-          <img src="https://placehold.co/100x40?text=DEEPCOIN" alt="DEEPCOIN 로고"/>
-          <h3>DEEPCOIN</h3>
-          <h2>Coming soon</h2>
-          <p>수수료 65% 페이백</p>
-          <p>지정가 0.007%, 시장가 0.021%</p>
-          <button>페이백 시작하기</button>
-        </div>
-        <div class="exchange-card hot">
-          <div class="hot-label">HOT</div>
-          <img src="https://placehold.co/100x40?text=TAPBIT" alt="TAPBIT 로고"/>
-          <h3>TAPBIT</h3>
-          <h2>Coming soon</h2>
-          <p>수수료 60% 페이백</p>
-          <p>지정가 0.008%, 시장가 0.024%</p>
-          <button>페이백 시작하기</button>
-        </div>
-        <div class="exchange-card">
-          <img src="https://placehold.co/100x40?text=BitMart" alt="BitMart 로고"/>
-          <h3>BitMart</h3>
-          <h2>Coming soon</h2>
-          <p>수수료 50% 페이백</p>
-          <p>지정가 0.015%, 시장가 0.025%</p>
-          <button>페이백 시작하기</button>
-        </div>
-        <div class="exchange-card">
-          <img src="https://placehold.co/100x40?text=BloFin" alt="BloFin 로고"/>
-          <h3>BYBIT</h3>
-          <h2>Coming soon</h2>
-          <p>수수료 55% 페이백</p>
-          <p>지정가 0.012%, 시장가 0.022%</p>
-          <button>페이백 시작하기</button>
-        </div>
-        <div class="exchange-card">
-          <img src="https://placehold.co/100x40?text=BYBIT" alt="BYBIT 로고"/>
-          <h3>BINANCE</h3>
-          <h2>Coming soon</h2>
-          <p>수수료 50% 페이백</p>
-          <p>지정가 0.015%, 시장가 0.025%</p>
-          <button>페이백 시작하기</button>
-        </div>
+          <table>
+              <thead>
+                  <tr>
+                      <th>거래소</th>
+                      <th>점수 <i class="fas fa-info-circle"></i></th>
+                      <th>페이백률%</th>
+                      <th>거래 할인률%</th>
+                      <th>지정가</th>
+                      <th>시장가</th>
+                      <th>1인 평균 환급금</th>
+                      <th>태그</th>
+                      <th></th>
+                  </tr>
+              </thead>
+              <tbody>
+                  <tr>
+                      <td><div class="exchange-info"><img src="https://prod-tethermax.s3.ap-northeast-2.amazonaws.com/exchange/icon/bybit.png" class="exchange-logo"><span>Bybit</span></div></td>
+                      <td>9.9</td>
+                      <td class="red-highlight">45%</td>
+                      <td class="red-highlight">20%</td>
+                      <td>0.011%</td>
+                      <td>0.0242%</td>
+                      <td>71만원</td>
+                      <td>
+                          <div class="tag-cell">
+                              <span class="tag v2">최상위 거래소 <img src="https://prod-tethermax.s3.ap-northeast-2.amazonaws.com/exchange/detail/0a46249c-e724-4d04-9eba-deddf2babfdf.png" alt="tag icon"></span>
+                              <span class="tag v2 boost">부스트 혜택 <i class="fas fa-fire"></i></span>
+                          </div>
+                      </td>
+                      <td><button class="signup-button filled">계정 개설</button></td>
+                  </tr>
+                  <tr>
+                      <td><div class="exchange-info"><img src="https://prod-tethermax.s3.ap-northeast-2.amazonaws.com/exchange/logo/bitget.png" class="exchange-logo"><span>Bitget</span></div></td>
+                      <td>9.7</td>
+                      <td class="red-highlight">70%</td>
+                      <td class="red-highlight">50%</td>
+                      <td>0.006%</td>
+                      <td>0.012%</td>
+                      <td>157만원</td>
+                      <td>
+                          <div class="tag-cell">
+                              <span class="tag v2">최상위 거래소 <img src="https://prod-tethermax.s3.ap-northeast-2.amazonaws.com/exchange/detail/40c1b454-9fda-427e-bf88-02bc9092c8f1.png" alt="tag icon"></span>
+                              <span class="tag v2 boost">부스트 혜택 <i class="fas fa-fire"></i></span>
+                          </div>
+                      </td>
+                      <td><button class="signup-button">계정 개설</button></td>
+                  </tr>
+                  <tr>
+                      <td><div class="exchange-info"><img src="https://prod-tethermax.s3.ap-northeast-2.amazonaws.com/exchange/detail/c340b25d-db6a-42bb-bb4b-bf72a90837b4.png" class="exchange-logo"><span>BloFin</span></div></td>
+                      <td>9.4</td>
+                      <td>70%</td>
+                      <td>0%</td>
+                      <td>0.006%</td>
+                      <td>0.018%</td>
+                      <td>89만원</td>
+                      <td>
+                          <div class="tag-cell">
+                              <span class="tag v2">추천거래소 <img src="https://prod-tethermax.s3.ap-northeast-2.amazonaws.com/exchange/detail/db9d9410-b883-4e66-9955-bb35ab1eabed.png" alt="tag icon"></span>
+                          </div>
+                      </td>
+                      <td><button class="signup-button">계정 개설</button></td>
+                  </tr>
+                  <tr>
+                      <td><div class="exchange-info"><img src="https://prod-tethermax.s3.ap-northeast-2.amazonaws.com/exchange/detail/a53d0158-e7b7-43c5-b22a-60bc097ae730.png" class="exchange-logo"><span>BitMEX</span></div></td>
+                      <td>9.1</td>
+                      <td>70%</td>
+                      <td>0%</td>
+                      <td>0.015%</td>
+                      <td>0.015%</td>
+                      <td>4만원</td>
+                      <td>
+                          <div class="tag-cell">
+                              <span class="tag v2">100% 환급 <img src="https://prod-tethermax.s3.ap-northeast-2.amazonaws.com/exchange/detail/b5b9c19c-eaf3-4835-a448-8516002a44b4.png" alt="tag icon"></span>
+                          </div>
+                      </td>
+                      <td><button class="signup-button">계정 개설</button></td>
+                  </tr>
+                  <tr>
+                      <td><div class="exchange-info"><img src="https://prod-tethermax.s3.ap-northeast-2.amazonaws.com/exchange/detail/8cde443f-fc48-4dfb-ae03-5e2fd09c9adb.png" class="exchange-logo"><span>Bitunix</span></div></td>
+                      <td>9.1</td>
+                      <td class="red-highlight">85%</td>
+                      <td>0%</td>
+                      <td>0.003%</td>
+                      <td>0.009%</td>
+                      <td>45만원</td>
+                      <td>
+                          <div class="tag-cell">
+                               <span class="tag v2">최대 페이백 <img src="https://prod-tethermax.s3.ap-northeast-2.amazonaws.com/exchange/detail/ec54c591-5a58-483e-af30-e86c44732f25.png" alt="tag icon"></span>
+                          </div>
+                      </td>
+                      <td><button class="signup-button">계정 개설</button></td>
+                  </tr>
+                  <tr>
+                      <td><div class="exchange-info"><img src="https://prod-tethermax.s3.ap-northeast-2.amazonaws.com/exchange/detail/fb401999-b8d8-4bbf-a5f7-b739f5c9e10d.png" class="exchange-logo"><span>MEXC</span></div></td>
+                      <td>9.1</td>
+                      <td>50%</td>
+                      <td>0%</td>
+                      <td>0%</td>
+                      <td>0.01%</td>
+                      <td>84만원</td>
+                      <td>
+                          <div class="tag-cell">
+                              <span class="tag v2">인기 거래소 <img src="https://prod-tethermax.s3.ap-northeast-2.amazonaws.com/exchange/detail/6e9dcefa-4223-498f-a69a-66bd9a29b0a5.png" alt="tag icon"></span>
+                          </div>
+                      </td>
+                      <td><button class="signup-button">계정 개설</button></td>
+                  </tr>
+                  <tr>
+                      <td><div class="exchange-info"><img src="https://prod-tethermax.s3.ap-northeast-2.amazonaws.com/exchange/icon/okx.png" class="exchange-logo"><span>OKX</span></div></td>
+                      <td>9.5</td>
+                      <td>54%</td>
+                      <td>0%</td>
+                      <td>0.0092%</td>
+                      <td>0.023%</td>
+                      <td>90만원</td>
+                      <td>
+                          <div class="tag-cell">
+                              <span class="tag v2">최상위 거래량 <img src="https://prod-tethermax.s3.ap-northeast-2.amazonaws.com/exchange/detail/04679565-41ab-4c28-b116-1023d6462c87.png" alt="tag icon"></span>
+                          </div>
+                      </td>
+                      <td><button class="signup-button">계정 개설</button></td>
+                  </tr>
+                  <tr>
+                     <td><div class="exchange-info"><img src="https://prod-tethermax.s3.ap-northeast-2.amazonaws.com/exchange/detail/8afec6d4-1c4d-4228-b9a7-0c8679175cb2.png" class="exchange-logo"><span>BVOX</span></div></td>
+                     <td>9.1</td>
+                     <td class="red-highlight">60%</td>
+                     <td class="red-highlight">50%</td>
+                     <td>0.008%</td>
+                     <td>0.016%</td>
+                     <td>12만원</td>
+                     <td><div class="tag-cell"><span class="tag v2">200배 <img src="https://prod-tethermax.s3.ap-northeast-2.amazonaws.com/exchange/detail/26edd69d-eb37-46ec-8276-9f2e5a500aa2.png" alt="tag icon"></span></div></td>
+                     <td><button class="signup-button">계정 개설</button></td>
+                  </tr>
+                  <tr>
+                      <td><div class="exchange-info"><img src="https://prod-tethermax.s3.ap-northeast-2.amazonaws.com/exchange/detail/69f51d45-f5a4-4134-89e5-d0a4294477fd.png" class="exchange-logo"><span>Gate</span></div></td>
+                      <td>9.2</td>
+                      <td class="red-highlight">80%</td>
+                      <td>0%</td>
+                      <td>0.004%</td>
+                      <td>0.01%</td>
+                      <td>100만원</td>
+                      <td><div class="tag-cell"><span class="tag v2">추천 거래소 <img src="https://prod-tethermax.s3.ap-northeast-2.amazonaws.com/exchange/detail/b89a9b3e-1ce4-4bd6-ab3b-45a35495a0a4.png" alt="tag icon"></span></div></td>
+                      <td><button class="signup-button">계정 개설</button></td>
+                  </tr>
+                   <tr>
+                      <td><div class="exchange-info"><img src="https://prod-tethermax.s3.ap-northeast-2.amazonaws.com/exchange/icon/bingx.png" class="exchange-logo"><span>BingX</span></div></td>
+                      <td>9.3</td>
+                      <td>60%</td>
+                      <td>0%</td>
+                      <td>0.008%</td>
+                      <td>0.02%</td>
+                      <td>20만원</td>
+                      <td><div class="tag-cell"><span class="tag v2">추천 거래소 <img src="https://prod-tethermax.s3.ap-northeast-2.amazonaws.com/exchange/detail/5b533ca7-beba-4a38-ba22-91fc16431f29.png" alt="tag icon"></span></div></td>
+                      <td><button class="signup-button">계정 개설</button></td>
+                  </tr>
+              </tbody>
+          </table>
       </div>
     </section>
   </main>
-  <div id="consult-modal" class="modal">
+
+  <footer class="footer">
+    <div class="footer-wrapper">
+        <section class="footer-container">
+            <h4 class="footer-text">FELICITY PTE. LTD</h4>
+            <ul class="info-list">
+                <li><p>고유 법인 번호(UEN) : <span class="value">202326628N</span></p></li>
+                <li><p>소재지 : <span class="value">38 BEACH ROAD #17-12 SOUTH BEACH TOWER SINGAPORE (189767)</span></p></li>
+                <li><p>고객센터 : <span class="value">채팅 상담 (00:00 - 24:00)</span></p></li>
+                <li><p>이메일 : <span class="value">support@felicity.io</span></p></li>
+                <li><p>copyright 2022 | Felicity | All Right Reserved.</p></li>
+                <li><button>이용 약관</button><span>|</span><button>개인정보처리방침</button></li>
+            </ul>
+            <ul class="sns-list">
+                <li><a href="#"><i class="fab fa-instagram"></i></a></li>
+                <li><a href="#"><i class="fab fa-blogger-b"></i></a></li>
+                <li><a href="#"><i class="fab fa-youtube"></i></a></li>
+                <li><a href="#"><i class="fab fa-twitter"></i></a></li>
+                <li><a href="#"><i class="fab fa-telegram-plane"></i></a></li>
+            </ul>
+        </section>
+    </div>
+  </footer>
+
+  <div id="consult-modal" class="modal" style="display: none;">
     <div class="modal-content">
       <span class="close" onclick="closeConsultModal()">&times;</span>
       <h2>상담 신청</h2>
@@ -128,6 +338,121 @@
       <button>상담 신청</button>
     </div>
   </div>
-  <script src="script.js"></script>
+
+  <script src="https://unpkg.com/swiper/swiper-bundle.min.js"></script>
+  <script>
+    const themeToggle = document.getElementById('theme-toggle');
+    const body = document.body;
+    const icon = themeToggle.querySelector('i');
+
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme) {
+      body.classList.add(savedTheme);
+      if (savedTheme === 'dark-mode') {
+        icon.classList.remove('fa-moon');
+        icon.classList.add('fa-sun');
+      }
+    } else {
+        body.classList.remove('dark-mode');
+        icon.classList.remove('fa-sun');
+        icon.classList.add('fa-moon');
+    }
+
+    themeToggle.addEventListener('click', () => {
+      body.classList.toggle('dark-mode');
+      if (body.classList.contains('dark-mode')) {
+        icon.classList.remove('fa-moon');
+        icon.classList.add('fa-sun');
+        localStorage.setItem('theme', 'dark-mode');
+      } else {
+        icon.classList.remove('fa-sun');
+        icon.classList.add('fa-moon');
+        localStorage.removeItem('theme');
+      }
+    });
+
+    function openConsultModal() {
+      document.getElementById('consult-modal').style.display = 'flex';
+    }
+    function closeConsultModal() {
+      document.getElementById('consult-modal').style.display = 'none';
+    }
+
+    const tabsSwiper = new Swiper('.table-tabs', {
+        slidesPerView: 'auto',
+        spaceBetween: 24,
+        freeMode: true,
+    });
+
+    const tabsContainer = document.querySelector('.table-tabs .swiper-wrapper');
+    const tableBody = document.querySelector('.exchange-table-wrapper tbody');
+    if (tableBody) {
+        const originalRows = Array.from(tableBody.querySelectorAll('tr'));
+
+        function parseValue(text) {
+            if (!text) return -Infinity;
+            const parsed = parseFloat(text.replace(/[^0-9.-]+/g, ''));
+            return isNaN(parsed) ? 0 : parsed;
+        }
+
+        tabsContainer.addEventListener('click', (e) => {
+            const tab = e.target.closest('.swiper-slide');
+            if (!tab) return;
+
+            tabsContainer.querySelectorAll('.swiper-slide').forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+
+            const sortBy = tab.dataset.sort;
+            let rowsToShow = [...originalRows];
+            
+            rowsToShow.forEach(row => {
+                row.style.display = '';
+                tableBody.appendChild(row); // Restore original order before sort/filter
+            });
+
+            if (sortBy === 'recommended') {
+                rowsToShow.forEach(row => {
+                    if (!row.querySelector('.tag-cell').textContent.includes('추천')) {
+                        row.style.display = 'none';
+                    }
+                });
+                return;
+            }
+            
+            if (sortBy === 'event') {
+                rowsToShow.forEach(row => {
+                    if (!row.querySelector('.tag.boost')) {
+                        row.style.display = 'none';
+                    }
+                });
+                return;
+            }
+
+            let sortedRows;
+            switch (sortBy) {
+                case 'payback':
+                    sortedRows = rowsToShow.sort((a, b) => parseValue(b.children[2].textContent) - parseValue(a.children[2].textContent));
+                    break;
+                case 'maker':
+                    sortedRows = rowsToShow.sort((a, b) => parseValue(a.children[4].textContent) - parseValue(b.children[4].textContent));
+                    break;
+                case 'taker':
+                    sortedRows = rowsToShow.sort((a, b) => parseValue(a.children[5].textContent) - parseValue(b.children[5].textContent));
+                    break;
+                case 'all':
+                default:
+                    sortedRows = originalRows;
+                    break;
+            }
+
+            tableBody.innerHTML = '';
+            sortedRows.forEach(row => {
+                if(row.style.display !== 'none') {
+                   tableBody.appendChild(row)
+                }
+            });
+        });
+    }
+  </script>
 </body>
-</html> 
+</html>
