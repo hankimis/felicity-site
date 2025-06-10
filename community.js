@@ -1,12 +1,42 @@
 window.onload = function() {
 
-    // --- Anonymous User ID ---
-    let anonymousId = sessionStorage.getItem('anonymousCommunityId');
-    if (!anonymousId) {
-        anonymousId = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-        sessionStorage.setItem('anonymousCommunityId', anonymousId);
+    // --- Firebase & Anonymous User Setup ---
+    
+    const firebaseConfig = {
+        apiKey: "AIzaSyCbvgcol3P4wTUNh88-d9HPZl-2NC9WbqI",
+        authDomain: "livechattest-35101.firebaseapp.com",
+        databaseURL: "https://livechattest-35101-default-rtdb.asia-southeast1.firebasedatabase.app/",
+        projectId: "livechattest-35101",
+        storageBucket: "livechattest-35101.appspot.com",
+        messagingSenderId: "880700591040",
+        appId: "1:880700591040:web:a93e47bf19a9713a245625",
+        measurementId: "G-ER1H2CCZW9"
+    };
+
+    // Initialize Firebase
+    if (firebase.apps.length === 0) {
+        firebase.initializeApp(firebaseConfig);
     }
-    const anonymousUsername = `익명 ${anonymousId}`;
+    const auth = firebase.auth();
+    const db = firebase.database();
+    const messagesRef = db.ref('community-chat');
+
+    let currentUser = null;
+    let anonymousUsername = '';
+
+    auth.onAuthStateChanged((user) => {
+        if (user) {
+            currentUser = user;
+            // Generate a username based on the unique UID
+            const uidLastPart = user.uid.substring(user.uid.length - 3);
+            anonymousUsername = `익명 ${uidLastPart}`;
+        } else {
+            // Sign in anonymously if no user
+            auth.signInAnonymously().catch((error) => {
+                console.error("Anonymous sign-in failed:", error);
+            });
+        }
+    });
 
     // --- Lightweight Charts Implementation ---
     const chartContainer = document.getElementById('chart-container');
@@ -102,7 +132,7 @@ window.onload = function() {
         }).observe(chartContainer);
     }
 
-    // --- Local Chat Implementation ---
+    // --- Realtime Chat Implementation ---
     const chatForm = document.getElementById('chat-form');
     const messageInput = document.getElementById('message-input');
     const chatMessages = document.getElementById('chat-messages');
@@ -111,23 +141,40 @@ window.onload = function() {
         chatForm.addEventListener('submit', (e) => {
             e.preventDefault();
             const messageText = messageInput.value.trim();
-            if (messageText) {
-                appendMessage(messageText, anonymousUsername);
+            if (messageText && currentUser) {
+                const newMessageRef = messagesRef.push();
+                newMessageRef.set({
+                    uid: currentUser.uid,
+                    name: anonymousUsername,
+                    text: messageText,
+                    timestamp: firebase.database.ServerValue.TIMESTAMP
+                });
                 messageInput.value = '';
             }
         });
     }
 
-    function appendMessage(text, sender) {
+    function appendMessage(message) {
         const messageElement = document.createElement('div');
-        messageElement.classList.add('message', 'sent');
+        messageElement.classList.add('message');
+        
+        if (currentUser && message.uid === currentUser.uid) {
+            messageElement.classList.add('sent');
+        } else {
+            messageElement.classList.add('received');
+        }
         
         messageElement.innerHTML = `
-            <div class="message-sender">${sender}</div>
-            <div class="message-text">${text}</div>
+            <div class="message-sender">${message.name}</div>
+            <div class="message-text">${message.text}</div>
         `;
 
         chatMessages.appendChild(messageElement);
         chatMessages.scrollTop = chatMessages.scrollHeight;
     }
+
+    // Listen for new messages
+    messagesRef.limitToLast(100).on('child_added', (snapshot) => {
+        appendMessage(snapshot.val());
+    });
 }; 
