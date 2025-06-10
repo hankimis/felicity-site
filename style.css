@@ -73,38 +73,71 @@ button {
 
 /* Navbar */
 .navbar {
-  background: var(--bg-color);
-  backdrop-filter: blur(10px);
-  border-bottom: 1px solid var(--border-color);
-  padding: 18px 5%;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  position: sticky; top: 0; z-index: 1000;
-  transition: background-color 0.3s, border-color 0.3s;
+  padding: 12px 24px;
+  background-color: var(--card-bg);
+  border-bottom: 1px solid var(--border-color);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  height: 65px;
 }
 
-.logo {
+.navbar .logo {
+  font-size: 1.8rem;
+  font-weight: 900;
   color: var(--primary-color);
-  font-weight: 700;
-  font-size: 1.5em;
-  letter-spacing: -1px;
+  text-decoration: none;
+}
+
+.navbar nav {
+  margin-left: 24px;
 }
 
 .navbar nav ul {
-  display: flex;
   list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
   gap: 28px;
 }
 
-.navbar nav ul li a {
+.navbar nav a {
   color: var(--text-color);
+  text-decoration: none;
+  font-size: 1.05rem;
   font-weight: 600;
-  font-size: 1em;
+  padding: 8px 0;
+  position: relative;
+  transition: color 0.2s;
 }
 
-.navbar nav ul li a:hover {
+.navbar nav a:after {
+  content: '';
+  position: absolute;
+  width: 0;
+  height: 2px;
+  bottom: -2px;
+  left: 50%;
+  background-color: var(--primary-color);
+  transition: all 0.3s ease-out;
+}
+
+.navbar nav a:hover {
   color: var(--primary-color);
+}
+
+.navbar nav a:hover:after {
+  width: 100%;
+  left: 0;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
 }
 
 .auth-buttons {
@@ -113,35 +146,70 @@ button {
   gap: 12px;
 }
 
-.auth-buttons .login {
-  color: var(--text-color);
-  padding: 8px 20px;
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
+.auth-buttons a {
+  text-decoration: none;
+  padding: 8px 16px;
+  border-radius: 8px;
   font-weight: 600;
+  transition: all 0.2s;
+}
+
+.auth-buttons .login {
+  color: var(--primary-color);
+}
+.auth-buttons .login:hover {
+  background-color: var(--bg-secondary-color);
 }
 
 .auth-buttons .signup {
-  background: var(--primary-color);
+  background-color: var(--primary-color);
   color: #fff;
-  padding: 8px 20px;
-  border-radius: 6px;
-  font-weight: 600;
-  border: 1px solid transparent;
+}
+.auth-buttons .signup:hover {
+  background-color: #2563eb;
 }
 
-.auth-buttons .signup:hover {
-  background: #2563eb;
+#user-profile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--text-color);
+  background-color: var(--bg-secondary-color);
+  padding: 6px 12px;
+  border-radius: 8px;
+}
+
+#user-profile #user-level {
+  font-weight: 700;
+}
+
+#user-profile #user-display-name {
+  font-weight: 600;
 }
 
 .icon-button {
+  background: none;
+  border: none;
   color: var(--text-color-secondary);
-  font-size: 1.1em;
-  margin-left: 8px;
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s, color 0.2s;
 }
 
-body.dark-mode .navbar nav ul li a {
-  color: var(--text-color-secondary);
+.icon-button:hover {
+  background-color: var(--bg-secondary-color);
+  color: var(--text-color);
+}
+
+body.dark-mode .navbar nav a:hover:after {
+  background-color: var(--primary-color);
 }
 
 /* Main Banner */
@@ -2360,4 +2428,73 @@ body.dark-mode .payback-card-amount {
   .affiliate-grid-container {
       grid-template-columns: 1fr;
   }
+}
+
+/* --- Community Chat Additions --- */
+.message-item {
+    /* display: flex; align-items: flex-start; gap: 12px; */ /* Removed for hiding profile pic */
+    margin-bottom: 16px;
+    max-width: 85%;
+}
+
+.profile-pic {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-top: 2px;
+    border: 1px solid var(--border-color);
+}
+
+.message-content {
+    display: flex;
+    flex-direction: column;
+}
+
+.message-sender {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+    font-size: 0.9rem;
+}
+
+.message-sender .level-badge {
+    color: var(--primary-color);
+    font-weight: 700;
+}
+
+.message-sender .admin-badge {
+    color: #ef5350; /* Red for admin */
+    font-weight: 700;
+}
+
+.message-sender strong {
+    color: var(--text-color);
+    font-weight: 600;
+}
+
+.message-text {
+    background-color: var(--bg-secondary-color);
+    padding: 10px 14px;
+    border-radius: 12px;
+    color: var(--text-color-secondary);
+    line-height: 1.5;
+    word-wrap: break-word;
+    margin: 0;
+}
+
+/* My Messages */
+.message-item.my-message {
+    margin-left: auto;
+    /* flex-direction: row-reverse; */ /* Removed for hiding profile pic */
+}
+
+.message-item.my-message .message-text {
+    background-color: var(--primary-color);
+    color: #fff;
+}
+
+.message-item.my-message .message-content {
+    align-items: flex-end;
 }

@@ -1,397 +1,232 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore, collection, query, orderBy, limit, onSnapshot, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { 
+    getFirestore, 
+    collection, 
+    addDoc, 
+    serverTimestamp, 
+    query, 
+    orderBy, 
+    onSnapshot,
+    getDoc,
+    doc 
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { firebaseConfig } from './firebase-config.js';
+import { triggerConfetti } from './effects.js';
 
-// Wait for the DOM to be fully loaded before running any script
-document.addEventListener('DOMContentLoaded', () => {
-    console.log('Community.js loaded and DOM ready');
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
 
-    // --- Firebase & Anonymous User Setup ---
-    const firebaseConfig = {
-        apiKey: "AIzaSyCbvgcol3P4wTUNh88-d9HPZl-2NC9WbqI",
-        authDomain: "livechattest-35101.firebaseapp.com",
-        projectId: "livechattest-35101",
-        storageBucket: "livechattest-35101.firebasestorage.app",
-        messagingSenderId: "880700591040",
-        appId: "1:880700591040:web:a93e47bf19a9713a245625",
-        measurementId: "G-ER1H2CCZW9"
-    };
+// --- DOM Elements ---
+const messageForm = document.getElementById('chat-form');
+const messageInput = document.getElementById('message-input');
+const messagesContainer = document.getElementById('chat-messages');
+const chatOverlay = document.getElementById('chat-overlay');
+const chartContainer = document.getElementById('chart-container');
 
-    let app, auth, db, messagesCol, currentUser = null;
+let currentUser = null;
+let messagesUnsubscribe = null;
+let binanceSocket = null;
 
-    try {
-        app = initializeApp(firebaseConfig);
-        auth = getAuth(app);
-        db = getFirestore(app);
-        messagesCol = collection(db, 'community-chat');
-        console.log('Firebase initialized successfully');
-    } catch (error) {
-        console.error('Firebase initialization failed:', error);
-        return;
+// --- Authentication Handler ---
+onAuthStateChanged(auth, async (user) => {
+    if (messagesUnsubscribe) {
+        messagesUnsubscribe();
+        messagesUnsubscribe = null;
     }
+    
+    if (user) {
+        const userDocRef = doc(db, 'users', user.uid);
+        const userDoc = await getDoc(userDocRef);
 
-    // --- Elements ---
-    const chatForm = document.getElementById('chat-form');
-    const messageInput = document.getElementById('message-input');
-    const chatMessages = document.getElementById('chat-messages');
-
-    // Check if essential elements exist
-    if (!chatForm) {
-        console.error('Chat form element not found');
-        return;
-    }
-    if (!messageInput) {
-        console.error('Message input element not found');
-        return;
-    }
-    if (!chatMessages) {
-        console.error('Chat messages container not found');
-        return;
-    }
-
-    console.log('All chat elements found successfully');
-
-    // --- Chat Functions ---
-    function appendMessage(message, fireEffect = false) {
-        if (!chatMessages || !message) {
-            console.error('appendMessage: chatMessages 또는 message가 없음', { chatMessages, message });
-            return;
-        }
-
-        console.log('Appending message:', message);
-
-        const messageElement = document.createElement('div');
-        messageElement.classList.add('message');
-
-        if (currentUser && message.uid === currentUser.uid) {
-            messageElement.classList.add('sent');
-        } else {
-            messageElement.classList.add('received');
-        }
-
-        const sanitizedText = message.text ? message.text.replace(/</g, '&lt;').replace(/>/g, '&gt;') : '';
-        const sanitizedName = message.name ? message.name.replace(/</g, '&lt;').replace(/>/g, '&gt;') : '익명';
-
-        messageElement.innerHTML = `
-            <div class="message-sender">${sanitizedName}</div>
-            <div class="message-text">${sanitizedText}</div>
-        `;
+        currentUser = userDoc.exists() 
+            ? { uid: user.uid, ...userDoc.data() }
+            : { uid: user.uid, displayName: user.displayName || 'Anonymous', level: 1, role: 'user' };
         
-        messageElement.style.display = 'flex';
-        messageElement.style.flexDirection = 'column';
-        messageElement.style.marginBottom = '16px';
-        messageElement.style.maxWidth = '70%';
-        messageElement.style.visibility = 'visible';
-        messageElement.style.opacity = '1';
-
-        if (currentUser && message.uid === currentUser.uid) {
-            messageElement.style.alignSelf = 'flex-end';
-            const textDiv = messageElement.querySelector('.message-text');
-            if (textDiv) {
-                textDiv.style.backgroundColor = '#3b82f6';
-                textDiv.style.color = 'white';
-                textDiv.style.padding = '10px 14px';
-                textDiv.style.borderRadius = '14px';
-                textDiv.style.borderTopRightRadius = '4px';
-            }
-            const senderDiv = messageElement.querySelector('.message-sender');
-            if (senderDiv) {
-                senderDiv.style.textAlign = 'right';
-                senderDiv.style.fontSize = '0.85em';
-                senderDiv.style.marginBottom = '6px';
-                senderDiv.style.color = '#6b7280';
-            }
-        } else {
-            messageElement.style.alignSelf = 'flex-start';
-            const textDiv = messageElement.querySelector('.message-text');
-            if (textDiv) {
-                textDiv.style.backgroundColor = '#f3f4f6';
-                textDiv.style.color = '#1f2937';
-                textDiv.style.padding = '10px 14px';
-                textDiv.style.borderRadius = '14px';
-                textDiv.style.borderTopLeftRadius = '4px';
-            }
-            const senderDiv = messageElement.querySelector('.message-sender');
-            if (senderDiv) {
-                senderDiv.style.fontSize = '0.85em';
-                senderDiv.style.marginBottom = '6px';
-                senderDiv.style.color = '#6b7280';
-            }
-        }
-
-        chatMessages.appendChild(messageElement);
-        console.log('Message element added to DOM. Total messages in container:', chatMessages.children.length);
-
-        if (fireEffect && message.effect === 'confetti' && typeof confetti === 'function') {
-            setTimeout(() => triggerDopamineBlast(messageElement), 50);
-        }
-
-        chatMessages.scrollTop = chatMessages.scrollHeight;
-    }
-
-    function triggerDopamineBlast(element) {
-        if (!element || typeof confetti !== 'function') return;
-
-        const rect = element.getBoundingClientRect();
-        // 화면에 보이지 않는 요소에 대해서는 효과를 실행하지 않음
-        if (rect.top > window.innerHeight || rect.bottom < 0) return;
-
-        const origin = {
-            x: (rect.left + rect.right) / 2 / window.innerWidth,
-            y: (rect.top + rect.bottom) / 2 / window.innerHeight
-        };
-
-        function fire(particleRatio, opts) {
-            confetti(Object.assign({}, {
-                origin: origin,
-                particleCount: Math.floor(200 * particleRatio),
-                spread: 90,
-                gravity: 0.7,
-                scalar: 1.1,
-                ticks: 150,
-                colors: ['#26a69a', '#ef5350', '#ffc107', '#ffffff', '#2196f3']
-            }, opts));
-        }
-
-        // 여러 겹의 화려한 폭발 효과
-        fire(0.25, { spread: 30, startVelocity: 60 });
-        fire(0.2, { spread: 60, startVelocity: 45 });
-        fire(0.35, { spread: 120, decay: 0.91, scalar: 0.8 });
-        fire(0.1, { spread: 130, startVelocity: 30, decay: 0.92, scalar: 1.2 });
-        fire(0.1, { spread: 150, startVelocity: 50 });
-    }
-
-    function setupChat(user) {
-        console.log('Setting up chat for user:', user.uid);
-        currentUser = user;
-        const uidLastPart = user.uid.substring(user.uid.length - 3);
-        const anonymousUsername = `익명 ${uidLastPart}`;
-
-        if (!chatMessages) {
-            console.error('setupChat: chatMessages 요소를 찾을 수 없습니다');
-            return;
+        if (!currentUser.photoURL) {
+            currentUser.photoURL = `https://ui-avatars.com/api/?name=${encodeURIComponent(currentUser.displayName)}&background=random`;
         }
         
-        chatMessages.innerHTML = '<div style="text-align: center; color: var(--text-color-secondary); padding: 20px;">채팅 기록을 불러오는 중...</div>';
+        if(chatOverlay) chatOverlay.style.display = 'none';
+        if(messageForm) messageForm.style.display = 'flex';
+        loadAndDisplayMessages();
+    } else {
+        currentUser = null;
+        if(chatOverlay) chatOverlay.style.display = 'flex';
+        if(messageForm) messageForm.style.display = 'none';
+        if (messagesContainer) messagesContainer.innerHTML = '';
+    }
+});
 
-        const q = query(messagesCol, orderBy('timestamp'));
-        console.log('Setting up Firestore listener...');
-        
-        let isInitialLoad = true;
-        onSnapshot(q, (snapshot) => {
-            if (isInitialLoad) {
-                chatMessages.innerHTML = ''; // 로딩 메시지 제거
-            }
+// --- Chat Functions ---
+function loadAndDisplayMessages() {
+    if (!messagesContainer) return;
 
-            snapshot.docChanges().forEach((change) => {
-                if (change.type === "added") {
-                    const messageData = change.doc.data();
-                    // 실시간으로 받은 새 메시지에만 효과를 발동시킴
-                    appendMessage(messageData, !isInitialLoad);
-                }
-            });
+    const messagesRef = collection(db, "community-chat");
+    const q = query(messagesRef, orderBy("timestamp", "asc"));
+    let isInitialLoad = true;
 
-            isInitialLoad = false;
-
-        }, (error) => {
-            console.error("Firestore real-time listener failed:", error);
-            if (chatMessages) {
-                chatMessages.innerHTML = `
-                    <div style="text-align: center; color: #ef5350; padding: 20px; background-color: var(--bg-secondary-color); border-radius: 8px; margin: 10px;">
-                        <strong>채팅 연결 실패</strong><br>
-                        <small>잠시 후 다시 시도해주세요.</small>
-                    </div>
-                `;
-            }
-            if (error.code === 'failed-precondition') {
-                alert("Firestore 인덱스가 필요합니다. Firebase Console에서 'community-chat' 컬렉션의 'timestamp' 필드에 대한 복합 인덱스를 생성해주세요.");
-            } else if (error.code === 'permission-denied') {
-                alert("데이터베이스 접근 권한이 없습니다. Firestore 보안 규칙을 확인해주세요.");
-            } else {
-                alert("실시간 채팅 연결에 실패했습니다: " + error.message);
+    messagesUnsubscribe = onSnapshot(q, (snapshot) => {
+        snapshot.docChanges().forEach(change => {
+            if (change.type === "added") {
+                displayMessage(change.doc.id, change.doc.data(), !isInitialLoad);
             }
         });
+        
+        isInitialLoad = false;
+        scrollToBottom();
+    });
+}
 
-        if (chatForm) {
-            chatForm.onsubmit = async (e) => {
-                e.preventDefault();
-                const messageText = messageInput.value.trim();
-                
-                if (!messageText) {
-                    console.log('Empty message, not sending');
-                    return;
-                }
-                
-                if (!currentUser) {
-                    console.error('No current user, cannot send message');
-                    alert('사용자 인증이 필요합니다. 페이지를 새로고침해주세요.');
-                    return;
-                }
-                
-                console.log('Sending message:', messageText);
-                
-                try {
-                    const messageData = {
-                        uid: currentUser.uid,
-                        name: anonymousUsername,
-                        text: messageText,
-                        timestamp: serverTimestamp()
-                    };
+function displayMessage(docId, data, isNew) {
+    if (!messagesContainer || document.getElementById(docId)) return;
 
-                    if (messageText === '영차') {
-                        messageData.effect = 'confetti';
-                    }
+    const messageElement = document.createElement('div');
+    messageElement.id = docId;
+    messageElement.classList.add('message-item');
+    if (data.uid === currentUser?.uid) messageElement.classList.add('my-message');
+    
+    const levelBadge = data.role === 'admin'
+        ? `<span class="admin-badge">[Admin]</span>`
+        : `<span class="level-badge">[Lv.${data.level}]</span>`;
 
-                    await addDoc(messagesCol, messageData);
-                    console.log('Message sent successfully');
-                    messageInput.value = '';
-                } catch (error) {
-                    console.error("Error sending message: ", error);
-                    alert('메시지 전송에 실패했습니다: ' + error.message);
-                }
-            };
+    messageElement.innerHTML = `
+        <!-- <img src="${data.photoURL}" alt="${data.displayName}" class="profile-pic"> -->
+        <div class="message-content">
+            <div class="message-sender">
+                ${levelBadge}
+                <strong>${data.displayName}</strong>
+            </div>
+            <p class="message-text">${data.text.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</p>
+        </div>
+    `;
+    messagesContainer.appendChild(messageElement);
+
+    if (isNew && data.effect === 'confetti') triggerConfetti(messageElement);
+}
+
+function scrollToBottom() {
+    if (messagesContainer) messagesContainer.scrollTop = messagesContainer.scrollHeight;
+}
+
+if (messageForm) {
+    messageForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        if (!currentUser) return;
+
+        const messageText = messageInput.value.trim();
+        if (messageText) {
+            try {
+                await addDoc(collection(db, "community-chat"), {
+                    text: messageText,
+                    timestamp: serverTimestamp(),
+                    uid: currentUser.uid,
+                    displayName: currentUser.displayName,
+                    level: currentUser.level,
+                    role: currentUser.role,
+                    photoURL: currentUser.photoURL,
+                    effect: messageText.includes("영차") ? 'confetti' : null
+                });
+                messageInput.value = '';
+                scrollToBottom();
+            } catch (error) {
+                console.error("Error sending message: ", error);
+            }
+        }
+    });
+}
+
+// --- Lightweight Charts ---
+if (chartContainer) {
+    const chart = LightweightCharts.createChart(chartContainer, {
+        layout: {
+            background: { color: 'transparent' },
+            textColor: '#ADB5BD',
+        },
+        grid: {
+            vertLines: { color: 'rgba(255, 255, 255, 0.1)' },
+            horzLines: { color: 'rgba(255, 255, 255, 0.1)' },
+        },
+        timeScale: {
+            timeVisible: true,
+            secondsVisible: false,
+        },
+    });
+
+    const candlestickSeries = chart.addCandlestickSeries({
+        upColor: '#26a69a',
+        downColor: '#ef5350',
+        borderDownColor: '#ef5350',
+        borderUpColor: '#26a69a',
+        wickDownColor: '#ef5350',
+        wickUpColor: '#26a69a',
+    });
+    
+    async function fetchHistoricalData(interval) {
+        try {
+            const response = await fetch(`https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=${interval}&limit=500`);
+            const data = await response.json();
+            const candlestickData = data.map(d => ({
+                time: d[0] / 1000,
+                open: parseFloat(d[1]),
+                high: parseFloat(d[2]),
+                low: parseFloat(d[3]),
+                close: parseFloat(d[4]),
+            }));
+            candlestickSeries.setData(candlestickData);
+        } catch (error) {
+            console.error('Failed to fetch historical chart data:', error);
         }
     }
-
-    // --- Main Auth Logic ---
-    console.log('Setting up auth state listener...');
-    onAuthStateChanged(auth, (user) => {
-        if (user) {
-            console.log('User authenticated:', user.uid);
-            setupChat(user);
-        } else {
-            console.log('No user, signing in anonymously...');
-            signInAnonymously(auth).catch((error) => {
-                console.error("Anonymous sign-in failed:", error);
-                alert('사용자 인증에 실패했습니다: ' + error.message);
+    
+    function setupWebSocket(interval) {
+        if (binanceSocket) {
+            binanceSocket.close();
+        }
+        binanceSocket = new WebSocket(`wss://stream.binance.com:9443/ws/btcusdt@kline_${interval}`);
+        binanceSocket.onmessage = function (event) {
+            const message = JSON.parse(event.data);
+            const kline = message.k;
+            candlestickSeries.update({
+                time: kline.t / 1000,
+                open: parseFloat(kline.o),
+                high: parseFloat(kline.h),
+                low: parseFloat(kline.l),
+                close: parseFloat(kline.c),
             });
+        };
+    }
+
+    const intervalButtons = document.getElementById('chart-intervals');
+    intervalButtons.addEventListener('click', (e) => {
+        if (e.target.matches('.interval-button')) {
+            const newInterval = e.target.dataset.interval;
+            intervalButtons.querySelector('.active').classList.remove('active');
+            e.target.classList.add('active');
+            fetchHistoricalData(newInterval);
+            setupWebSocket(newInterval);
         }
     });
 
-    // --- Lightweight Charts Implementation ---
-    const chartContainer = document.getElementById('chart-container');
+    // Initial Load
+    fetchHistoricalData('1m');
+    setupWebSocket('1m');
 
-    function getChartOptions() {
-        const isDarkMode = document.body.classList.contains('dark-mode');
-        const gridColor = isDarkMode ? 'rgba(255, 255, 255, 0.1)' : '#f1f3f5';
-        const textColor = isDarkMode ? '#f0f0f0' : '#212529';
-        const borderColor = isDarkMode ? 'rgba(255, 255, 255, 0.2)' : '#e0e6ed';
+    const handleResize = () => chart.applyOptions({ width: chartContainer.clientWidth });
+    window.addEventListener('resize', handleResize);
 
-        return {
+    document.body.addEventListener('themeChanged', (e) => {
+        const isDarkMode = e.detail.isDarkMode;
+        chart.applyOptions({
             layout: {
-                backgroundColor: 'transparent',
-                textColor: textColor,
+                textColor: isDarkMode ? '#ADB5BD' : '#333',
             },
             grid: {
-                vertLines: { color: gridColor },
-                horzLines: { color: gridColor },
+                vertLines: { color: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)' },
+                horzLines: { color: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)' },
             },
-            timeScale: {
-                borderColor: borderColor,
-            },
-        };
-    }
-
-    if (chartContainer) {
-        const chart = LightweightCharts.createChart(chartContainer, {
-            width: chartContainer.clientWidth,
-            height: chartContainer.clientHeight,
-            crosshair: {
-                mode: LightweightCharts.CrosshairMode.Normal,
-            },
-            ...getChartOptions(),
         });
-
-        const candleSeries = chart.addCandlestickSeries({
-            upColor: '#26a69a',
-            downColor: '#ef5350',
-            borderDownColor: '#ef5350',
-            borderUpColor: '#26a69a',
-            wickDownColor: '#ef5350',
-            wickUpColor: '#26a69a',
-        });
-
-        let currentInterval = '1m';
-        let socket = null;
-
-        async function loadChartData(interval) {
-            try {
-                const response = await fetch(`https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=${interval}&limit=500`);
-                const data = await response.json();
-                
-                const candleData = data.map(d => ({
-                    time: d[0] / 1000,
-                    open: parseFloat(d[1]),
-                    high: parseFloat(d[2]),
-                    low: parseFloat(d[3]),
-                    close: parseFloat(d[4]),
-                }));
-                
-                candleSeries.setData(candleData);
-                
-            } catch (error) {
-                console.error(`Failed to fetch chart data for interval ${interval}:`, error);
-            }
-        }
-
-        function setupWebSocket(interval) {
-            if (socket && socket.readyState === WebSocket.OPEN) {
-                socket.close();
-            }
-
-            socket = new WebSocket(`wss://stream.binance.com:9443/ws/btcusdt@kline_${interval}`);
-            socket.onmessage = (event) => {
-                const message = JSON.parse(event.data);
-                const kline = message.k;
-                candleSeries.update({
-                    time: kline.t / 1000,
-                    open: parseFloat(kline.o),
-                    high: parseFloat(kline.h),
-                    low: parseFloat(kline.l),
-                    close: parseFloat(kline.c),
-                });
-            };
-        }
-
-        const intervalContainer = document.getElementById('chart-intervals');
-        if(intervalContainer) {
-            intervalContainer.addEventListener('click', (e) => {
-                if (e.target.matches('.interval-button')) {
-                    const newInterval = e.target.dataset.interval;
-                    if (newInterval === currentInterval) return;
-
-                    const currentActive = intervalContainer.querySelector('.active');
-                    if (currentActive) {
-                        currentActive.classList.remove('active');
-                    }
-                    e.target.classList.add('active');
-
-                    currentInterval = newInterval;
-                    loadChartData(currentInterval).then(() => {
-                        setupWebSocket(currentInterval);
-                    });
-                }
-            });
-        }
-
-        // Initial load
-        loadChartData(currentInterval).then(() => {
-            setupWebSocket(currentInterval);
-        });
-        
-        const observer = new MutationObserver((mutations) => {
-            mutations.forEach((mutation) => {
-                if (mutation.attributeName === 'class') {
-                    chart.applyOptions(getChartOptions());
-                }
-            });
-        });
-        observer.observe(document.body, { attributes: true });
-
-        new ResizeObserver(entries => {
-            if (entries.length === 0 || entries[0].target !== chartContainer) { return; }
-            const newRect = entries[0].contentRect;
-            chart.applyOptions({ width: newRect.width, height: newRect.height });
-        }).observe(chartContainer);
-    }
-}); 
+    });
+} 

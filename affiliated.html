@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>ONBit - 제휴 거래소</title>
     <link rel="stylesheet" href="style.css"/>
+    <link rel="stylesheet" href="auth.css"/>
     <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link rel="stylesheet" href="https://unpkg.com/swiper/swiper-bundle.min.css" />
@@ -18,12 +19,22 @@
             <li><a href="community.html">커뮤니티</a></li>
           </ul>
         </nav>
-        <aside class="auth-buttons">
-            <a href="#" class="login">로그인</a>
-            <a href="#" class="signup">회원가입</a>
+        <div class="header-right">
+            <aside class="auth-buttons">
+                <a href="#" class="login">로그인</a>
+                <a href="#" class="signup">회원가입</a>
+            </aside>
+            <div id="user-profile" style="display: none; align-items: center; gap: 12px; color: var(--text-color);">
+                <span id="user-level" style="font-weight: 700; color: var(--primary-color);"></span>
+                <span id="user-display-name"></span>
+                <button id="logout-btn" class="icon-button" aria-label="로그아웃"><i class="fas fa-sign-out-alt"></i></button>
+            </div>
             <button class="icon-button" id="theme-toggle"><i class="fas fa-moon"></i></button>
-            <button class="icon-button"><i class="fas fa-globe"></i></button>
-        </aside>
+            <a href="my-account.html" class="icon-button" aria-label="마이페이지"><i class="fas fa-user-circle"></i></a>
+        </div>
+        <button class="mobile-menu-button" id="mobile-menu-button" aria-label="메뉴 열기">
+            <i class="fas fa-bars"></i>
+        </button>
     </header>
 
     <main class="main-container affiliated-page">
@@ -352,124 +363,58 @@
         </div>
     </footer>
 
+    <!-- Modals -->
+    <div id="login-modal" class="auth-modal">
+        <div class="auth-modal-content">
+            <span class="auth-modal-close">&times;</span>
+            <form id="login-form" class="auth-form">
+                <h2>로그인</h2>
+                <p id="login-error-message" class="error-message"></p>
+                <div class="input-group">
+                    <i class="fas fa-envelope"></i>
+                    <input type="email" name="login-email" placeholder="이메일" required>
+                </div>
+                <div class="input-group">
+                    <i class="fas fa-lock"></i>
+                    <input type="password" name="login-password" placeholder="비밀번호" required>
+                </div>
+                <button type="submit" class="submit-btn">로그인</button>
+                <p class="auth-form-switch">계정이 없으신가요? <a href="#" id="show-signup">회원가입</a></p>
+            </form>
+        </div>
+    </div>
+
+    <div id="signup-modal" class="auth-modal">
+        <div class="auth-modal-content">
+            <span class="auth-modal-close">&times;</span>
+            <form id="signup-form" class="auth-form">
+                <h2>회원가입</h2>
+                <p id="signup-error-message" class="error-message"></p>
+                <div class="input-group">
+                    <i class="fas fa-user"></i>
+                    <input type="text" name="signup-name" placeholder="닉네임" required>
+                </div>
+                <div class="input-group">
+                    <i class="fas fa-envelope"></i>
+                    <input type="email" name="signup-email" placeholder="이메일" required>
+                </div>
+                <div class="input-group">
+                    <i class="fas fa-lock"></i>
+                    <input type="password" name="signup-password" placeholder="비밀번호" required>
+                </div>
+                <div class="input-group">
+                    <i class="fas fa-check-circle"></i>
+                    <input type="password" name="signup-confirm-password" placeholder="비밀번호 확인" required>
+                </div>
+                <button type="submit" class="submit-btn">회원가입</button>
+                <p class="auth-form-switch">이미 계정이 있으신가요? <a href="#" id="show-login">로그인</a></p>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Scripts -->
     <script src="https://unpkg.com/swiper/swiper-bundle.min.js"></script>
-    <script>
-        const themeToggle = document.getElementById('theme-toggle');
-        const body = document.body;
-        const icon = themeToggle.querySelector('i');
-
-        const savedTheme = localStorage.getItem('theme');
-        if (savedTheme) {
-            body.classList.add(savedTheme);
-            if (savedTheme === 'dark-mode') {
-                icon.classList.remove('fa-moon');
-                icon.classList.add('fa-sun');
-            }
-        } else {
-            body.classList.remove('dark-mode');
-            icon.classList.remove('fa-sun');
-            icon.classList.add('fa-moon');
-        }
-
-        themeToggle.addEventListener('click', () => {
-            body.classList.toggle('dark-mode');
-            if (body.classList.contains('dark-mode')) {
-                icon.classList.remove('fa-moon');
-                icon.classList.add('fa-sun');
-                localStorage.setItem('theme', 'dark-mode');
-            } else {
-                icon.classList.remove('fa-sun');
-                icon.classList.add('fa-moon');
-                localStorage.removeItem('theme');
-            }
-        });
-
-        const bannerSwiper = new Swiper('.top-event-banner-swiper .swiper', {
-            loop: true,
-            autoplay: {
-                delay: 5000,
-            },
-            pagination: {
-                el: '.swiper-pagination',
-                clickable: true,
-            },
-        });
-
-        const tabsSwiper = new Swiper('.table-tabs', {
-            slidesPerView: 'auto',
-            spaceBetween: 24,
-            freeMode: true,
-        });
-
-        const tabsContainer = document.querySelector('.table-tabs .swiper-wrapper');
-        const tableBody = document.querySelector('.exchange-table-wrapper tbody');
-        if (tableBody) {
-            const originalRows = Array.from(tableBody.querySelectorAll('tr'));
-
-            function parseValue(text) {
-                if (!text) return -Infinity;
-                const parsed = parseFloat(text.replace(/[^0-9.-]+/g, ''));
-                return isNaN(parsed) ? 0 : parsed;
-            }
-
-            tabsContainer.addEventListener('click', (e) => {
-                const tab = e.target.closest('.swiper-slide');
-                if (!tab) return;
-
-                tabsContainer.querySelectorAll('.swiper-slide').forEach(t => t.classList.remove('active'));
-                tab.classList.add('active');
-
-                const sortBy = tab.dataset.sort;
-                let rowsToShow = [...originalRows];
-                
-                rowsToShow.forEach(row => {
-                    row.style.display = '';
-                    tableBody.appendChild(row); // Restore original order before sort/filter
-                });
-
-                if (sortBy === 'recommended') {
-                    rowsToShow.forEach(row => {
-                        if (!row.querySelector('.tag-cell').textContent.includes('추천')) {
-                            row.style.display = 'none';
-                        }
-                    });
-                    return;
-                }
-                
-                if (sortBy === 'event') {
-                    rowsToShow.forEach(row => {
-                        if (!row.querySelector('.tag.boost')) {
-                            row.style.display = 'none';
-                        }
-                    });
-                    return;
-                }
-
-                let sortedRows;
-                switch (sortBy) {
-                    case 'payback':
-                        sortedRows = rowsToShow.sort((a, b) => parseValue(b.children[2].textContent) - parseValue(a.children[2].textContent));
-                        break;
-                    case 'maker':
-                        sortedRows = rowsToShow.sort((a, b) => parseValue(a.children[4].textContent) - parseValue(b.children[4].textContent));
-                        break;
-                    case 'taker':
-                        sortedRows = rowsToShow.sort((a, b) => parseValue(a.children[5].textContent) - parseValue(b.children[5].textContent));
-                        break;
-                    case 'all':
-                    default:
-                        sortedRows = originalRows;
-                        break;
-                }
-
-                tableBody.innerHTML = '';
-                sortedRows.forEach(row => {
-                    if(row.style.display !== 'none') {
-                       tableBody.appendChild(row)
-                    }
-                });
-            });
-        }
-    </script>
+    <script src="script.js"></script>
+    <script type="module" src="auth.js"></script>
 </body>
 </html> 

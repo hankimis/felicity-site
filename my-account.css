@@ -1,0 +1,132 @@
+/* my-account.css */
+
+.main-container {
+    padding-top: 40px;
+    padding-bottom: 40px;
+    max-width: 900px;
+    margin: auto;
+}
+
+.account-container h1 {
+    font-size: 2.5rem;
+    font-weight: 800;
+    margin-bottom: 30px;
+    color: var(--text-color);
+}
+
+.profile-card {
+    display: flex;
+    gap: 40px;
+    background-color: var(--card-bg);
+    padding: 40px;
+    border-radius: 16px;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 4px 12px var(--shadow-color);
+}
+
+.profile-picture-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    flex-basis: 200px;
+    flex-shrink: 0;
+}
+
+#profile-picture-preview {
+    width: 160px;
+    height: 160px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 4px solid var(--border-color);
+}
+
+.profile-info-section {
+    flex-grow: 1;
+}
+
+.form-group {
+    margin-bottom: 24px;
+}
+
+.form-group label {
+    display: block;
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--text-color);
+}
+
+.form-group input {
+    width: 100%;
+    padding: 12px;
+    font-size: 1rem;
+    border-radius: 8px;
+    background-color: var(--bg-secondary-color);
+    border: 1px solid var(--border-color);
+    color: var(--text-color);
+    transition: all 0.2s ease;
+}
+
+.form-group input:disabled {
+    background-color: var(--bg-color);
+    cursor: not-allowed;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+}
+
+.input-hint {
+    font-size: 0.85rem;
+    color: var(--text-color-secondary);
+    margin-top: 8px;
+}
+
+.primary-btn, .secondary-btn {
+    width: 100%;
+    padding: 12px;
+    font-size: 1rem;
+    font-weight: 600;
+    border-radius: 8px;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s ease;
+}
+
+.primary-btn {
+    background-color: var(--primary-color);
+    color: white;
+}
+.primary-btn:hover {
+    background-color: #2563eb;
+}
+
+.secondary-btn {
+    background-color: var(--bg-secondary-color);
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+}
+.secondary-btn:hover {
+    background-color: var(--border-color);
+}
+
+.upload-status {
+    font-size: 0.9rem;
+    height: 20px;
+    text-align: center;
+}
+.upload-status.success { color: #26a69a; }
+.upload-status.error { color: #ef5350; }
+
+@media (max-width: 768px) {
+    .profile-card {
+        flex-direction: column;
+        padding: 24px;
+    }
+    .account-container h1 {
+        font-size: 2rem;
+    }
+} 
