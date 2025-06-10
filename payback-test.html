@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Felicity - 페이백 테스트</title>
+    <link rel="stylesheet" href="style.css"/>
+    <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+    <header class="navbar">
+        <a href="index.html" class="logo">Felicity</a>
+        <nav>
+            <ul>
+                <li><a href="affiliated.html">제휴 거래소</a></li>
+                <li><a href="#">혜택</a></li>
+                <li><a href="payback-test.html">페이백 테스트</a></li>
+                <li><button>앱 다운로드</button></li>
+                <li><a href="#">서비스 소개</a></li>
+            </ul>
+        </nav>
+        <aside class="auth-buttons">
+            <a href="#" class="login">로그인</a>
+            <a href="#" class="signup">회원가입</a>
+            <button class="icon-button" id="theme-toggle"><i class="fas fa-moon"></i></button>
+            <button class="icon-button"><i class="fas fa-globe"></i></button>
+        </aside>
+    </header>
+
+    <main class="main-container payback-test-page">
+        <div class="payback-test-container">
+            <h1 class="payback-test-title">지금 다른 사람들이<br>돌려받는 수수료는 얼마일까요?</h1>
+            <p class="payback-test-subtitle">간단하게 조회하세요, 40초면 됩니다!</p>
+
+            <div class="payback-result-card">
+                <img src="https://i.imgur.com/uJp1mYe.png" alt="페이백 예상 금액 아이콘" class="payback-card-icon">
+                <div class="payback-amount-box">
+                    <p class="payback-card-label">페이백 예상 금액이 이만큼 쌓였어요</p>
+                    <p class="payback-card-amount">8,932,730원</p>
+                </div>
+            </div>
+
+            <a href="#" class="payback-start-button">나도 거래 수수료 환급받기</a>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="footer-wrapper">
+            <section class="footer-container">
+                <h4 class="footer-text">FELICITY PTE. LTD</h4>
+                <ul class="info-list">
+                    <li><p>고유 법인 번호(UEN) : <span class="value">202326628N</span></p></li>
+                    <li><p>소재지 : <span class="value">38 BEACH ROAD #17-12 SOUTH BEACH TOWER SINGAPORE (189767)</span></p></li>
+                    <li><p>고객센터 : <span class="value">채팅 상담 (00:00 - 24:00)</span></p></li>
+                    <li><p>이메일 : <span class="value">support@felicity.io</span></p></li>
+                    <li><p>copyright 2022 | Felicity | All Right Reserved.</p></li>
+                    <li><button>이용 약관</button><span>|</span><button>개인정보처리방침</button></li>
+                </ul>
+                <ul class="sns-list">
+                    <li><a href="#"><i class="fab fa-instagram"></i></a></li>
+                    <li><a href="#"><i class="fab fa-blogger-b"></i></a></li>
+                    <li><a href="#"><i class="fab fa-youtube"></i></a></li>
+                    <li><a href="#"><i class="fab fa-twitter"></i></a></li>
+                    <li><a href="#"><i class="fab fa-telegram-plane"></i></a></li>
+                </ul>
+            </section>
+        </div>
+    </footer>
+
+    <script>
+        const themeToggle = document.getElementById('theme-toggle');
+        const body = document.body;
+        const icon = themeToggle.querySelector('i');
+
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme) {
+            body.classList.add(savedTheme);
+            if (savedTheme === 'dark-mode') {
+                icon.classList.remove('fa-moon');
+                icon.classList.add('fa-sun');
+            }
+        } else {
+            body.classList.remove('dark-mode');
+            icon.classList.remove('fa-sun');
+            icon.classList.add('fa-moon');
+        }
+
+        themeToggle.addEventListener('click', () => {
+            body.classList.toggle('dark-mode');
+            if (body.classList.contains('dark-mode')) {
+                icon.classList.remove('fa-moon');
+                icon.classList.add('fa-sun');
+                localStorage.setItem('theme', 'dark-mode');
+            } else {
+                icon.classList.remove('fa-sun');
+                icon.classList.add('fa-moon');
+                localStorage.removeItem('theme');
+            }
+        });
+    </script>
+</body>
+</html> 
