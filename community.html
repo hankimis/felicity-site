@@ -187,6 +187,164 @@
         .chat-messages::-webkit-scrollbar-thumb:hover {
             background: var(--text-color-secondary);
         }
+
+        /* Responsive Styles */
+        .mobile-menu-button {
+            display: none;
+            background: none;
+            border: none;
+            color: var(--text-color);
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        .mobile-menu {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100dvh;
+            background-color: var(--bg-color, #fff);
+            z-index: 1000;
+            transform: translateX(100%);
+            transition: transform 0.3s ease-in-out;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            color: var(--text-color);
+        }
+
+        .mobile-menu.is-open {
+            transform: translateX(0);
+        }
+
+        body.mobile-menu-open {
+            overflow: hidden;
+        }
+
+        .mobile-menu-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+        
+        .mobile-menu-header .logo {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+
+        .mobile-menu-close {
+            background: none;
+            border: none;
+            color: var(--text-color);
+            font-size: 2.5rem;
+            cursor: pointer;
+            line-height: 1;
+        }
+
+        .mobile-menu-content {
+            flex-grow: 1;
+        }
+
+        .mobile-menu-auth {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+
+        .mobile-menu-auth a {
+            flex: 1;
+            text-align: center;
+            padding: 12px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .mobile-menu-auth .login {
+            background-color: var(--primary-color);
+            color: #fff;
+        }
+        .mobile-menu-auth .signup {
+            background-color: var(--bg-secondary-color);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+        }
+        
+        .mobile-menu-nav ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .mobile-menu-nav li a {
+            display: block;
+            padding: 16px 0;
+            font-size: 1.2rem;
+            font-weight: 500;
+            color: var(--text-color);
+            text-decoration: none;
+        }
+
+        .mobile-menu-footer {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .mobile-menu-setting {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            font-size: 1rem;
+            cursor: pointer;
+        }
+
+        .mobile-theme-display {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-color-secondary);
+        }
+
+        @media (max-width: 1200px) {
+            .navbar nav,
+            .navbar .auth-buttons {
+                display: none;
+            }
+            .mobile-menu-button {
+                display: block;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .main-container {
+                padding: 0 15px;
+                margin: 15px auto;
+            }
+            .community-layout {
+                height: auto;
+                gap: 15px;
+            }
+            .chart-section, .chat-section {
+                padding: 15px;
+            }
+            .section-title-bar h2,
+            .chat-section h2 {
+                font-size: 1.2em;
+            }
+            .chat-input-form input,
+            .chat-input-form button {
+                padding: 10px 14px;
+                font-size: 0.95em;
+            }
+        }
     </style>
 </head>
 <body>
@@ -208,7 +366,45 @@
         <button class="icon-button" id="theme-toggle"><i class="fas fa-moon"></i></button>
         <button class="icon-button"><i class="fas fa-globe"></i></button>
       </aside>
+      <button class="mobile-menu-button" id="mobile-menu-button" aria-label="메뉴 열기">
+        <i class="fas fa-bars"></i>
+      </button>
     </header>
+
+    <div class="mobile-menu" id="mobile-menu">
+        <div class="mobile-menu-header">
+            <a href="index.html" class="logo">Felicity</a>
+            <button class="mobile-menu-close" id="mobile-menu-close" aria-label="메뉴 닫기">&times;</button>
+        </div>
+        <div class="mobile-menu-content">
+            <div class="mobile-menu-auth">
+                <a href="#" class="login">로그인</a>
+                <a href="#" class="signup">회원가입</a>
+            </div>
+            <nav class="mobile-menu-nav">
+                <ul>
+                    <li><a href="affiliated.html">제휴 거래소</a></li>
+                    <li><a href="#">혜택</a></li>
+                    <li><a href="payback-test.html">페이백 테스트</a></li>
+                    <li><a href="#">앱 다운로드</a></li>
+                    <li><a href="#">서비스 소개</a></li>
+                </ul>
+            </nav>
+        </div>
+        <div class="mobile-menu-footer">
+            <div class="mobile-menu-setting" id="mobile-theme-toggle">
+                <span>테마</span>
+                <div class="mobile-theme-display">
+                    <span>다크 모드</span>
+                    <i class="fas fa-moon"></i>
+                </div>
+            </div>
+            <div class="mobile-menu-setting">
+                <span>언어</span>
+                <span>KO &gt;</span>
+            </div>
+        </div>
+    </div>
 
     <main class="main-container">
         <div class="community-layout">
@@ -238,5 +434,57 @@
     <!-- Custom Scripts -->
     <script src="script.js"></script> <!-- General purpose script for theme toggle -->
     <script type="module" src="community.js"></script>
+    <script>
+      document.addEventListener('DOMContentLoaded', () => {
+        const menuButton = document.getElementById('mobile-menu-button');
+        const closeButton = document.getElementById('mobile-menu-close');
+        const mobileMenu = document.getElementById('mobile-menu');
+        const body = document.body;
+
+        if (menuButton && mobileMenu) {
+            menuButton.addEventListener('click', () => {
+                mobileMenu.classList.add('is-open');
+                body.classList.add('mobile-menu-open');
+            });
+        }
+
+        if (closeButton && mobileMenu) {
+            closeButton.addEventListener('click', () => {
+                mobileMenu.classList.remove('is-open');
+                body.classList.remove('mobile-menu-open');
+            });
+        }
+
+        // Mobile Menu Theme Toggle
+        const mobileThemeToggle = document.getElementById('mobile-theme-toggle');
+        const desktopThemeToggle = document.getElementById('theme-toggle');
+
+        if (mobileThemeToggle) {
+            mobileThemeToggle.addEventListener('click', () => {
+                // Replicate theme toggle functionality from script.js
+                // This assumes script.js toggles a 'dark-mode' class on the body
+                const isDarkMode = body.classList.toggle('dark-mode');
+                
+                // Update icon on the original toggle button if it exists
+                if (desktopThemeToggle) {
+                    const desktopIcon = desktopThemeToggle.querySelector('.fas');
+                    if (desktopIcon) {
+                        desktopIcon.classList.toggle('fa-sun', isDarkMode);
+                        desktopIcon.classList.toggle('fa-moon', !isDarkMode);
+                    }
+                }
+                
+                // Update icon in the mobile menu
+                const mobileIcon = mobileThemeToggle.querySelector('.fas');
+                const mobileThemeText = mobileThemeToggle.querySelector('.mobile-theme-display span');
+                if (mobileIcon) {
+                    mobileIcon.classList.toggle('fa-sun', isDarkMode);
+                    mobileIcon.classList.toggle('fa-moon', !isDarkMode);
+                    mobileThemeText.textContent = isDarkMode ? '라이트 모드' : '다크 모드';
+                }
+            });
+        }
+      });
+    </script>
 </body>
 </html> 
