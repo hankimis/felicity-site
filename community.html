@@ -57,14 +57,31 @@
             margin: 0;
         }
 
-        .chart-interval {
-            font-size: 0.9em;
-            font-weight: 500;
-            color: var(--text-color-secondary);
-            background-color: var(--bg-secondary-color);
-            padding: 4px 10px;
-            border-radius: 8px;
+        .chart-intervals {
+            display: flex;
+            gap: 8px;
+        }
+
+        .interval-button {
+            background-color: transparent;
             border: 1px solid var(--border-color);
+            color: var(--text-color-secondary);
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .interval-button:hover {
+            background-color: var(--bg-secondary-color);
+            color: var(--text-color);
+        }
+
+        .interval-button.active {
+            background-color: var(--primary-color);
+            color: #fff;
+            border-color: var(--primary-color);
         }
 
         #chart-container {
@@ -414,7 +431,15 @@
             <section class="chart-section">
                 <div class="section-title-bar">
                     <h2>BTC/USDT 실시간 차트</h2>
-                    <span class="chart-interval">1분봉</span>
+                    <div class="chart-intervals" id="chart-intervals">
+                        <button class="interval-button active" data-interval="1m">1분</button>
+                        <button class="interval-button" data-interval="5m">5분</button>
+                        <button class="interval-button" data-interval="15m">15분</button>
+                        <button class="interval-button" data-interval="1h">1시간</button>
+                        <button class="interval-button" data-interval="4h">4시간</button>
+                        <button class="interval-button" data-interval="1d">일</button>
+                        <button class="interval-button" data-interval="1w">주</button>
+                    </div>
                 </div>
                 <div id="chart-container"></div>
             </section>

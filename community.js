@@ -139,9 +139,12 @@ if (chartContainer) {
         wickUpColor: '#26a69a',
     });
 
-    async function fetchInitialData() {
+    let currentInterval = '1m';
+    let socket = null;
+
+    async function loadChartData(interval) {
         try {
-            const response = await fetch('https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1m&limit=500');
+            const response = await fetch(`https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=${interval}&limit=500`);
             const data = await response.json();
             
             const formattedData = data.map(d => ({
@@ -155,12 +158,16 @@ if (chartContainer) {
             candleSeries.setData(formattedData);
             
         } catch (error) {
-            console.error('Failed to fetch initial chart data:', error);
+            console.error(`Failed to fetch chart data for interval ${interval}:`, error);
         }
     }
 
-    fetchInitialData().then(() => {
-        const socket = new WebSocket('wss://stream.binance.com:9443/ws/btcusdt@kline_1m');
+    function setupWebSocket(interval) {
+        if (socket && socket.readyState === WebSocket.OPEN) {
+            socket.close();
+        }
+
+        socket = new WebSocket(`wss://stream.binance.com:9443/ws/btcusdt@kline_${interval}`);
         socket.onmessage = (event) => {
             const message = JSON.parse(event.data);
             const kline = message.k;
@@ -172,6 +179,32 @@ if (chartContainer) {
                 close: parseFloat(kline.c),
             });
         };
+    }
+
+    const intervalContainer = document.getElementById('chart-intervals');
+    if(intervalContainer) {
+        intervalContainer.addEventListener('click', (e) => {
+            if (e.target.matches('.interval-button')) {
+                const newInterval = e.target.dataset.interval;
+                if (newInterval === currentInterval) return;
+
+                const currentActive = intervalContainer.querySelector('.active');
+                if (currentActive) {
+                    currentActive.classList.remove('active');
+                }
+                e.target.classList.add('active');
+
+                currentInterval = newInterval;
+                loadChartData(currentInterval).then(() => {
+                    setupWebSocket(currentInterval);
+                });
+            }
+        });
+    }
+
+    // Initial load
+    loadChartData(currentInterval).then(() => {
+        setupWebSocket(currentInterval);
     });
     
     const observer = new MutationObserver((mutations) => {
