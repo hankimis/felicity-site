@@ -23,7 +23,6 @@ const db = getFirestore(app);
 const messageForm = document.getElementById('chat-form');
 const messageInput = document.getElementById('message-input');
 const messagesContainer = document.getElementById('chat-messages');
-const chatOverlay = document.getElementById('chat-overlay');
 const chartContainer = document.getElementById('chart-container');
 
 let currentUser = null;
@@ -37,7 +36,11 @@ onAuthStateChanged(auth, async (user) => {
         messagesUnsubscribe = null;
     }
     
+    // Clear messages on any auth state change to prevent content flashing
+    if (messagesContainer) messagesContainer.innerHTML = '';
+
     if (user) {
+        // User is logged in
         const userDocRef = doc(db, 'users', user.uid);
         const userDoc = await getDoc(userDocRef);
 
@@ -49,14 +52,29 @@ onAuthStateChanged(auth, async (user) => {
             currentUser.photoURL = `https://ui-avatars.com/api/?name=${encodeURIComponent(currentUser.displayName)}&background=random`;
         }
         
-        if(chatOverlay) chatOverlay.style.display = 'none';
-        if(messageForm) messageForm.style.display = 'flex';
+        if(messageForm) {
+            if(messageInput) {
+                messageInput.placeholder = "메시지를 입력하세요...";
+                messageInput.disabled = false;
+            }
+            const submitButton = messageForm.querySelector('button');
+            if(submitButton) submitButton.disabled = false;
+        }
         loadAndDisplayMessages();
+
     } else {
+        // User is signed out, allow viewing messages but disable input
         currentUser = null;
-        if(chatOverlay) chatOverlay.style.display = 'flex';
-        if(messageForm) messageForm.style.display = 'none';
-        if (messagesContainer) messagesContainer.innerHTML = '';
+        
+        if(messageForm) {
+            if(messageInput) {
+                messageInput.placeholder = "로그인 후 채팅에 참여할 수 있습니다.";
+                messageInput.disabled = true;
+            }
+            const submitButton = messageForm.querySelector('button');
+            if(submitButton) submitButton.disabled = true;
+        }
+        loadAndDisplayMessages();
     }
 });
 
