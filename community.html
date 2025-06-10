@@ -16,7 +16,6 @@
 
         .main-container {
             flex-grow: 1;
-            max-width: 1200px;
             width: 100%;
             margin: 20px auto;
             padding: 0 20px;
@@ -24,7 +23,7 @@
 
         .community-layout {
             display: flex;
-            flex-direction: column;
+            flex-direction: row;
             gap: 20px;
             height: calc(100vh - 150px);
         }
@@ -75,7 +74,7 @@
         }
 
         .chat-section {
-            flex: 2;
+            flex: 1;
             overflow: hidden;
         }
         
@@ -331,9 +330,13 @@
             .community-layout {
                 height: auto;
                 gap: 15px;
+                flex-direction: column;
             }
             .chart-section, .chat-section {
                 padding: 15px;
+            }
+            .chat-section {
+                height: 70vh;
             }
             .section-title-bar h2,
             .chat-section h2 {
