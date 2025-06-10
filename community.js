@@ -59,15 +59,7 @@ function setupChat(user) {
     onSnapshot(q, (snapshot) => {
         snapshot.docChanges().forEach((change) => {
             if (change.type === "added") {
-                const messageData = change.doc.data();
-                appendMessage(messageData);
-                if (messageData.effect === 'confetti' && messageData.timestamp) {
-                    const messageTime = messageData.timestamp.toMillis();
-                    const now = Date.now();
-                    if (Math.abs(now - messageTime) < 5000) {
-                        triggerConfetti();
-                    }
-                }
+                appendMessage(change.doc.data());
             }
         });
     });
@@ -77,21 +69,13 @@ function setupChat(user) {
             e.preventDefault();
             const messageText = messageInput.value.trim();
             if (messageText && currentUser) {
-                
-                const messagePayload = {
-                    uid: currentUser.uid,
-                    name: anonymousUsername,
-                    text: messageText,
-                    timestamp: serverTimestamp()
-                };
-
-                if (messageText === '영차') {
-                    messagePayload.effect = 'confetti';
-                    triggerConfetti();
-                }
-
                 try {
-                    await addDoc(messagesCol, messagePayload);
+                    await addDoc(messagesCol, {
+                        uid: currentUser.uid,
+                        name: anonymousUsername,
+                        text: messageText,
+                        timestamp: serverTimestamp()
+                    });
                     messageInput.value = '';
                 } catch (error) {
                     console.error("Error sending message: ", error);
@@ -99,62 +83,6 @@ function setupChat(user) {
             }
         };
     }
-}
-
-function triggerConfetti() {
-    const duration = 3 * 1000;
-    const animationEnd = Date.now() + duration;
-    const colors = ['#26a69a', '#facc15', '#ffffff']; // Green, Gold, White
-
-    // Left side cannon shooting up-right
-    (function frameLeft() {
-        confetti({
-            particleCount: 7,
-            angle: 315, // Up and Right
-            spread: 55,
-            origin: { x: 0, y: 0.5 },
-            colors: colors,
-            startVelocity: 45
-        });
-
-        if (Date.now() < animationEnd) {
-            requestAnimationFrame(frameLeft);
-        }
-    }());
-
-    // Right side cannon shooting up-left
-    (function frameRight() {
-        confetti({
-            particleCount: 7,
-            angle: 225, // Up and Left
-            spread: 55,
-            origin: { x: 1, y: 0.5 },
-            colors: colors,
-            startVelocity: 45
-        });
-
-        if (Date.now() < animationEnd) {
-            requestAnimationFrame(frameRight);
-        }
-    }());
-
-    // A central powerful fountain for 1.5 seconds
-    const fountainEnd = Date.now() + 1.5 * 1000;
-    (function frameCenter() {
-        confetti({
-            particleCount: 10,
-            startVelocity: 40,
-            spread: 100,
-            origin: { x: 0.5, y: 1 },
-            angle: 270,
-            gravity: 1.2,
-            colors: ['#ffffff', '#f472b6'] // White and pink for contrast
-        });
-
-        if (Date.now() < fountainEnd) {
-            requestAnimationFrame(frameCenter);
-        }
-    }());
 }
 
 // --- Main Auth Logic ---
