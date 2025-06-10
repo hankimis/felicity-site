@@ -37,6 +37,56 @@
         </button>
     </header>
 
+    <div class="mobile-menu" id="mobile-menu">
+        <div class="mobile-menu-header">
+            <a href="index.html" class="logo">ONBit</a>
+            <button class="mobile-menu-close" id="mobile-menu-close" aria-label="메뉴 닫기">&times;</button>
+        </div>
+        <div class="mobile-menu-content">
+            <div class="mobile-menu-auth">
+                <a href="#" class="login">로그인</a>
+                <a href="#" class="signup">회원가입</a>
+            </div>
+            <div class="mobile-menu-user" style="display: none;">
+                <div class="mobile-user-profile-info">
+                    <span id="mobile-user-level" class="level-badge"></span>
+                    <strong id="mobile-user-display-name"></strong>
+                    <span>님 환영합니다!</span>
+                </div>
+                <a href="my-account.html" class="mobile-menu-link">
+                    <i class="fas fa-user-circle"></i>
+                    <span>마이페이지</span>
+                </a>
+                <button id="mobile-logout-btn" class="mobile-menu-logout-btn">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>로그아웃</span>
+                </button>
+            </div>
+            <nav class="mobile-menu-nav">
+                <ul>
+                    <li><a href="affiliated.html">제휴 거래소</a></li>
+                    <li><a href="#">혜택</a></li>
+                    <li><a href="payback-test.html">페이백 테스트</a></li>
+                    <li><a href="#">앱 다운로드</a></li>
+                    <li><a href="#">서비스 소개</a></li>
+                </ul>
+            </nav>
+        </div>
+        <div class="mobile-menu-footer">
+            <div class="mobile-menu-setting" id="mobile-theme-toggle">
+                <span>테마</span>
+                <div class="mobile-theme-display">
+                    <span>다크 모드</span>
+                    <i class="fas fa-moon"></i>
+                </div>
+            </div>
+            <div class="mobile-menu-setting">
+                <span>언어</span>
+                <span>KO &gt;</span>
+            </div>
+        </div>
+    </div>
+
     <main class="main-container affiliated-page">
         <section class="top-event-banner-swiper">
             <div class="swiper">

@@ -472,7 +472,8 @@
                         </select>
                     </div>
                 </div>
-                <div id="chart-container"></div>
+                <div id="chart-container" style="position:relative;">
+                </div>
             </section>
             <section class="chat-section">
                 <h2>실시간 채팅</h2>
@@ -549,10 +550,10 @@
     <script type="module" src="community.js"></script>
     <script>
       document.addEventListener('DOMContentLoaded', () => {
+        const body = document.body;
         const menuButton = document.getElementById('mobile-menu-button');
         const closeButton = document.getElementById('mobile-menu-close');
         const mobileMenu = document.getElementById('mobile-menu');
-        const body = document.body;
 
         if (menuButton && mobileMenu) {
             menuButton.addEventListener('click', () => {
@@ -597,7 +598,39 @@
                 }
             });
         }
+
+        // 다크모드/라이트모드 토글
+        const themeToggle = document.getElementById('theme-toggle');
+        if (themeToggle) {
+            const icon = themeToggle.querySelector('i');
+            // 초기 상태
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'dark-mode') {
+                body.classList.add('dark-mode');
+                icon.classList.remove('fa-moon');
+                icon.classList.add('fa-sun');
+            } else {
+                body.classList.remove('dark-mode');
+                icon.classList.remove('fa-sun');
+                icon.classList.add('fa-moon');
+            }
+            themeToggle.addEventListener('click', () => {
+                body.classList.toggle('dark-mode');
+                if (body.classList.contains('dark-mode')) {
+                    icon.classList.remove('fa-moon');
+                    icon.classList.add('fa-sun');
+                    localStorage.setItem('theme', 'dark-mode');
+                } else {
+                    icon.classList.remove('fa-sun');
+                    icon.classList.add('fa-moon');
+                    localStorage.removeItem('theme');
+                }
+                // 차트 테마 동기화 이벤트
+                document.body.dispatchEvent(new CustomEvent('themeChanged', { detail: { isDarkMode: body.classList.contains('dark-mode') } }));
+            });
+        }
       });
     </script>
+    <div id="rocket-overlay" style="display:none; position:fixed; left:0; top:0; width:100vw; height:100vh; pointer-events:none; z-index:2000;"></div>
 </body>
 </html> 

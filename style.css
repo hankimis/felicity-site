@@ -2631,3 +2631,190 @@ body.dark-mode .payback-card-amount {
         display: block;
     }
 }
+
+.login-prompt {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    text-align: center;
+    color: var(--text-color-secondary);
+    padding: 20px;
+}
+
+.login-prompt p {
+    font-size: 1.1rem;
+    margin-bottom: 20px;
+}
+
+.login-prompt-btn {
+    padding: 10px 24px;
+    border-radius: 8px;
+    background-color: var(--primary-color);
+    color: #fff;
+    font-weight: 600;
+    transition: background-color 0.2s;
+    border: none;
+    cursor: pointer;
+}
+
+.login-prompt-btn:hover {
+    background-color: #2563eb;
+}
+
+@media (min-width: 1200px) {
+  .mobile-menu-button {
+    display: none !important;
+  }
+}
+
+.mobile-menu {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100dvh;
+  background-color: var(--bg-color, #fff);
+  z-index: 1000;
+  transform: translateX(100%) !important;
+  transition: transform 0.3s ease-in-out;
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  color: var(--text-color);
+}
+.mobile-menu.is-open {
+  transform: translateX(0) !important;
+}
+body.mobile-menu-open {
+  overflow: hidden;
+}
+.mobile-menu-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+}
+.mobile-menu-header .logo {
+  font-size: 1.8rem;
+  font-weight: bold;
+  color: var(--primary-color);
+  text-decoration: none;
+}
+.mobile-menu-close {
+  background: none;
+  border: none;
+  color: var(--text-color);
+  font-size: 2.5rem;
+  cursor: pointer;
+  line-height: 1;
+}
+.mobile-menu-content {
+  flex-grow: 1;
+}
+.mobile-menu-auth {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 30px;
+}
+.mobile-menu-auth a {
+  flex: 1;
+  text-align: center;
+  padding: 12px;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: 600;
+}
+.mobile-menu-auth .login {
+  background-color: var(--primary-color);
+  color: #fff;
+}
+.mobile-menu-auth .signup {
+  background-color: var(--bg-secondary-color);
+  color: var(--text-color);
+  border: 1px solid var(--border-color);
+}
+.mobile-menu-user {
+  display: none;
+  flex-direction: column;
+  gap: 15px;
+  margin-bottom: 30px;
+  padding: 15px;
+  background-color: var(--bg-secondary-color);
+  border-radius: 12px;
+}
+.mobile-user-profile-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+.mobile-user-profile-info .level-badge {
+  color: var(--primary-color);
+  font-weight: 700;
+}
+.mobile-menu-link, .mobile-menu-logout-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 8px;
+  text-decoration: none;
+  color: var(--text-color);
+  background-color: transparent;
+  width: 100%;
+  text-align: left;
+  font-size: 1.1rem;
+  font-weight: 500;
+  transition: background-color 0.2s;
+  border: none;
+  cursor: pointer;
+}
+.mobile-menu-link:hover, .mobile-menu-logout-btn:hover {
+  background-color: var(--border-color);
+}
+.mobile-menu-nav ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.mobile-menu-nav li a {
+  display: block;
+  padding: 16px 0;
+  font-size: 1.2rem;
+  font-weight: 500;
+  color: var(--text-color);
+  text-decoration: none;
+}
+.mobile-menu-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border-color);
+}
+.mobile-menu-setting {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  font-size: 1rem;
+  cursor: pointer;
+}
+.mobile-theme-display {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-color-secondary);
+}
+@media (max-width: 1200px) {
+  .navbar nav,
+  .navbar .auth-buttons {
+    display: none;
+  }
+  .mobile-menu-button {
+    display: block;
+  }
+}

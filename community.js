@@ -48,6 +48,12 @@ onAuthStateChanged(auth, async (user) => {
     // Clear messages on any auth state change to prevent content flashing
     if (messagesContainer) messagesContainer.innerHTML = '';
 
+    // 익명 계정이면 강제 로그아웃
+    if (user && user.providerData.length === 0) {
+        await auth.signOut();
+        return;
+    }
+
     if (user) {
         // User is logged in
         const userDocRef = doc(db, 'users', user.uid);
@@ -72,7 +78,7 @@ onAuthStateChanged(auth, async (user) => {
         loadInitialMessages();
 
     } else {
-        // User is signed out, allow viewing messages but disable input
+        // User is signed out -> Show login prompt
         currentUser = null;
         
         if(messageForm) {
@@ -83,7 +89,28 @@ onAuthStateChanged(auth, async (user) => {
             const submitButton = messageForm.querySelector('button');
             if(submitButton) submitButton.disabled = true;
         }
-        loadInitialMessages();
+        
+        if (messagesContainer) {
+            messagesContainer.innerHTML = `<div class="login-prompt">
+                <p>실시간 채팅을 보려면 로그인이 필요합니다.</p>
+                <button class="login-prompt-btn login">로그인</button>
+            </div>`;
+            
+            // Re-run setupModals to attach event listener to the new login button
+            // This requires setupModals to be accessible, e.g. by exporting/importing it.
+            // For simplicity, we'll manually trigger the modal.
+            const loginBtn = messagesContainer.querySelector('.login-prompt-btn');
+            if(loginBtn) {
+                loginBtn.addEventListener('click', () => {
+                   document.getElementById('login-modal').style.display = 'block';
+                });
+            }
+        }
+
+        if (messagesUnsubscribe) {
+            messagesUnsubscribe();
+            messagesUnsubscribe = null;
+        }
     }
 });
 
@@ -114,7 +141,7 @@ function loadInitialMessages() {
     messagesUnsubscribe = onSnapshot(q, (snapshot) => {
         snapshot.docChanges().forEach(change => {
             if (change.type === "added") {
-                displayMessage(change.doc.id, change.doc.data());
+                displayMessage(change.doc.id, change.doc.data(), !isInitialLoad);
                 
                 // 실시간으로 추가된 새 메시지일 경우 스크롤
                 if (!isInitialLoad) {
@@ -188,7 +215,7 @@ function showLoader() {
     return loaderElement;
 }
 
-function displayMessage(docId, data) {
+function displayMessage(docId, data, isNewMessage = false) {
     if (!messagesContainer || document.getElementById(docId)) return;
 
     const messageElement = document.createElement('div');
@@ -219,6 +246,11 @@ function displayMessage(docId, data) {
     } else {
         // PC 전체 및 모바일 초기 로드는 맨 아래에 추가(append)
         messagesContainer.appendChild(messageElement);
+    }
+
+    // '가즈아' 키워드 감지 시 showRocketOverlay() 호출
+    if (isNewMessage && data.text && typeof data.text === 'string' && data.text.includes('가즈아')) {
+        showRocketOverlay();
     }
 }
 
@@ -377,4 +409,16 @@ if (chartContainer) {
             },
         });
     });
+}
+
+// 로켓 애니메이션 오버레이 함수
+function showRocketOverlay() {
+    const overlay = document.getElementById('rocket-overlay');
+    if (!overlay) return;
+    overlay.innerHTML = '<img src="/Rocket-Animation-Video-Generat-unscreen.gif" style="width:60vw; max-width:600px; min-width:200px; position:absolute; left:50%; transform:translateX(-50%); bottom:8vh; pointer-events:none;" />';
+    overlay.style.display = 'block';
+    setTimeout(() => {
+        overlay.style.display = 'none';
+        overlay.innerHTML = '';
+    }, 2500);
 } 
