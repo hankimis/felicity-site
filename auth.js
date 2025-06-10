@@ -37,6 +37,11 @@ const userProfiles = document.querySelectorAll('#user-profile'); // 모든 페�
 const userLevels = document.querySelectorAll('#user-level');
 const userDisplayNames = document.querySelectorAll('#user-display-name');
 const logoutBtns = document.querySelectorAll('#logout-btn');
+const mobileAuthButtons = document.querySelector('.mobile-menu-auth');
+const mobileUserProfile = document.querySelector('.mobile-menu-user');
+const mobileUserLevel = document.getElementById('mobile-user-level');
+const mobileUserDisplayName = document.getElementById('mobile-user-display-name');
+const mobileLogoutBtn = document.getElementById('mobile-logout-btn');
 
 // --- Modal Handling ---
 function setupModals() {
@@ -159,6 +164,9 @@ if (loginForm) {
 }
 
 logoutBtns.forEach(btn => btn.addEventListener('click', () => signOut(auth)));
+if (mobileLogoutBtn) {
+    mobileLogoutBtn.addEventListener('click', () => signOut(auth));
+}
 
 // --- Auth State Change Handler ---
 onAuthStateChanged(auth, async (user) => {
@@ -187,7 +195,7 @@ onAuthStateChanged(auth, async (user) => {
         userLevels.forEach(levelEl => {
             if (userData.role === 'admin') {
                 levelEl.textContent = '[Admin]';
-                levelEl.style.color = '#ef5350'; // Admin color
+                levelEl.style.color = '#ef5350';
             } else {
                 levelEl.textContent = `[Lv.${userData.level}]`;
                 levelEl.style.color = 'var(--primary-color)';
@@ -195,13 +203,30 @@ onAuthStateChanged(auth, async (user) => {
         });
         userDisplayNames.forEach(nameEl => nameEl.textContent = userData.displayName);
 
+        // Update Mobile Menu UI
+        if (mobileAuthButtons) mobileAuthButtons.style.display = 'none';
+        if (mobileUserProfile) {
+            mobileUserProfile.style.display = 'flex';
+            if (mobileUserLevel) {
+                 if (userData.role === 'admin') {
+                    mobileUserLevel.textContent = '[Admin]';
+                } else {
+                    mobileUserLevel.textContent = `[Lv.${userData.level}]`;
+                }
+            }
+            if (mobileUserDisplayName) mobileUserDisplayName.textContent = userData.displayName;
+        }
+
     } else {
         // Update UI on all pages
         authButtons.forEach(btn => btn.style.display = 'flex');
         userProfiles.forEach(profile => profile.style.display = 'none');
+        
+        // Update Mobile Menu UI
+        if (mobileAuthButtons) mobileAuthButtons.style.display = 'flex';
+        if (mobileUserProfile) mobileUserProfile.style.display = 'none';
     }
 });
-
 
 function getAuthErrorMessage(errorCode) {
     switch (errorCode) {

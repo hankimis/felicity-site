@@ -406,6 +406,21 @@
                 <a href="#" class="login">로그인</a>
                 <a href="#" class="signup">회원가입</a>
             </div>
+            <div class="mobile-menu-user" style="display: none;">
+                <div class="mobile-user-profile-info">
+                    <span id="mobile-user-level" class="level-badge"></span>
+                    <strong id="mobile-user-display-name"></strong>
+                    <span>님 환영합니다!</span>
+                </div>
+                <a href="my-account.html" class="mobile-menu-link">
+                    <i class="fas fa-user-circle"></i>
+                    <span>마이페이지</span>
+                </a>
+                <button id="mobile-logout-btn" class="mobile-menu-logout-btn">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>로그아웃</span>
+                </button>
+            </div>
             <nav class="mobile-menu-nav">
                 <ul>
                     <li><a href="affiliated.html">제휴 거래소</a></li>
@@ -436,7 +451,7 @@
             <section class="chart-section">
                 <div class="section-title-bar">
                     <h2>BTC/USDT 실시간 차트</h2>
-                    <div class="chart-intervals" id="chart-intervals">
+                    <div class="chart-intervals" id="chart-intervals-desktop">
                         <button class="interval-button active" data-interval="1m">1분</button>
                         <button class="interval-button" data-interval="5m">5분</button>
                         <button class="interval-button" data-interval="15m">15분</button>
@@ -444,6 +459,17 @@
                         <button class="interval-button" data-interval="4h">4시간</button>
                         <button class="interval-button" data-interval="1d">일</button>
                         <button class="interval-button" data-interval="1w">주</button>
+                    </div>
+                    <div class="chart-intervals-mobile">
+                        <select id="chart-interval-select-mobile" class="interval-select">
+                            <option value="1m">1분</option>
+                            <option value="5m">5분</option>
+                            <option value="15m">15분</option>
+                            <option value="1h">1시간</option>
+                            <option value="4h">4시간</option>
+                            <option value="1d">일</option>
+                            <option value="1w">주</option>
+                        </select>
                     </div>
                 </div>
                 <div id="chart-container"></div>

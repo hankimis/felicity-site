@@ -9,10 +9,15 @@ import {
     orderBy, 
     onSnapshot,
     getDoc,
-    doc 
+    doc,
+    limit,
+    startAfter,
+    getDocs
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { firebaseConfig } from './firebase-config.js';
 import { triggerConfetti } from './effects.js';
+
+const MESSAGES_PER_PAGE = 25;
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
@@ -28,6 +33,10 @@ const chartContainer = document.getElementById('chart-container');
 let currentUser = null;
 let messagesUnsubscribe = null;
 let binanceSocket = null;
+let lastVisibleMessageDoc = null;
+let isLoadingMore = false;
+let noMoreMessages = false;
+let isInitialLoad = true;
 
 // --- Authentication Handler ---
 onAuthStateChanged(auth, async (user) => {
@@ -60,7 +69,7 @@ onAuthStateChanged(auth, async (user) => {
             const submitButton = messageForm.querySelector('button');
             if(submitButton) submitButton.disabled = false;
         }
-        loadAndDisplayMessages();
+        loadInitialMessages();
 
     } else {
         // User is signed out, allow viewing messages but disable input
@@ -74,31 +83,112 @@ onAuthStateChanged(auth, async (user) => {
             const submitButton = messageForm.querySelector('button');
             if(submitButton) submitButton.disabled = true;
         }
-        loadAndDisplayMessages();
+        loadInitialMessages();
     }
 });
 
 // --- Chat Functions ---
-function loadAndDisplayMessages() {
-    if (!messagesContainer) return;
-
+function getChatQuery() {
+    const isMobile = window.innerWidth <= 768;
     const messagesRef = collection(db, "community-chat");
-    const q = query(messagesRef, orderBy("timestamp", "asc"));
-    let isInitialLoad = true;
+    if (isMobile) {
+        return query(messagesRef, orderBy("timestamp", "desc"), limit(MESSAGES_PER_PAGE));
+    } else {
+        // PC: 전체 메시지 불러오기 (limit 제거)
+        return query(messagesRef, orderBy("timestamp", "asc"));
+    }
+}
+
+function loadInitialMessages() {
+    if (!messagesContainer) return;
+    
+    // 상태 초기화
+    if (messagesUnsubscribe) messagesUnsubscribe();
+    messagesContainer.innerHTML = '';
+    lastVisibleMessageDoc = null;
+    noMoreMessages = false;
+    isInitialLoad = true;
+
+    const q = getChatQuery();
 
     messagesUnsubscribe = onSnapshot(q, (snapshot) => {
         snapshot.docChanges().forEach(change => {
             if (change.type === "added") {
-                displayMessage(change.doc.id, change.doc.data(), !isInitialLoad);
+                displayMessage(change.doc.id, change.doc.data());
+                
+                // 실시간으로 추가된 새 메시지일 경우 스크롤
+                if (!isInitialLoad) {
+                    scrollToLatest();
+                }
             }
         });
         
-        isInitialLoad = false;
-        scrollToBottom();
+        // 초기 로드가 끝나면 한 번만 스크롤
+        if (isInitialLoad) {
+            scrollToLatest();
+            isInitialLoad = false; // 초기 로드 완료 플래그 설정
+        }
+
+        if (!snapshot.empty) {
+            lastVisibleMessageDoc = snapshot.docs[snapshot.docs.length - 1];
+        }
+        setupScrollListener();
+    }, error => {
+        console.error("Error fetching initial messages: ", error);
     });
 }
 
-function displayMessage(docId, data, isNew) {
+async function loadMoreMessages() {
+    if (isLoadingMore || noMoreMessages || !lastVisibleMessageDoc) return;
+    isLoadingMore = true;
+    const loader = showLoader();
+    const isMobile = window.innerWidth <= 768;
+    const messagesRef = collection(db, "community-chat");
+    const q = isMobile
+        ? query(messagesRef, orderBy("timestamp", "desc"), startAfter(lastVisibleMessageDoc), limit(MESSAGES_PER_PAGE))
+        : query(messagesRef, orderBy("timestamp", "asc"), startAfter(lastVisibleMessageDoc), limit(MESSAGES_PER_PAGE));
+    try {
+        const snapshot = await getDocs(q);
+        if (snapshot.empty) {
+            noMoreMessages = true;
+            if (loader) loader.remove();
+            return;
+        }
+        lastVisibleMessageDoc = snapshot.docs[snapshot.docs.length - 1];
+        snapshot.forEach(doc => {
+            displayMessage(doc.id, doc.data(), false);
+        });
+    } catch (error) {
+        console.error("Error fetching more messages: ", error);
+    } finally {
+        if (loader) loader.remove();
+        isLoadingMore = false;
+    }
+}
+
+function setupScrollListener() {
+    if (!messagesContainer) return;
+    const isMobile = window.innerWidth <= 768;
+    if (!isMobile) return; // PC에서는 무한스크롤 X
+    messagesContainer.onscroll = () => {
+        const isAtTop = (messagesContainer.scrollTop + messagesContainer.clientHeight >= messagesContainer.scrollHeight - 10);
+        if (isAtTop) {
+            loadMoreMessages();
+        }
+    };
+}
+
+function showLoader() {
+    if (!messagesContainer) return;
+    const loaderElement = document.createElement('div');
+    loaderElement.classList.add('chat-loader');
+    loaderElement.textContent = '이전 메시지 로딩 중...';
+    // For mobile (flex-reverse), prepend puts it at the "bottom" which appears at the top
+    messagesContainer.prepend(loaderElement);
+    return loaderElement;
+}
+
+function displayMessage(docId, data) {
     if (!messagesContainer || document.getElementById(docId)) return;
 
     const messageElement = document.createElement('div');
@@ -120,24 +210,38 @@ function displayMessage(docId, data, isNew) {
             <p class="message-text">${data.text.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</p>
         </div>
     `;
-    messagesContainer.appendChild(messageElement);
 
-    if (isNew && data.effect === 'confetti') triggerConfetti(messageElement);
+    const isMobile = window.innerWidth <= 768;
+
+    // 모바일에서 실시간 새 메시지는 맨 위에 추가(prepend)
+    if (isMobile && !isInitialLoad) {
+        messagesContainer.prepend(messageElement);
+    } else {
+        // PC 전체 및 모바일 초기 로드는 맨 아래에 추가(append)
+        messagesContainer.appendChild(messageElement);
+    }
 }
 
-function scrollToBottom() {
-    if (messagesContainer) messagesContainer.scrollTop = messagesContainer.scrollHeight;
+// PC/모바일 자동 스크롤 함수
+function scrollToLatest() {
+    const isMobile = window.innerWidth <= 768;
+    if (messagesContainer) {
+        if (isMobile) {
+            messagesContainer.scrollTop = 0; // flex-reverse: 0이 맨 위(최신)
+        } else {
+            messagesContainer.scrollTop = messagesContainer.scrollHeight; // 맨 아래(최신)
+        }
+    }
 }
 
 if (messageForm) {
     messageForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         if (!currentUser) return;
-
         const messageText = messageInput.value.trim();
         if (messageText) {
             try {
-                await addDoc(collection(db, "community-chat"), {
+                const docRef = await addDoc(collection(db, "community-chat"), {
                     text: messageText,
                     timestamp: serverTimestamp(),
                     uid: currentUser.uid,
@@ -145,10 +249,17 @@ if (messageForm) {
                     level: currentUser.level,
                     role: currentUser.role,
                     photoURL: currentUser.photoURL,
-                    effect: messageText.includes("영차") ? 'confetti' : null
+                    effect: null // 항상 null로 저장
                 });
                 messageInput.value = '';
-                scrollToBottom();
+                
+                // 영차 효과: 내가 보낸 메시지 + 영차 포함 + 전송 직후에만
+                if (messageText.includes('영차')) {
+                    setTimeout(() => {
+                        const el = document.getElementById(docRef.id);
+                        if (el) triggerConfetti(el);
+                    }, 100); // DOM 렌더링 대기
+                }
             } catch (error) {
                 console.error("Error sending message: ", error);
             }
@@ -200,11 +311,11 @@ if (chartContainer) {
     }
     
     function setupWebSocket(interval) {
-        if (binanceSocket) {
-            binanceSocket.close();
+        if (window.binanceSocket) {
+            window.binanceSocket.close();
         }
-        binanceSocket = new WebSocket(`wss://stream.binance.com:9443/ws/btcusdt@kline_${interval}`);
-        binanceSocket.onmessage = function (event) {
+        window.binanceSocket = new WebSocket(`wss://stream.binance.com:9443/ws/btcusdt@kline_${interval}`);
+        window.binanceSocket.onmessage = function (event) {
             const message = JSON.parse(event.data);
             const kline = message.k;
             candlestickSeries.update({
@@ -217,16 +328,35 @@ if (chartContainer) {
         };
     }
 
-    const intervalButtons = document.getElementById('chart-intervals');
-    intervalButtons.addEventListener('click', (e) => {
-        if (e.target.matches('.interval-button')) {
-            const newInterval = e.target.dataset.interval;
-            intervalButtons.querySelector('.active').classList.remove('active');
-            e.target.classList.add('active');
-            fetchHistoricalData(newInterval);
-            setupWebSocket(newInterval);
+    const desktopIntervalButtons = document.getElementById('chart-intervals-desktop');
+    const mobileIntervalSelect = document.getElementById('chart-interval-select-mobile');
+
+    function handleIntervalChange(newInterval) {
+        if (desktopIntervalButtons) {
+            const currentActive = desktopIntervalButtons.querySelector('.active');
+            if (currentActive) currentActive.classList.remove('active');
+            const newActiveButton = desktopIntervalButtons.querySelector(`[data-interval="${newInterval}"]`);
+            if (newActiveButton) newActiveButton.classList.add('active');
         }
-    });
+        if (mobileIntervalSelect) {
+            mobileIntervalSelect.value = newInterval;
+        }
+        fetchHistoricalData(newInterval);
+        setupWebSocket(newInterval);
+    }
+
+    if (desktopIntervalButtons) {
+        desktopIntervalButtons.addEventListener('click', (e) => {
+            if (e.target.matches('.interval-button')) {
+                handleIntervalChange(e.target.dataset.interval);
+            }
+        });
+    }
+    if (mobileIntervalSelect) {
+        mobileIntervalSelect.addEventListener('change', (e) => {
+            handleIntervalChange(e.target.value);
+        });
+    }
 
     // Initial Load
     fetchHistoricalData('1m');
