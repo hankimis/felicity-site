@@ -52,7 +52,7 @@ document.addEventListener('DOMContentLoaded', () => {
     console.log('All chat elements found successfully');
 
     // --- Chat Functions ---
-    function appendMessage(message) {
+    function appendMessage(message, fireEffect = false) {
         if (!chatMessages || !message) {
             console.error('appendMessage: chatMessages 또는 message가 없음', { chatMessages, message });
             return;
@@ -69,7 +69,6 @@ document.addEventListener('DOMContentLoaded', () => {
             messageElement.classList.add('received');
         }
 
-        // Sanitize message content to prevent XSS
         const sanitizedText = message.text ? message.text.replace(/</g, '&lt;').replace(/>/g, '&gt;') : '';
         const sanitizedName = message.name ? message.name.replace(/</g, '&lt;').replace(/>/g, '&gt;') : '익명';
 
@@ -77,8 +76,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="message-sender">${sanitizedName}</div>
             <div class="message-text">${sanitizedText}</div>
         `;
-
-        // CSS 문제 해결을 위한 강제 스타일 적용
+        
         messageElement.style.display = 'flex';
         messageElement.style.flexDirection = 'column';
         messageElement.style.marginBottom = '16px';
@@ -86,7 +84,6 @@ document.addEventListener('DOMContentLoaded', () => {
         messageElement.style.visibility = 'visible';
         messageElement.style.opacity = '1';
 
-        // 메시지 방향별 스타일
         if (currentUser && message.uid === currentUser.uid) {
             messageElement.style.alignSelf = 'flex-end';
             const textDiv = messageElement.querySelector('.message-text');
@@ -125,14 +122,10 @@ document.addEventListener('DOMContentLoaded', () => {
         chatMessages.appendChild(messageElement);
         console.log('Message element added to DOM. Total messages in container:', chatMessages.children.length);
 
-        // 새 메시지에만 confetti 효과 적용
-        if (message.effect === 'confetti' && typeof confetti === 'function' && !message.hasFiredEffect) {
-            // setTimeout으로 렌더링 후 효과를 실행하여 깨짐 현상 방지
+        if (fireEffect && message.effect === 'confetti' && typeof confetti === 'function') {
             setTimeout(() => triggerDopamineBlast(messageElement), 50);
-            message.hasFiredEffect = true; // 효과가 실행되었음을 표시 (중복 방지)
         }
 
-        // 메시지가 추가될 때마다 맨 아래로 스크롤
         chatMessages.scrollTop = chatMessages.scrollHeight;
     }
 
@@ -184,19 +177,22 @@ document.addEventListener('DOMContentLoaded', () => {
         const q = query(messagesCol, orderBy('timestamp'));
         console.log('Setting up Firestore listener...');
         
-        let isFirstLoad = true;
+        let isInitialLoad = true;
         onSnapshot(q, (snapshot) => {
-            if (isFirstLoad) {
+            if (isInitialLoad) {
                 chatMessages.innerHTML = ''; // 로딩 메시지 제거
-                isFirstLoad = false;
             }
 
             snapshot.docChanges().forEach((change) => {
                 if (change.type === "added") {
                     const messageData = change.doc.data();
-                    appendMessage(messageData);
+                    // 실시간으로 받은 새 메시지에만 효과를 발동시킴
+                    appendMessage(messageData, !isInitialLoad);
                 }
             });
+
+            isInitialLoad = false;
+
         }, (error) => {
             console.error("Firestore real-time listener failed:", error);
             if (chatMessages) {
