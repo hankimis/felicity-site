@@ -5,5 +5,6 @@ export const firebaseConfig = {
     storageBucket: "livechattest-35101.firebasestorage.app",
     messagingSenderId: "880700591040",
     appId: "1:880700591040:web:a93e47bf19a9713a245625",
-    measurementId: "G-ER1H2CCZW9"
+    measurementId: "G-ER1H2CCZW9",
+    databaseURL: "https://livechattest-35101-default-rtdb.asia-southeast1.firebasedatabase.app/"
 }; 

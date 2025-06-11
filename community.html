@@ -51,6 +51,34 @@
             margin-bottom: 16px;
         }
 
+        .chart-title-controls {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .coin-selector {
+            padding: 8px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background-color: var(--bg-secondary-color);
+            color: var(--text-color);
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .coin-selector:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(49, 130, 246, 0.2);
+        }
+
+        .coin-selector:hover {
+            background-color: var(--card-bg);
+        }
+
         .section-title-bar h2 {
             font-size: 1.4em;
             font-weight: 700;
@@ -268,27 +296,45 @@
 
         .mobile-menu-auth {
             display: flex;
+            flex-direction: row;
             gap: 10px;
             margin-bottom: 30px;
+            width: 100%;
         }
 
-        .mobile-menu-auth a {
+        .mobile-menu-auth button {
             flex: 1;
-            text-align: center;
-            padding: 12px;
-            border-radius: 8px;
-            text-decoration: none;
-            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 13px 0;
+            border-radius: 10px;
+            background: var(--primary-color);
+            color: #fff;
+            font-weight: 700;
+            font-size: 1.08rem;
+            box-shadow: 0 2px 8px rgba(49,130,246,0.08);
+            transition: background 0.2s;
+            border: none;
         }
 
-        .mobile-menu-auth .login {
-            background-color: var(--primary-color);
-            color: #fff;
+        .mobile-menu-auth button:hover {
+            background-color: #2563eb;
         }
-        .mobile-menu-auth .signup {
-            background-color: var(--bg-secondary-color);
-            color: var(--text-color);
-            border: 1px solid var(--border-color);
+
+        .mobile-menu-auth button.login {
+            background: var(--bg-secondary-color);
+            color: var(--primary-color);
+            border: 1.5px solid var(--primary-color);
+            box-shadow: 0 2px 8px rgba(49,130,246,0.04);
+        }
+
+        .mobile-menu-auth button.signup {
+            background: var(--bg-secondary-color);
+            color: var(--primary-color);
+            border: 1.5px solid var(--primary-color);
+            box-shadow: 0 2px 8px rgba(49,130,246,0.04);
         }
         
         .mobile-menu-nav ul {
@@ -356,9 +402,23 @@
             .chat-section {
                 height: 70vh;
             }
+            .section-title-bar {
+                flex-direction: column;
+                gap: 12px;
+                align-items: stretch;
+            }
+            .chart-title-controls {
+                justify-content: center;
+                gap: 10px;
+            }
+            .coin-selector {
+                font-size: 0.9em;
+                padding: 6px 10px;
+            }
             .section-title-bar h2,
             .chat-section h2 {
                 font-size: 1.2em;
+                text-align: center;
             }
             .chat-input-form input,
             .chat-input-form button {
@@ -375,7 +435,15 @@
       <nav>
         <ul>
           <li><a href="affiliated.html">제휴 거래소</a></li>
-          <li><a href="community.html">커뮤니티</a></li>
+          <li><a href="community.html">실시간 채팅</a></li>
+          <li class="dropdown">
+            <a href="#" class="dropdown-toggle">커뮤니티 <i class="fas fa-caret-down"></i></a>
+            <ul class="dropdown-menu">
+              <li><a href="community-board.html">자유 게시판</a></li>
+              <li><a href="attendance.html">출석체크</a></li>
+            </ul>
+          </li>
+          <li><a href="notice-board.html">공지사항</a></li>
         </ul>
       </nav>
       <div class="header-right">
@@ -389,68 +457,25 @@
             <button id="logout-btn" class="icon-button" aria-label="로그아웃"><i class="fas fa-sign-out-alt"></i></button>
         </div>
         <button class="icon-button" id="theme-toggle"><i class="fas fa-moon"></i></button>
-        <a href="my-account.html" class="icon-button" aria-label="마이페이지"><i class="fas fa-user-circle"></i></a>
+        <a href="my-account.html" id="my-page-link" class="icon-button" aria-label="마이페이지"><i class="fas fa-user-circle"></i></a>
       </div>
       <button class="mobile-menu-button" id="mobile-menu-button" aria-label="메뉴 열기">
         <i class="fas fa-bars"></i>
       </button>
     </header>
 
-    <div class="mobile-menu" id="mobile-menu">
-        <div class="mobile-menu-header">
-            <a href="index.html" class="logo">ONBit</a>
-            <button class="mobile-menu-close" id="mobile-menu-close" aria-label="메뉴 닫기">&times;</button>
-        </div>
-        <div class="mobile-menu-content">
-            <div class="mobile-menu-auth">
-                <a href="#" class="login">로그인</a>
-                <a href="#" class="signup">회원가입</a>
-            </div>
-            <div class="mobile-menu-user" style="display: none;">
-                <div class="mobile-user-profile-info">
-                    <span id="mobile-user-level" class="level-badge"></span>
-                    <strong id="mobile-user-display-name"></strong>
-                    <span>님 환영합니다!</span>
-                </div>
-                <a href="my-account.html" class="mobile-menu-link">
-                    <i class="fas fa-user-circle"></i>
-                    <span>마이페이지</span>
-                </a>
-                <button id="mobile-logout-btn" class="mobile-menu-logout-btn">
-                    <i class="fas fa-sign-out-alt"></i>
-                    <span>로그아웃</span>
-                </button>
-            </div>
-            <nav class="mobile-menu-nav">
-                <ul>
-                    <li><a href="affiliated.html">제휴 거래소</a></li>
-                    <li><a href="#">혜택</a></li>
-                    <li><a href="payback-test.html">페이백 테스트</a></li>
-                    <li><a href="#">앱 다운로드</a></li>
-                    <li><a href="#">서비스 소개</a></li>
-                </ul>
-            </nav>
-        </div>
-        <div class="mobile-menu-footer">
-            <div class="mobile-menu-setting" id="mobile-theme-toggle">
-                <span>테마</span>
-                <div class="mobile-theme-display">
-                    <span>다크 모드</span>
-                    <i class="fas fa-moon"></i>
-                </div>
-            </div>
-            <div class="mobile-menu-setting">
-                <span>언어</span>
-                <span>KO &gt;</span>
-            </div>
-        </div>
-    </div>
-
     <main class="main-container">
         <div class="community-layout">
             <section class="chart-section">
                 <div class="section-title-bar">
-                    <h2>BTC/USDT 실시간 차트</h2>
+                    <div class="chart-title-controls">
+                        <select id="coin-selector" class="coin-selector">
+                            <option value="BTCUSDT">BTC/USDT</option>
+                            <option value="ETHUSDT">ETH/USDT</option>
+                            <option value="SOLUSDT">SOL/USDT</option>
+                        </select>
+                        <h2 id="chart-title">실시간 차트</h2>
+                    </div>
                     <div class="chart-intervals" id="chart-intervals-desktop">
                         <button class="interval-button active" data-interval="1m">1분</button>
                         <button class="interval-button" data-interval="5m">5분</button>
@@ -476,7 +501,13 @@
                 </div>
             </section>
             <section class="chat-section">
-                <h2>실시간 채팅</h2>
+                <div class="chat-section-header" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+                    <h2 style="margin: 0;">실시간 채팅</h2>
+                    <div class="chat-users-count" style="display: flex; align-items: center; gap: 6px; font-size: 1.2em; color: var(--text-color-secondary);">
+                        <i class="fas fa-user"></i>
+                        <span id="chat-users-count">0</span>
+                    </div>
+                </div>
                 <div class="chat-messages" id="chat-messages">
                     <!-- Messages will be appended here -->
                 </div>
@@ -545,7 +576,6 @@
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
 
     <!-- Custom Scripts -->
-    <script src="script.js"></script> <!-- General purpose script for theme toggle -->
     <script type="module" src="auth.js"></script>
     <script type="module" src="community.js"></script>
     <script>
@@ -566,67 +596,6 @@
             closeButton.addEventListener('click', () => {
                 mobileMenu.classList.remove('is-open');
                 body.classList.remove('mobile-menu-open');
-            });
-        }
-
-        // Mobile Menu Theme Toggle
-        const mobileThemeToggle = document.getElementById('mobile-theme-toggle');
-        const desktopThemeToggle = document.getElementById('theme-toggle');
-
-        if (mobileThemeToggle) {
-            mobileThemeToggle.addEventListener('click', () => {
-                // Replicate theme toggle functionality from script.js
-                // This assumes script.js toggles a 'dark-mode' class on the body
-                const isDarkMode = body.classList.toggle('dark-mode');
-                
-                // Update icon on the original toggle button if it exists
-                if (desktopThemeToggle) {
-                    const desktopIcon = desktopThemeToggle.querySelector('.fas');
-                    if (desktopIcon) {
-                        desktopIcon.classList.toggle('fa-sun', isDarkMode);
-                        desktopIcon.classList.toggle('fa-moon', !isDarkMode);
-                    }
-                }
-                
-                // Update icon in the mobile menu
-                const mobileIcon = mobileThemeToggle.querySelector('.fas');
-                const mobileThemeText = mobileThemeToggle.querySelector('.mobile-theme-display span');
-                if (mobileIcon) {
-                    mobileIcon.classList.toggle('fa-sun', isDarkMode);
-                    mobileIcon.classList.toggle('fa-moon', !isDarkMode);
-                    mobileThemeText.textContent = isDarkMode ? '라이트 모드' : '다크 모드';
-                }
-            });
-        }
-
-        // 다크모드/라이트모드 토글
-        const themeToggle = document.getElementById('theme-toggle');
-        if (themeToggle) {
-            const icon = themeToggle.querySelector('i');
-            // 초기 상태
-            const savedTheme = localStorage.getItem('theme');
-            if (savedTheme === 'dark-mode') {
-                body.classList.add('dark-mode');
-                icon.classList.remove('fa-moon');
-                icon.classList.add('fa-sun');
-            } else {
-                body.classList.remove('dark-mode');
-                icon.classList.remove('fa-sun');
-                icon.classList.add('fa-moon');
-            }
-            themeToggle.addEventListener('click', () => {
-                body.classList.toggle('dark-mode');
-                if (body.classList.contains('dark-mode')) {
-                    icon.classList.remove('fa-moon');
-                    icon.classList.add('fa-sun');
-                    localStorage.setItem('theme', 'dark-mode');
-                } else {
-                    icon.classList.remove('fa-sun');
-                    icon.classList.add('fa-moon');
-                    localStorage.removeItem('theme');
-                }
-                // 차트 테마 동기화 이벤트
-                document.body.dispatchEvent(new CustomEvent('themeChanged', { detail: { isDarkMode: body.classList.contains('dark-mode') } }));
             });
         }
       });

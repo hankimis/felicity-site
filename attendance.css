@@ -1,0 +1,287 @@
+/* 출석체크 메인 레이아웃 */
+.attendance-main {
+  max-width: 1200px;
+  margin: 40px auto 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  background: var(--card-bg);
+  border-radius: 18px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.07);
+  padding: 32px 28px 40px 28px;
+}
+.calendar-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 32px;
+  font-size: 1.5em;
+  font-weight: 700;
+  color: #222;
+  margin-bottom: 18px;
+}
+.calendar-nav {
+  background: none;
+  border: none;
+  color: #2563eb;
+  font-size: 1.3em;
+  cursor: pointer;
+  padding: 4px 10px;
+  border-radius: 6px;
+  transition: background 0.15s;
+}
+.calendar-nav:hover {
+  background: #f2f6fa;
+}
+#attendance-calendar {
+  background: #f7f9fb;
+  border-radius: 16px;
+  padding: 18px 24px 12px 24px;
+  box-shadow: none;
+  margin: 0 auto 0 auto;
+  max-width: 350px;
+}
+.attendance-calendar-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0 6px;
+  font-size: 1.13em;
+  color: #222;
+  background: transparent;
+}
+.attendance-calendar-table th {
+  color: #2563eb;
+  font-weight: 700;
+  background: transparent;
+  padding-bottom: 4px;
+}
+.attendance-calendar-table td {
+  text-align: center;
+  background: none;
+  border-radius: 8px;
+  padding: 4px 0;
+  font-weight: 500;
+  color: #222;
+}
+.attendance-calendar-table td.today {
+  background: #eaf1ff;
+  color: #2563eb;
+  font-weight: 700;
+}
+.attendance-calendar-table td.checked {
+  background: #2563eb;
+  color: #fff;
+  font-weight: 700;
+  position: relative;
+}
+.attendance-calendar-table td .calendar-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  background: #ffd700;
+  border-radius: 50%;
+  margin-left: 4px;
+  vertical-align: middle;
+}
+.attendance-calendar-table td.empty {
+  background: none;
+}
+/* 오늘의 한마디(명언) 입력란 */
+.attendance-input-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+.attendance-avatar {
+  display: none;
+}
+.attendance-textarea {
+  flex: 1;
+  min-height: 48px;
+  border-radius: 12px;
+  border: 1px solid #eee;
+  padding: 12px;
+  font-size: 16px;
+  background: #fff;
+  resize: none;
+}
+.attendance-btn {
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 24px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-left: 8px;
+}
+.attendance-info-row {
+  background: #fafbfc;
+  border-radius: 12px;
+  padding: 12px 16px;
+  font-size: 15px;
+  margin-bottom: 24px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+#attendance-message {
+  flex: 1;
+  border: none;
+  background: transparent;
+  color: #222;
+  font-size: 1.13em;
+  font-weight: 500;
+  resize: none;
+  outline: none;
+}
+#attendance-message[readonly] {
+  background: transparent;
+}
+#attendance-submit {
+  padding: 10px 28px;
+  border-radius: 8px;
+  font-size: 1.08em;
+  background: #2563eb;
+  color: #fff;
+  font-weight: 700;
+  border: none;
+  box-shadow: 0 2px 8px rgba(49,130,246,0.08);
+}
+#attendance-submit:hover {
+  background: #1746b0;
+}
+.attendance-info {
+  background: #fff;
+  border-radius: 12px;
+  padding: 10px 18px;
+  margin-bottom: 18px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  font-size: 1.08em;
+  color: #222;
+  box-shadow: 0 1px 4px rgba(49,130,246,0.04);
+}
+#user-level-badge {
+  color: #2563eb;
+  font-weight: 700;
+}
+#attendance-reward {
+  color: #ffd700;
+  font-weight: 700;
+}
+.attendance-list-section {
+  margin-top: 18px;
+  background: #fff;
+  border-radius: 12px;
+  padding: 18px 18px 10px 18px;
+  box-shadow: 0 1px 4px rgba(49,130,246,0.04);
+}
+.attendance-list-section h2 {
+  font-size: 1.18em;
+  font-weight: 700;
+  color: #222;
+  margin-bottom: 12px;
+}
+#attendance-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.attendance-list-item {
+  background: #f7f9fb;
+  border-radius: 10px;
+  padding: 12px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 1.05em;
+  color: #222;
+  box-shadow: none;
+}
+.att-item-main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.attendance-list-item .level-badge {
+  color: #888;
+  font-size: 0.97em;
+  margin-left: auto;
+}
+.att-item-quote {
+  color: #555;
+  font-size: 1em;
+  padding-left: 4px;
+}
+#attendance-comments {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.attendance-comment-item {
+  background: var(--bg-secondary-color);
+  border-radius: 8px;
+  padding: 10px 14px;
+  color: var(--text-color);
+  font-size: 1em;
+  display: flex;
+  flex-direction: column;
+}
+.attendance-comment-meta {
+  color: var(--text-color-secondary);
+  font-size: 0.93em;
+  margin-bottom: 2px;
+}
+#attendance-comment-form {
+  display: flex;
+  gap: 8px;
+}
+#attendance-comment-input {
+  flex: 1;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  padding: 10px;
+  font-size: 1em;
+  background: var(--bg-secondary-color);
+  color: var(--text-color);
+  resize: none;
+}
+#attendance-comment-form button {
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-size: 1em;
+}
+@media (max-width: 900px) {
+  .attendance-main {
+    max-width: 98vw;
+    padding: 18px 4vw 30px 4vw;
+  }
+  #attendance-calendar {
+    max-width: 100vw;
+    padding: 8px 2px 8px 2px;
+  }
+}
+@media (max-width: 600px) {
+  .attendance-main {
+    padding: 8px 2vw 20px 2vw;
+  }
+  .attendance-input-row {
+    flex-direction: column;
+    gap: 8px;
+  }
+  .attendance-info {
+    flex-direction: column;
+    gap: 8px;
+  }
+  .attendance-calendar-section {
+    padding: 18px 0 12px 0;
+  }
+  .attendance-list-section {
+    padding: 10px 6px 6px 6px;
+  }
+} 

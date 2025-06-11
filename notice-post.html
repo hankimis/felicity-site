@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>공지사항 - ONBit</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="auth.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+  <style>
+    .post-detail-section { max-width: 700px; margin: 40px auto 0 auto; background: var(--card-bg); border-radius: 18px; box-shadow: 0 4px 24px rgba(0,0,0,0.07); padding: 32px 28px 40px 28px; }
+    .post-detail-header { border-bottom: 1px solid var(--border-color); padding-bottom: 18px; margin-bottom: 18px; }
+    .post-title { font-size: 1.5em; font-weight: 700; color: var(--text-color); margin-bottom: 8px; }
+    .post-meta { color: var(--text-color-secondary); font-size: 0.98em; margin-bottom: 4px; }
+    .post-content { color: var(--text-color); font-size: 1.13em; line-height: 1.8; margin-bottom: 18px; white-space: pre-line; }
+    .post-actions { display: flex; gap: 16px; margin-bottom: 18px; }
+    .post-actions button { background: var(--bg-secondary-color); border: 1px solid var(--border-color); border-radius: 8px; padding: 8px 18px; font-size: 1em; cursor: pointer; transition: background 0.15s; }
+    .post-actions button.active, .post-actions button:hover { background: var(--primary-color); color: #fff; border-color: var(--primary-color); }
+    .back-btn { margin-bottom: 18px; background: none; border: none; color: var(--primary-color); font-size: 1em; cursor: pointer; text-decoration: underline; }
+    .comments-section { margin-top: 32px; }
+    .comments-title { font-size: 1.1em; font-weight: 600; margin-bottom: 10px; }
+    .comment-list { display: flex; flex-direction: column; gap: 14px; margin-bottom: 18px; }
+    .comment-item { background: var(--bg-secondary-color); border-radius: 8px; padding: 12px 16px; color: var(--text-color); font-size: 1em; }
+    .comment-meta { color: var(--text-color-secondary); font-size: 0.93em; margin-bottom: 2px; }
+    .comment-form { display: flex; gap: 8px; margin-top: 8px; }
+    .comment-form textarea { flex: 1; border-radius: 8px; border: 1px solid var(--border-color); padding: 10px; font-size: 1em; }
+    .comment-form button { padding: 10px 18px; border-radius: 8px; background: var(--primary-color); color: #fff; border: none; font-weight: 600; cursor: pointer; }
+    @media (max-width: 700px) { .post-detail-section { max-width: 98vw; padding: 12px 2vw 30px 2vw; } }
+  </style>
+</head>
+<body>
+  <header class="navbar">
+    <a href="index.html" class="logo">ONBit</a>
+    <nav>
+      <ul>
+        <li><a href="affiliated.html">제휴 거래소</a></li>
+        <li><a href="community.html">실시간 채팅</a></li>
+        <li class="dropdown">
+          <a href="#" class="dropdown-toggle">커뮤니티 <i class="fas fa-caret-down"></i></a>
+          <ul class="dropdown-menu">
+            <li><a href="community-board.html">자유 게시판</a></li>
+            <li><a href="attendance.html">출석체크</a></li>
+          </ul>
+        </li>
+        <li><a href="notice-board.html">공지사항</a></li>
+      </ul>
+    </nav>
+    <div class="header-right">
+      <aside class="auth-buttons">
+        <a href="#" class="login">로그인</a>
+        <a href="#" class="signup">회원가입</a>
+      </aside>
+      <div id="user-profile" style="display: none; align-items: center; gap: 12px; color: var(--text-color);">
+        <span id="user-level" style="font-weight: 700; color: var(--primary-color);"></span>
+        <span id="user-display-name"></span>
+        <button id="logout-btn" class="icon-button" aria-label="로그아웃"><i class="fas fa-sign-out-alt"></i></button>
+      </div>
+      <button class="icon-button" id="theme-toggle"><i class="fas fa-moon"></i></button>
+      <a href="my-account.html" id="my-page-link" class="icon-button" aria-label="마이페이지"><i class="fas fa-user-circle"></i></a>
+    </div>
+    <button class="mobile-menu-button" id="mobile-menu-button" aria-label="메뉴 열기">
+      <i class="fas fa-bars"></i>
+    </button>
+  </header>
+  <main>
+    <section class="post-detail-section">
+      <button class="back-btn" onclick="window.location.href='notice-board.html'">← 목록으로</button>
+      <div id="post-detail"></div>
+      <div class="post-actions" id="post-actions"></div>
+      <button id="delete-post-btn" style="display:none; margin-bottom:16px; background:#ef5350; color:#fff; border:none; border-radius:8px; padding:8px 18px; font-weight:600; cursor:pointer;">삭제</button>
+      <div class="comments-section">
+        <div class="comments-title">댓글</div>
+        <div class="comment-list" id="comment-list"></div>
+        <form class="comment-form" id="comment-form">
+          <textarea id="comment-input" placeholder="댓글을 입력하세요" required></textarea>
+          <button type="submit">댓글등록</button>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <!-- Login Modal -->
+  <div id="login-modal" class="auth-modal">
+      <div class="auth-modal-content">
+          <span class="auth-modal-close">&times;</span>
+          <form id="login-form" class="auth-form">
+              <h2>로그인</h2>
+              <p id="login-error-message" class="error-message"></p>
+              <div class="input-group">
+                  <i class="fas fa-envelope"></i>
+                  <input type="email" name="login-email" placeholder="이메일" required>
+              </div>
+              <div class="input-group">
+                  <i class="fas fa-lock"></i>
+                  <input type="password" name="login-password" placeholder="비밀번호" required>
+              </div>
+              <button type="submit" class="submit-btn">로그인</button>
+              <p class="auth-form-switch">계정이 없으신가요? <a href="#" id="show-signup">회원가입</a></p>
+          </form>
+      </div>
+  </div>
+
+  <!-- Signup Modal -->
+  <div id="signup-modal" class="auth-modal">
+      <div class="auth-modal-content">
+          <span class="auth-modal-close">&times;</span>
+          <form id="signup-form" class="auth-form">
+              <h2>회원가입</h2>
+              <p id="signup-error-message" class="error-message"></p>
+              <div class="input-group">
+                  <i class="fas fa-user"></i>
+                  <input type="text" name="signup-name" placeholder="닉네임" required>
+              </div>
+              <div class="input-group">
+                  <i class="fas fa-envelope"></i>
+                  <input type="email" name="signup-email" placeholder="이메일" required>
+              </div>
+              <div class="input-group">
+                  <i class="fas fa-lock"></i>
+                  <input type="password" name="signup-password" placeholder="비밀번호" required>
+              </div>
+              <div class="input-group">
+                  <i class="fas fa-check-circle"></i>
+                  <input type="password" name="signup-confirm-password" placeholder="비밀번호 확인" required>
+              </div>
+              <button type="submit" class="submit-btn">회원가입</button>
+              <p class="auth-form-switch">이미 계정이 있으신가요? <a href="#" id="show-login">로그인</a></p>
+          </form>
+      </div>
+  </div>
+
+  <script type="module" src="auth.js"></script>
+  <script type="module" src="notice-post.js"></script>
+</body>
+</html> 
