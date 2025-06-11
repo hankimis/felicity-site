@@ -50,7 +50,9 @@
 </head>
 <body>
   <header class="navbar">
-    <a href="index.html" class="logo">ONBit</a>
+    <a href="index.html" class="logo">
+      <img id="main-logo" src="assets/lightlogo.png" alt="Onbit Logo" height="40"/>
+    </a>
     <nav>
       <ul>
         <li><a href="affiliated.html">제휴 거래소</a></li>
@@ -83,12 +85,12 @@
     </button>
   </header>
   <main class="main-container">
+    <div class="community-title-bar">
+      <h1>공지사항</h1>
+    </div>
     <section class="board-section">
-      <div class="section-title-bar">
-        <h2>공지사항</h2>
-        <button id="write-notice-btn" class="primary-btn" style="display:none;">공지 작성</button>
-      </div>
-      <div id="notice-list" class="board-table"></div>
+      <div class="notice-list" id="notice-list"></div>
+      <button id="write-notice-btn" class="primary-btn" style="display:none;position:fixed;right:32px;bottom:32px;z-index:1200;box-shadow:0 4px 16px rgba(49,130,246,0.13);padding:16px 32px;font-size:1.1rem;border-radius:12px;">공지 작성</button>
     </section>
     <!-- 공지 작성 모달 -->
     <div id="notice-modal" class="auth-modal" style="display:none;">
@@ -119,5 +121,6 @@
 
   <script type="module" src="auth.js"></script>
   <script type="module" src="notice-board.js"></script>
+  <script src="assets/logo-theme.js"></script>
 </body>
 </html> 

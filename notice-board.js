@@ -64,35 +64,30 @@ async function renderPage(page = 1) {
   const posts = [];
   snap.forEach(doc => posts.push({ id: doc.id, ...doc.data() }));
   if (posts.length > 0) lastVisible = snap.docs[snap.docs.length - 1];
-  // 댓글수, 추천수, 조회수 등 표시
-  noticeList.innerHTML = `
-    <table class="board-table">
-      <thead><tr><th>번호</th><th>제목</th><th>글쓴이</th><th>조회</th><th>추천</th><th>댓글</th><th>날짜</th></tr></thead>
-      <tbody>
-        ${posts.map((post, idx) => `
-          <tr data-id="${post.id}">
-            <td>${(page-1)*POSTS_PER_PAGE + idx + 1}</td>
-            <td class="title-cell">${post.title}</td>
-            <td>${post.displayName}</td>
-            <td>${post.views || 0}</td>
-            <td>${post.likes || 0}</td>
-            <td id="comment-count-${post.id}">-</td>
-            <td>${post.createdAt ? new Date(post.createdAt.seconds*1000).toLocaleDateString() : ''}</td>
-          </tr>
-        `).join('')}
-      </tbody>
-    </table>
-    <div class="pagination" id="pagination"></div>
-  `;
+  // 카드형 렌더링
+  noticeList.innerHTML = posts.map(post => `
+    <div class="notice-card" data-id="${post.id}">
+      <div class="notice-title">${post.title}</div>
+      <div class="notice-content-preview">${(post.content || '').replace(/<[^>]+>/g, '').slice(0, 60)}${(post.content||'').length>60?'...':''}</div>
+      <div class="notice-meta">
+        <span class="meta-item"><i class="fas fa-user"></i> ${post.displayName || '관리자'}</span>
+        <span class="meta-item"><i class="fas fa-calendar-alt"></i> ${post.createdAt ? new Date(post.createdAt.seconds*1000).toLocaleDateString() : ''}</span>
+        <span class="meta-item"><i class="fas fa-eye"></i> ${post.views || 0}</span>
+        <span class="meta-item"><i class="fas fa-thumbs-up"></i> ${post.likes || 0}</span>
+        <span class="meta-item"><i class="fas fa-comment"></i> <span id="comment-count-${post.id}">-</span></span>
+      </div>
+    </div>
+  `).join('') + '<div class="pagination" id="pagination"></div>';
   // 댓글수 fetch
   posts.forEach(async post => {
     const commentsSnap = await getCountFromServer(collection(db, `notices/${post.id}/comments`));
-    document.getElementById(`comment-count-${post.id}`).textContent = commentsSnap.data().count;
+    const el = document.getElementById(`comment-count-${post.id}`);
+    if (el) el.textContent = commentsSnap.data().count;
   });
-  // 행 클릭시 상세로 이동
-  noticeList.querySelectorAll('tr[data-id]').forEach(row => {
-    row.addEventListener('click', () => {
-      window.location.href = `notice-post.html?id=${row.dataset.id}`;
+  // 카드 클릭시 상세로 이동
+  noticeList.querySelectorAll('.notice-card').forEach(card => {
+    card.addEventListener('click', () => {
+      window.location.href = `notice-post.html?id=${card.dataset.id}`;
     });
   });
   renderPagination(page);

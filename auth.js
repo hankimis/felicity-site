@@ -280,7 +280,7 @@ function createMobileMenuIfNeeded() {
     menu.className = 'mobile-menu';
     menu.innerHTML = `
         <div class="mobile-menu-header">
-          <a href="index.html" class="logo">ONBit</a>
+          <a href="index.html" class="logo"><img id="mobile-main-logo" src="assets/lightlogo.png" alt="Onbit Logo" height="36"/></a>
           <button class="icon-button mobile-menu-close" data-action="close-mobile-menu" aria-label="메뉴 닫기"><i class="fas fa-times"></i></button>
         </div>
         <div class="mobile-auth-section"></div>
@@ -313,4 +313,16 @@ document.addEventListener('DOMContentLoaded', () => {
     setDataActions();
     document.addEventListener('click', handleGlobalClick);
     setupFormListeners();
+
+    // 모바일 메뉴 로고도 테마에 따라 변경
+    function updateMobileLogoByTheme() {
+      const logoImg = document.getElementById('mobile-main-logo');
+      if (!logoImg) return;
+      const isDark = document.body.classList.contains('dark-mode');
+      logoImg.src = isDark ? 'assets/darklogo.png' : 'assets/lightlogo.png';
+    }
+    updateMobileLogoByTheme();
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', updateMobileLogoByTheme);
+    const observer = new MutationObserver(updateMobileLogoByTheme);
+    observer.observe(document.body, { attributes: true, attributeFilter: ['class'] });
 }); 

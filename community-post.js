@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore, doc, getDoc, updateDoc, increment, collection, addDoc, serverTimestamp, query, orderBy, onSnapshot, deleteDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, doc, getDoc, updateDoc, increment, collection, addDoc, serverTimestamp, query, orderBy, onSnapshot, deleteDoc, getDocs, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { firebaseConfig } from './firebase-config.js';
 
 const app = initializeApp(firebaseConfig);
@@ -18,13 +18,71 @@ let currentUser = null;
 let postData = null;
 
 function checkDeleteButton() {
+  const deleteBtn = document.getElementById('delete-post-btn');
+  if (!deleteBtn) return;
   if (!currentUser || !postData) {
     deleteBtn.style.display = 'none';
     return;
   }
   if (currentUser.uid === postData.uid || currentUser.email === 'admin@site.com') {
-    deleteBtn.style.display = 'block';
+    deleteBtn.style.display = 'inline-block';
+  } else {
+    deleteBtn.style.display = 'none';
+  }
+}
+
+async function loadPost() {
+  const snap = await getDoc(postRef);
+  if (!snap.exists()) {
+    postDetail.innerHTML = '<div>게시글을 찾을 수 없습니다.</div>';
+    return;
+  }
+  postData = snap.data();
+  await updateDoc(postRef, { views: increment(1) });
+  // 카드형 레이아웃 (클래스 기반)
+  postDetail.innerHTML = `
+    <div class="post-card-header">
+      <img class="post-profile-img" src="${postData.profileImg || 'assets/@default-profile.png'}" onerror="this.onerror=null;this.src='assets/@default-profile.png';" alt="프로필">
+      <div style="display:flex;flex-direction:column;gap:2px;">
+        <span class="post-nickname">${postData.displayName || '익명'}</span>
+        <span class="post-time">
+          ${postData.createdAt ? new Date(postData.createdAt.seconds*1000).toLocaleString() : ''}
+          ${postData.isEdited ? ' (수정됨)' : ''}
+        </span>
+      </div>
+      <span class="post-category-badge">${postData.subCategory || postData.category || '자유'}
+        <button id="delete-post-btn" style="margin-left:10px;background:#ef5350;color:#fff;border:none;border-radius:8px;padding:4px 14px;font-weight:600;cursor:pointer;">삭제</button>
+      </span>
+    </div>
+    <div class="post-card-title">${postData.title}</div>
+    <div class="post-card-content">${postData.content.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>
+    ${postData.isNews ? `
+      <div class="post-news-block">
+        <span class="post-news-icon"><i class="fas fa-chart-line"></i></span>
+        <div>
+          <h3 class="post-news-title">${postData.newsTitle || ''}</h3>
+          <div class="post-news-summary">${postData.newsSummary || ''}</div>
+        </div>
+      </div>
+    ` : ''}
+    <div class="post-meta">조회수 ${postData.views+1 || 1}</div>
+  `;
+  // 태그(있으면)
+  const postTags = document.getElementById('post-tags');
+  if (postTags) {
+    if (postData.tags && Array.isArray(postData.tags) && postData.tags.length > 0) {
+      postTags.innerHTML = postData.tags.map(tag => `<span class="post-tag-badge">${tag}</span>`).join('');
+    } else {
+      postTags.innerHTML = '';
+    }
+  }
+  // 반응 버튼 렌더링
+  renderReactions();
+  // 삭제 버튼 이벤트 연결
+  const deleteBtn = document.getElementById('delete-post-btn');
+  if (deleteBtn) {
     deleteBtn.onclick = async () => {
+      if (!currentUser || !(currentUser.uid === postData.uid || currentUser.email === 'admin@site.com')) return;
       if (!confirm('정말 삭제하시겠습니까?')) return;
       const commentsRef = collection(db, `community-posts/${postId}/comments`);
       const commentsSnap = await getDocs(commentsRef);
@@ -35,28 +93,59 @@ function checkDeleteButton() {
       alert('삭제되었습니다.');
       window.location.href = 'community-board.html';
     };
-  } else {
-    deleteBtn.style.display = 'none';
   }
+  checkDeleteButton();
 }
 
-async function loadPost() {
-  const snap = await getDoc(postRef);
-  if (!snap.exists()) {
-    postDetail.innerHTML = '<div>게시글을 찾을 수 없습니다.</div>';
-    deleteBtn.style.display = 'none';
-    return;
-  }
-  postData = snap.data();
-  await updateDoc(postRef, { views: increment(1) });
-  postDetail.innerHTML = `
-    <div class="post-detail-header">
-      <div class="post-title">${postData.title}</div>
-      <div class="post-meta">${postData.displayName} · ${postData.createdAt ? new Date(postData.createdAt.seconds*1000).toLocaleString() : ''} · 조회수 ${postData.views+1 || 1}</div>
-    </div>
-    <div class="post-content">${postData.content.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>
+function renderReactions() {
+  const reactions = document.getElementById('post-reactions');
+  if (!reactions || !postData) return;
+  reactions.innerHTML = `
+    <button class="post-reaction-btn" id="like-btn"><span class="icon"><i class="fas fa-heart"></i></span> <span id="like-count">${postData.likes || 0}</span></button>
+    <button class="post-reaction-btn" id="comment-btn"><span class="icon"><i class="fas fa-comment"></i></span> <span id="comment-count">0</span></button>
+    <button class="post-reaction-btn" id="share-btn"><span class="icon"><i class="fas fa-share"></i></span></button>
   `;
-  checkDeleteButton();
+  document.getElementById('like-btn').onclick = () => handleLike();
+  document.getElementById('share-btn').onclick = () => handleShare();
+  document.getElementById('comment-btn').onclick = () => {
+    document.getElementById('comment-input')?.focus();
+  };
+  // 댓글 카운트 실시간 반영
+  const commentsRef = collection(db, `community-posts/${postId}/comments`);
+  onSnapshot(commentsRef, snap => {
+    const countEl = document.getElementById('comment-count');
+    if (countEl) countEl.textContent = snap.size;
+  });
+}
+
+async function handleLike() {
+  if (!auth.currentUser) return alert('로그인 후 이용 가능합니다.');
+  const likeRef = doc(db, `community-posts/${postId}/likes`, auth.currentUser.uid);
+  const postRef2 = doc(db, 'community-posts', postId);
+  const postSnap = await getDoc(postRef2);
+  let likes = postSnap.data().likes || 0;
+  const likeSnap = await getDoc(likeRef);
+  if (likeSnap.exists()) {
+    if (likes > 0) await updateDoc(postRef2, { likes: likes - 1 });
+    await deleteDoc(likeRef);
+    document.getElementById('like-btn').classList.remove('active');
+  } else {
+    await updateDoc(postRef2, { likes: likes + 1 });
+    await setDoc(likeRef, { liked: true });
+    document.getElementById('like-btn').classList.add('active');
+  }
+  // 새로고침 없이 카운트 갱신
+  const snap2 = await getDoc(postRef2);
+  document.getElementById('like-count').textContent = snap2.data().likes || 0;
+}
+
+function handleShare() {
+  const url = `${window.location.origin}/community-post.html?id=${postId}`;
+  if (navigator.share) {
+    navigator.share({ title: postData.title, url });
+  } else {
+    navigator.clipboard.writeText(url).then(() => alert('링크가 복사되었습니다.'));
+  }
 }
 
 onAuthStateChanged(auth, user => {
@@ -101,9 +190,7 @@ onSnapshot(commentsQuery, snap => {
   const comments = [];
   snap.forEach(doc => { comments.push({ id: doc.id, ...doc.data() }); });
   renderComments(comments);
-  // 댓글 카운트 업데이트 (community-board.js의 comment-count-${postId} 엘리먼트가 있다면)
-  const countEl = document.getElementById(`comment-count-${postId}`);
-  if (countEl) countEl.textContent = comments.length;
+  document.getElementById('comment-count').textContent = comments.length;
 });
 
 // 댓글 등록

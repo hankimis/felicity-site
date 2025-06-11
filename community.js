@@ -64,7 +64,7 @@ onAuthStateChanged(auth, async (user) => {
             ? { uid: user.uid, ...userDoc.data() }
             : { uid: user.uid, displayName: user.displayName || 'Anonymous', level: 1, role: 'user' };
         if (!currentUser.photoURL) {
-            currentUser.photoURL = `https://ui-avatars.com/api/?name=${encodeURIComponent(currentUser.displayName)}&background=random`;
+            currentUser.photoURL = 'assets/@default-profile.png';
         }
         // presence 등록
         presenceRef = dbRef(rtdb, `chat-presence/${user.uid}`);

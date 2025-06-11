@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lbank 거래소 정보 - ONBit</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="auth.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+</head>
+<body>
+  <!-- 사이트 공통 헤더/네비게이션 (navbar) -->
+  <header class="navbar">
+    <a href="index.html" class="logo">
+      <img id="main-logo" src="assets/lightlogo.png" alt="Onbit Logo" height="40"/>
+    </a>
+    <nav>
+      <ul>
+        <li><a href="affiliated.html">제휴 거래소</a></li>
+        <li><a href="community.html">실시간 채팅</a></li>
+        <li class="dropdown">
+          <a href="#" class="dropdown-toggle">커뮤니티 <i class="fas fa-caret-down"></i></a>
+          <ul class="dropdown-menu">
+            <li><a href="community-board.html">자유 게시판</a></li>
+            <li><a href="attendance.html">출석체크</a></li>
+          </ul>
+        </li>
+        <li><a href="notice-board.html">공지사항</a></li>
+      </ul>
+    </nav>
+    <div class="header-right">
+      <aside class="auth-buttons">
+        <a href="#" class="login">로그인</a>
+        <a href="#" class="signup">회원가입</a>
+      </aside>
+      <div id="user-profile" style="display: none; align-items: center; gap: 12px; color: var(--text-color);">
+        <span id="user-level" style="font-weight: 700; color: var(--primary-color);"></span>
+        <span id="user-display-name"></span>
+        <button id="logout-btn" class="icon-button" aria-label="로그아웃"><i class="fas fa-sign-out-alt"></i></button>
+      </div>
+      <button class="icon-button" id="theme-toggle"><i class="fas fa-moon"></i></button>
+      <a href="my-account.html" id="my-page-link" class="icon-button" aria-label="마이페이지"><i class="fas fa-user-circle"></i></a>
+    </div>
+    <button class="mobile-menu-button" id="mobile-menu-button" aria-label="메뉴 열기">
+      <i class="fas fa-bars"></i>
+    </button>
+  </header>
+  <main class="main-container lbank-detail-page" style="max-width: 700px; margin: 0 auto;">
+    <section class="exchange-intro-card info-card" style="text-align:center; margin-top:40px;">
+      <img class="exchange-logo-img" src="https://i.namu.wiki/i/YWlRrFTBHqJEpAbnFsgM_16TA14dcFdcDYxuASjS-BIoXu0R8on04qBAO3qauxmbaD-33tNpVWDwjx8rxLbKzEjKK0xHdLJ4RoXh2-lSSToI4pY0GXSP9ERPTYSremOTvDr7XkW8zTaazWnvxQGSUg.webp" alt="Lbank 로고" style="width:110px; height:110px; border-radius:24px; background:#fff; object-fit:contain; margin-bottom:18px;" />
+      <h1 class="exchange-title" style="font-size:2.2em; font-weight:900; letter-spacing:2px; margin-bottom:8px;">Lbank</h1>
+      <p class="exchange-desc" style="font-size:1.13em; color:var(--text-color-secondary); margin-bottom:18px;">Lbank는 글로벌 유저가 많은 대형 거래소로, 다양한 코인 상장과 빠른 입출금, 그리고 <b style="color:#3182f6;">30% 페이백</b> 혜택을 제공합니다.</p>
+      <a href="https://lbank.com/ref/5454M" target="_blank" class="lbank-join-btn signup-button filled" style="font-size:1.15em; padding:14px 38px; margin-bottom:0;">셀퍼럴로 Lbank 가입하기</a>
+    </section>
+
+    <section class="exchange-benefit-card info-card" style="margin-top:32px;">
+      <h2 class="section-title" style="margin-bottom:18px;">주요 혜택</h2>
+      <ul style="list-style:none; padding:0; display:flex; flex-direction:column; gap:12px;">
+        <li style="display:flex;align-items:center;gap:10px;"><i class="fas fa-fire" style="color:#ff5252;"></i> <b style="color:#3182f6;">수수료 30% 페이백</b> <span style="color:var(--text-color-secondary);">(모든 유저, 레퍼럴 & 이벤트)</span></li>
+        <li style="display:flex;align-items:center;gap:10px;"><i class="fas fa-gift" style="color:#ffd700;"></i> <b style="color:#3182f6;">신규 가입 이벤트</b> <span style="color:var(--text-color-secondary);">(가입 시 추가 보너스 지급)</span></li>
+      </ul>
+    </section>
+
+    <section class="exchange-fee-card info-card" style="margin-top:32px;">
+      <h2 class="section-title" style="margin-bottom:18px;">수수료 안내</h2>
+      <table style="width:100%; border-radius:12px; background:var(--bg-secondary-color);">
+        <tr><th style="text-align:left; color:var(--text-color-secondary); font-weight:700; padding:10px 0;">지정가</th><td style="padding:10px 0;">0.01%</td></tr>
+        <tr><th style="text-align:left; color:var(--text-color-secondary); font-weight:700; padding:10px 0;">시장가</th><td style="padding:10px 0;">0.02%</td></tr>
+        <tr><th style="text-align:left; color:var(--text-color-secondary); font-weight:700; padding:10px 0;">최소 입금</th><td style="padding:10px 0;">10 USDT</td></tr>
+      </table>
+    </section>
+
+    <button class="back-btn-modern" style="margin:40px 0 32px 0;" onclick="window.location.href='index.html'"><i class='fas fa-arrow-left'></i> 거래소 목록으로</button>
+  </main>
+  <!-- 인증 모달 (로그인/회원가입) -->
+  <div id="login-modal" class="auth-modal">
+    <div class="auth-modal-content">
+      <span class="auth-modal-close">&times;</span>
+      <form id="login-form" class="auth-form">
+        <h2>로그인</h2>
+        <p id="login-error-message" class="error-message"></p>
+        <div class="input-group">
+          <i class="fas fa-envelope"></i>
+          <input type="email" name="login-email" placeholder="이메일" required>
+        </div>
+        <div class="input-group">
+          <i class="fas fa-lock"></i>
+          <input type="password" name="login-password" placeholder="비밀번호" required>
+        </div>
+        <button type="submit" class="submit-btn">로그인</button>
+        <p class="auth-form-switch">계정이 없으신가요? <a href="#" id="show-signup">회원가입</a></p>
+      </form>
+    </div>
+  </div>
+  <div id="signup-modal" class="auth-modal">
+    <div class="auth-modal-content">
+      <span class="auth-modal-close">&times;</span>
+      <form id="signup-form" class="auth-form">
+        <h2>회원가입</h2>
+        <p id="signup-error-message" class="error-message"></p>
+        <div class="input-group">
+          <i class="fas fa-user"></i>
+          <input type="text" name="signup-name" placeholder="닉네임" required>
+        </div>
+        <div class="input-group">
+          <i class="fas fa-envelope"></i>
+          <input type="email" name="signup-email" placeholder="이메일" required>
+        </div>
+        <div class="input-group">
+          <i class="fas fa-lock"></i>
+          <input type="password" name="signup-password" placeholder="비밀번호" required>
+        </div>
+        <div class="input-group">
+          <i class="fas fa-check-circle"></i>
+          <input type="password" name="signup-confirm-password" placeholder="비밀번호 확인" required>
+        </div>
+        <button type="submit" class="submit-btn">회원가입</button>
+        <p class="auth-form-switch">이미 계정이 있으신가요? <a href="#" id="show-login">로그인</a></p>
+      </form>
+    </div>
+  </div>
+  <script src="assets/logo-theme.js"></script>
+  <script type="module" src="auth.js"></script>
+</body>
+</html> 

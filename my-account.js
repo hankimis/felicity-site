@@ -34,6 +34,8 @@ onAuthStateChanged(auth, async (user) => {
             emailInput.value = userData.email;
             if (userData.photoURL) {
                 profilePicPreview.src = userData.photoURL;
+            } else {
+                profilePicPreview.src = 'assets/@default-profile.png';
             }
         }
     } else {
