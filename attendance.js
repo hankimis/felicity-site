@@ -159,9 +159,7 @@ function renderAttendanceList(attendances) {
         <span class="level-badge">[Lv.${att.user.level || 1}]</span>
         <span class="display-name">${att.user.displayName}</span>
         <span class="attendance-time">${a_time}</span>
-      </div>
-      <div class="att-item-quote">
-        "${att.quote}"
+        <span class="att-item-quote">"${att.quote}"</span>
       </div>
     `;
     attendanceList.appendChild(item);
