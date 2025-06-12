@@ -1,0 +1,46 @@
+  <div class="top-bar">
+    <span>10초 수수료 페이백 확인</span>
+    <span>내 계좌 이체 정보 | <a href="#">문의하기</a></span>
+  </div>
+
+  <header class="navbar">
+    <a href="index.html" class="logo">
+      <img id="main-logo" src="assets/lightlogo.png" alt="Onbit Logo" height="40"/>
+    </a>
+    <nav>
+      <ul>
+        <li><a href="affiliated.html">제휴 거래소</a></li>
+        <li><a href="community.html">실시간 채팅</a></li>
+        <li class="dropdown">
+          <a href="#" class="dropdown-toggle">커뮤니티 <i class="fas fa-caret-down"></i></a>
+          <ul class="dropdown-menu">
+            <li><a href="community-board.html">자유 게시판</a></li>
+            <li><a href="attendance.html">출석체크</a></li>
+            <li><a href="event-board.html">이벤트</a></li>
+          </ul>
+        </li>
+        <li><a href="notice-board.html">공지사항</a></li>
+      </ul>
+    </nav>
+    <div class="header-right">
+      <aside class="auth-buttons">
+        <a href="#" class="login" data-action="open-login">로그인</a>
+        <a href="#" class="signup" data-action="open-signup">회원가입</a>
+      </aside>
+      <div class="user-info" id="user-profile" style="display: none;">
+        <span id="user-display-name"></span>
+        <span id="user-level"></span>
+        <a href="admin.html" id="admin-page-link" style="display: none;" title="관리자 페이지">
+          <i class="fas fa-shield-alt"></i>
+        </a>
+        <button id="logout-btn" data-action="logout"><i class="fas fa-sign-out-alt"></i></button>
+      </div>
+      <div class="theme-toggle" id="theme-toggle" data-action="toggle-theme">
+        <i class="fas fa-moon"></i>
+      </div>
+      <a href="my-account.html" id="my-page-link" class="icon-button" data-action="my-page" aria-label="마이페이지"><i class="fas fa-user-circle"></i></a>
+    </div>
+    <button class="mobile-menu-button" id="mobile-menu-button" data-action="open-mobile-menu" aria-label="메뉴 열기">
+      <i class="fas fa-bars"></i>
+    </button>
+  </header> 

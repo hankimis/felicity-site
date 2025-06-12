@@ -1,6 +1,8 @@
 /* --- Authentication Modals --- */
 .auth-modal {
-    display: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     position: fixed;
     z-index: 2000;
     left: 0;
@@ -21,15 +23,18 @@
 
 .auth-modal-content {
     background-color: var(--card-bg);
-    margin: 10vh auto;
-    padding: 32px 40px;
+    margin: 0;
+    padding: 24px 24px;
     border: 1px solid var(--border-color);
-    width: 90%;
-    max-width: 420px;
-    border-radius: 16px;
+    width: 100%;
+    max-width: 380px;
+    border-radius: 20px;
     box-shadow: 0 10px 30px rgba(0,0,0,0.1);
     position: relative;
     animation: slideIn 0.4s ease-out;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
 }
 
 @keyframes slideIn {
@@ -55,9 +60,9 @@
 .auth-form h2 {
     text-align: center;
     color: var(--text-color);
-    margin-bottom: 8px;
-    font-size: 1.8rem;
-    font-weight: 700;
+    margin-bottom: 14px;
+    font-size: 1.5rem;
+    font-weight: 800;
 }
 
 .auth-form .error-message {
@@ -79,28 +84,28 @@
 
 .input-group {
     position: relative;
-    margin-bottom: 20px;
+    margin-bottom: 12px;
 }
 
 .input-group i {
     position: absolute;
-    left: 15px;
+    left: 18px;
     top: 50%;
     transform: translateY(-50%);
     color: var(--text-color-secondary);
-    font-size: 1rem;
-    pointer-events: none; /* Make icon unclickable */
+    font-size: 1.1rem;
+    pointer-events: none;
 }
 
 .input-group input {
     width: 100%;
-    padding: 14px 14px 14px 45px;
+    padding: 14px 14px 14px 42px;
     border: 1px solid var(--border-color);
     background-color: var(--bg-secondary-color);
-    border-radius: 8px;
+    border-radius: 12px;
     font-size: 1rem;
     color: var(--text-color);
-    box-sizing: border-box; /* Important for padding */
+    box-sizing: border-box;
     transition: border-color 0.2s, box-shadow 0.2s;
 }
 
@@ -117,11 +122,11 @@
     border: none;
     color: white;
     font-size: 1.1rem;
-    font-weight: 600;
-    border-radius: 8px;
+    font-weight: 700;
+    border-radius: 12px;
     cursor: pointer;
     transition: background-color 0.2s, transform 0.1s;
-    margin-top: 10px;
+    margin-top: 12px;
 }
 
 .submit-btn:hover {
@@ -134,8 +139,9 @@
 
 .auth-form-switch {
     text-align: center;
-    margin-top: 24px;
-    font-size: 0.95rem;
+    margin-top: 10px;
+    margin-bottom: 0;
+    font-size: 0.9rem;
     color: var(--text-color-secondary);
 }
 
@@ -147,4 +153,21 @@
 
 .auth-form-switch a:hover {
     text-decoration: underline;
+}
+
+@media (max-width: 768px) {
+    .auth-modal-content {
+        padding: 18px 8px;
+        max-width: 95vw;
+    }
+    .auth-form h2 {
+        font-size: 1.2rem;
+        margin-bottom: 10px;
+    }
+    .input-group {
+        margin-bottom: 8px;
+    }
+    .auth-form-switch {
+        margin-top: 8px;
+    }
 } 

@@ -23,6 +23,7 @@
           <ul class="dropdown-menu">
             <li><a href="community-board.html">자유 게시판</a></li>
             <li><a href="attendance.html">출석체크</a></li>
+            <li><a href="event-board.html">이벤트</a></li>
           </ul>
         </li>
         <li><a href="notice-board.html">공지사항</a></li>
@@ -47,10 +48,10 @@
   </header>
   <main class="main-container lbank-detail-page" style="max-width: 700px; margin: 0 auto;">
     <section class="exchange-intro-card info-card" style="text-align:center; margin-top:40px;">
-      <img class="exchange-logo-img" src="https://i.namu.wiki/i/YWlRrFTBHqJEpAbnFsgM_16TA14dcFdcDYxuASjS-BIoXu0R8on04qBAO3qauxmbaD-33tNpVWDwjx8rxLbKzEjKK0xHdLJ4RoXh2-lSSToI4pY0GXSP9ERPTYSremOTvDr7XkW8zTaazWnvxQGSUg.webp" alt="Lbank 로고" style="width:110px; height:110px; border-radius:24px; background:#fff; object-fit:contain; margin-bottom:18px;" />
+      <img class="exchange-logo-img" src="assets/lbank logo.png" alt="Lbank 로고" style="width:110px; height:110px; border-radius:24px; background:#fff; object-fit:contain; margin-bottom:18px;" />
       <h1 class="exchange-title" style="font-size:2.2em; font-weight:900; letter-spacing:2px; margin-bottom:8px;">Lbank</h1>
-      <p class="exchange-desc" style="font-size:1.13em; color:var(--text-color-secondary); margin-bottom:18px;">Lbank는 글로벌 유저가 많은 대형 거래소로, 다양한 코인 상장과 빠른 입출금, 그리고 <b style="color:#3182f6;">30% 페이백</b> 혜택을 제공합니다.</p>
-      <a href="https://lbank.com/ref/5454M" target="_blank" class="lbank-join-btn signup-button filled" style="font-size:1.15em; padding:14px 38px; margin-bottom:0;">셀퍼럴로 Lbank 가입하기</a>
+      <p class="exchange-desc" style="font-size:1.13em; color:var(--text-color-secondary); margin-bottom:30px;">Lbank는 글로벌 유저가 많은 대형 거래소로, 다양한 코인 상장과 빠른 입출금을 제공합니다.</p>
+      <a href="https://lbank.com/ref/5454M" target="_blank" class="lbank-join-btn signup-button filled" style="font-size:1.15em; padding:14px 38px; margin-bottom:0;">가입하기</a>
     </section>
 
     <section class="exchange-benefit-card info-card" style="margin-top:32px;">
@@ -88,13 +89,13 @@
           <input type="password" name="login-password" placeholder="비밀번호" required>
         </div>
         <button type="submit" class="submit-btn">로그인</button>
-        <p class="auth-form-switch">계정이 없으신가요? <a href="#" id="show-signup">회원가입</a></p>
+        <p class="auth-form-switch">계정이 없으신가요? <a href="#" id="show-signup" data-action="show-signup">회원가입</a></p>
       </form>
     </div>
   </div>
   <div id="signup-modal" class="auth-modal">
     <div class="auth-modal-content">
-      <span class="auth-modal-close">&times;</span>
+      <span class="auth-modal-close" data-action="close-modal">&times;</span>
       <form id="signup-form" class="auth-form">
         <h2>회원가입</h2>
         <p id="signup-error-message" class="error-message"></p>
@@ -115,11 +116,10 @@
           <input type="password" name="signup-confirm-password" placeholder="비밀번호 확인" required>
         </div>
         <button type="submit" class="submit-btn">회원가입</button>
-        <p class="auth-form-switch">이미 계정이 있으신가요? <a href="#" id="show-login">로그인</a></p>
+        <p class="auth-form-switch">이미 계정이 있으신가요? <a href="#" id="show-login" data-action="show-login">로그인</a></p>
       </form>
     </div>
   </div>
-  <script src="assets/logo-theme.js"></script>
   <script type="module" src="auth.js"></script>
 </body>
 </html> 

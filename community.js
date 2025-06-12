@@ -202,16 +202,16 @@ function displayMessage(docId, data, isNewMessage = false) {
     messageElement.id = docId;
     messageElement.classList.add('message-item');
     if (data.uid === currentUser?.uid) messageElement.classList.add('my-message');
-    
-    const levelBadge = data.role === 'admin'
-        ? `<span class="admin-badge">[Admin]</span>`
-        : `<span class="level-badge">[Lv.${data.level}]</span>`;
+
+    const profileImg = data.photoURL || 'assets/@default-profile.png';
 
     messageElement.innerHTML = `
-        <!-- <img src="${data.photoURL}" alt="${data.displayName}" class="profile-pic"> -->
+        <img class="chat-profile-pic" src="${profileImg}" alt="프로필" onerror="this.onerror=null;this.src='assets/@default-profile.png';">
         <div class="message-content">
             <div class="message-sender">
-                ${levelBadge}
+                ${data.role === 'admin'
+                    ? `<span class="admin-badge">[Admin]</span>`
+                    : `<span class="level-badge">[Lv.${data.level}]</span>`}
                 <strong>${data.displayName}</strong>
             </div>
             <p class="message-text">${data.text.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</p>

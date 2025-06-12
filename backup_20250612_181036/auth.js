@@ -26,29 +26,17 @@ function applyTheme() {
     const theme = localStorage.getItem('theme');
     document.body.classList.toggle('dark-mode', theme === 'dark');
     updateLogos();
-    updateThemeIcon();
 }
 
 function toggleTheme() {
-    const currentTheme = localStorage.getItem('theme') || 'light';
-    const newTheme = currentTheme === 'light' ? 'dark' : 'light';
-    document.body.classList.toggle('dark-mode', newTheme === 'dark');
-    localStorage.setItem('theme', newTheme);
+    const isDarkMode = document.body.classList.toggle('dark-mode');
+    localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
     updateLogos();
-    updateThemeIcon();
-}
-
-function updateThemeIcon() {
-    const themeButton = document.querySelector('#theme-toggle');
-    if (themeButton) {
-        const isDarkMode = document.body.classList.contains('dark-mode');
-        themeButton.innerHTML = isDarkMode ? '<i class="fas fa-moon"></i>' : '<i class="fas fa-sun"></i>';
-    }
 }
 
 function updateLogos() {
     const isDarkMode = document.body.classList.contains('dark-mode');
-    const logoSrc = isDarkMode ? 'assets/darklogo.png' : 'assets/lightlogo.png';
+    const logoSrc = isDarkMode ? 'assets/images/logo_dark.png' : 'assets/images/logo_light.png';
     document.querySelectorAll('.logo img, #mobile-main-logo').forEach(img => {
         if(img) img.src = logoSrc;
     });
@@ -56,54 +44,53 @@ function updateLogos() {
 
 // 4. UI 업데이트 함수
 async function updateAuthUI(user) {
-    console.log("updateAuthUI called with user:", user);
     const mobileAuthSection = document.querySelector('.mobile-auth-section');
+    if (user) {
+        try {
+            const userDoc = await getDoc(doc(db, "users", user.uid));
+            currentUser = userDoc.exists() ? { uid: user.uid, ...userDoc.data() } : { displayName: user.displayName || "사용자", level: 1 };
+            updateUIVisibility(true, currentUser, mobileAuthSection);
+        } catch (error) {
+            console.error("Error fetching user data:", error);
+            updateUIVisibility(false, {}, mobileAuthSection);
+        }
+    } else {
+        currentUser = null;
+        updateUIVisibility(false, {}, mobileAuthSection);
+    }
+}
+
+function updateUIVisibility(isLoggedIn, userData, mobileAuthSection) {
     const userProfile = getElement('user-profile');
     const authButtons = document.querySelector('.auth-buttons');
     const adminPageLink = getElement('admin-page-link');
 
-    if (user) {
-        try {
-            console.log("Fetching user data for:", user.uid);
-            const userDoc = await getDoc(doc(db, "users", user.uid));
-            currentUser = userDoc.exists() ? { uid: user.uid, ...userDoc.data() } : { uid: user.uid, displayName: user.displayName || "사용자", level: 1 };
-            console.log("User data fetched:", currentUser);
+    if (userProfile) userProfile.style.display = isLoggedIn ? 'flex' : 'none';
+    if (authButtons) authButtons.style.display = isLoggedIn ? 'none' : 'flex';
 
-            // 로그인 상태 UI 업데이트
-            if (userProfile) userProfile.style.display = 'flex';
-            if (authButtons) authButtons.style.display = 'none';
-            if (getElement('user-display-name')) getElement('user-display-name').textContent = currentUser.displayName;
-            if (getElement('user-level')) getElement('user-level').textContent = `Lv.${currentUser.level}`;
-            if (adminPageLink) adminPageLink.style.display = currentUser.role === 'admin' ? 'inline-block' : 'none';
-
-            // 모바일 메뉴 업데이트
-            if (mobileAuthSection) {
-                mobileAuthSection.innerHTML = `
-                    <div class="mobile-user-profile">
-                        <span>${currentUser.displayName}님 (Lv.${currentUser.level})</span>
-                        <a href="#" id="mobile-logout-btn" data-action="logout">로그아웃</a>
-                    </div>`;
-            }
-        } catch (error) {
-            console.error("Error fetching user data:", error);
-            // 에러 발생 시 로그아웃 처리
-            signOut(auth).catch(console.error);
+    if (isLoggedIn) {
+        if (getElement('user-display-name')) getElement('user-display-name').textContent = userData.displayName;
+        if (getElement('user-level')) getElement('user-level').textContent = `Lv.${userData.level}`;
+        
+        // 관리자일 경우 관리자 페이지 링크 표시
+        if (adminPageLink) {
+            adminPageLink.style.display = userData.role === 'admin' ? 'inline-block' : 'none';
         }
     } else {
-        console.log("User is logged out");
-        currentUser = null;
-
-        // 로그아웃 상태 UI 업데이트
-        if (userProfile) userProfile.style.display = 'none';
-        if (authButtons) authButtons.style.display = 'flex';
-        if (adminPageLink) adminPageLink.style.display = 'none';
-
-        // 모바일 메뉴 업데이트
-        if (mobileAuthSection) {
-            mobileAuthSection.innerHTML = `
-                <button class="button-login" data-action="open-login">로그인</button>
-                <button class="button-signup" data-action="open-signup">회원가입</button>`;
+        // 로그아웃 시 관리자 페이지 링크 숨김
+        if (adminPageLink) {
+            adminPageLink.style.display = 'none';
         }
+    }
+
+    if (mobileAuthSection) {
+        mobileAuthSection.innerHTML = isLoggedIn ?
+            `<div class="mobile-user-profile">
+                <span>${userData.displayName}님 (Lv.${userData.level})</span>
+                <a href="#" id="mobile-logout-btn" data-action="logout">로그아웃</a>
+            </div>` :
+            `<button class="button-login" data-action="open-login">로그인</button>
+             <button class="button-signup" data-action="open-signup">회원가입</button>`;
     }
 }
 
@@ -115,46 +102,17 @@ function handleGlobalClick(e) {
     const action = target.dataset.action;
     e.preventDefault();
 
-    console.log("Handling action:", action);
-
     const actions = {
         'open-login': () => controlModal('login-modal', true),
         'open-signup': () => controlModal('signup-modal', true),
-        'close-modal': () => {
-            const modal = target.closest('.auth-modal');
-            if (modal) {
-                console.log("Closing modal:", modal.id);
-                controlModal(modal.id, false);
-            }
-        },
+        'close-modal': () => controlModal(target.closest('.auth-modal').id, false),
         'show-signup': () => { controlModal('login-modal', false); controlModal('signup-modal', true); },
         'show-login': () => { controlModal('signup-modal', false); controlModal('login-modal', true); },
-        'toggle-theme': () => {
-            console.log("Toggling theme");
-            toggleTheme();
-        },
-        'logout': () => {
-            console.log("Logging out");
-            signOut(auth).catch(console.error);
-        },
-        'my-page': () => {
-            if (auth.currentUser) window.location.href = target.href;
-            else alert('로그인이 필요합니다.');
-        },
-        'open-mobile-menu': () => {
-            const mobileMenu = getElement('mobile-menu');
-            if (mobileMenu) {
-                mobileMenu.classList.add('is-open');
-                document.body.classList.add('mobile-menu-open');
-            }
-        },
-        'close-mobile-menu': () => {
-            const mobileMenu = getElement('mobile-menu');
-            if (mobileMenu) {
-                mobileMenu.classList.remove('is-open');
-                document.body.classList.remove('mobile-menu-open');
-            }
-        },
+        'toggle-theme': toggleTheme,
+        'logout': () => signOut(auth),
+        'my-page': () => { if (auth.currentUser) window.location.href = target.href; else alert('로그인이 필요합니다.'); },
+        'open-mobile-menu': () => { getElement('mobile-menu')?.classList.add('is-open'); document.body.classList.add('mobile-menu-open'); },
+        'close-mobile-menu': () => { getElement('mobile-menu')?.classList.remove('is-open'); document.body.classList.remove('mobile-menu-open'); },
     };
 
     if (actions[action]) {

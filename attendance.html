@@ -7,9 +7,15 @@
   <link rel="stylesheet" href="style.css" />
   <link rel="stylesheet" href="auth.css" />
   <link rel="stylesheet" href="attendance.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
 </head>
 <body>
+  <div class="top-bar">
+    <span>10초 수수료 페이백 확인</span>
+    <span>내 계좌 이체 정보 | <a href="#">문의하기</a></span>
+  </div>
+
   <header class="navbar">
     <a href="index.html" class="logo">
       <img id="main-logo" src="assets/lightlogo.png" alt="Onbit Logo" height="40"/>
@@ -23,6 +29,7 @@
           <ul class="dropdown-menu">
             <li><a href="community-board.html">자유 게시판</a></li>
             <li><a href="attendance.html">출석체크</a></li>
+            <li><a href="event-board.html">이벤트</a></li>
           </ul>
         </li>
         <li><a href="notice-board.html">공지사항</a></li>
@@ -30,16 +37,21 @@
     </nav>
     <div class="header-right">
       <aside class="auth-buttons">
-        <a href="#" class="login">로그인</a>
-        <a href="#" class="signup">회원가입</a>
+        <a href="#" class="login" data-action="open-login">로그인</a>
+        <a href="#" class="signup" data-action="open-signup">회원가입</a>
       </aside>
-      <div id="user-profile" style="display: none; align-items: center; gap: 12px; color: var(--text-color);">
-        <span id="user-level" style="font-weight: 700; color: var(--primary-color);"></span>
+      <div class="user-info" id="user-profile" style="display: none;">
         <span id="user-display-name"></span>
-        <button id="logout-btn" class="icon-button" aria-label="로그아웃"><i class="fas fa-sign-out-alt"></i></button>
+        <span id="user-level"></span>
+        <a href="admin.html" id="admin-page-link" style="display: none;" title="관리자 페이지">
+          <i class="fas fa-shield-alt"></i>
+        </a>
+        <button id="logout-btn" data-action="logout"><i class="fas fa-sign-out-alt"></i></button>
       </div>
-      <button class="icon-button" id="theme-toggle"><i class="fas fa-moon"></i></button>
-      <a href="my-account.html" id="my-page-link" class="icon-button" aria-label="마이페이지"><i class="fas fa-user-circle"></i></a>
+      <button class="theme-button" id="theme-toggle" data-action="toggle-theme">
+        <i class="fas fa-sun"></i>
+      </button>
+      <a href="my-account.html" id="my-page-link" class="icon-button" data-action="my-page" aria-label="마이페이지"><i class="fas fa-user-circle"></i></a>
     </div>
     <button class="mobile-menu-button" id="mobile-menu-button" data-action="open-mobile-menu" aria-label="메뉴 열기">
       <i class="fas fa-bars"></i>
@@ -106,13 +118,13 @@
                   <input type="password" name="login-password" placeholder="비밀번호" required>
                 </div>
                 <button type="submit" class="submit-btn">로그인</button>
-                <p class="auth-form-switch">계정이 없으신가요? <a href="#" id="show-signup">회원가입</a></p>
+                <p class="auth-form-switch">계정이 없으신가요? <a href="#" id="show-signup" data-action="show-signup">회원가입</a></p>
               </form>
             </div>
           </div>
           <div id="signup-modal" class="auth-modal">
             <div class="auth-modal-content">
-              <span class="auth-modal-close">&times;</span>
+              <span class="auth-modal-close" data-action="close-modal">&times;</span>
               <form id="signup-form" class="auth-form">
                 <h2>회원가입</h2>
                 <p id="signup-error-message" class="error-message"></p>
@@ -133,7 +145,7 @@
                   <input type="password" name="signup-confirm-password" placeholder="비밀번호 확인" required>
                 </div>
                 <button type="submit" class="submit-btn">회원가입</button>
-                <p class="auth-form-switch">이미 계정이 있으신가요? <a href="#" id="show-login">로그인</a></p>
+                <p class="auth-form-switch">이미 계정이 있으신가요? <a href="#" id="show-login" data-action="show-login">로그인</a></p>
               </form>
             </div>
           </div>
@@ -144,6 +156,5 @@
 
   <script type="module" src="auth.js"></script>
   <script type="module" src="attendance.js"></script>
-  <script src="assets/logo-theme.js"></script>
 </body>
 </html> 

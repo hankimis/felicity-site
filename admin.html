@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>관리자 페이지 - ONBit</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="admin.css">
+    <link rel="stylesheet" href="auth.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+    <div class="top-bar">
+        <span>10초 수수료 페이백 확인</span>
+        <span>내 계좌 이체 정보 | <a href="#">문의하기</a></span>
+    </div>
+
+    <header class="navbar">
+        <a href="index.html" class="logo">
+            <img id="main-logo" src="assets/lightlogo.png" alt="Onbit Logo" height="40"/>
+        </a>
+        <nav>
+            <ul>
+                <li><a href="affiliated.html">제휴 거래소</a></li>
+                <li><a href="community.html">실시간 채팅</a></li>
+                <li class="dropdown">
+                    <a href="#" class="dropdown-toggle">커뮤니티 <i class="fas fa-caret-down"></i></a>
+                    <ul class="dropdown-menu">
+                        <li><a href="community-board.html">자유 게시판</a></li>
+                        <li><a href="attendance.html">출석체크</a></li>
+                        <li><a href="event-board.html">이벤트</a></li>
+                    </ul>
+                </li>
+                <li><a href="notice-board.html">공지사항</a></li>
+            </ul>
+        </nav>
+        <div class="header-right">
+            <aside class="auth-buttons">
+                <a href="#" class="login" data-action="open-login">로그인</a>
+                <a href="#" class="signup" data-action="open-signup">회원가입</a>
+            </aside>
+            <div class="user-info" id="user-profile" style="display: none;">
+                <span id="user-display-name"></span>
+                <span id="user-level"></span>
+                <a href="admin.html" id="admin-page-link" style="display: none;" title="관리자 페이지">
+                    <i class="fas fa-shield-alt"></i>
+                </a>
+                <button id="logout-btn" data-action="logout"><i class="fas fa-sign-out-alt"></i></button>
+            </div>
+            <button class="theme-button" id="theme-toggle" data-action="toggle-theme">
+                <i class="fas fa-sun"></i>
+            </button>
+            <a href="my-account.html" id="my-page-link" class="icon-button" data-action="my-page" aria-label="마이페이지"><i class="fas fa-user-circle"></i></a>
+        </div>
+        <button class="mobile-menu-button" id="mobile-menu-button" data-action="open-mobile-menu" aria-label="메뉴 열기">
+            <i class="fas fa-bars"></i>
+        </button>
+    </header>
+
+    <main class="admin-page-main">
+        <div class="container">
+            <div class="admin-header">
+                <div class="admin-title">
+                    <h1>관리자 대시보드</h1>
+                    <p>ONBit Admin</p>
+                </div>
+                <div class="admin-actions">
+                    <button class="refresh-btn">
+                        <i class="fas fa-sync-alt"></i>
+                        새로고침
+                    </button>
+                </div>
+            </div>
+            
+            <div id="admin-access-denied" style="display:none;">
+                <i class="fas fa-lock"></i>
+                <h2>접근 권한이 없습니다</h2>
+                <p>관리자 권한이 필요한 페이지입니다.</p>
+                <a href="index.html" class="back-btn">홈으로 돌아가기</a>
+            </div>
+
+            <div id="admin-dashboard" style="display:none;">
+                <section class="user-management-section">
+                    <div class="section-header">
+                        <h2>사용자 관리</h2>
+                        <div class="search-bar">
+                            <i class="fas fa-search"></i>
+                            <input type="text" id="user-search" placeholder="사용자 검색...">
+                        </div>
+                    </div>
+
+                    <div class="admin-stats">
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-users"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h3>전체 회원 수</h3>
+                                <p id="total-users-count">0</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-user-clock"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h3>오늘의 신규 가입</h3>
+                                <p id="new-users-count">0</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="user-table-container">
+                        <table id="users-table">
+                            <thead>
+                                <tr>
+                                    <th>UID</th>
+                                    <th>닉네임</th>
+                                    <th>이메일</th>
+                                    <th>레벨</th>
+                                    <th>가입일</th>
+                                    <th>관리</th>
+                                </tr>
+                            </thead>
+                            <tbody id="users-table-body">
+                                <!-- 사용자 목록이 여기에 동적으로 추가됩니다. -->
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </main>
+
+    <div id="nickname-modal" class="auth-modal">
+        <div class="auth-modal-content">
+            <span class="auth-modal-close" id="close-nickname-modal">&times;</span>
+            <form id="nickname-form" class="auth-form">
+                <h2>닉네임 변경</h2>
+                <input type="hidden" id="nickname-uid">
+                <div class="input-group">
+                    <i class="fas fa-user"></i>
+                    <input type="text" id="new-nickname" placeholder="새 닉네임" required>
+                </div>
+                <button type="submit" class="submit-btn">변경하기</button>
+            </form>
+        </div>
+    </div>
+
+    <footer class="main-footer">
+        <div class="container">
+            <p>&copy; 2024 ONBit. All rights reserved.</p>
+            <div class="footer-links">
+                <a href="#">이용약관</a>
+                <a href="#">개인정보처리방침</a>
+            </div>
+        </div>
+    </footer>
+
+    <script type="module" src="auth.js"></script>
+    <script type="module" src="admin.js"></script>
+</body>
+</html> 

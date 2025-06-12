@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Onbit</title>
+    <link rel="stylesheet" href="style.css"/>
+    <link rel="stylesheet" href="auth.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+      .event-board-container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 60px 24px 40px 24px;
+      }
+      .event-board-title {
+        font-size: 2.2em;
+        font-weight: 900;
+        margin-bottom: 36px;
+        color: var(--text-color);
+        letter-spacing: -1px;
+      }
+      .event-card-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+        gap: 36px;
+      }
+      .event-card {
+        background: var(--card-bg);
+        border-radius: 22px;
+        padding: 32px 32px 28px 32px;
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+        box-shadow: 0 4px 24px var(--shadow-color);
+        min-width: 0;
+        transition: background 0.3s, color 0.3s;
+      }
+      .event-card-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: var(--text-color-secondary);
+        font-size: 1.08em;
+        font-weight: 600;
+      }
+      .event-card-title {
+        font-size: 1.25em;
+        font-weight: 800;
+        margin-bottom: 6px;
+        color: var(--text-color);
+        letter-spacing: -0.5px;
+      }
+      .event-card-desc {
+        color: var(--text-color-secondary);
+        font-size: 1.05em;
+        margin-bottom: 8px;
+      }
+      .event-card-footer {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-top: 8px;
+      }
+      .event-exchange-logo {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        object-fit: contain;
+        background: #fff;
+        margin-right: 4px;
+      }
+      .event-exchange-name {
+        font-weight: 700;
+        color: var(--text-color-secondary);
+        font-size: 1.05em;
+      }
+      .event-card-main {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 24px;
+      }
+      .event-card-main-text {
+        flex: 1;
+        min-width: 0;
+      }
+      .event-card-img {
+        width: 120px;
+        height: 120px;
+        border-radius: 14px;
+        object-fit: cover;
+        background: var(--bg-secondary-color);
+        box-shadow: 0 2px 8px var(--shadow-color);
+      }
+      @media (max-width: 900px) {
+        .event-board-title { font-size: 1.3em; }
+        .event-card-grid { grid-template-columns: 1fr; gap: 18px; }
+        .event-card { padding: 18px 12px 16px 12px; }
+        .event-card-main { flex-direction: column; gap: 12px; align-items: flex-start; }
+        .event-card-img { width: 100%; height: 90px; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="top-bar">
+      <span>10초 수수료 페이백 확인</span>
+      <span>내 계좌 이체 정보 | <a href="#">문의하기</a></span>
+    </div>
+  
+    <header class="navbar">
+      <a href="index.html" class="logo">
+        <img id="main-logo" src="assets/lightlogo.png" alt="Onbit Logo" height="40"/>
+      </a>
+      <nav>
+        <ul>
+          <li><a href="affiliated.html">제휴 거래소</a></li>
+          <li><a href="community.html">실시간 채팅</a></li>
+          <li class="dropdown">
+            <a href="#" class="dropdown-toggle">커뮤니티 <i class="fas fa-caret-down"></i></a>
+            <ul class="dropdown-menu">
+              <li><a href="community-board.html">자유 게시판</a></li>
+              <li><a href="attendance.html">출석체크</a></li>
+              <li><a href="event-board.html">이벤트</a></li>
+            </ul>
+          </li>
+          <li><a href="notice-board.html">공지사항</a></li>
+        </ul>
+      </nav>
+      <div class="header-right">
+        <aside class="auth-buttons">
+          <a href="#" class="login" data-action="open-login">로그인</a>
+          <a href="#" class="signup" data-action="open-signup">회원가입</a>
+        </aside>
+        <div class="user-info" id="user-profile" style="display: none;">
+          <span id="user-display-name"></span>
+          <span id="user-level"></span>
+          <a href="admin.html" id="admin-page-link" style="display: none;" title="관리자 페이지">
+            <i class="fas fa-shield-alt"></i>
+          </a>
+          <button id="logout-btn" data-action="logout"><i class="fas fa-sign-out-alt"></i></button>
+        </div>
+        <button class="theme-button" id="theme-toggle" data-action="toggle-theme">
+          <i class="fas fa-sun"></i>
+        </button>
+        <a href="my-account.html" id="my-page-link" class="icon-button" data-action="my-page" aria-label="마이페이지"><i class="fas fa-user-circle"></i></a>
+      </div>
+      <button class="mobile-menu-button" id="mobile-menu-button" data-action="open-mobile-menu" aria-label="메뉴 열기">
+        <i class="fas fa-bars"></i>
+      </button>
+    </header>
+    
+    <div class="event-board-container">
+      <h1 class="event-board-title">거래소가 진행하는 이벤트에요</h1>
+      <div class="event-card-grid">
+        <!-- Event Card 1 -->
+        <div class="event-card">
+          <div class="event-card-header"><i class="fas fa-calendar-alt"></i> 25.06.01 ~ 25.06.30</div>
+          <div class="event-card-main">
+            <div class="event-card-main-text">
+              <div class="event-card-title">100,000 USDT 캐시백 받아가세요!</div>
+              <div class="event-card-desc">6월 Bybit 캐시백 이벤트</div>
+              <div class="event-card-footer">
+                <img class="event-exchange-logo" src="https://prod-tethermax.s3.ap-northeast-2.amazonaws.com/exchange/icon/bybit.png" alt="Bybit" />
+                <span class="event-exchange-name">Bybit</span>
+              </div>
+            </div>
+            <img class="event-card-img" src="https://i.imgur.com/8Q1ZQ1B.png" alt="Bybit Event" />
+          </div>
+        </div>
+        <!-- Event Card 2 -->
+        <div class="event-card">
+          <div class="event-card-header"><i class="fas fa-calendar-alt"></i> 25.05.26 ~ 25.06.16</div>
+          <div class="event-card-main">
+            <div class="event-card-main-text">
+              <div class="event-card-title">BingAI 체험하고 매일 보상 받아가세요</div>
+              <div class="event-card-desc">BingX BingAI 체험 이벤트</div>
+              <div class="event-card-footer">
+                <img class="event-exchange-logo" src="https://prod-tethermax.s3.ap-northeast-2.amazonaws.com/exchange/icon/bingx.png" alt="BingX" />
+                <span class="event-exchange-name">BingX</span>
+              </div>
+            </div>
+            <img class="event-card-img" src="https://i.imgur.com/8Q1ZQ1B.png" alt="BingX Event" />
+          </div>
+        </div>
+        <!-- Event Card 3 -->
+        <div class="event-card">
+          <div class="event-card-header"><i class="fas fa-calendar-alt"></i> 25.05.29 ~ 25.06.16</div>
+          <div class="event-card-main">
+            <div class="event-card-main-text">
+              <div class="event-card-title">거래하고, 크루즈 · 위스키 · 골드바 받아가세요</div>
+              <div class="event-card-desc">BingX 거래 이벤트</div>
+              <div class="event-card-footer">
+                <img class="event-exchange-logo" src="https://prod-tethermax.s3.ap-northeast-2.amazonaws.com/exchange/icon/bingx.png" alt="BingX" />
+                <span class="event-exchange-name">BingX</span>
+              </div>
+            </div>
+            <img class="event-card-img" src="https://i.imgur.com/8Q1ZQ1B.png" alt="BingX Event" />
+          </div>
+        </div>
+        <!-- Event Card 4 -->
+        <div class="event-card">
+          <div class="event-card-header"><i class="fas fa-calendar-alt"></i> 25.06.09 ~ 25.06.30</div>
+          <div class="event-card-main">
+            <div class="event-card-main-text">
+              <div class="event-card-title">F1 라이브 레이스 티켓을 받고, 매달 5,000 GT 상금도 나눠가세요</div>
+              <div class="event-card-desc">Gate 레드불 레이싱 투어 이벤트</div>
+              <div class="event-card-footer">
+                <img class="event-exchange-logo" src="https://prod-tethermax.s3.ap-northeast-2.amazonaws.com/exchange/icon/gate.png" alt="Gate" />
+                <span class="event-exchange-name">Gate</span>
+              </div>
+            </div>
+            <img class="event-card-img" src="https://i.imgur.com/8Q1ZQ1B.png" alt="Gate Event" />
+          </div>
+        </div>
+        <!-- Event Card 5 -->
+        <div class="event-card">
+          <div class="event-card-header"><i class="fas fa-calendar-alt"></i> 25.06.09 ~ 25.06.17</div>
+          <div class="event-card-main">
+            <div class="event-card-main-text">
+              <div class="event-card-title">총 상금풀 $50,000 받아가세요</div>
+              <div class="event-card-desc">HTX BTC 예측+ 트레이딩 챌린지</div>
+              <div class="event-card-footer">
+                <img class="event-exchange-logo" src="https://prod-tethermax.s3.ap-northeast-2.amazonaws.com/exchange/icon/htx.png" alt="HTX" />
+                <span class="event-exchange-name">HTX</span>
+              </div>
+            </div>
+            <img class="event-card-img" src="https://i.imgur.com/8Q1ZQ1B.png" alt="HTX Event" />
+          </div>
+        </div>
+      </div>
+    </div>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+    <!-- Auth Modals & Scripts (attendance.html 방식) -->
+    <div id="auth-modals"></div>
+    <script type="module" src="auth.js"></script>
+    <script src="assets/logo-theme.js"></script>
+  </body>
+</html> 
