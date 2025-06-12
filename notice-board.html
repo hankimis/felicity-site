@@ -169,14 +169,6 @@
   </main>
 
   <div id="auth-modals"></div>
-  <script>
-    fetch('auth-modals.html')
-      .then(res => res.text())
-      .then(html => {
-        document.getElementById('auth-modals').innerHTML = html;
-      });
-  </script>
-
   <script type="module" src="auth.js"></script>
   <script type="module" src="notice-board.js"></script>
 </body>
