@@ -604,6 +604,130 @@
       .popular-post-item2 { font-size: 0.97em; padding: 5px 2px 5px 0; }
       .post-category-badge { right: 4px; top: 4px; font-size: 0.9em; padding: 1.5px 6px; }
     }
+    /* 글쓰기 모달 스타일 개선 */
+    .auth-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 1300;
+      display: none;
+    }
+
+    .auth-modal.show {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    #write-modal .auth-modal-content {
+      position: relative;
+      width: 100%;
+      max-width: 800px;
+      margin: 20px;
+      background: var(--card-bg);
+      border-radius: 24px;
+      padding: 40px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+      animation: modalFadeIn 0.3s ease;
+    }
+
+    @keyframes modalFadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(-20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    #write-modal .auth-modal-close {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      font-size: 28px;
+      color: var(--text-color-secondary);
+      cursor: pointer;
+      transition: color 0.2s;
+    }
+
+    #write-modal .auth-modal-close:hover {
+      color: var(--text-color);
+    }
+
+    #write-form {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    #write-form input[type="text"],
+    #write-form textarea {
+      width: 100%;
+      padding: 16px 20px;
+      border: 2px solid var(--border-color);
+      border-radius: 16px;
+      background: var(--bg-secondary-color);
+      color: var(--text-color);
+      font-size: 1.1em;
+      transition: all 0.2s;
+    }
+
+    #write-form input[type="text"]:focus,
+    #write-form textarea:focus {
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+      outline: none;
+    }
+
+    #write-form textarea {
+      min-height: 300px;
+      resize: vertical;
+    }
+
+    #write-form button[type="submit"] {
+      width: 100%;
+      padding: 16px;
+      border: none;
+      border-radius: 16px;
+      background: var(--primary-color);
+      color: white;
+      font-size: 1.1em;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    #write-form button[type="submit"]:hover {
+      background: #2563eb;
+      transform: translateY(-1px);
+    }
+
+    #write-form button[type="submit"]:active {
+      transform: translateY(1px);
+    }
+
+    /* 모바일 반응형 */
+    @media (max-width: 768px) {
+      #write-modal .auth-modal-content {
+        margin: 16px;
+        padding: 24px;
+      }
+
+      #write-form input[type="text"],
+      #write-form textarea {
+        padding: 12px 16px;
+        font-size: 1em;
+      }
+
+      #write-form textarea {
+        min-height: 200px;
+      }
+    }
   </style>
 </head>
 <body>
@@ -691,20 +815,16 @@
     <!-- 플로팅 버튼 그룹 -->
     <div class="floating-btn-group">
       <button id="scroll-top-btn" class="floating-btn"><i class="fas fa-arrow-up"></i></button>
-      <button id="write-post-btn" class="floating-btn write-btn"><i class="fas fa-pen"></i> 글쓰기</button>
+      <button type="button" id="write-post-btn" class="floating-btn write-btn" style="display: none;"><i class="fas fa-pen"></i> 글쓰기</button>
     </div>
     <!-- 글쓰기 모달 -->
-    <div id="write-modal" class="auth-modal" style="display:none;">
-      <div class="auth-modal-content" style="max-width:600px;padding:54px 42px 42px 42px;">
-        <span class="auth-modal-close" id="close-write-modal" data-action="close-modal">&times;</span>
-        <form id="write-form" class="auth-form" style="background:none;box-shadow:none;">
-          <div style="display:flex;flex-direction:column;gap:28px;">
-            <input type="text" id="post-title" placeholder="제목을 입력해 주세요" style="font-size:1.35em;padding:28px 24px;border-radius:16px;border:2px solid #e5e7eb;background:#fafbfc;outline:none;" required />
-            <div style="background:#fafbfc;border-radius:16px;border:2px solid #e5e7eb;">
-              <textarea id="post-content" placeholder="욕설, 비방 등 상대방을 불쾌하게 하는 게시물은 올리지 말아 주세요." rows="10" style="width:100%;border:none;background:transparent;resize:none;font-size:1.22em;padding:28px 24px 0 24px;outline:none;min-height:220px;" required></textarea>
-          </div>
-            <button type="submit" class="submit-btn" style="width:100%;background:#4664fa;color:#fff;font-size:1.23em;padding:22px 0;border-radius:16px;font-weight:700;">남기기</button>
-          </div>
+    <div id="write-modal" class="auth-modal">
+      <div class="auth-modal-content">
+        <span class="auth-modal-close" id="close-write-modal">&times;</span>
+        <form id="write-form">
+          <input type="text" id="post-title" placeholder="제목을 입력해 주세요" required />
+          <textarea id="post-content" placeholder="내용을 입력해 주세요.&#13;&#10;&#13;&#10;• 광고성, 음란성, 욕설이 포함된 게시글은 통보 없이 삭제될 수 있습니다.&#13;&#10;• 타인을 비방하거나 명예를 훼손하는 게시글은 제재 대상이 됩니다." required></textarea>
+          <button type="submit">게시하기</button>
         </form>
       </div>
     </div>

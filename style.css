@@ -5003,21 +5003,20 @@ html, body {
 
 /* PC 화면에서 채팅창을 감싸는 컨테이너 */
 .chat-container {
-    max-width: 1000px;
+    max-width: 800px;
     margin: 0 auto;
     border: 1px solid var(--border-color);
     border-radius: 12px;
-    overflow: hidden; /* 자식 요소가 부모를 벗어나지 않도록 */
+    overflow: hidden;
+    background-color: var(--card-bg);
+    height: calc(100vh - 40px); /* 상단 네비게이션바 여백 줄임 */
 }
 
 .chat-wrapper {
     display: flex;
     flex-direction: column;
-    width: 100%;
-    background-color: var(--bg-color);
-    /* PC에서는 최대 높이를 지정하여 스크롤 생성 */
-    max-height: 85vh;
-    height: 85vh;
+    height: 100%;
+    background-color: var(--card-bg);
 }
 
 /* --- 2. 메시지 영역 --- */
@@ -5039,62 +5038,47 @@ html, body {
 #chat-form {
     display: flex;
     align-items: center;
-    padding: 10px;
-    gap: 10px;
+    padding: 8px; /* 입력 폼 패딩 줄임 */
+    gap: 8px;
     border-top: 1px solid var(--border-color);
     background-color: var(--card-bg);
     flex-shrink: 0; /* 입력창이 줄어들지 않도록 */
 }
 
 #message-input {
-    flex-grow: 1;
-    min-width: 0;
-    height: 44px;
-    padding: 0 15px;
+    height: 36px; /* 입력창 높이 줄임 */
+    padding: 0 12px;
     border: 1px solid var(--border-color);
-    border-radius: 22px;
+    border-radius: 18px;
     background-color: var(--bg-secondary-color);
     color: var(--text-color);
-    font-size: 16px;
+    font-size: 0.95em;
 }
 
 #chat-form button {
-    flex-shrink: 0;
-    height: 44px;
-    padding: 0 20px;
-    border-radius: 22px;
+    height: 36px; /* 버튼 높이 줄임 */
+    padding: 0 16px;
+    border-radius: 18px;
     background-color: var(--primary-color);
     color: white;
-    font-weight: bold;
+    font-weight: normal;
     border: none;
     cursor: pointer;
-    transition: background-color 0.2s;
 }
 
 /* --- 5. 모바일 반응형 처리 --- */
 @media (max-width: 768px) {
     .chat-container {
-        border: none;
-        border-radius: 0;
-    }
-
-    .chat-wrapper {
-        height: 100vh; /* 모바일에서는 화면 전체 높이 사용 */
-        max-height: none;
+        height: calc(100vh - 20px); /* 모바일에서 상단 여백 더 줄임 */
     }
     
     #chat-messages {
-        flex-direction: column-reverse;
-        padding-bottom: 80px;
+        padding: 12px; /* 모바일에서 메시지 영역 패딩 줄임 */
+        padding-bottom: 60px; /* 하단 입력창 여백 줄임 */
     }
-
+    
     #chat-form {
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        width: 100%;
-        z-index: 100;
-        box-sizing: border-box;
+        padding: 6px; /* 모바일에서 입력 폼 패딩 더 줄임 */
     }
 }
 
@@ -5384,19 +5368,15 @@ body, html {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 10px 15px;
-    border: 1px solid var(--border-color);
-    border-bottom: none;
-    border-radius: 12px 12px 0 0;
-    background-color: var(--card-bg);
+    padding: 8px 12px; /* 헤더 패딩 줄임 */
+    margin-bottom: 8px; /* 헤더와 채팅 영역 간격 줄임 */
 }
-.chat-section-header h2 { margin: 0; }
+.chat-section-header h2 {
+    font-size: 1.1em; /* 헤더 폰트 크기 줄임 */
+    margin: 0;
+}
 .chat-users-count {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 1.1em;
-    color: var(--text-color-secondary);
+    font-size: 0.9em; /* 사용자 수 표시 폰트 크기 줄임 */
 }
 
 /* 채팅 메시지와 입력창을 감싸는 wrapper */
@@ -5448,16 +5428,22 @@ body, html {
 .message-item {
     display: flex;
     align-items: flex-start;
-    gap: 10px;
-    margin-bottom: 12px;
+    gap: 8px; /* 프로필 사진과 메시지 간격 줄임 */
+    margin-bottom: 6px; /* 메시지 간 세로 간격 줄임 */
     max-width: 85%;
 }
 .chat-profile-pic {
-    width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0;
+    width: 32px; /* 프로필 이미지 크기 줄임 */
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+    background: #f0f0f0;
+    border: 2px solid #e0e0e0;
+    transition: box-shadow 0.3s;
 }
 .message-content { display: flex; flex-direction: column; }
-.message-sender { font-size: 0.9rem; margin-bottom: 4px; }
-.message-text { padding: 10px 14px; border-radius: 18px; word-wrap: break-word; background-color: var(--bg-secondary-color); color: var(--text-color); }
+.message-sender { font-size: 0.85rem; /* 발신자 정보 폰트 크기 줄임 */ margin-bottom: 2px; /* 발신자와 메시지 간격 줄임 */ }
+.message-text { padding: 8px 12px; /* 메시지 텍스트 내부 패딩 줄임 */ border-radius: 14px; word-wrap: break-word; background-color: var(--bg-secondary-color); color: var(--text-color); font-size: 0.95em; /* 폰트 크기 약간 줄임 */ line-height: 1.4; /* 줄 간격 줄임 */ }
 
 /* 내가 보낸 메시지 스타일 */
 .message-item.my-message {
@@ -5562,7 +5548,7 @@ body, html {
 /* 일반 레벨 (250-499 EXP) */
 .message-item.level-일반 .message-sender strong {
     color: #8b5cf6;
-    font-weight: 700;
+    font-weight: normal;
 }
 
 :root.dark-mode .message-item.level-일반 .message-sender strong {
@@ -5597,7 +5583,7 @@ body, html {
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
-    font-weight: 800;
+    font-weight: normal;
 }
 .message-item.level-숙련 .level-badge {
     background: linear-gradient(135deg, #f59e0b, #d97706);
@@ -5619,7 +5605,7 @@ body, html {
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
-    font-weight: 800;
+    font-weight: normal;
 }
 .message-item.level-전문가 .level-badge {
     background: linear-gradient(135deg, #ef4444, #dc2626);
@@ -5642,7 +5628,7 @@ body, html {
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
-    font-weight: 800;
+    font-weight: normal;
 }
 .message-item.level-고수 .level-badge {
     background: linear-gradient(135deg, #ec4899, #db2777);
@@ -5665,7 +5651,7 @@ body, html {
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
-    font-weight: 900;
+    font-weight: normal;
     text-shadow: 0 0 8px rgba(6, 182, 212, 0.3);
 }
 .message-item.level-달인 .level-badge {
@@ -5691,7 +5677,7 @@ body, html {
     -webkit-text-fill-color: transparent;
     background-clip: text;
     animation: rainbow-text-animation 3s ease infinite;
-    font-weight: 900;
+    font-weight: normal;
     text-shadow: 0 0 10px rgba(132, 204, 22, 0.5);
 }
 .message-item.level-마스터 .level-badge {
@@ -5718,7 +5704,7 @@ body, html {
     -webkit-text-fill-color: transparent;
     background-clip: text;
     animation: rainbow-text-animation 2s ease infinite;
-    font-weight: 900;
+    font-weight: normal;
     text-shadow: 0 0 12px rgba(249, 115, 22, 0.6);
 }
 .message-item.level-그랜드마스터 .level-badge {
@@ -5747,7 +5733,7 @@ body, html {
     -webkit-text-fill-color: transparent;
     background-clip: text;
     animation: rainbow-text-animation 1.5s ease infinite;
-    font-weight: 900;
+    font-weight: normal;
     text-shadow: 0 0 15px rgba(220, 38, 38, 0.8);
 }
 .message-item.level-레전드 .level-badge {
@@ -6741,8 +6727,8 @@ body, html {
 .message-item.level-마스터 .message-text,
 .message-item.level-그랜드마스터 .message-text,
 .message-item.level-레전드 .message-text {
-    background: #f8f9fa;
-    font-weight: bold;
+    background: var(--bg-secondary-color);
+    font-weight: normal;
     border-radius: 14px;
     box-shadow: 0 2px 8px rgba(245, 158, 11, 0.08);
 }
@@ -6760,7 +6746,7 @@ body, html {
     -webkit-text-fill-color: transparent;
     background-clip: text;
     text-fill-color: transparent;
-    font-weight: 700;
+    font-weight: normal;
 }
 
 /* 3. 달인 이상: 메시지 글로우 */

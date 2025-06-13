@@ -168,9 +168,9 @@ function renderMessage(msg) {
                     ? `<span class="admin-badge">Admin</span>` 
                     : `<span class="level-badge" style="background: ${levelInfo.gradient || levelInfo.color}">${levelInfo.name}</span>`
                 }
-                <strong>${msg.data.displayName}</strong>
+                <strong style="font-weight: normal;">${msg.data.displayName}</strong>
             </div>
-            <p class="message-text">${msg.data.text.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</p>
+            <p class="message-text" style="font-weight: normal;">${msg.data.text.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</p>
         </div>
     `;
 

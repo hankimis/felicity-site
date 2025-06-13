@@ -1,6 +1,6 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore, collection, addDoc, serverTimestamp, query, orderBy, onSnapshot, doc, getCountFromServer, getDocs, limit, startAfter, where, increment, updateDoc, deleteDoc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getFirestore, collection, addDoc, serverTimestamp, query, orderBy, onSnapshot, doc, getCountFromServer, getDocs, limit, startAfter, where, increment, updateDoc, deleteDoc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { firebaseConfig } from './firebase-config.js';
 
 const app = initializeApp(firebaseConfig);
@@ -26,54 +26,89 @@ document.addEventListener('DOMContentLoaded', () => {
   let isLoading = false;
 
   function showWriteModal(show) {
-    writeModal.style.display = show ? 'block' : 'none';
+    if (show) {
+      if (!auth.currentUser) {
+        const loginModal = document.getElementById('login-modal');
+        loginModal.classList.add('show');
+        return;
+      }
+      writeModal.classList.add('show');
+    } else {
+      writeModal.classList.remove('show');
+    }
   }
 
-  onAuthStateChanged(auth, user => {
-    if (user) {
-      writeBtn.style.display = 'inline-block';
-    } else {
-      writeBtn.style.display = 'none';
+  onAuthStateChanged(auth, (user) => {
+    if (writeBtn) {
+      if (user) {
+        writeBtn.style.display = 'flex';
+      } else {
+        writeBtn.style.display = 'none';
+        if (writeModal && writeModal.classList.contains('show')) {
+          writeModal.classList.remove('show');
+        }
+      }
     }
   });
 
   if (writeBtn && writeModal && closeWriteModal && writeForm) {
-    writeBtn.addEventListener('click', () => showWriteModal(true));
-    closeWriteModal.addEventListener('click', () => showWriteModal(false));
+    writeBtn.addEventListener('click', () => {
+      console.log('글쓰기 버튼 클릭됨');
+      showWriteModal(true);
+    });
+    closeWriteModal.addEventListener('click', () => {
+      console.log('닫기 버튼 클릭됨');
+      showWriteModal(false);
+    });
+    
+    // 모달 외부 클릭 시 닫기
+    writeModal.addEventListener('click', (e) => {
+      if (e.target === writeModal) {
+        showWriteModal(false);
+      }
+    });
+
     writeForm.addEventListener('submit', async (e) => {
       e.preventDefault();
+      console.log('폼 제출됨');
+      
       const user = auth.currentUser;
-      if (!user) return alert('로그인 후 작성 가능합니다.');
+      if (!user) {
+        showWriteModal(false);
+        const loginModal = document.getElementById('login-modal');
+        loginModal.classList.add('show');
+        return;
+      }
+
       const title = document.getElementById('post-title').value.trim();
       const content = document.getElementById('post-content').value.trim();
       if (!title || !content) return;
-      
-      await addDoc(collection(db, 'community-posts'), {
-        title,
-        content,
-        uid: user.uid,
-        displayName: user.displayName || '익명',
-        profileImg: user.photoURL || 'assets/@default-profile.png',
-        createdAt: serverTimestamp(),
-        views: 0,
-        likes: 0,
-        comments: 0,
-        isNews: false // 예시
-      });
-      
-      // 게시글 작성 포인트 추가 (레벨 시스템)
+
       try {
+        await addDoc(collection(db, 'community-posts'), {
+          title,
+          content,
+          uid: user.uid,
+          displayName: user.displayName || '익명',
+          profileImg: user.photoURL || 'assets/@default-profile.png',
+          createdAt: serverTimestamp(),
+          views: 0,
+          likes: 0,
+          comments: 0
+        });
+
         if (typeof addPostPoints === 'function') {
           await addPostPoints(user.uid);
           console.log('게시글 작성 포인트 추가됨 (+15점)');
         }
-      } catch (levelError) {
-        console.error('레벨 시스템 오류:', levelError);
+
+        writeForm.reset();
+        showWriteModal(false);
+        renderFeed(true);
+      } catch (error) {
+        console.error('게시글 작성 중 오류:', error);
+        alert('게시글 작성 중 오류가 발생했습니다. 다시 시도해주세요.');
       }
-      
-      writeForm.reset();
-      showWriteModal(false);
-      renderFeed(true);
     });
   }
 

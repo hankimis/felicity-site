@@ -1,6 +1,6 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore, collection, addDoc, serverTimestamp, query, orderBy, onSnapshot, doc, getCountFromServer, getDocs, limit, startAfter } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getFirestore, collection, addDoc, serverTimestamp, query, orderBy, onSnapshot, doc, getCountFromServer, getDocs, limit, startAfter } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { firebaseConfig } from './firebase-config.js';
 
 const ADMIN_EMAIL = "admin@site.com";
@@ -19,39 +19,91 @@ let currentPage = 1;
 const POSTS_PER_PAGE = 10;
 
 function showWriteModal(show) {
-  writeModal.style.display = show ? 'block' : 'none';
+  if (show) {
+    const user = auth.currentUser;
+    if (!user || user.email !== ADMIN_EMAIL) {
+      alert('관리자만 공지사항을 작성할 수 있습니다.');
+      return;
+    }
+    writeModal.classList.add('show');
+  } else {
+    writeModal.classList.remove('show');
+  }
 }
 
-onAuthStateChanged(auth, user => {
-  if (user && user.email === ADMIN_EMAIL) {
-    writeBtn.style.display = 'inline-block';
-  } else {
-    writeBtn.style.display = 'none';
+onAuthStateChanged(auth, (user) => {
+  if (writeBtn) {
+    if (user && user.email === ADMIN_EMAIL) {
+      writeBtn.style.display = 'flex';
+    } else {
+      writeBtn.style.display = 'none';
+      if (writeModal && writeModal.classList.contains('show')) {
+        writeModal.classList.remove('show');
+      }
+    }
   }
 });
 
-writeBtn.addEventListener('click', () => showWriteModal(true));
-closeWriteModal.addEventListener('click', () => showWriteModal(false));
+document.addEventListener('DOMContentLoaded', () => {
+  if (writeBtn) {
+    writeBtn.addEventListener('click', () => {
+      console.log('공지작성 버튼 클릭됨');
+      showWriteModal(true);
+    });
+  }
 
-writeForm.addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const user = auth.currentUser;
-  if (!user || user.email !== ADMIN_EMAIL) return alert('관리자만 작성 가능합니다.');
-  const title = document.getElementById('notice-title').value.trim();
-  const content = document.getElementById('notice-content').value.trim();
-  if (!title || !content) return;
-  await addDoc(collection(db, 'notices'), {
-    title,
-    content,
-    uid: user.uid,
-    displayName: user.displayName || '관리자',
-    createdAt: serverTimestamp(),
-    views: 0,
-    likes: 0,
-    dislikes: 0
-  });
-  writeForm.reset();
-  showWriteModal(false);
+  if (closeWriteModal) {
+    closeWriteModal.addEventListener('click', () => {
+      console.log('닫기 버튼 클릭됨');
+      showWriteModal(false);
+    });
+  }
+
+  if (writeModal) {
+    writeModal.addEventListener('click', (e) => {
+      if (e.target === writeModal) {
+        showWriteModal(false);
+      }
+    });
+  }
+
+  if (writeForm) {
+    writeForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      console.log('공지사항 폼 제출됨');
+      
+      const user = auth.currentUser;
+      if (!user || user.email !== ADMIN_EMAIL) {
+        alert('관리자만 공지사항을 작성할 수 있습니다.');
+        showWriteModal(false);
+        return;
+      }
+
+      const title = document.getElementById('notice-title').value.trim();
+      const content = document.getElementById('notice-content').value.trim();
+      if (!title || !content) return;
+
+      try {
+        await addDoc(collection(db, 'notices'), {
+          title,
+          content,
+          uid: user.uid,
+          displayName: '관리자',
+          createdAt: serverTimestamp(),
+          views: 0,
+          likes: 0,
+          comments: 0
+        });
+
+        writeForm.reset();
+        showWriteModal(false);
+        location.reload(); // 공지사항 목록 새로고침
+      } catch (error) {
+        console.error('공지사항 작성 중 오류:', error);
+        alert('공지사항 작성 중 오류가 발생했습니다. 다시 시도해주세요.');
+      }
+    });
+  }
 });
 
 async function renderPage(page = 1) {
