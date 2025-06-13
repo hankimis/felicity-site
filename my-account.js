@@ -43,7 +43,7 @@ changePicBtn.addEventListener('click', () => {
 // Handle file selection and upload
 profilePicInput.addEventListener('change', async (e) => {
     const file = e.target.files[0];
-    if (!file || !currentUser) return;
+    if (!file || !auth.currentUser) return;
 
     // Check file type and size
     if (!file.type.startsWith('image/')) {
@@ -55,7 +55,7 @@ profilePicInput.addEventListener('change', async (e) => {
         return;
     }
 
-    const storageRef = ref(storage, `profilePictures/${currentUser.uid}/${file.name}`);
+    const storageRef = ref(storage, `profilePictures/${auth.currentUser.uid}/${file.name}`);
     showStatus('이미지 업로드 중...', 'info');
 
     try {
@@ -63,8 +63,8 @@ profilePicInput.addEventListener('change', async (e) => {
         const downloadURL = await getDownloadURL(snapshot.ref);
 
         // Update profile in Auth and Firestore
-        await updateProfile(currentUser, { photoURL: downloadURL });
-        const userDocRef = doc(db, "users", currentUser.uid);
+        await updateProfile(auth.currentUser, { photoURL: downloadURL });
+        const userDocRef = doc(db, "users", auth.currentUser.uid);
         await updateDoc(userDocRef, { photoURL: downloadURL });
 
         profilePicPreview.src = downloadURL;
@@ -143,13 +143,18 @@ async function loadUserData(user) {
     try {
         const userDoc = await getDoc(doc(db, 'users', user.uid));
         if (userDoc.exists()) {
-            currentUser = { uid: user.uid, ...userDoc.data() };
+            const userData = userDoc.data();
+            currentUser = { 
+                ...userData,
+                uid: user.uid,
+                getIdToken: user.getIdToken.bind(user) // Auth 메서드 보존
+            };
             
-            displayNameInput.value = currentUser.displayName || '';
-            emailInput.value = currentUser.email || user.email;
+            displayNameInput.value = userData.displayName || '';
+            emailInput.value = userData.email || user.email;
             
-            if (currentUser.photoURL) {
-                profilePicPreview.src = currentUser.photoURL;
+            if (userData.photoURL) {
+                profilePicPreview.src = userData.photoURL;
             }
         } else {
             currentUser = {
@@ -157,7 +162,8 @@ async function loadUserData(user) {
                 displayName: user.displayName || '',
                 email: user.email,
                 points: 0,
-                level: "새싹"
+                level: "새싹",
+                getIdToken: user.getIdToken.bind(user) // Auth 메서드 보존
             };
         }
     } catch (error) {
