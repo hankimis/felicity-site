@@ -70,25 +70,25 @@
 
     <script>
         const themeToggle = document.getElementById('theme-toggle');
-        const body = document.body;
+        const root = document.documentElement;
         const icon = themeToggle.querySelector('i');
 
         const savedTheme = localStorage.getItem('theme');
         if (savedTheme) {
-            body.classList.add(savedTheme);
+            root.classList.add(savedTheme);
             if (savedTheme === 'dark-mode') {
                 icon.classList.remove('fa-moon');
                 icon.classList.add('fa-sun');
             }
         } else {
-            body.classList.remove('dark-mode');
+            root.classList.remove('dark-mode');
             icon.classList.remove('fa-sun');
             icon.classList.add('fa-moon');
         }
 
         themeToggle.addEventListener('click', () => {
-            body.classList.toggle('dark-mode');
-            if (body.classList.contains('dark-mode')) {
+            root.classList.toggle('dark-mode');
+            if (root.classList.contains('dark-mode')) {
                 icon.classList.remove('fa-moon');
                 icon.classList.add('fa-sun');
                 localStorage.setItem('theme', 'dark-mode');

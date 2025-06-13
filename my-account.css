@@ -1,132 +1,685 @@
 /* my-account.css */
 
 .main-container {
-    padding-top: 40px;
-    padding-bottom: 40px;
-    max-width: 900px;
-    margin: auto;
+    background: var(--bg-color);
+    min-height: 100vh;
+    padding: 40px 20px;
+}
+
+.account-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: grid;
+    gap: 30px;
 }
 
 .account-container h1 {
     font-size: 2.5rem;
     font-weight: 800;
-    margin-bottom: 30px;
     color: var(--text-color);
+    text-align: center;
+    margin-bottom: 20px;
+    background: linear-gradient(135deg, var(--primary-color), #8b5cf6);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
 }
 
 .profile-card {
-    display: flex;
-    gap: 40px;
-    background-color: var(--card-bg);
+    background: var(--card-bg);
+    border-radius: 24px;
     padding: 40px;
-    border-radius: 16px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
     border: 1px solid var(--border-color);
-    box-shadow: 0 4px 12px var(--shadow-color);
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 40px;
+    align-items: start;
+    position: relative;
+    overflow: hidden;
+}
+
+.profile-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--primary-color), #8b5cf6, #ec4899);
 }
 
 .profile-picture-section {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 16px;
-    flex-basis: 200px;
-    flex-shrink: 0;
+    gap: 20px;
+    min-width: 200px;
 }
 
 #profile-picture-preview {
-    width: 160px;
-    height: 160px;
+    width: 150px;
+    height: 150px;
     border-radius: 50%;
     object-fit: cover;
-    border: 4px solid var(--border-color);
+    border: 4px solid var(--primary-color);
+    box-shadow: 0 10px 30px rgba(59, 130, 246, 0.3);
+    transition: all 0.3s ease;
+}
+
+#profile-picture-preview:hover {
+    transform: scale(1.05);
+    box-shadow: 0 15px 40px rgba(59, 130, 246, 0.4);
+}
+
+#change-picture-btn {
+    background: var(--bg-secondary-color);
+    color: var(--text-color);
+    border: 2px solid var(--border-color);
+    padding: 12px 24px;
+    border-radius: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+#change-picture-btn:hover {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+    transform: translateY(-2px);
+}
+
+.upload-status {
+    font-size: 0.9rem;
+    text-align: center;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-weight: 500;
+}
+
+.upload-status.success {
+    background: rgba(34, 197, 94, 0.1);
+    color: #22c55e;
+    border: 1px solid rgba(34, 197, 94, 0.2);
+}
+
+.upload-status.error {
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.2);
 }
 
 .profile-info-section {
-    flex-grow: 1;
+    flex: 1;
 }
 
 .form-group {
-    margin-bottom: 24px;
+    margin-bottom: 25px;
 }
 
 .form-group label {
     display: block;
-    font-size: 1.1rem;
     font-weight: 600;
-    margin-bottom: 8px;
     color: var(--text-color);
+    margin-bottom: 8px;
+    font-size: 1rem;
 }
 
 .form-group input {
     width: 100%;
-    padding: 12px;
-    font-size: 1rem;
-    border-radius: 8px;
-    background-color: var(--bg-secondary-color);
-    border: 1px solid var(--border-color);
+    padding: 16px 20px;
+    border: 2px solid var(--border-color);
+    border-radius: 12px;
+    background: var(--bg-secondary-color);
     color: var(--text-color);
+    font-size: 1rem;
     transition: all 0.2s ease;
-}
-
-.form-group input:disabled {
-    background-color: var(--bg-color);
-    cursor: not-allowed;
 }
 
 .form-group input:focus {
     outline: none;
     border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.form-group input:disabled {
+    background: var(--bg-color);
+    color: var(--text-color-secondary);
+    cursor: not-allowed;
 }
 
 .input-hint {
     font-size: 0.85rem;
     color: var(--text-color-secondary);
-    margin-top: 8px;
-}
-
-.primary-btn, .secondary-btn {
-    width: 100%;
-    padding: 12px;
-    font-size: 1rem;
-    font-weight: 600;
-    border-radius: 8px;
-    cursor: pointer;
-    border: none;
-    transition: all 0.2s ease;
+    margin-top: 6px;
+    margin-bottom: 0;
 }
 
 .primary-btn {
-    background-color: var(--primary-color);
+    background: linear-gradient(135deg, var(--primary-color), #2563eb);
     color: white;
+    border: none;
+    padding: 16px 32px;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 8px 20px rgba(59, 130, 246, 0.3);
 }
+
 .primary-btn:hover {
-    background-color: #2563eb;
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    transform: translateY(-2px);
+    box-shadow: 0 12px 30px rgba(59, 130, 246, 0.4);
 }
 
 .secondary-btn {
-    background-color: var(--bg-secondary-color);
+    background: var(--bg-secondary-color);
     color: var(--text-color);
-    border: 1px solid var(--border-color);
-}
-.secondary-btn:hover {
-    background-color: var(--border-color);
+    border: 2px solid var(--border-color);
+    padding: 12px 24px;
+    border-radius: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
 }
 
-.upload-status {
-    font-size: 0.9rem;
-    height: 20px;
+.secondary-btn:hover {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+/* 레벨 카드 */
+.level-card {
+    background: var(--card-bg);
+    border-radius: 24px;
+    padding: 40px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+    border: 1px solid var(--border-color);
+    position: relative;
+    overflow: hidden;
+}
+
+.level-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #22c55e, #3b82f6, #8b5cf6);
+}
+
+.level-card h2 {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--text-color);
+    margin-bottom: 25px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.level-card h2::before {
+    content: '🏆';
+    font-size: 1.5rem;
+}
+
+/* 포인트 가이드 카드 */
+.points-guide-card {
+    background: var(--card-bg);
+    border-radius: 24px;
+    padding: 40px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+    border: 1px solid var(--border-color);
+    position: relative;
+    overflow: hidden;
+}
+
+.points-guide-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #f59e0b, #ef4444, #ec4899);
+}
+
+.points-guide-card h2 {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--text-color);
+    margin-bottom: 30px;
     text-align: center;
 }
-.upload-status.success { color: #26a69a; }
-.upload-status.error { color: #ef5350; }
+
+.points-guide-content {
+    display: grid;
+    gap: 35px;
+}
+
+.guide-section h3 {
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: var(--text-color);
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--border-color);
+}
+
+/* 포인트 획득 방법 */
+.points-methods {
+    display: grid;
+    gap: 15px;
+}
+
+.method-item {
+    background: var(--bg-secondary-color);
+    padding: 20px;
+    border-radius: 16px;
+    border: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    transition: all 0.2s ease;
+}
+
+.method-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+}
+
+.method-icon {
+    font-size: 1.5rem;
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--primary-color);
+    border-radius: 12px;
+    color: white;
+}
+
+.method-name {
+    flex: 1;
+    font-weight: 600;
+    color: var(--text-color);
+    font-size: 1.1rem;
+}
+
+.method-points {
+    font-weight: 700;
+    color: var(--primary-color);
+    font-size: 1.1rem;
+    background: rgba(59, 130, 246, 0.1);
+    padding: 8px 16px;
+    border-radius: 8px;
+}
+
+/* 레벨 가이드 */
+.level-guide {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 15px;
+}
+
+.level-item {
+    background: var(--bg-secondary-color);
+    padding: 16px 20px;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: all 0.2s ease;
+}
+
+.level-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.level-badge, .level-badge-mini {
+    color: #fff !important;
+}
+
+.level-range {
+    font-weight: 600;
+    color: var(--text-color-secondary);
+    font-size: 0.9rem;
+}
+
+/* 특별 효과 리스트 */
+.effects-list {
+    background: var(--bg-secondary-color);
+    padding: 25px;
+    border-radius: 16px;
+    border: 1px solid var(--border-color);
+}
+
+.effects-list p {
+    margin: 12px 0;
+    color: var(--text-color);
+    font-size: 1rem;
+    line-height: 1.6;
+}
+
+.effects-list strong {
+    color: var(--primary-color);
+    font-weight: 600;
+}
+
+/* 포인트 히스토리 카드 */
+.points-history-card {
+    background: var(--card-bg);
+    border-radius: 24px;
+    padding: 40px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+    border: 1px solid var(--border-color);
+    position: relative;
+    overflow: hidden;
+}
+
+.points-history-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #06b6d4, #84cc16, #f97316);
+}
+
+.points-history-card h2 {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--text-color);
+    margin-bottom: 25px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.points-history-card h2::before {
+    content: '📊';
+    font-size: 1.5rem;
+}
+
+#points-history-display {
+    display: grid;
+    gap: 12px;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.history-item {
+    background: var(--bg-secondary-color);
+    padding: 20px;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.2s ease;
+}
+
+.history-item:hover {
+    transform: translateX(5px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.history-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.history-action {
+    font-weight: 600;
+    color: var(--text-color);
+    font-size: 1rem;
+}
+
+.history-date {
+    font-size: 0.85rem;
+    color: var(--text-color-secondary);
+}
+
+.history-points {
+    font-weight: 700;
+    font-size: 1.1rem;
+    padding: 8px 16px;
+    border-radius: 8px;
+}
+
+.history-points.positive {
+    color: #22c55e;
+    background: rgba(34, 197, 94, 0.1);
+}
+
+.history-points.negative {
+    color: #ef4444;
+    background: rgba(239, 68, 68, 0.1);
+}
+
+/* 다크모드 스타일 */
+:root.dark-mode .profile-card,
+:root.dark-mode .level-card,
+:root.dark-mode .points-guide-card,
+:root.dark-mode .points-history-card {
+    background: var(--card-bg);
+    border-color: var(--border-color);
+}
+
+:root.dark-mode .method-item,
+:root.dark-mode .level-item,
+:root.dark-mode .effects-list,
+:root.dark-mode .history-item {
+    background: var(--bg-secondary-color);
+    border-color: var(--border-color);
+}
+
+:root.dark-mode .account-container h1,
+:root.dark-mode .level-card h2,
+:root.dark-mode .points-guide-card h2,
+:root.dark-mode .points-history-card h2,
+:root.dark-mode .guide-section h3 {
+    color: var(--text-color);
+}
+
+:root.dark-mode .method-name,
+:root.dark-mode .history-action,
+:root.dark-mode .effects-list p {
+    color: var(--text-color);
+}
+
+:root.dark-mode .level-range,
+:root.dark-mode .history-date,
+:root.dark-mode .input-hint {
+    color: var(--text-color-secondary);
+}
+
+/* 반응형 디자인 */
+@media (max-width: 1024px) {
+    .account-container {
+        max-width: 800px;
+        gap: 25px;
+    }
+    
+    .profile-card {
+        padding: 30px;
+        gap: 30px;
+    }
+    
+    .level-guide {
+        grid-template-columns: 1fr;
+    }
+}
 
 @media (max-width: 768px) {
-    .profile-card {
-        flex-direction: column;
-        padding: 24px;
+    .main-container {
+        padding: 20px 15px;
     }
+    
     .account-container h1 {
         font-size: 2rem;
     }
+    
+    .profile-card {
+        grid-template-columns: 1fr;
+        text-align: center;
+        padding: 25px;
+        gap: 25px;
+    }
+    
+    .profile-picture-section {
+        min-width: auto;
+    }
+    
+    #profile-picture-preview {
+        width: 120px;
+        height: 120px;
+    }
+    
+    .level-card,
+    .points-guide-card,
+    .points-history-card {
+        padding: 25px;
+    }
+    
+    .level-card h2,
+    .points-guide-card h2,
+    .points-history-card h2 {
+        font-size: 1.5rem;
+    }
+    
+    .points-methods {
+        gap: 12px;
+    }
+    
+    .method-item {
+        padding: 16px;
+        gap: 12px;
+    }
+    
+    .method-icon {
+        width: 40px;
+        height: 40px;
+        font-size: 1.2rem;
+    }
+    
+    .method-name {
+        font-size: 1rem;
+    }
+    
+    .method-points {
+        font-size: 1rem;
+        padding: 6px 12px;
+    }
+}
+
+@media (max-width: 480px) {
+    .main-container {
+        padding: 15px 10px;
+    }
+    
+    .account-container h1 {
+        font-size: 1.8rem;
+    }
+    
+    .profile-card,
+    .level-card,
+    .points-guide-card,
+    .points-history-card {
+        padding: 20px;
+    }
+    
+    .form-group input {
+        padding: 14px 16px;
+    }
+    
+    .primary-btn {
+        padding: 14px 28px;
+        font-size: 0.95rem;
+    }
+    
+    .method-item {
+        flex-direction: column;
+        text-align: center;
+        gap: 10px;
+    }
+    
+    .level-item {
+        flex-direction: column;
+        gap: 8px;
+        text-align: center;
+    }
+    
+    .history-item {
+        flex-direction: column;
+        gap: 12px;
+        text-align: center;
+    }
+}
+
+/* 로딩 애니메이션 */
+.loading-spinner {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--border-color);
+    border-radius: 50%;
+    border-top-color: var(--primary-color);
+    animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* 성공/오류 메시지 */
+.success-message {
+    background: rgba(34, 197, 94, 0.1);
+    color: #22c55e;
+    padding: 16px 20px;
+    border-radius: 12px;
+    border: 1px solid rgba(34, 197, 94, 0.2);
+    margin: 15px 0;
+    font-weight: 500;
+    text-align: center;
+}
+
+.error-message {
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+    padding: 16px 20px;
+    border-radius: 12px;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    margin: 15px 0;
+    font-weight: 500;
+    text-align: center;
+}
+
+/* 스크롤바 스타일링 */
+#points-history-display::-webkit-scrollbar {
+    width: 8px;
+}
+
+#points-history-display::-webkit-scrollbar-track {
+    background: var(--bg-secondary-color);
+    border-radius: 4px;
+}
+
+#points-history-display::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 4px;
+}
+
+#points-history-display::-webkit-scrollbar-thumb:hover {
+    background: var(--primary-color);
 } 

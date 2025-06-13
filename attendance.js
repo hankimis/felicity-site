@@ -67,19 +67,50 @@ function renderCalendar(year, month) {
   const firstDay = new Date(year, month, 1);
   const lastDay = new Date(year, month + 1, 0);
   const today = new Date();
-  let html = '<table class="attendance-calendar-table"><thead><tr>';
+  
+  let html = '<table class="attendance-calendar"><thead><tr>';
   const weekDays = ['일', '월', '화', '수', '목', '금', '토'];
   weekDays.forEach(d => html += `<th>${d}</th>`);
-  html += '</tr></thead><tbody><tr>';
-  for (let i = 0; i < firstDay.getDay(); i++) html += '<td class="empty"></td>';
+  html += '</tr></thead><tbody>';
+  
+  let currentWeek = '<tr>';
+  
+  // 첫 주의 빈 칸들
+  for (let i = 0; i < firstDay.getDay(); i++) {
+    currentWeek += '<td class="empty"></td>';
+  }
+  
+  // 날짜들
   for (let d = 1; d <= lastDay.getDate(); d++) {
     const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
     const isToday = today.getFullYear() === year && today.getMonth() === month && today.getDate() === d;
-    const checked = attendanceData[dateStr];
-    html += `<td class="${checked ? 'checked' : ''} ${isToday ? 'today' : ''}">${d}${checked ? `<span class='calendar-dot'></span>` : ''}</td>`;
-    if ((firstDay.getDay() + d) % 7 === 0) html += '</tr><tr>';
+    const isAttended = attendanceData[dateStr];
+    
+    let classes = [];
+    if (isToday) classes.push('today');
+    if (isAttended) classes.push('attended');
+    
+    currentWeek += `<td class="${classes.join(' ')}">${d}</td>`;
+    
+    // 주 끝나면 새로운 주 시작
+    if ((firstDay.getDay() + d) % 7 === 0) {
+      currentWeek += '</tr>';
+      html += currentWeek;
+      currentWeek = '<tr>';
+    }
   }
-  html += '</tr></tbody></table>';
+  
+  // 마지막 주의 빈 칸들
+  const remainingCells = 7 - ((firstDay.getDay() + lastDay.getDate()) % 7);
+  if (remainingCells < 7) {
+    for (let i = 0; i < remainingCells; i++) {
+      currentWeek += '<td class="empty"></td>';
+    }
+    currentWeek += '</tr>';
+    html += currentWeek;
+  }
+  
+  html += '</tbody></table>';
   calendarEl.innerHTML = html;
   calendarTitle.textContent = `${year}-${String(month+1).padStart(2,'0')}`;
 }
@@ -101,7 +132,7 @@ nextMonthBtn.addEventListener('click', () => {
 async function loadAttendance(user) {
   const userRef = doc(db, 'users', user.uid);
   const userSnap = await getDoc(userRef);
-  let userData = userSnap.exists() ? userSnap.data() : { level: 1, streak: 0, total: 0 };
+  let userData = userSnap.exists() ? userSnap.data() : { points: 0, level: "새싹", streak: 0, total: 0 };
   const todayStr = new Date().toISOString().slice(0,10);
   // 출석 데이터
   const attendanceRef = collection(db, `users/${user.uid}/attendance`);
@@ -128,7 +159,10 @@ async function loadAttendance(user) {
   });
   streakCountEl.textContent = streak;
   totalCountEl.textContent = total;
-  userLevelBadge.textContent = `Lv.${userData.level || 1}`;
+  if (userLevelBadge && window.levelSystem) {
+    const levelInfo = window.levelSystem.calculateLevel(userData.points || 0);
+    userLevelBadge.innerHTML = `<span style="background: ${levelInfo.gradient || levelInfo.color}; padding: 2px 8px; border-radius: 12px; color: white; font-size: 12px;">${levelInfo.name}</span>`;
+  }
   // 보상
   let reward = '-';
   if (streak % 30 === 0 && streak > 0) reward = '30일 연속 출석 보상!';
@@ -156,7 +190,7 @@ function renderAttendanceList(attendances) {
 
     item.innerHTML = `
       <div class="att-item-main">
-        <span class="level-badge">[Lv.${att.user.level || 1}]</span>
+        <span class="level-badge" style="background: ${window.levelSystem ? window.levelSystem.calculateLevel(att.user.points || 0).gradient : '#22c55e'}; color: white; padding: 2px 6px; border-radius: 8px; font-size: 11px;">[${window.levelSystem ? window.levelSystem.calculateLevel(att.user.points || 0).name : "새싹"}]</span>
         <span class="display-name">${att.user.displayName}</span>
         <span class="attendance-time">${a_time}</span>
         <span class="att-item-quote">"${att.quote}"</span>
@@ -239,7 +273,8 @@ async function handleAttendanceSubmit(e) {
       user: {
         displayName: currentUser.displayName,
         uid: currentUser.uid,
-        level: currentUser.level || 1
+        points: currentUser.points || 0,
+        level: window.levelSystem ? window.levelSystem.calculateLevel(currentUser.points || 0).name : "새싹"
       }
     });
 
@@ -251,8 +286,27 @@ async function handleAttendanceSubmit(e) {
         streak: increment(1) 
     });
 
-    alert('출석체크 완료!');
+    // 출석체크 포인트 추가 (레벨 시스템)
+    try {
+      // 레벨 시스템이 로드되어 있는지 확인
+      if (typeof addAttendancePoints === 'function') {
+        await addAttendancePoints(currentUser.uid);
+        alert('출석체크 완료! 🎉\n+10 포인트 획득!');
+      } else {
+        alert('출석체크 완료!');
+      }
+    } catch (levelError) {
+      console.error('레벨 시스템 오류:', levelError);
+      alert('출석체크 완료!');
+    }
+
     await loadAttendance(currentUser); // Reload all data and re-render
+    
+    // 사용자 레벨 정보 업데이트
+    if (typeof displayUserLevel === 'function') {
+      displayUserLevel(currentUser.uid, 'user-level-display');
+    }
+    
   } catch (error) {
     console.error("출석체크 오류:", error);
     alert('출석체크 중 오류가 발생했습니다.');

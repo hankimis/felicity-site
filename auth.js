@@ -24,7 +24,7 @@ function controlModal(modalId, show) {
 
 function applyTheme() {
     const theme = localStorage.getItem('theme');
-    document.body.classList.toggle('dark-mode', theme === 'dark');
+    document.documentElement.classList.toggle('dark-mode', theme === 'dark');
     updateLogos();
     updateThemeIcon();
 }
@@ -32,7 +32,7 @@ function applyTheme() {
 function toggleTheme() {
     const currentTheme = localStorage.getItem('theme') || 'light';
     const newTheme = currentTheme === 'light' ? 'dark' : 'light';
-    document.body.classList.toggle('dark-mode', newTheme === 'dark');
+    document.documentElement.classList.toggle('dark-mode', newTheme === 'dark');
     localStorage.setItem('theme', newTheme);
     updateLogos();
     updateThemeIcon();
@@ -41,14 +41,14 @@ function toggleTheme() {
 function updateThemeIcon() {
     const themeButton = document.querySelector('#theme-toggle');
     if (themeButton) {
-        const isDarkMode = document.body.classList.contains('dark-mode');
-        themeButton.innerHTML = isDarkMode ? '<i class="fas fa-moon"></i>' : '<i class="fas fa-sun"></i>';
+        const isDarkMode = document.documentElement.classList.contains('dark-mode');
+        themeButton.innerHTML = isDarkMode ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
     }
 }
 
 function updateLogos() {
-    const isDarkMode = document.body.classList.contains('dark-mode');
-    const logoSrc = isDarkMode ? 'assets/darklogo.png' : 'assets/lightlogo.png';
+    const isDarkMode = document.documentElement.classList.contains('dark-mode');
+    const logoSrc = isDarkMode ? '/assets/darklogo.png' : '/assets/lightlogo.png';
     document.querySelectorAll('.logo img, #mobile-main-logo').forEach(img => {
         if(img) img.src = logoSrc;
     });
@@ -66,24 +66,30 @@ async function updateAuthUI(user) {
         try {
             console.log("Fetching user data for:", user.uid);
             const userDoc = await getDoc(doc(db, "users", user.uid));
-            currentUser = userDoc.exists() ? { uid: user.uid, ...userDoc.data() } : { uid: user.uid, displayName: user.displayName || "사용자", level: 1 };
+            currentUser = userDoc.exists() 
+                ? { uid: user.uid, ...userDoc.data() } 
+                : { uid: user.uid, displayName: user.displayName || "사용자", points: 0, level: "새싹" };
             console.log("User data fetched:", currentUser);
 
             // 로그인 상태 UI 업데이트
             if (userProfile) userProfile.style.display = 'flex';
             if (authButtons) authButtons.style.display = 'none';
             if (getElement('user-display-name')) getElement('user-display-name').textContent = currentUser.displayName;
-            if (getElement('user-level')) getElement('user-level').textContent = `Lv.${currentUser.level}`;
+            
+            // 레벨 정보 업데이트
+            updateUserLevelDisplay();
+            
             if (adminPageLink) adminPageLink.style.display = currentUser.role === 'admin' ? 'inline-block' : 'none';
+            
+            // 모바일 관리자 링크 업데이트
+            const mobileAdminLink = getElement('mobile-admin-link');
+            if (mobileAdminLink) mobileAdminLink.style.display = currentUser.role === 'admin' ? 'block' : 'none';
 
             // 모바일 메뉴 업데이트
-            if (mobileAuthSection) {
-                mobileAuthSection.innerHTML = `
-                    <div class="mobile-user-profile">
-                        <span>${currentUser.displayName}님 (Lv.${currentUser.level})</span>
-                        <a href="#" id="mobile-logout-btn" data-action="logout">로그아웃</a>
-                    </div>`;
-            }
+            updateMobileMenuUserInfo();
+            
+            // 주기적 사용자 데이터 새로고침 시작
+            startUserDataRefresh();
         } catch (error) {
             console.error("Error fetching user data:", error);
             // 에러 발생 시 로그아웃 처리
@@ -92,6 +98,9 @@ async function updateAuthUI(user) {
     } else {
         console.log("User is logged out");
         currentUser = null;
+
+        // 주기적 새로고침 중지
+        stopUserDataRefresh();
 
         // 로그아웃 상태 UI 업데이트
         if (userProfile) userProfile.style.display = 'none';
@@ -104,6 +113,154 @@ async function updateAuthUI(user) {
                 <button class="button-login" data-action="open-login">로그인</button>
                 <button class="button-signup" data-action="open-signup">회원가입</button>`;
         }
+    }
+}
+
+// 사용자 레벨 표시 업데이트
+function updateUserLevelDisplay() {
+    if (!currentUser) {
+        console.log('currentUser가 없어서 레벨 업데이트 중단');
+        return;
+    }
+    
+    // 레벨 시스템이 로드될 때까지 기다림
+    if (!window.levelSystem) {
+        console.log('레벨 시스템 로딩 대기 중...');
+        setTimeout(updateUserLevelDisplay, 200);
+        return;
+    }
+    
+    const levelInfo = window.levelSystem.calculateLevel(currentUser.points || 0);
+    console.log('헤더 레벨 업데이트:', currentUser.points, '->', levelInfo.name);
+    
+    // 헤더 레벨 업데이트 (여러 방법으로 시도)
+    const userLevelElement = getElement('user-level');
+    const userLevelElements = document.querySelectorAll('#user-level, .user-level');
+    
+    if (userLevelElement) {
+        userLevelElement.textContent = levelInfo.name;
+        userLevelElement.style.color = levelInfo.color || '#22c55e';
+        console.log('헤더 레벨 요소 업데이트 완료:', levelInfo.name);
+    } else {
+        console.log('user-level 요소를 찾을 수 없음');
+    }
+    
+    // 모든 레벨 요소 업데이트
+    userLevelElements.forEach(element => {
+        element.textContent = levelInfo.name;
+        element.style.color = levelInfo.color || '#22c55e';
+    });
+    
+    // 채팅에서 사용할 수 있도록 전역 변수 설정
+    window.currentUserLevel = levelInfo;
+    
+    // 모든 페이지에서 사용할 수 있도록 전역 사용자 정보 업데이트
+    window.currentUserData = currentUser;
+    
+    console.log('전역 레벨 정보 업데이트 완료:', window.currentUserLevel);
+}
+
+// 모바일 메뉴 사용자 정보 업데이트
+function updateMobileMenuUserInfo() {
+    const mobileAuthSection = document.querySelector('.mobile-auth-section');
+    if (!mobileAuthSection || !currentUser) return;
+    
+    // 레벨 시스템이 로드될 때까지 기다림
+    if (!window.levelSystem) {
+        setTimeout(updateMobileMenuUserInfo, 100);
+        return;
+    }
+    
+    const levelInfo = window.levelSystem.calculateLevel(currentUser.points || 0);
+    
+    mobileAuthSection.innerHTML = `
+        <div class="mobile-user-profile">
+            <div class="mobile-user-info">
+                <span class="mobile-user-name">${currentUser.displayName}님</span>
+                <span class="mobile-user-level" style="color: ${levelInfo.color || levelInfo.gradient || '#22c55e'}">${levelInfo.name}</span>
+            </div>
+            <div class="mobile-user-stats">
+                <span class="mobile-user-points">${(currentUser.points || 0).toLocaleString()}P</span>
+            </div>
+            <button class="mobile-logout-btn" data-action="logout">로그아웃</button>
+        </div>`;
+}
+
+// 사용자 데이터 새로고침 함수 (관리자가 포인트 변경 시 호출)
+window.refreshUserData = async function() {
+    if (auth.currentUser) {
+        // 최신 사용자 데이터를 다시 가져와서 업데이트
+        try {
+            console.log('사용자 데이터 새로고침 시작...');
+            const userDoc = await getDoc(doc(db, 'users', auth.currentUser.uid));
+            if (userDoc.exists()) {
+                const oldPoints = currentUser ? currentUser.points : 0;
+                currentUser = { uid: auth.currentUser.uid, ...userDoc.data() };
+                
+                console.log('포인트 변경:', oldPoints, '->', currentUser.points);
+                
+                // 레벨 시스템이 로드될 때까지 기다림
+                if (!window.levelSystem) {
+                    console.log('레벨 시스템 로딩 대기 중...');
+                    setTimeout(window.refreshUserData, 200);
+                    return;
+                }
+                
+                // 헤더 레벨 업데이트
+                updateUserLevelDisplay();
+                
+                // 모바일 메뉴 업데이트
+                updateMobileMenuUserInfo();
+                
+                // 채팅에서 사용할 수 있도록 전역 변수 업데이트
+                window.currentUserLevel = window.levelSystem.calculateLevel(currentUser.points || 0);
+                window.currentUserData = currentUser;
+                
+                // 마이페이지에서 사용할 수 있도록 이벤트 발생
+                window.dispatchEvent(new CustomEvent('userDataUpdated', { 
+                    detail: { user: currentUser, level: window.currentUserLevel } 
+                }));
+                
+                console.log('사용자 데이터가 새로고침되었습니다:', currentUser);
+                console.log('현재 레벨:', window.currentUserLevel);
+            }
+        } catch (error) {
+            console.error('사용자 데이터 새로고침 오류:', error);
+        }
+    }
+}
+
+// 페이지 로드 시 주기적으로 사용자 데이터 확인 (5초마다)
+let userDataRefreshInterval;
+function startUserDataRefresh() {
+    if (userDataRefreshInterval) {
+        clearInterval(userDataRefreshInterval);
+    }
+    
+    userDataRefreshInterval = setInterval(async () => {
+        if (auth.currentUser && currentUser) {
+            try {
+                const userDoc = await getDoc(doc(db, 'users', auth.currentUser.uid));
+                if (userDoc.exists()) {
+                    const newUserData = userDoc.data();
+                    
+                    // 포인트가 변경되었는지 확인
+                    if (newUserData.points !== currentUser.points) {
+                        console.log('포인트 변경 감지:', currentUser.points, '->', newUserData.points);
+                        await window.refreshUserData();
+                    }
+                }
+            } catch (error) {
+                console.error('주기적 사용자 데이터 확인 오류:', error);
+            }
+        }
+    }, 3000); // 3초마다 확인
+}
+
+function stopUserDataRefresh() {
+    if (userDataRefreshInterval) {
+        clearInterval(userDataRefreshInterval);
+        userDataRefreshInterval = null;
     }
 }
 
@@ -142,17 +299,40 @@ function handleGlobalClick(e) {
             else alert('로그인이 필요합니다.');
         },
         'open-mobile-menu': () => {
+            console.log('Opening mobile menu');
+            
+            // 모바일 메뉴가 없으면 생성
+            if (!getElement('mobile-menu')) {
+                createMobileMenuIfNeeded();
+            }
+            
             const mobileMenu = getElement('mobile-menu');
             if (mobileMenu) {
+                // 강제로 display 설정 (모바일에서)
+                if (window.innerWidth <= 768) {
+                    mobileMenu.style.display = 'flex';
+                }
                 mobileMenu.classList.add('is-open');
                 document.body.classList.add('mobile-menu-open');
+                console.log('Mobile menu opened');
+            } else {
+                console.log('Mobile menu element not found');
             }
         },
         'close-mobile-menu': () => {
+            console.log('Closing mobile menu');
             const mobileMenu = getElement('mobile-menu');
             if (mobileMenu) {
                 mobileMenu.classList.remove('is-open');
                 document.body.classList.remove('mobile-menu-open');
+                console.log('Mobile menu closed');
+                
+                // 링크 클릭 시 페이지 이동 허용
+                if (target.tagName === 'A' && target.href && !target.href.includes('#')) {
+                    setTimeout(() => {
+                        window.location.href = target.href;
+                    }, 100);
+                }
             }
         },
     };
@@ -164,24 +344,66 @@ function handleGlobalClick(e) {
 
 // 6. 초기화 함수
 function createMobileMenuIfNeeded() {
-    if (getElement('mobile-menu')) return;
+    // 기존 모바일 메뉴와 오버레이 제거
+    const existingMenu = getElement('mobile-menu');
+    const existingOverlay = document.querySelector('.mobile-menu-overlay');
+    
+    if (existingMenu) {
+        existingMenu.remove();
+    }
+    if (existingOverlay) {
+        existingOverlay.remove();
+    }
+    
+    // 오버레이 생성
+    const overlay = document.createElement('div');
+    overlay.className = 'mobile-menu-overlay';
+    overlay.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log('Overlay clicked');
+        const mobileMenu = getElement('mobile-menu');
+        if (mobileMenu && mobileMenu.classList.contains('is-open')) {
+            mobileMenu.classList.remove('is-open');
+            document.body.classList.remove('mobile-menu-open');
+            console.log('Mobile menu closed via overlay');
+        }
+    });
+    document.body.appendChild(overlay);
+    
+    // 메뉴 생성
     const menu = document.createElement('div');
     menu.id = 'mobile-menu';
     menu.className = 'mobile-menu';
     menu.innerHTML = `
         <div class="mobile-menu-header">
           <a href="index.html" class="logo-container"><img id="mobile-main-logo" src="" alt="Onbit Logo" height="36"/></a>
-          <button class="icon-button mobile-menu-close" data-action="close-mobile-menu" aria-label="메뉴 닫기"><i class="fas fa-times"></i></button>
+          <button class="mobile-menu-close" data-action="close-mobile-menu" aria-label="메뉴 닫기"><i class="fas fa-times"></i></button>
         </div>
         <div class="mobile-auth-section"></div>
         <nav class="mobile-menu-nav">
           <ul>
-            <li><a href="affiliated.html">제휴 거래소</a></li>
-            <li><a href="community.html">커뮤니티</a></li>
-            <li><a href="notice-board.html">공지사항</a></li>
+            <li><a href="affiliated.html" data-action="close-mobile-menu">제휴 거래소</a></li>
+            <li><a href="community.html" data-action="close-mobile-menu">실시간 채팅</a></li>
+            <li><a href="community-board.html" data-action="close-mobile-menu">자유 게시판</a></li>
+            <li><a href="attendance.html" data-action="close-mobile-menu">출석체크</a></li>
+            <li><a href="notice-board.html" data-action="close-mobile-menu">공지사항</a></li>
+            <li><a href="my-account.html" data-action="close-mobile-menu">마이페이지</a></li>
             <li><a href="#" data-action="toggle-theme">테마 변경</a></li>
           </ul>
-        </nav>`;
+        </nav>
+        <div class="mobile-menu-actions">
+          <div class="mobile-action-grid">
+            <a href="my-account.html" class="mobile-action-btn" data-action="close-mobile-menu">
+              <i class="fas fa-user-circle"></i>
+              <span>마이페이지</span>
+            </a>
+            <a href="admin.html" class="mobile-action-btn" id="mobile-admin-link" style="display: none;" data-action="close-mobile-menu">
+              <i class="fas fa-shield-alt"></i>
+              <span>관리자</span>
+            </a>
+          </div>
+        </div>`;
     document.body.appendChild(menu);
 }
 
@@ -191,7 +413,33 @@ onAuthStateChanged(auth, updateAuthUI);
 document.addEventListener('DOMContentLoaded', () => {
     createMobileMenuIfNeeded();
     applyTheme();
+    
+    // 모바일 메뉴 초기 상태 확실히 설정
+    setTimeout(() => {
+        const mobileMenu = getElement('mobile-menu');
+        if (mobileMenu) {
+            mobileMenu.classList.remove('is-open');
+            document.body.classList.remove('mobile-menu-open');
+            // PC에서는 완전히 숨김
+            if (window.innerWidth > 768) {
+                mobileMenu.style.display = 'none';
+            }
+        }
+    }, 100);
+    
     document.addEventListener('click', handleGlobalClick);
+    
+    // ESC 키로 모바일 메뉴 닫기
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            const mobileMenu = getElement('mobile-menu');
+            if (mobileMenu && mobileMenu.classList.contains('is-open')) {
+                mobileMenu.classList.remove('is-open');
+                document.body.classList.remove('mobile-menu-open');
+                console.log('Mobile menu closed via ESC key');
+            }
+        }
+    });
 
     const loginForm = getElement('login-form');
     if (loginForm) {
@@ -227,7 +475,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 const userCredential = await createUserWithEmailAndPassword(auth, email, password);
                 await updateProfile(userCredential.user, { displayName: name });
                 await setDoc(doc(db, "users", userCredential.user.uid), {
-                    displayName: name, email, level: 1, points: 0, role: 'user', createdAt: serverTimestamp()
+                    displayName: name, 
+                    email, 
+                    points: 0, 
+                    level: "새싹", 
+                    role: 'user', 
+                    createdAt: serverTimestamp()
                 });
                 controlModal('signup-modal', false);
                 signupForm.reset();

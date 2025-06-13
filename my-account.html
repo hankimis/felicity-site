@@ -7,6 +7,8 @@
     <link rel="stylesheet" href="style.css" />
     <link rel="stylesheet" href="auth.css" />
     <link rel="stylesheet" href="my-account.css" />
+    <link rel="stylesheet" href="mobile-menu.css" />
+    <link rel="stylesheet" href="toast.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
 </head>
 <body>
@@ -43,7 +45,7 @@
           <button class="icon-button" id="theme-toggle" data-action="toggle-theme"><i class="fas fa-moon"></i></button>
           <a href="my-account.html" id="my-page-link" class="icon-button" aria-label="마이페이지"><i class="fas fa-user-circle"></i></a>
         </div>
-        <button class="mobile-menu-button" id="mobile-menu-button" aria-label="메뉴 열기">
+        <button class="mobile-menu-button" id="mobile-menu-button" data-action="open-mobile-menu" aria-label="메뉴 열기">
           <i class="fas fa-bars"></i>
         </button>
     </header>
@@ -73,6 +75,116 @@
                         </div>
                         <button type="submit" id="save-profile-btn" class="primary-btn">변경사항 저장</button>
                     </form>
+                </div>
+            </div>
+            
+            <!-- 레벨 정보 카드 -->
+            <div class="level-card">
+                <h2>레벨 정보</h2>
+                <div class="user-level-info" id="user-level-display">
+                    <!-- 레벨 시스템이 로드되면 여기에 레벨 정보가 표시됩니다 -->
+                </div>
+            </div>
+            
+            <!-- 포인트 시스템 설명 카드 -->
+            <div class="points-guide-card">
+                <h2>🎯 포인트 시스템 가이드</h2>
+                <div class="points-guide-content">
+                    <div class="guide-section">
+                        <h3>📈 포인트 획득 방법</h3>
+                        <div class="points-methods">
+                            <div class="method-item">
+                                <span class="method-icon">📅</span>
+                                <span class="method-name">출석체크</span>
+                                <span class="method-points">+10P</span>
+                            </div>
+                            <div class="method-item">
+                                <span class="method-icon">✍️</span>
+                                <span class="method-name">게시글 작성</span>
+                                <span class="method-points">+15P</span>
+                            </div>
+                            <div class="method-item">
+                                <span class="method-icon">💬</span>
+                                <span class="method-name">댓글 작성</span>
+                                <span class="method-points">+5P</span>
+                            </div>
+                            <div class="method-item">
+                                <span class="method-icon">❤️</span>
+                                <span class="method-name">좋아요 받기</span>
+                                <span class="method-points">+3P</span>
+                            </div>
+                            <div class="method-item">
+                                <span class="method-icon">🎁</span>
+                                <span class="method-name">레벨업 보너스</span>
+                                <span class="method-points">+10~500P</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="guide-section">
+                        <h3>🏆 레벨 시스템</h3>
+                        <div class="level-guide">
+                            <div class="level-item">
+                                <span class="level-badge-mini" style="background: linear-gradient(135deg, #22c55e, #16a34a)">새싹</span>
+                                <span class="level-range">0-99 EXP</span>
+                            </div>
+                            <div class="level-item">
+                                <span class="level-badge-mini" style="background: linear-gradient(135deg, #3b82f6, #2563eb)">초보</span>
+                                <span class="level-range">100-249 EXP</span>
+                            </div>
+                            <div class="level-item">
+                                <span class="level-badge-mini" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed)">일반</span>
+                                <span class="level-range">250-499 EXP</span>
+                            </div>
+                            <div class="level-item">
+                                <span class="level-badge-mini" style="background: linear-gradient(135deg, #f59e0b, #d97706)">숙련</span>
+                                <span class="level-range">500-999 EXP</span>
+                            </div>
+                            <div class="level-item">
+                                <span class="level-badge-mini" style="background: linear-gradient(135deg, #ef4444, #dc2626)">전문가</span>
+                                <span class="level-range">1000-1999 EXP</span>
+                            </div>
+                            <div class="level-item">
+                                <span class="level-badge-mini" style="background: linear-gradient(135deg, #ec4899, #db2777)">고수</span>
+                                <span class="level-range">2000-3999 EXP</span>
+                            </div>
+                            <div class="level-item">
+                                <span class="level-badge-mini" style="background: linear-gradient(135deg, #06b6d4, #0891b2)">달인</span>
+                                <span class="level-range">4000-7999 EXP</span>
+                            </div>
+                            <div class="level-item">
+                                <span class="level-badge-mini" style="background: linear-gradient(135deg, #84cc16, #65a30d)">마스터</span>
+                                <span class="level-range">8000-15999 EXP</span>
+                            </div>
+                            <div class="level-item">
+                                <span class="level-badge-mini" style="background: linear-gradient(135deg, #f97316, #ea580c)">그랜드마스터</span>
+                                <span class="level-range">16000-31999 EXP</span>
+                            </div>
+                            <div class="level-item">
+                                <span class="level-badge-mini" style="background: linear-gradient(135deg, #dc2626, #b91c1c)">레전드</span>
+                                <span class="level-range">32000+ EXP</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="guide-section">
+                        <h3>✨ 레벨별 특별 효과</h3>
+                        <div class="effects-list">
+                            <p><strong>일반 이상:</strong> 채팅에서 메시지 강조 효과</p>
+                            <p><strong>숙련 이상:</strong> 닉네임 그라데이션 효과</p>
+                            <p><strong>달인 이상:</strong> 메시지 테두리 글로우 효과</p>
+                            <p><strong>마스터 이상:</strong> 애니메이션 효과</p>
+                            <p><strong>레전드:</strong> 최고급 무지개 효과</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 포인트 히스토리 카드 -->
+            <div class="points-history-card">
+                <h2>포인트 히스토리</h2>
+                <div id="points-history-display">
+                    <!-- 포인트 히스토리가 여기에 표시됩니다 -->
                 </div>
             </div>
         </div>
@@ -128,6 +240,7 @@
 
     <!-- Scripts -->
     <script src="script.js"></script>
+    <script type="module" src="level-system.js"></script>
     <script type="module" src="auth.js"></script>
     <script type="module" src="my-account.js"></script>
 </body>

@@ -114,7 +114,9 @@ function renderReactions() {
   const commentsRef = collection(db, `community-posts/${postId}/comments`);
   onSnapshot(commentsRef, snap => {
     const countEl = document.getElementById('comment-count');
-    if (countEl) countEl.textContent = snap.size;
+    if (countEl) {
+      countEl.textContent = snap.size;
+    }
   });
 }
 
@@ -125,6 +127,7 @@ async function handleLike() {
   const postSnap = await getDoc(postRef2);
   let likes = postSnap.data().likes || 0;
   const likeSnap = await getDoc(likeRef);
+  
   if (likeSnap.exists()) {
     if (likes > 0) await updateDoc(postRef2, { likes: likes - 1 });
     await deleteDoc(likeRef);
@@ -133,10 +136,24 @@ async function handleLike() {
     await updateDoc(postRef2, { likes: likes + 1 });
     await setDoc(likeRef, { liked: true });
     document.getElementById('like-btn').classList.add('active');
+    
+    // 좋아요 받은 게시글 작성자에게 포인트 추가 (레벨 시스템)
+    try {
+      if (typeof addLikePoints === 'function' && postData && postData.uid) {
+        await addLikePoints(postData.uid);
+        console.log('좋아요 포인트 추가됨 (+3점)');
+      }
+    } catch (levelError) {
+      console.error('레벨 시스템 오류:', levelError);
+    }
   }
+  
   // 새로고침 없이 카운트 갱신
   const snap2 = await getDoc(postRef2);
-  document.getElementById('like-count').textContent = snap2.data().likes || 0;
+  const likeCountEl = document.getElementById('like-count');
+  if (likeCountEl) {
+    likeCountEl.textContent = snap2.data().likes || 0;
+  }
 }
 
 function handleShare() {
@@ -190,7 +207,10 @@ onSnapshot(commentsQuery, snap => {
   const comments = [];
   snap.forEach(doc => { comments.push({ id: doc.id, ...doc.data() }); });
   renderComments(comments);
-  document.getElementById('comment-count').textContent = comments.length;
+  const commentCountEl = document.getElementById('comment-count');
+  if (commentCountEl) {
+    commentCountEl.textContent = comments.length;
+  }
 });
 
 // 댓글 등록
@@ -202,12 +222,24 @@ if (commentForm) {
     if (!currentUser) return alert('로그인 후 댓글 작성 가능합니다.');
     const text = commentInput.value.trim();
     if (!text) return;
+    
     await addDoc(commentsRef, {
       text,
       displayName: currentUser.displayName || '익명',
       uid: currentUser.uid,
       createdAt: serverTimestamp()
     });
+    
+    // 댓글 작성 포인트 추가 (레벨 시스템)
+    try {
+      if (typeof addCommentPoints === 'function') {
+        await addCommentPoints(currentUser.uid);
+        console.log('댓글 작성 포인트 추가됨 (+5점)');
+      }
+    } catch (levelError) {
+      console.error('레벨 시스템 오류:', levelError);
+    }
+    
     commentInput.value = '';
   });
 }

@@ -1,5 +1,5 @@
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore, collection, getDocs, doc, getDoc, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, collection, getDocs, doc, getDoc, deleteDoc, updateDoc, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { firebaseConfig } from './firebase-config.js';
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 
@@ -108,40 +108,146 @@ function renderUsersTable(users) {
     users.forEach(user => {
         const row = document.createElement('tr');
         const registrationDate = user.createdAt?.toDate ? user.createdAt.toDate().toLocaleDateString('ko-KR') : '알 수 없음';
+        const levelInfo = window.levelSystem ? window.levelSystem.calculateLevel(user.points || 0) : { name: "새싹", gradient: "#22c55e" };
         
         row.innerHTML = `
-            <td>${user.id}</td>
-            <td>${user.displayName || 'N/A'}</td>
-            <td>${user.email || 'N/A'}</td>
+            <td><span class="user-uid">${user.id}</span></td>
+            <td><span class="user-nickname">${user.displayName || 'N/A'}</span></td>
+            <td><span class="user-email">${user.email || 'N/A'}</span></td>
+            <td><span class="user-points">${(user.points || 0).toLocaleString()}</span></td>
             <td>
-                <input type="number" class="level-input" value="${user.level || 1}" min="1" data-uid="${user.id}">
+                <span class="user-level" style="background: ${levelInfo.gradient};">
+                    ${levelInfo.name}
+                </span>
             </td>
-            <td>${registrationDate}</td>
-            <td class="user-actions">
-                <button class="action-btn edit" data-uid="${user.id}" data-name="${user.displayName || ''}" title="닉네임 변경">
-                    <i class="fas fa-edit"></i>
-                </button>
-                <button class="action-btn delete" data-uid="${user.id}" title="회원 삭제">
-                    <i class="fas fa-trash-alt"></i>
-                </button>
+            <td>
+                <span class="user-role ${user.role || 'user'}">
+                    ${getRoleDisplayName(user.role || 'user')}
+                </span>
+            </td>
+            <td><span class="user-join-date">${registrationDate}</span></td>
+            <td>
+                <div class="admin-actions-cell">
+                    <button class="admin-btn edit" data-uid="${user.id}" data-name="${user.displayName || ''}" title="닉네임 수정">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="admin-btn points" data-uid="${user.id}" title="포인트 조정">
+                        <i class="fas fa-coins"></i>
+                    </button>
+                    <button class="admin-btn role" data-uid="${user.id}" data-role="${user.role || 'user'}" title="권한 변경">
+                        <i class="fas fa-shield-alt"></i>
+                    </button>
+                    <button class="admin-btn view" data-uid="${user.id}" title="상세 정보">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                    <button class="admin-btn danger" data-uid="${user.id}" title="사용자 삭제">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
             </td>
         `;
         usersTableBody.appendChild(row);
     });
 
     // 이벤트 리스너 추가
-    document.querySelectorAll('.action-btn.delete').forEach(button => {
-        button.addEventListener('click', handleDeleteUser);
-    });
-    document.querySelectorAll('.action-btn.edit').forEach(button => {
+    document.querySelectorAll('.admin-btn.edit').forEach(button => {
         button.addEventListener('click', function(e) {
-            const uid = e.target.closest('.action-btn').dataset.uid;
-            const name = e.target.closest('.action-btn').dataset.name;
+            const uid = e.target.closest('.admin-btn').dataset.uid;
+            const name = e.target.closest('.admin-btn').dataset.name;
             openNicknameModal(uid, name);
         });
     });
-    document.querySelectorAll('.level-input').forEach(input => {
-        input.addEventListener('change', handleUpdateLevel);
+    
+    document.querySelectorAll('.admin-btn.points').forEach(button => {
+        button.addEventListener('click', function(e) {
+            const uid = e.target.closest('.admin-btn').dataset.uid;
+            openPointsModal(uid);
+        });
+    });
+    
+    document.querySelectorAll('.admin-btn.role').forEach(button => {
+        button.addEventListener('click', function(e) {
+            const uid = e.target.closest('.admin-btn').dataset.uid;
+            const currentRole = e.target.closest('.admin-btn').dataset.role;
+            openRoleModal(uid, currentRole);
+        });
+    });
+    
+    document.querySelectorAll('.admin-btn.view').forEach(button => {
+        button.addEventListener('click', function(e) {
+            const uid = e.target.closest('.admin-btn').dataset.uid;
+            openUserDetailModal(uid);
+        });
+    });
+    
+    document.querySelectorAll('.admin-btn.danger').forEach(button => {
+        button.addEventListener('click', function(e) {
+            const uid = e.target.closest('.admin-btn').dataset.uid;
+            handleDeleteUser(uid);
+        });
+    });
+
+    // 사용자 업데이트 이벤트 리스너
+    document.addEventListener('click', async (e) => {
+        if (e.target.classList.contains('update-user-btn')) {
+            const uid = e.target.dataset.uid;
+            const row = e.target.closest('tr');
+            const nameInput = row.querySelector('.name-input');
+            const pointsInput = row.querySelector('.points-input');
+            const roleSelect = row.querySelector('.role-select');
+            
+            const newName = nameInput.value.trim();
+            const newPoints = parseInt(pointsInput.value, 10);
+            const newRole = roleSelect.value;
+            
+            if (!newName || isNaN(newPoints) || newPoints < 0) {
+                alert('올바른 값을 입력해주세요.');
+                return;
+            }
+            
+            try {
+                await updateDoc(doc(db, 'users', uid), {
+                    displayName: newName,
+                    points: newPoints,
+                    role: newRole
+                });
+                alert('사용자 정보가 업데이트되었습니다.');
+                loadDashboardData();
+            } catch (error) {
+                console.error('사용자 업데이트 오류:', error);
+                alert('업데이트 중 오류가 발생했습니다.');
+            }
+        }
+        
+        if (e.target.classList.contains('reset-points-btn')) {
+            const uid = e.target.dataset.uid;
+            if (confirm('이 사용자의 포인트를 0으로 초기화하시겠습니까?')) {
+                try {
+                    await updateDoc(doc(db, 'users', uid), {
+                        points: 0
+                    });
+                    alert('포인트가 초기화되었습니다.');
+                    loadDashboardData();
+                } catch (error) {
+                    console.error('포인트 초기화 오류:', error);
+                    alert('초기화 중 오류가 발생했습니다.');
+                }
+            }
+        }
+        
+        if (e.target.classList.contains('delete-user-btn')) {
+            const uid = e.target.dataset.uid;
+            if (confirm('정말로 이 사용자를 삭제하시겠습니까?')) {
+                try {
+                    await deleteDoc(doc(db, 'users', uid));
+                    alert('사용자가 삭제되었습니다.');
+                    loadDashboardData();
+                } catch (error) {
+                    console.error('사용자 삭제 오류:', error);
+                    alert('삭제 중 오류가 발생했습니다.');
+                }
+            }
+        }
     });
 }
 
@@ -168,27 +274,7 @@ async function handleUpdateLevel(event) {
     }
 }
 
-async function handleDeleteUser(event) {
-    const button = event.target.closest('.action-btn');
-    const uidToDelete = button.dataset.uid;
-    if (!uidToDelete) return;
 
-    if (uidToDelete === auth.currentUser?.uid) {
-        alert('자기 자신은 삭제할 수 없습니다.');
-        return;
-    }
-
-    if (confirm('정말로 이 회원을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
-        try {
-            await deleteDoc(doc(db, "users", uidToDelete));
-            showToast('회원이 성공적으로 삭제되었습니다.');
-            loadDashboardData();
-        } catch (error) {
-            console.error("Error deleting user: ", error);
-            alert('회원 삭제 중 오류가 발생했습니다.');
-        }
-    }
-}
 
 function openNicknameModal(uid, currentName) {
     const modal = document.getElementById('nickname-modal');
@@ -241,6 +327,228 @@ userSearch?.addEventListener('input', (e) => {
 refreshBtn?.addEventListener('click', () => {
     loadDashboardData();
     showToast('데이터가 새로고침되었습니다.');
+});
+
+// 권한 표시명 반환 함수
+function getRoleDisplayName(role) {
+    switch(role) {
+        case 'admin': return '관리자';
+        case 'moderator': return '모더레이터';
+        case 'user': 
+        default: return '일반 사용자';
+    }
+}
+
+// 포인트 조정 모달 열기
+async function openPointsModal(uid) {
+    const modal = document.getElementById('points-modal');
+    document.getElementById('points-uid').value = uid;
+    document.getElementById('points-amount').value = '';
+    document.getElementById('points-reason').value = '';
+    
+    // 현재 포인트 표시
+    try {
+        const userDoc = await getDoc(doc(db, 'users', uid));
+        if (userDoc.exists()) {
+            const currentPoints = userDoc.data().points || 0;
+            document.getElementById('current-points').textContent = currentPoints.toLocaleString();
+        }
+    } catch (error) {
+        console.error('사용자 포인트 조회 오류:', error);
+    }
+    
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+}
+
+// 권한 변경 모달 열기
+function openRoleModal(uid, currentRole) {
+    const modal = document.getElementById('role-modal');
+    document.getElementById('role-uid').value = uid;
+    document.getElementById('new-role').value = currentRole;
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+}
+
+// 사용자 상세 정보 모달 열기
+async function openUserDetailModal(uid) {
+    try {
+        const userDoc = await getDoc(doc(db, 'users', uid));
+        if (!userDoc.exists()) {
+            alert('사용자 정보를 찾을 수 없습니다.');
+            return;
+        }
+        
+        const userData = userDoc.data();
+        const levelInfo = window.levelSystem ? window.levelSystem.calculateLevel(userData.points || 0) : { name: "새싹", gradient: "#22c55e" };
+        
+        const modal = document.getElementById('user-detail-modal');
+        const detailInfo = document.getElementById('user-detail-info');
+        
+        detailInfo.innerHTML = `
+            <div class="user-detail-grid">
+                <div class="detail-card">
+                    <h4>기본 정보</h4>
+                    <div class="detail-item">
+                        <span class="detail-label">UID:</span>
+                        <span class="detail-value">${uid}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">닉네임:</span>
+                        <span class="detail-value">${userData.displayName || 'N/A'}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">이메일:</span>
+                        <span class="detail-value">${userData.email || 'N/A'}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">권한:</span>
+                        <span class="detail-value">${getRoleDisplayName(userData.role || 'user')}</span>
+                    </div>
+                </div>
+                
+                <div class="detail-card">
+                    <h4>레벨 & 포인트</h4>
+                    <div class="detail-item">
+                        <span class="detail-label">현재 레벨:</span>
+                        <span class="detail-value">${levelInfo.name}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">총 포인트:</span>
+                        <span class="detail-value">${(userData.points || 0).toLocaleString()}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">가입일:</span>
+                        <span class="detail-value">${userData.createdAt?.toDate ? userData.createdAt.toDate().toLocaleDateString('ko-KR') : '알 수 없음'}</span>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    } catch (error) {
+        console.error('사용자 상세 정보 로드 오류:', error);
+        alert('사용자 정보를 불러오는 중 오류가 발생했습니다.');
+    }
+}
+
+// 사용자 삭제 처리
+async function handleDeleteUser(uid) {
+    if (uid === auth.currentUser?.uid) {
+        alert('자기 자신은 삭제할 수 없습니다.');
+        return;
+    }
+
+    if (confirm('정말로 이 회원을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
+        try {
+            await deleteDoc(doc(db, "users", uid));
+            showToast('회원이 성공적으로 삭제되었습니다.');
+            loadDashboardData();
+        } catch (error) {
+            console.error("Error deleting user: ", error);
+            alert('회원 삭제 중 오류가 발생했습니다.');
+        }
+    }
+}
+
+// 모달 닫기 이벤트 리스너들
+document.getElementById('close-points-modal')?.addEventListener('click', () => {
+    document.getElementById('points-modal').style.display = 'none';
+    document.body.style.overflow = '';
+});
+
+document.getElementById('close-role-modal')?.addEventListener('click', () => {
+    document.getElementById('role-modal').style.display = 'none';
+    document.body.style.overflow = '';
+});
+
+document.getElementById('close-user-detail-modal')?.addEventListener('click', () => {
+    document.getElementById('user-detail-modal').style.display = 'none';
+    document.body.style.overflow = '';
+});
+
+// 포인트 조정 폼 제출
+document.getElementById('points-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const uid = document.getElementById('points-uid').value;
+    const amount = parseInt(document.getElementById('points-amount').value);
+    const reason = document.getElementById('points-reason').value.trim();
+    
+    if (!uid || isNaN(amount) || !reason) {
+        alert('모든 필드를 올바르게 입력하세요.');
+        return;
+    }
+    
+    try {
+        const userDoc = await getDoc(doc(db, 'users', uid));
+        if (!userDoc.exists()) {
+            alert('사용자를 찾을 수 없습니다.');
+            return;
+        }
+        
+        const currentPoints = userDoc.data().points || 0;
+        const newPoints = Math.max(0, currentPoints + amount);
+        
+        // 포인트 업데이트
+        await updateDoc(doc(db, 'users', uid), {
+            points: newPoints
+        });
+        
+        // 포인트 히스토리 추가
+        await addDoc(collection(db, 'pointHistory'), {
+            userId: uid,
+            action: 'admin_adjustment',
+            points: amount,
+            timestamp: serverTimestamp(),
+            description: `관리자 조정: ${reason}`,
+            adminId: auth.currentUser?.uid
+        });
+        
+        showToast(`포인트가 ${amount > 0 ? '+' : ''}${amount} 조정되었습니다. (사유: ${reason})`);
+        loadDashboardData();
+        document.getElementById('points-modal').style.display = 'none';
+        document.body.style.overflow = '';
+        
+        // 사용자 데이터 새로고침 (실시간 반영)
+        if (window.refreshUserData) {
+            window.refreshUserData();
+        }
+    } catch (error) {
+        console.error('포인트 조정 오류:', error);
+        alert('포인트 조정 중 오류가 발생했습니다.');
+    }
+});
+
+// 권한 변경 폼 제출
+document.getElementById('role-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const uid = document.getElementById('role-uid').value;
+    const newRole = document.getElementById('new-role').value;
+    
+    if (!uid || !newRole) {
+        alert('권한을 선택하세요.');
+        return;
+    }
+    
+    if (uid === auth.currentUser?.uid && newRole !== 'admin') {
+        alert('자기 자신의 관리자 권한은 해제할 수 없습니다.');
+        return;
+    }
+    
+    try {
+        await updateDoc(doc(db, 'users', uid), {
+            role: newRole
+        });
+        
+        showToast(`권한이 ${getRoleDisplayName(newRole)}로 변경되었습니다.`);
+        loadDashboardData();
+        document.getElementById('role-modal').style.display = 'none';
+        document.body.style.overflow = '';
+    } catch (error) {
+        console.error('권한 변경 오류:', error);
+        alert('권한 변경 중 오류가 발생했습니다.');
+    }
 });
 
 // 토스트 메시지 표시 함수

@@ -55,29 +55,7 @@
         .chart-title-controls {
             display: flex;
             align-items: center;
-            gap: 15px;
-        }
-
-        .coin-selector {
-            padding: 8px 12px;
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            background-color: var(--bg-secondary-color);
-            color: var(--text-color);
-            font-size: 1em;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .coin-selector:focus {
-            outline: none;
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 2px rgba(49, 130, 246, 0.2);
-        }
-
-        .coin-selector:hover {
-            background-color: var(--card-bg);
+            gap: 12px;
         }
 
         .section-title-bar h2 {
@@ -85,6 +63,77 @@
             font-weight: 700;
             color: var(--text-color);
             margin: 0;
+            white-space: nowrap;
+        }
+
+        .coin-selector {
+            position: relative;
+            padding: 10px 40px 10px 16px;
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            background: linear-gradient(135deg, var(--card-bg), var(--bg-secondary-color));
+            color: var(--text-color);
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            min-width: 140px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            background-size: 16px;
+        }
+
+        .coin-selector:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(49, 130, 246, 0.15), 0 4px 12px rgba(0, 0, 0, 0.15);
+            transform: translateY(-1px);
+        }
+
+        .coin-selector:hover {
+            border-color: var(--primary-color);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            transform: translateY(-1px);
+        }
+
+        .coin-selector option {
+            background-color: var(--card-bg);
+            color: var(--text-color);
+            padding: 12px 16px;
+            font-weight: 500;
+            border: none;
+        }
+
+        .coin-selector option:hover {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .coin-selector option:checked {
+            background-color: var(--primary-color);
+            color: white;
+            font-weight: 600;
+        }
+
+        /* 다크모드 지원 */
+        :root.dark-mode .coin-selector {
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23adb5bd' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+        }
+
+        /* 모바일 최적화 */
+        @media (max-width: 768px) {
+            .coin-selector {
+                font-size: 0.9em;
+                padding: 8px 32px 8px 12px;
+                min-width: 120px;
+                background-size: 14px;
+                background-position: right 10px center;
+            }
         }
 
         .chart-intervals {
@@ -409,23 +458,85 @@
                 align-items: stretch;
             }
             .chart-title-controls {
-                justify-content: center;
+                justify-content: flex-start;
                 gap: 10px;
             }
             .coin-selector {
                 font-size: 0.9em;
-                padding: 6px 10px;
+                padding: 8px 32px 8px 12px;
+                min-width: 120px;
+                background-size: 14px;
+                background-position: right 10px center;
             }
-            .section-title-bar h2,
-            .chat-section h2 {
+            .section-title-bar h2 {
                 font-size: 1.2em;
-                text-align: center;
+                text-align: left;
             }
             .chat-input-form input,
             .chat-input-form button {
                 padding: 10px 14px;
                 font-size: 0.95em;
             }
+        }
+
+        /* Interval Select 스타일 (모바일용) */
+        .interval-select {
+            position: relative;
+            padding: 8px 32px 8px 12px;
+            border: 2px solid var(--border-color);
+            border-radius: 10px;
+            background: linear-gradient(135deg, var(--card-bg), var(--bg-secondary-color));
+            color: var(--text-color);
+            font-size: 0.9em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            min-width: 100px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+            background-size: 14px;
+        }
+
+        .interval-select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(49, 130, 246, 0.15), 0 3px 8px rgba(0, 0, 0, 0.12);
+            transform: translateY(-1px);
+        }
+
+        .interval-select:hover {
+            border-color: var(--primary-color);
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.12);
+            transform: translateY(-1px);
+        }
+
+        .interval-select option {
+            background-color: var(--card-bg);
+            color: var(--text-color);
+            padding: 10px 12px;
+            font-weight: 500;
+            border: none;
+        }
+
+        .interval-select option:hover {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .interval-select option:checked {
+            background-color: var(--primary-color);
+            color: white;
+            font-weight: 600;
+        }
+
+        /* 다크모드 지원 */
+        :root.dark-mode .interval-select {
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23adb5bd' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
         }
     </style>
 </head>
@@ -483,11 +594,18 @@
                 <div class="section-title-bar">
                     <div class="chart-title-controls">
                         <select id="coin-selector" class="coin-selector">
-                            <option value="BTCUSDT">BTC/USDT</option>
-                            <option value="ETHUSDT">ETH/USDT</option>
-                            <option value="SOLUSDT">SOL/USDT</option>
+                            <option value="BTCUSDT">🟠 BTC/USDT</option>
+                            <option value="ETHUSDT">🔷 ETH/USDT</option>
+                            <option value="SOLUSDT">🟣 SOL/USDT</option>
+                            <option value="ADAUSDT">🔵 ADA/USDT</option>
+                            <option value="XRPUSDT">⚪ XRP/USDT</option>
+                            <option value="DOTUSDT">🔴 DOT/USDT</option>
+                            <option value="LINKUSDT">🔗 LINK/USDT</option>
+                            <option value="LTCUSDT">⚡ LTC/USDT</option>
+                            <option value="BNBUSDT">🟡 BNB/USDT</option>
+                            <option value="AVAXUSDT">🔺 AVAX/USDT</option>
                         </select>
-                        <h2 id="chart-title">실시간 차트</h2>
+                        <h2 id="chart-title">BTC/USDT 실시간 차트</h2>
                     </div>
                     <div class="chart-intervals" id="chart-intervals-desktop">
                         <button class="interval-button active" data-interval="1m">1분</button>
@@ -521,13 +639,14 @@
                         <span id="chat-users-count">0</span>
                     </div>
                 </div>
-                <div class="chat-messages" id="chat-messages">
-                    <!-- Messages will be appended here -->
+                <div class="chat-wrapper">
+                    <div id="chat-messages">
+                    </div>
+                    <form id="chat-form" class="chat-input-form">
+                        <input type="text" id="message-input" placeholder="메시지를 입력하세요..." autocomplete="off">
+                        <button type="submit">전송</button>
+                    </form>
                 </div>
-                <form class="chat-input-form" id="chat-form">
-                    <input type="text" id="message-input" placeholder="메시지를 입력하세요..." autocomplete="off">
-                    <button type="submit">전송</button>
-                </form>
             </section>
         </div>
     </main>
@@ -589,6 +708,7 @@
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
 
     <!-- Custom Scripts -->
+    <script type="module" src="level-system.js"></script>
     <script type="module" src="auth.js"></script>
     <script type="module" src="community.js"></script>
     <script>

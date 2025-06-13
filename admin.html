@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="admin.css">
     <link rel="stylesheet" href="auth.css">
+    <link rel="stylesheet" href="toast.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
@@ -118,7 +119,9 @@
                                     <th>UID</th>
                                     <th>닉네임</th>
                                     <th>이메일</th>
+                                    <th>포인트</th>
                                     <th>레벨</th>
+                                    <th>권한</th>
                                     <th>가입일</th>
                                     <th>관리</th>
                                 </tr>
@@ -133,6 +136,7 @@
         </div>
     </main>
 
+    <!-- 닉네임 변경 모달 -->
     <div id="nickname-modal" class="auth-modal">
         <div class="auth-modal-content">
             <span class="auth-modal-close" id="close-nickname-modal">&times;</span>
@@ -148,6 +152,64 @@
         </div>
     </div>
 
+    <!-- 포인트 조정 모달 -->
+    <div id="points-modal" class="auth-modal">
+        <div class="auth-modal-content">
+            <span class="auth-modal-close" id="close-points-modal">&times;</span>
+            <form id="points-form" class="auth-form">
+                <h2>포인트 조정</h2>
+                <input type="hidden" id="points-uid">
+                <div class="current-points-display">
+                    <span>현재 포인트:</span>
+                    <strong id="current-points">0</strong>
+                </div>
+                <div class="input-group">
+                    <i class="fas fa-coins"></i>
+                    <input type="number" id="points-amount" placeholder="포인트 (음수 가능)" required>
+                </div>
+                <div class="input-group">
+                    <i class="fas fa-comment"></i>
+                    <input type="text" id="points-reason" placeholder="조정 사유" required>
+                </div>
+                <button type="submit" class="submit-btn">포인트 조정</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 권한 변경 모달 -->
+    <div id="role-modal" class="auth-modal">
+        <div class="auth-modal-content">
+            <span class="auth-modal-close" id="close-role-modal">&times;</span>
+            <form id="role-form" class="auth-form">
+                <h2>권한 변경</h2>
+                <input type="hidden" id="role-uid">
+                <div class="input-group">
+                    <i class="fas fa-shield-alt"></i>
+                    <select id="new-role" required>
+                        <option value="">권한 선택</option>
+                        <option value="user">일반 사용자</option>
+                        <option value="moderator">모더레이터</option>
+                        <option value="admin">관리자</option>
+                    </select>
+                </div>
+                <button type="submit" class="submit-btn">권한 변경</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 사용자 상세 정보 모달 -->
+    <div id="user-detail-modal" class="auth-modal">
+        <div class="auth-modal-content large">
+            <span class="auth-modal-close" id="close-user-detail-modal">&times;</span>
+            <div class="user-detail-content">
+                <h2>사용자 상세 정보</h2>
+                <div id="user-detail-info">
+                    <!-- 사용자 상세 정보가 여기에 표시됩니다 -->
+                </div>
+            </div>
+        </div>
+    </div>
+
     <footer class="main-footer">
         <div class="container">
             <p>&copy; 2024 ONBit. All rights reserved.</p>
@@ -158,6 +220,7 @@
         </div>
     </footer>
 
+    <script type="module" src="level-system.js"></script>
     <script type="module" src="auth.js"></script>
     <script type="module" src="admin.js"></script>
 </body>

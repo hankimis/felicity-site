@@ -47,6 +47,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const title = document.getElementById('post-title').value.trim();
       const content = document.getElementById('post-content').value.trim();
       if (!title || !content) return;
+      
       await addDoc(collection(db, 'community-posts'), {
         title,
         content,
@@ -59,6 +60,17 @@ document.addEventListener('DOMContentLoaded', () => {
         comments: 0,
         isNews: false // 예시
       });
+      
+      // 게시글 작성 포인트 추가 (레벨 시스템)
+      try {
+        if (typeof addPostPoints === 'function') {
+          await addPostPoints(user.uid);
+          console.log('게시글 작성 포인트 추가됨 (+15점)');
+        }
+      } catch (levelError) {
+        console.error('레벨 시스템 오류:', levelError);
+      }
+      
       writeForm.reset();
       showWriteModal(false);
       renderFeed(true);
@@ -248,7 +260,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const likeRef = doc(db, `community-posts/${postId}/likes`, auth.currentUser.uid);
     const postSnap = await getDoc(postRef);
     let likes = postSnap.data().likes || 0;
+    const postData = postSnap.data();
     const likeSnap = await getDoc(likeRef);
+    
     if (likeSnap.exists()) {
       // 이미 좋아요 눌렀으면 취소
       if (likes > 0) await updateDoc(postRef, { likes: likes - 1 });
@@ -258,7 +272,18 @@ document.addEventListener('DOMContentLoaded', () => {
       await updateDoc(postRef, { likes: likes + 1 });
       await setDoc(likeRef, { liked: true });
       btn.classList.add('active');
+      
+      // 좋아요 받은 게시글 작성자에게 포인트 추가 (레벨 시스템)
+      try {
+        if (typeof addLikePoints === 'function' && postData && postData.uid) {
+          await addLikePoints(postData.uid);
+          console.log('좋아요 포인트 추가됨 (+3점)');
+        }
+      } catch (levelError) {
+        console.error('레벨 시스템 오류:', levelError);
+      }
     }
+    
     // 새로고침 없이 카운트 갱신
     const snap2 = await getDoc(postRef);
     btn.querySelector('.count').textContent = snap2.data().likes || 0;
