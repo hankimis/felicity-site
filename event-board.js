@@ -13,6 +13,13 @@ const eventModal = document.getElementById('event-modal');
 const closeEventModal = document.getElementById('close-event-modal');
 const eventForm = document.getElementById('event-form');
 
+// 이미지/로고 미리보기 및 유효성 안내
+const eventImgInput = document.getElementById('event-img');
+const eventLogoInput = document.getElementById('event-logo');
+const previewEventImg = document.getElementById('preview-event-img');
+const previewEventLogo = document.getElementById('preview-event-logo');
+const eventFormMessage = document.getElementById('event-form-message');
+
 let currentUser = null;
 let isAdmin = false;
 
@@ -116,9 +123,37 @@ closeEventModal.addEventListener('click', () => {
   eventModal.removeAttribute('data-edit-id');
 });
 
+function showPreview(input, preview) {
+  const url = input.value.trim();
+  if (url && /^https?:\/\//.test(url)) {
+    preview.src = url;
+    preview.style.display = 'block';
+  } else {
+    preview.src = '';
+    preview.style.display = 'none';
+  }
+}
+if (eventImgInput && previewEventImg) {
+  eventImgInput.addEventListener('input', () => showPreview(eventImgInput, previewEventImg));
+}
+if (eventLogoInput && previewEventLogo) {
+  eventLogoInput.addEventListener('input', () => showPreview(eventLogoInput, previewEventLogo));
+}
+
+function showFormMessage(msg, color = '#ef5350') {
+  if (eventFormMessage) {
+    eventFormMessage.textContent = msg;
+    eventFormMessage.style.color = color;
+  }
+}
+function clearFormMessage() {
+  if (eventFormMessage) eventFormMessage.textContent = '';
+}
+
 const eventFormSubmitHandler = async (e) => {
   e.preventDefault();
   if (!isAdmin) return;
+  clearFormMessage();
   const title = document.getElementById('event-title').value.trim();
   const desc = document.getElementById('event-desc').value.trim();
   const period = document.getElementById('event-period').value.trim();
@@ -126,18 +161,37 @@ const eventFormSubmitHandler = async (e) => {
   const img = document.getElementById('event-img').value.trim();
   const logo = document.getElementById('event-logo').value.trim();
   const link = document.getElementById('event-link').value.trim();
-  if (!title || !desc || !period || !exchange || !img || !logo || !link) return;
-  const editId = eventModal.getAttribute('data-edit-id');
-  if (editId) {
-    await updateDoc(doc(db, 'events', editId), { title, desc, period, exchange, img, logo, link });
-    eventModal.removeAttribute('data-edit-id');
-  } else {
-    await addDoc(collection(db, 'events'), { title, desc, period, exchange, img, logo, link, createdAt: serverTimestamp() });
+  if (!title || !desc || !period || !exchange || !img || !logo || !link) {
+    showFormMessage('모든 항목을 입력해 주세요.');
+    return;
   }
-  eventModal.style.display = 'none';
-  document.body.style.overflow = '';
-  eventForm.reset();
-  renderEvents();
+  if (title.length > 40 || desc.length > 120) {
+    showFormMessage('제목/설명 글자 수를 확인해 주세요.');
+    return;
+  }
+  showFormMessage('등록 중입니다...', '#1976d2');
+  const editId = eventModal.getAttribute('data-edit-id');
+  try {
+    if (editId) {
+      await updateDoc(doc(db, 'events', editId), { title, desc, period, exchange, img, logo, link });
+      eventModal.removeAttribute('data-edit-id');
+      showFormMessage('수정 완료!', '#388e3c');
+    } else {
+      await addDoc(collection(db, 'events'), { title, desc, period, exchange, img, logo, link, createdAt: serverTimestamp() });
+      showFormMessage('등록 완료!', '#388e3c');
+    }
+    setTimeout(() => {
+      eventModal.style.display = 'none';
+      document.body.style.overflow = '';
+      eventForm.reset();
+      clearFormMessage();
+      previewEventImg.style.display = 'none';
+      previewEventLogo.style.display = 'none';
+      renderEvents();
+    }, 800);
+  } catch (err) {
+    showFormMessage('오류가 발생했습니다. 다시 시도해 주세요.');
+  }
 };
 eventForm.removeEventListener('submit', eventFormSubmitHandler);
 eventForm.addEventListener('submit', eventFormSubmitHandler); 

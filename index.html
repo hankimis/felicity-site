@@ -8,6 +8,12 @@
   <link rel="stylesheet" href="auth.css"/>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <link rel="icon" type="image/png" href="/onbit/favicon-96x96.png" sizes="96x96" />
+  <link rel="icon" type="image/svg+xml" href="/onbit/favicon.svg" />
+  <link rel="shortcut icon" href="/onbit/favicon.ico" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/onbit/apple-touch-icon.png" />
+  <meta name="apple-mobile-web-app-title" content="Onbit" />
+  <link rel="manifest" href="/onbit/site.webmanifest" />
 </head>
 <body>
   <div class="top-bar">
@@ -264,6 +270,9 @@
                 <i class="fas fa-lock"></i>
                 <input type="password" name="login-password" placeholder="비밀번호" required>
             </div>
+            <p class="find-links" style="text-align:center; margin-top:12px;">
+              <a href="#" id="find-id-link">아이디(이메일) 찾기</a> | <a href="#" id="find-password-link">비밀번호 찾기</a>
+            </p>
             <button type="submit" class="submit-btn">로그인</button>
             <p class="auth-form-switch">계정이 없으신가요? <a href="#" id="show-signup" data-action="show-signup">회원가입</a></p>
         </form>

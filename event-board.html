@@ -8,6 +8,12 @@
     <link rel="stylesheet" href="auth.css"/>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="icon" type="image/png" href="/onbit/favicon-96x96.png" sizes="96x96" />
+    <link rel="icon" type="image/svg+xml" href="/onbit/favicon.svg" />
+    <link rel="shortcut icon" href="/onbit/favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/onbit/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-title" content="Onbit" />
+    <link rel="manifest" href="/onbit/site.webmanifest" />
     <style>
       .event-board-container {
         max-width: 1200px;
@@ -242,6 +248,77 @@
         }
         .event-card-edit { top: 8px; right: 38px; font-size: 1em; }
       }
+      .floating-write-btn {
+        position: fixed;
+        right: 32px;
+        bottom: 32px;
+        z-index: 1200;
+        background: var(--primary-color);
+        color: #fff;
+        border: none;
+        border-radius: 50px;
+        padding: 16px 28px;
+        font-size: 1.15em;
+        font-weight: 700;
+        box-shadow: 0 4px 16px rgba(49,130,246,0.13);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        transition: background 0.2s;
+      }
+      .floating-write-btn:hover {
+        background: var(--primary-color-dark);
+      }
+      .event-modal-content {
+        max-width: 420px;
+        width: 95vw;
+        padding: 32px 24px 24px 24px;
+      }
+      .event-form label {
+        font-size: 1em;
+        font-weight: 600;
+        margin-bottom: 8px;
+        color: var(--text-color);
+        display: block;
+      }
+      .event-form input, .event-form textarea {
+        font-size: 1em;
+        margin-bottom: 0;
+      }
+      .event-form textarea {
+        min-height: 100px;
+        resize: vertical;
+        border-radius: 10px;
+        padding: 14px 12px;
+        font-size: 1.08em;
+        background: var(--bg-secondary-color);
+        border: 1.5px solid var(--border-color);
+        color: var(--text-color);
+        margin-top: 6px;
+        margin-bottom: 0;
+      }
+      .form-message {
+        margin-top: 10px;
+        color: #ef5350;
+        font-size: 0.98em;
+        min-height: 18px;
+      }
+      @media (max-width: 700px) {
+        .floating-write-btn {
+          right: 12px;
+          bottom: 12px;
+          padding: 12px 18px;
+          font-size: 1em;
+        }
+        .event-modal-content {
+          padding: 18px 6px 16px 6px;
+        }
+        .event-form textarea {
+          min-height: 80px;
+          font-size: 1em;
+        }
+      }
     </style>
   </head>
   <body>
@@ -294,40 +371,54 @@
     
     <div class="event-board-container">
       <h1 class="event-board-title">이벤트</h1>
-      <button id="write-event-btn" class="primary-btn" style="display:none; margin-bottom:24px; float:right;">이벤트 작성</button>
       <div class="event-card-grid" id="event-list">
         <!-- 기존 하드코딩 카드 삭제, JS로 렌더링 -->
       </div>
     </div>
 
+    <!-- 플로팅 이벤트 작성 버튼 -->
+    <button id="write-event-btn" class="floating-write-btn" style="display:none;">
+      <i class="fas fa-plus"></i> 이벤트 작성
+    </button>
+
     <!-- 이벤트 작성 모달 -->
     <div id="event-modal" class="auth-modal" style="display:none;">
-      <div class="auth-modal-content">
+      <div class="auth-modal-content event-modal-content">
         <span class="auth-modal-close" id="close-event-modal">&times;</span>
-        <form id="event-form" class="auth-form">
+        <form id="event-form" class="auth-form event-form">
           <h2>이벤트 작성</h2>
           <div class="input-group">
-            <input type="text" id="event-title" placeholder="제목" required />
+            <label for="event-title">제목</label>
+            <input type="text" id="event-title" placeholder="이벤트 제목을 입력하세요" required maxlength="40" />
           </div>
           <div class="input-group">
-            <input type="text" id="event-desc" placeholder="설명" required />
+            <label for="event-desc">설명</label>
+            <textarea id="event-desc" placeholder="이벤트 설명을 입력하세요\n(최대 120자, 줄바꿈 가능)" required maxlength="120"></textarea>
           </div>
           <div class="input-group">
-            <input type="text" id="event-period" placeholder="기간 (예: 25.06.01 ~ 25.06.30)" required />
+            <label for="event-period">기간</label>
+            <input type="text" id="event-period" placeholder="예: 25.06.01 ~ 25.06.30" required maxlength="30" />
           </div>
           <div class="input-group">
-            <input type="text" id="event-exchange" placeholder="거래소명 (예: Bybit)" required />
+            <label for="event-exchange">거래소명</label>
+            <input type="text" id="event-exchange" placeholder="예: Bybit" required maxlength="20" />
           </div>
           <div class="input-group">
-            <input type="url" id="event-img" placeholder="이벤트 이미지 URL" required />
+            <label for="event-img">이벤트 이미지 URL</label>
+            <input type="url" id="event-img" placeholder="이벤트 이미지 URL을 입력하세요" required />
+            <img id="preview-event-img" style="display:none;max-width:100%;margin-top:8px;border-radius:8px;" />
           </div>
           <div class="input-group">
-            <input type="url" id="event-logo" placeholder="거래소 로고 URL" required />
+            <label for="event-logo">거래소 로고 URL</label>
+            <input type="url" id="event-logo" placeholder="거래소 로고 URL을 입력하세요" required />
+            <img id="preview-event-logo" style="display:none;width:40px;height:40px;margin-top:8px;border-radius:50%;background:#fff;object-fit:contain;" />
           </div>
           <div class="input-group">
-            <input type="url" id="event-link" placeholder="이벤트 링크(URL)" required />
+            <label for="event-link">이벤트 링크(URL)</label>
+            <input type="url" id="event-link" placeholder="이벤트 상세 페이지 링크를 입력하세요" required />
           </div>
           <button type="submit" class="submit-btn">등록</button>
+          <div id="event-form-message" class="form-message"></div>
         </form>
       </div>
     </div>
@@ -356,6 +447,9 @@
               </div>
               <button type="submit" class="submit-btn">로그인</button>
               <p class="auth-form-switch">계정이 없으신가요? <a href="#" id="show-signup" data-action="show-signup">회원가입</a></p>
+              <p class="find-links" style="text-align:center; margin-top:12px;">
+                <a href="#" id="find-id-link">아이디(이메일) 찾기</a> | <a href="#" id="find-password-link">비밀번호 찾기</a>
+              </p>
           </form>
       </div>
     </div>

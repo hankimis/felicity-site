@@ -9,6 +9,12 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link rel="stylesheet" href="https://unpkg.com/swiper/swiper-bundle.min.css" />
+    <link rel="icon" type="image/png" href="/onbit/favicon-96x96.png" sizes="96x96" />
+    <link rel="icon" type="image/svg+xml" href="/onbit/favicon.svg" />
+    <link rel="shortcut icon" href="/onbit/favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/onbit/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-title" content="Onbit" />
+    <link rel="manifest" href="/onbit/site.webmanifest" />
 </head>
 <body>
     <div class="top-bar">
@@ -62,14 +68,14 @@
         <section class="pre-check-section">
             <h3 class="section-title">거래소 선택 전, 꼭 확인하세요!</h3>
             <div class="check-card-container">
-                <a href="#" class="check-card">
+                <a href="exchange-guide.html" class="check-card">
                     <div class="card-icon-wrapper"><i class="fas fa-lightbulb"></i></div>
                     <div class="card-text">
-                        <p>관심 있는 거래소, 내 페이백 예상 금액은?</p>
-                        <p class="secondary">지금 가입 안된 거래소 이용하는법?</p>
+                        <p>거래소 이용 가이드 보기</p>
+                        <p class="secondary">이용 방법 자세히 알아보기</p>
                     </div>
                 </a>
-                <a href="#" class="check-card">
+                <a href="kyc-guide.html" class="check-card">
                     <div class="card-icon-wrapper"><i class="fas fa-shield-alt"></i></div>
                     <div class="card-text">
                         <p>최고의 커뮤니티 온비트를 알아볼까요?</p>
@@ -288,6 +294,9 @@
                   <i class="fas fa-lock"></i>
                   <input type="password" name="login-password" placeholder="비밀번호" required>
               </div>
+              <p class="find-links" style="text-align:center; margin-top:12px;">
+                <a href="#" id="find-id-link">아이디(이메일) 찾기</a> | <a href="#" id="find-password-link">비밀번호 찾기</a>
+              </p>
               <button type="submit" class="submit-btn">로그인</button>
               <p class="auth-form-switch">계정이 없으신가요? <a href="#" id="show-signup" data-action="show-signup">회원가입</a></p>
           </form>

@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore, doc, setDoc, getDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, updateProfile, sendEmailVerification, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getFirestore, doc, setDoc, getDoc, serverTimestamp, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { firebaseConfig } from './firebase-config.js';
 
 // 1. Firebase 초기화
@@ -300,16 +300,14 @@ function handleGlobalClick(e) {
         },
         'open-mobile-menu': () => {
             console.log('Opening mobile menu');
-            
             // 모바일 메뉴가 없으면 생성
             if (!getElement('mobile-menu')) {
                 createMobileMenuIfNeeded();
             }
-            
             const mobileMenu = getElement('mobile-menu');
             if (mobileMenu) {
-                // 강제로 display 설정 (모바일에서)
-                if (window.innerWidth <= 768) {
+                // 1200px 미만에서 메뉴 열기
+                if (window.innerWidth < 1200) {
                     mobileMenu.style.display = 'flex';
                 }
                 mobileMenu.classList.add('is-open');
@@ -408,7 +406,14 @@ function createMobileMenuIfNeeded() {
 }
 
 // 7. 스크립트 실행
-onAuthStateChanged(auth, updateAuthUI);
+onAuthStateChanged(auth, async (user) => {
+    if (user && user.email !== 'admin@site.com' && !user.emailVerified) {
+        await signOut(auth);
+        // 안내 메시지는 로그인 시도 시 이미 표시됨
+        return;
+    }
+    updateAuthUI(user);
+});
 
 document.addEventListener('DOMContentLoaded', () => {
     createMobileMenuIfNeeded();
@@ -443,17 +448,38 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const loginForm = getElement('login-form');
     if (loginForm) {
-        loginForm.addEventListener('submit', (e) => {
+        loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const email = loginForm['login-email'].value;
             const password = loginForm['login-password'].value;
             const errorMsg = getElement('login-error-message');
-            signInWithEmailAndPassword(auth, email, password)
-                .then(() => {
-                    controlModal('login-modal', false);
-                    loginForm.reset();
-                })
-                .catch(() => { if(errorMsg) errorMsg.textContent = "이메일 또는 비밀번호가 잘못되었습니다."; });
+            try {
+                const userCredential = await signInWithEmailAndPassword(auth, email, password);
+                // admin@site.com은 이메일 인증 예외
+                if (email !== 'admin@site.com' && !userCredential.user.emailVerified) {
+                    if(errorMsg) errorMsg.textContent = "이메일 인증이 필요합니다. 메일함을 확인해 주세요.";
+                    await sendEmailVerification(userCredential.user);
+                    await signOut(auth);
+                    // 로그인 모달을 닫지 않고, 폼도 reset하지 않음
+                    return;
+                }
+                // Firestore에 사용자 정보가 없으면 최초 로그인 → 정보 저장
+                const userDoc = await getDoc(doc(db, "users", userCredential.user.uid));
+                if (!userDoc.exists()) {
+                    await setDoc(doc(db, "users", userCredential.user.uid), {
+                        displayName: userCredential.user.displayName || "사용자",
+                        email,
+                        points: 0,
+                        level: "새싹",
+                        role: 'user',
+                        createdAt: serverTimestamp()
+                    });
+                }
+                controlModal('login-modal', false);
+                loginForm.reset();
+            } catch (error) {
+                if(errorMsg) errorMsg.textContent = "이메일 또는 비밀번호가 잘못되었습니다.";
+            }
         });
     }
 
@@ -474,19 +500,96 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 const userCredential = await createUserWithEmailAndPassword(auth, email, password);
                 await updateProfile(userCredential.user, { displayName: name });
-                await setDoc(doc(db, "users", userCredential.user.uid), {
-                    displayName: name, 
-                    email, 
-                    points: 0, 
-                    level: "새싹", 
-                    role: 'user', 
-                    createdAt: serverTimestamp()
-                });
-                controlModal('signup-modal', false);
-                signupForm.reset();
-                alert('회원가입이 완료되었습니다!');
+                // admin@site.com은 이메일 인증 예외
+                if (email !== 'admin@site.com') {
+                    await sendEmailVerification(userCredential.user);
+                    controlModal('signup-modal', false);
+                    signupForm.reset();
+                    alert('회원가입이 완료되었습니다! 이메일로 전송된 인증 링크를 확인해 주세요.');
+                    await signOut(auth);
+                } else {
+                    // Firestore에 사용자 정보 저장
+                    await setDoc(doc(db, "users", userCredential.user.uid), {
+                        displayName: name,
+                        email,
+                        points: 0,
+                        level: "새싹",
+                        role: 'admin',
+                        createdAt: serverTimestamp()
+                    });
+                    controlModal('signup-modal', false);
+                    signupForm.reset();
+                    alert('관리자 계정으로 회원가입이 완료되었습니다!');
+                }
             } catch (error) {
                 if(errorMsg) errorMsg.textContent = error.code === 'auth/email-already-in-use' ? '이미 사용 중인 이메일입니다.' : "회원가입 중 오류가 발생했습니다.";
+            }
+        });
+    }
+
+    // 비밀번호 찾기 링크 클릭 시
+    const findPasswordLink = getElement('find-password-link');
+    if (findPasswordLink) {
+        findPasswordLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            controlModal('login-modal', false);
+            controlModal('reset-password-modal', true);
+        });
+    }
+    // 아이디(이메일) 찾기 링크 클릭 시
+    const findIdLink = getElement('find-id-link');
+    if (findIdLink) {
+        findIdLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            controlModal('login-modal', false);
+            controlModal('find-id-modal', true);
+        });
+    }
+    // 비밀번호 재설정 폼 제출
+    const resetForm = getElement('reset-password-form');
+    if (resetForm) {
+        resetForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = getElement('reset-password-email').value.trim();
+            const msg = getElement('reset-password-message');
+            try {
+                // 이메일이 등록되어 있는지 확인
+                const methods = await auth.fetchSignInMethodsForEmail(email);
+                if (!methods || methods.length === 0) {
+                    msg.textContent = '가입된 계정이 없습니다.';
+                    msg.style.color = '#ef5350';
+                    return;
+                }
+                await sendPasswordResetEmail(auth, email);
+                msg.textContent = '비밀번호 재설정 메일을 전송했습니다. 메일함을 확인해 주세요.';
+                msg.style.color = '#388e3c';
+            } catch (error) {
+                msg.textContent = '이메일이 올바르지 않거나 오류가 발생했습니다.';
+                msg.style.color = '#ef5350';
+            }
+        });
+    }
+    // 아이디(이메일) 찾기 폼 제출
+    const findIdForm = getElement('find-id-form');
+    if (findIdForm) {
+        findIdForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const nickname = getElement('find-id-nickname').value.trim();
+            const msg = getElement('find-id-message');
+            try {
+                const q = query(collection(db, 'users'), where('displayName', '==', nickname));
+                const snapshot = await getDocs(q);
+                if (!snapshot.empty) {
+                    const user = snapshot.docs[0].data();
+                    msg.textContent = `이메일: ${user.email}`;
+                    msg.style.color = '#388e3c';
+                } else {
+                    msg.textContent = '해당 닉네임으로 가입된 이메일이 없습니다.';
+                    msg.style.color = '#ef5350';
+                }
+            } catch (error) {
+                msg.textContent = '오류가 발생했습니다. 다시 시도해 주세요.';
+                msg.style.color = '#ef5350';
             }
         });
     }

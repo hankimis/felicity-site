@@ -154,6 +154,25 @@ function renderMessage(msg) {
     const levelClass = levelClassMap[levelInfo.level || levelInfo.name] || "level-새싹";
     messageElement.classList.add(levelClass);
 
+    // 타임스탬프 포맷팅 (한국시간)
+    let timeStr = '';
+    if (msg.data.timestamp) {
+        let dateObj;
+        if (typeof msg.data.timestamp.toDate === 'function') {
+            dateObj = msg.data.timestamp.toDate();
+        } else if (msg.data.timestamp.seconds) {
+            dateObj = new Date(msg.data.timestamp.seconds * 1000);
+        } else {
+            dateObj = new Date(msg.data.timestamp);
+        }
+        timeStr = dateObj.toLocaleString('ko-KR', {
+            timeZone: 'Asia/Seoul',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false
+        });
+    }
+
     messageElement.innerHTML = `
         <div class="chat-profile-pic-wrap">
             <img class="chat-profile-pic" 
@@ -171,6 +190,7 @@ function renderMessage(msg) {
                 <strong style="font-weight: normal;">${msg.data.displayName}</strong>
             </div>
             <p class="message-text" style="font-weight: normal;">${msg.data.text.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</p>
+            <div class="message-time" style="text-align: right; font-size: 0.8em; color: #888; margin-top: 2px;">${timeStr}</div>
         </div>
     `;
 

@@ -159,6 +159,22 @@ button {
 }
 .navbar nav ul li .dropdown-menu {
   top: 56px;
+  padding: 8px 0 !important;
+  min-width: 120px;
+  width: 120px;
+  box-sizing: border-box;
+}
+.navbar nav ul li .dropdown-menu li {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+.navbar nav ul li .dropdown-menu a {
+  display: block;
+  width: 100%;
+  padding: 8px 16px;
+  margin: 0;
+  box-sizing: border-box;
 }
 
 .navbar nav a {
@@ -6844,5 +6860,13 @@ body, html {
     background: none;
     -webkit-background-clip: initial;
     -webkit-text-fill-color: initial;
+}
+
+/* 레전드 등급 채팅 배경색을 다른 등급과 동일하게 */
+.message-item.level-레전드 .message-text {
+  background-color: var(--bg-secondary-color) !important;
+}
+:root.dark-mode .message-item.level-레전드 .message-text {
+  background-color: var(--bg-secondary-color) !important;
 }
 
