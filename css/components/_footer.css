@@ -1,0 +1,125 @@
+/* Footer: static, always at page bottom, not fixed */
+.footer {
+  position: static !important;
+  left: unset !important;
+  right: unset !important;
+  bottom: unset !important;
+  width: 100%;
+  z-index: unset !important;
+  background: var(--bg-secondary-color);
+  color: var(--text-color-secondary);
+  padding: 48px 0 24px 0;
+  font-size: 0.98em;
+  margin: 0 auto 0 auto;
+  border-radius: 0;
+  box-shadow: none !important;
+  margin-top: 60px;
+  border-top: 1px solid var(--border-color);
+}
+.footer-wrapper {
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+  padding: 0 16px;
+}
+
+.footer-text {
+  color: var(--text-color);
+  font-size: 1.1em;
+  margin-bottom: 18px;
+}
+
+.info-list {
+  list-style: none;
+  margin-bottom: 30px;
+}
+
+.info-list li {
+  margin-bottom: 8px;
+}
+
+.sns-list {
+  display: flex;
+  gap: 18px;
+}
+
+.sns-list a {
+  color: var(--text-color-secondary);
+  font-size: 1.5em;
+}
+
+.footer button {
+  background: var(--bg-secondary-color);
+  color: var(--primary-color);
+  border-radius: 6px;
+  padding: 6px 14px;
+  font-weight: 600;
+  border: 1px solid var(--primary-color);
+  margin: 0 4px;
+  transition: background 0.2s;
+  color: var(--text-color);
+}
+
+.footer button:hover {
+  background: var(--primary-color);
+  color: #fff;
+}
+
+/* --- 푸터(고정 CTA) --- */
+.home-float-footer {
+  background: #232733;
+  box-shadow: 0 -2px 12px rgba(0,0,0,0.12);
+  border-radius: 18px 18px 0 0;
+  padding: 18px 5%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: fixed;
+  left: 0; right: 0; bottom: 0; z-index: 100;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+.aside-calculator {
+  width: 60px; height: 60px;
+  background: url('/static/images/calculator3DHome.png') no-repeat center/contain;
+}
+.aside .text-wrapper-3 {
+  font-size: 1.1em;
+  margin-bottom: 6px;
+  color: #f0f0f0;
+}
+.aside .text-wrapper-4 {
+  color: #3182f6;
+  font-weight: 700;
+}
+.aside-button .text-wrapper-5 {
+  background: #3182f6;
+  color: #fff;
+  border-radius: 6px;
+  padding: 12px 24px;
+  font-size: 1em;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+  text-align: center;
+}
+.aside-button .text-wrapper-5:hover {
+  background: #2563eb;
+}
+
+@media (max-width: 900px) {
+  .footer {
+    padding: 32px 0 16px 0;
+  }
+  .home-float-footer {
+    flex-direction: column;
+    gap: 12px;
+    text-align: center;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border-radius: 0;
+    padding: 18px 8px;
+  }
+} 

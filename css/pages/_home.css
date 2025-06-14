@@ -1,0 +1,362 @@
+/* Main Banner */
+.main-banner {
+  background: #181c23;
+  color: #f0f0f0;
+  text-align: center;
+  margin-bottom: 40px;
+  padding: 40px 20px;
+  border-radius: 12px;
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.main-banner * {
+  color: #f0f0f0;
+}
+
+.main-banner .highlight-blue {
+  color: var(--primary-color) !important;
+}
+
+.main-banner .search-input-container {
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.2);
+}
+
+.main-banner .search-input-container input::placeholder {
+  color: #bfc9da;
+}
+
+.main-banner .floating-coin-item {
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.2);
+}
+
+.main-banner .payback-rate {
+  color: var(--primary-color) !important;
+}
+
+.main-banner .coin-name {
+  color: #bfc9da !important;
+}
+
+/* Search Input */
+.search-input-container {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 420px;
+  margin: 0 auto 30px auto;
+  margin-top: 15px;
+  box-shadow: 0 2px 8px var(--shadow-color);
+}
+
+.search-selector {
+  background: transparent;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.search-exchange-icon {
+  width: 24px;
+  height: 24px;
+}
+
+.search-input-container input {
+  background: none;
+  border: none;
+  color: var(--text-color);
+  font-size: 1.1em;
+  width: 100%;
+}
+
+.search-input-container input::placeholder {
+  color: #8899a6;
+}
+
+/* Floating Coins */
+.floating-coins-container {
+  display: flex;
+  gap: 18px;
+  justify-content: center;
+  margin: 30px 0 0 0;
+  flex-wrap: wrap;
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 20px;
+  padding-right: 20px;
+}
+
+.floating-coin-item {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 18px 12px;
+  min-width: 110px;
+  text-align: center;
+  box-shadow: 0 2px 8px var(--shadow-color);
+  animation: float 3s ease-in-out infinite;
+}
+
+.floating-coin-item img {
+  width: 38px;
+  height: 38px;
+  margin-bottom: 8px;
+}
+
+.coin-name {
+  color: var(--text-color-secondary);
+  font-size: 0.95em;
+}
+
+.payback-rate {
+  color: var(--primary-color);
+  font-weight: 700;
+  font-size: 1.1em;
+}
+
+/* --- 메인 문구 --- */
+.main-section {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  padding-top: 80px;
+}
+.main-section .p {
+  font-size: 2.2em;
+  font-weight: 800;
+  color: #f0f0f0;
+  text-align: center;
+  line-height: 1.3;
+  margin-bottom: 36px;
+}
+.main-section .span {
+  color: #3182f6;
+  font-weight: 900;
+}
+.main-section .text-wrapper {
+  color: #f0f0f0;
+}
+
+/* --- 오버레이/입력창/SVG --- */
+.overlay {
+  position: relative;
+  margin: 0 auto;
+  max-width: 420px;
+  width: 100%;
+  background: #232733;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(49,130,246,0.08);
+  padding: 24px 24px 32px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+}
+.bybit {
+  width: 48px;
+  height: 48px;
+  background: url('https://prod-tethermax.s3.ap-northeast-2.amazonaws.com/exchange/icon/bybit.png') no-repeat center/cover;
+  border-radius: 50%;
+  margin-bottom: 8px;
+}
+.SVG {
+  width: 60px;
+  height: 60px;
+  margin-bottom: 8px;
+}
+.form-input {
+  width: 100%;
+  margin-top: 8px;
+}
+.container-6 {
+  background: #181c23;
+  border-radius: 8px;
+  padding: 12px 18px;
+  display: flex;
+  align-items: center;
+  border: 1px solid #2e3646;
+}
+.text-wrapper-2 {
+  color: #bfc9da;
+  font-size: 1.1em;
+}
+
+/* Top Event Banner */
+.top-event-banner {
+  display: none;
+}
+
+/* New Swiper Event Banner */
+.top-event-banner-swiper {
+  margin-bottom: 50px;
+  border-radius: 16px;
+  overflow: hidden;
+  position: relative;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto 50px;
+  padding: 0 20px;
+  box-sizing: border-box;
+}
+.top-event-banner-swiper .swiper {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16/9;
+}
+.top-event-banner-swiper .swiper-slide {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+.top-event-banner-swiper .swiper-slide img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 1;
+  transition: opacity 0.3s ease;
+  will-change: opacity;
+  backface-visibility: hidden;
+  transform: translateZ(0);
+  -webkit-font-smoothing: subpixel-antialiased;
+}
+.banner-content-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  padding: 40px;
+  box-sizing: border-box;
+  color: #fff;
+  background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 100%);
+}
+.banner-content-overlay h2 {
+  font-size: 1.8em;
+  font-weight: 900;
+  margin: 0 0 8px 0;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+}
+.banner-content-overlay p {
+  font-size: 1.1em;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+}
+.top-event-banner-swiper .swiper-pagination-bullet {
+  background: rgba(255, 255, 255, 0.7);
+  width: 10px;
+  height: 10px;
+}
+.top-event-banner-swiper .swiper-pagination-bullet-active {
+  background: #ffffff;
+  width: 25px;
+  border-radius: 5px;
+}
+
+.main-banner-list {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+.main-banner-item {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16/5;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.10);
+  background: #181c23;
+}
+.main-banner-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.main-banner-item .banner-content-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  padding: 40px;
+  box-sizing: border-box;
+  color: #fff;
+  background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 100%);
+}
+
+@media (max-width: 900px) {
+  .main-section { padding-top: 40px; }
+  .p { font-size: 1.3em; }
+
+  .main-banner {
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+  .banner-main-phrase {
+    font-size: 1.8em;
+  }
+  .top-event-banner-swiper {
+    padding: 0 8px;
+    margin-bottom: 32px;
+  }
+  .top-event-banner-swiper .swiper {
+    aspect-ratio: 16/7;
+  }
+  .main-banner-list {
+    gap: 16px;
+  }
+  .main-banner-item {
+    aspect-ratio: 16/8;
+    border-radius: 10px;
+  }
+  .main-banner-item .banner-content-overlay {
+    padding: 18px;
+  }
+}
+
+/* Light/Dark Mode Overrides */
+:root:not(.dark-mode) .main-banner {
+  background: #232733;
+  border-color: #2e3646;
+  color: #f0f0f0;
+}
+:root:not(.dark-mode) .main-banner * {
+  color: #f0f0f0;
+}
+:root:not(.dark-mode) .main-banner .floating-coin-item,
+:root:not(.dark-mode) .main-banner .search-input-container {
+  background: #3a4151;
+  border-color: #4a5263;
+}
+:root:not(.dark-mode) .main-banner .coin-name {
+  color: var(--text-color-secondary);
+}
+:root:not(.dark-mode) .highlight-blue,
+:root:not(.dark-mode) .payback-rate {
+  color: var(--primary-color);
+}
+
+.main-banner,
+.floating-coins-container,
+.band-banner-section,
+.event-section,
+.benefit-banner-swiper-wrapper,
+.main-banner-list,
+.main-banner-item {
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 20px;
+  padding-right: 20px;
+  box-sizing: border-box;
+} 

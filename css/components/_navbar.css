@@ -1,0 +1,547 @@
+/* Navbar */
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 24px;
+  background-color: var(--card-bg);
+  border-bottom: 1px solid var(--border-color);
+  position: sticky;
+  top: 0;
+  z-index: 1001; /* chat-form 보다 위에 오도록 */
+  height: 65px;
+}
+
+.navbar .logo {
+  font-size: 1.8rem;
+  font-weight: 900;
+  color: var(--primary-color);
+  text-decoration: none;
+}
+
+.navbar .logo img {
+  display: block;
+  margin-top: 0px;
+  height: 30px;
+}
+
+.navbar nav {
+  margin-left: 24px;
+}
+
+/* 헤더 nav 메뉴 한 줄 정렬 및 커뮤니티 드롭다운 버튼 정렬 개선 */
+.navbar nav ul {
+  display: flex;
+  align-items: center;
+  gap: 36px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.navbar nav ul li {
+  display: flex;
+  align-items: center;
+  font-size: 1.18em;
+  font-weight: 700;
+  color: #23272f;
+  line-height: 1.2;
+  position: relative;
+  height: 56px;
+}
+.navbar nav ul li .dropdown-toggle {
+  font-size: 16.8px;
+  display: flex;
+  align-items: center;
+  height: 56px;
+  line-height: 56px;
+  font-weight: 700;
+  color: #23272f;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0 8px;
+}
+.navbar nav ul li .dropdown-menu {
+  top: 56px;
+  padding: 8px 0 !important;
+  min-width: 120px;
+  width: 120px;
+  box-sizing: border-box;
+}
+.navbar nav ul li .dropdown-menu li {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+.navbar nav ul li .dropdown-menu a {
+  display: block;
+  width: 100%;
+  padding: 8px 16px;
+  margin: 0;
+  box-sizing: border-box;
+}
+
+.navbar nav a {
+  color: var(--text-color);
+  text-decoration: none;
+  font-size: 1.05rem;
+  font-weight: 600;
+  padding: 8px 0;
+  position: relative;
+  transition: color 0.2s;
+}
+
+.navbar nav a:after {
+  content: '';
+  position: absolute;
+  width: 0;
+  height: 2px;
+  bottom: -2px;
+  left: 50%;
+  background-color: var(--primary-color);
+  transition: all 0.3s ease-out;
+}
+
+.navbar nav a:hover {
+  color: var(--primary-color);
+}
+
+.navbar nav a:hover:after {
+  width: 100%;
+  left: 0;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.auth-buttons {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.auth-buttons a {
+  text-decoration: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.auth-buttons .login {
+  color: var(--primary-color);
+}
+.auth-buttons .login:hover {
+  background-color: var(--bg-secondary-color);
+}
+
+.auth-buttons .signup {
+  background-color: var(--primary-color);
+  color: #fff;
+}
+.auth-buttons .signup:hover {
+  background-color: #2563eb;
+}
+
+#user-profile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--text-color);
+  background-color: var(--bg-secondary-color);
+  padding: 6px 12px;
+  border-radius: 8px;
+}
+
+#user-profile #user-level {
+  font-weight: 700;
+}
+
+#user-profile #user-display-name {
+  font-weight: 600;
+}
+
+.icon-button {
+  background: none;
+  border: none;
+  color: var(--text-color-secondary);
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.icon-button:hover {
+  background-color: var(--bg-secondary-color);
+  color: var(--text-color);
+}
+
+body.dark-mode .navbar nav a:hover:after {
+  background-color: var(--primary-color);
+}
+
+/* --- 커뮤니티 드롭다운 메뉴 --- */
+.navbar nav ul li.dropdown {
+  position: relative;
+}
+.navbar nav ul li .dropdown-toggle {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.navbar nav ul li .dropdown-menu {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 0 0 12px 12px;
+  min-width: 160px;
+  box-shadow: 0 4px 16px var(--shadow-color);
+  z-index: 100;
+  padding: 8px 0;
+}
+.navbar nav ul li.dropdown:hover .dropdown-menu,
+.navbar nav ul li.dropdown:focus-within .dropdown-menu {
+  display: block;
+}
+.navbar nav ul li .dropdown-menu li {
+  width: 100%;
+}
+.navbar nav ul li .dropdown-menu a {
+  display: block;
+  padding: 10px 20px;
+  color: var(--text-color);
+  text-decoration: none;
+  font-weight: 500;
+  transition: background 0.15s;
+}
+.navbar nav ul li .dropdown-menu a:hover {
+  background: var(--bg-secondary-color);
+  color: var(--primary-color);
+}
+
+.mobile-menu {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100dvh;
+  background-color: var(--bg-color, #fff);
+  z-index: 1001;
+  transform: translateX(100%);
+  transition: transform 0.3s ease-in-out;
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  color: var(--text-color);
+}
+
+.mobile-menu.is-open {
+  transform: translateX(0);
+}
+
+body.mobile-menu-open {
+    overflow: hidden;
+}
+
+body.mobile-menu-open .navbar {
+    z-index: 999;
+}
+
+.mobile-menu-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+}
+
+.mobile-menu-header .logo {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: var(--primary-color);
+  text-decoration: none;
+}
+
+.mobile-menu-close {
+  font-size: 1.5rem;
+}
+
+.mobile-auth-section {
+  margin-bottom: 30px;
+}
+
+.mobile-menu-nav ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.mobile-menu-nav ul li a {
+  display: block;
+  padding: 15px 10px;
+  font-size: 1.2rem;
+  font-weight: 500;
+  color: var(--text-color);
+  text-decoration: none;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.mobile-menu-nav ul li:last-child a {
+  border-bottom: none;
+}
+
+.mobile-dropdown-menu {
+  padding-left: 20px;
+  display: block; /* 이전에 none으로 처리했던 것 복원 */
+}
+
+.mobile-dropdown-menu li a {
+  font-size: 1.1rem;
+  color: var(--text-color-secondary);
+}
+
+/* 모바일 메뉴 내 로그인/회원가입 버튼 컨테이너 */
+.mobile-auth-buttons {
+  display: flex;
+  gap: 10px;
+  margin: 0 0 24px 0;
+  padding: 0 10px;
+}
+
+/* 로그인 버튼 */
+.mobile-auth-btn.login {
+  flex: 1;
+  background: #fff;
+  color: #3182f6;
+  border: 1.5px solid #3182f6;
+  border-radius: 8px;
+  padding: 12px 0;
+  text-align: center;
+  font-weight: 700;
+  font-size: 1.08rem;
+  text-decoration: none;
+  transition: background 0.2s, color 0.2s;
+}
+.mobile-auth-btn.login:hover {
+  background: #3182f6;
+  color: #fff;
+}
+
+/* 회원가입 버튼 */
+.mobile-auth-btn.signup {
+  flex: 1;
+  background: #3182f6;
+  color: #fff;
+  border: 1.5px solid #3182f6;
+  border-radius: 8px;
+  padding: 12px 0;
+  text-align: center;
+  font-weight: 700;
+  font-size: 1.08rem;
+  text-decoration: none;
+  transition: background 0.2s, color 0.2s;
+}
+.mobile-auth-btn.signup:hover {
+  background: #2563eb;
+  color: #fff;
+}
+
+.mobile-menu-link {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 13px 0;
+  border-radius: 10px;
+  background: var(--bg-secondary-color);
+  color: var(--primary-color);
+  font-weight: 700;
+  font-size: 1.08rem;
+  border: 1.5px solid var(--primary-color);
+  margin-bottom: 10px;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+.mobile-menu-link:hover {
+  background: var(--primary-color);
+  color: #fff;
+}
+.mobile-menu-logout-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 13px 0;
+  border-radius: 10px;
+  background: #ef5350;
+  color: #fff;
+  font-weight: 700;
+  font-size: 1.08rem;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.mobile-menu-logout-btn:hover {
+  background: #d32f2f;
+}
+
+.theme-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  color: var(--text-color);
+  background: none;
+  transition: color 0.2s;
+  font-size: 1.2em;
+}
+
+.theme-button:hover {
+  color: var(--primary-color);
+}
+
+
+/* --- Mobile Chat UI Improvements --- */
+@media (max-width: 768px) {
+    .mobile-theme-display {
+      display: flex;
+      align-items: flex-end;
+      gap: 8px;
+      color: var(--text-color-secondary);
+    }
+    
+    .mobile-menu-user {
+      display: none; /* Hidden by default */
+      flex-direction: column;
+      gap: 15px;
+      margin-bottom: 30px;
+      padding: 15px;
+      background-color: var(--bg-secondary-color);
+      border-radius: 12px;
+    }
+    .mobile-user-profile-info {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 1.1rem;
+      font-weight: 600;
+    }
+    .mobile-user-profile-info .level-badge {
+      color: var(--primary-color);
+      font-weight: 700;
+    }
+    .mobile-menu-link, .mobile-menu-logout-btn {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      border-radius: 8px;
+      text-decoration: none;
+      color: var(--text-color);
+      background-color: transparent;
+      width: 100%;
+      text-align: left;
+      font-size: 1.1rem;
+      font-weight: 500;
+      transition: background-color 0.2s;
+      border: none;
+      cursor: pointer;
+    }
+    .mobile-menu-link:hover, .mobile-menu-logout-btn:hover {
+      background-color: var(--border-color);
+    }
+}
+
+
+@media (min-width: 900px) {
+  .mobile-menu-button {
+    display: none !important;
+  }
+}
+
+@media (max-width: 900px) {
+  .navbar nav,
+  .navbar .auth-buttons {
+    display: none;
+  }
+  .mobile-menu-button {
+    display: block;
+  }
+  .theme-button {
+    width: 32px;
+    height: 32px;
+  }
+}
+
+@media (max-width: 899px) {
+  .auth-buttons,
+  #user-profile,
+  #my-page-link,
+  .signup,
+  .login {
+    display: none !important;
+  }
+  .header-right {
+    display: flex;
+    flex-direction: row-reverse;
+    align-items: flex-end;
+    gap: 0;
+  }
+  .theme-button, #theme-toggle {
+    margin-right: 8px;
+    margin-left: 0;
+    order: 1;
+  }
+  .mobile-menu-button {
+    order: 2;
+  }
+}
+
+@media (min-width: 900px) {
+  .header-right {
+    flex-direction: row;
+    gap: 16px;
+  }
+  .theme-button, #theme-toggle {
+    margin: 0;
+    order: unset;
+  }
+  .mobile-menu-button {
+    order: unset;
+  }
+}
+
+/* Dark Mode Overrides */
+:root.dark-mode .navbar nav > ul > li > a {
+  color: #ffffff;
+}
+
+:root.dark-mode .dropdown-menu {
+  background-color: var(--card-bg);
+  border-color: var(--border-color);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+:root.dark-mode .dropdown-item {
+  color: var(--text-color);
+}
+
+:root.dark-mode .dropdown-item:hover {
+  background-color: var(--bg-secondary-color);
+  color: var(--text-color);
+} 

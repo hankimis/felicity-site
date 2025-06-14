@@ -1,0 +1,80 @@
+.see-all-button {
+  background: var(--bg-secondary-color);
+  color: var(--text-color);
+  padding: 8px 12px;
+  border-radius: 6px;
+}
+
+.signup-button {
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-weight: 600;
+  border: 1px solid var(--primary-color);
+  color: var(--primary-color);
+}
+
+.signup-button.filled {
+  background: var(--primary-color);
+  color: #fff;
+}
+
+:root:not(.dark-mode) .signup-button {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+  background: transparent;
+}
+:root:not(.dark-mode) .signup-button.filled {
+  background: var(--primary-color);
+  color: #fff;
+}
+
+.button-SVG {
+  width: 40px;
+  height: 40px;
+  cursor: pointer;
+  transition: transform 0.15s;
+}
+.button-SVG:hover {
+  transform: scale(1.08) rotate(8deg);
+}
+
+.back-btn-modern {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: none;
+  border: 2px solid var(--primary-color);
+  color: var(--primary-color);
+  font-size: 1.05em;
+  font-weight: 600;
+  border-radius: 8px;
+  padding: 7px 18px;
+  margin-bottom: 22px;
+  margin-left: 0;
+  cursor: pointer;
+  transition: background 0.18s, color 0.18s, border 0.18s;
+  box-shadow: 0 2px 8px rgba(49,130,246,0.06);
+}
+.back-btn-modern i {
+  font-size: 1.1em;
+}
+.back-btn-modern:hover {
+  background: var(--primary-color);
+  color: #fff;
+  border-color: var(--primary-color);
+}
+@media (max-width: 700px) {
+  .back-btn-modern {
+    width: 100%;
+    justify-content: center;
+    font-size: 1em;
+    padding: 10px 0;
+  }
+}
+
+@media (max-width: 900px) {
+    .button-SVG {
+        width: 32px;
+        height: 32px;
+    }
+} 

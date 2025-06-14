@@ -97,7 +97,7 @@ function renderCalendar(year, month) {
       currentWeek += '</tr>';
       html += currentWeek;
       currentWeek = '<tr>';
-    }
+  }
   }
   
   // 마지막 주의 빈 칸들
@@ -297,7 +297,7 @@ async function handleAttendanceSubmit(e) {
       }
     } catch (levelError) {
       console.error('레벨 시스템 오류:', levelError);
-      alert('출석체크 완료!');
+    alert('출석체크 완료!');
     }
 
     await loadAttendance(currentUser); // Reload all data and re-render

@@ -1,0 +1,16 @@
+/* Top Bar */
+.top-bar {
+  background: var(--bg-secondary-color);
+  color: var(--text-color-secondary);
+  font-size: 13px;
+  padding: 8px 5%;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 24px;
+}
+
+.top-bar a {
+  color: var(--primary-color);
+} 

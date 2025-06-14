@@ -409,6 +409,7 @@ function createMobileMenuIfNeeded() {
           <span>© 2024 Onbit</span>
         </div>`;
     document.body.appendChild(menu);
+    updateMobileMenuUserInfo();
 }
 
 // 7. 스크립트 실행

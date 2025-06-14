@@ -1,0 +1,25 @@
+/* CSS Variables for Theming */
+:root {
+  /* Light Mode Palette */
+  --bg-color: #ffffff;
+  --bg-secondary-color: #f8f9fa;
+  --card-bg: #ffffff;
+  --text-color: #212529;
+  --text-color-secondary: #868e96;
+  --primary-color: #3182f6;
+  --border-color: #f1f3f5;
+  --table-row-bg: #fafbff;
+  --shadow-color: rgba(0, 0, 0, 0.05);
+}
+
+:root.dark-mode {
+  /* Dark Mode Palette */
+  --bg-color: #181c23;
+  --bg-secondary-color: #232733;
+  --card-bg: #232733;
+  --text-color: #f0f0f0;
+  --text-color-secondary: #bfc9da;
+  --primary-color: #3182f6;
+  --border-color: #2e3646;
+  --shadow-color: rgba(49, 130, 246, 0.08);
+} 

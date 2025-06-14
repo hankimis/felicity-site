@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>ONBit - 커뮤니티</title>
-    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="css/style.css" />
     <link rel="stylesheet" href="auth.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
@@ -594,8 +594,8 @@
         </button>
     </header>
 
-    <main class="main-container">
-        <div class="community-layout">
+    <main class="main-container main-container-community">
+        <div class="community-layout community-layout-community">
             <section class="chart-section">
                 <div class="section-title-bar">
                     <div class="chart-title-controls">
@@ -613,15 +613,6 @@
                         </select>
                         <h2 id="chart-title">BTC/USDT 실시간 차트</h2>
                     </div>
-                    <div class="chart-intervals" id="chart-intervals-desktop">
-                        <button class="interval-button active" data-interval="1m">1분</button>
-                        <button class="interval-button" data-interval="5m">5분</button>
-                        <button class="interval-button" data-interval="15m">15분</button>
-                        <button class="interval-button" data-interval="1h">1시간</button>
-                        <button class="interval-button" data-interval="4h">4시간</button>
-                        <button class="interval-button" data-interval="1d">일</button>
-                        <button class="interval-button" data-interval="1w">주</button>
-                    </div>
                     <div class="chart-intervals-mobile">
                         <select id="chart-interval-select-mobile" class="interval-select">
                             <option value="1m">1분</option>
@@ -637,7 +628,7 @@
                 <div id="chart-container" style="position:relative;">
                 </div>
             </section>
-            <section class="chat-section">
+            <section class="chat-section chat-section-community">
                 <div class="chat-section-header" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
                     <h2 style="margin: 0;">실시간 채팅</h2>
                     <div class="chat-users-count" style="display: flex; align-items: center; gap: 6px; font-size: 1.2em; color: var(--text-color-secondary);">

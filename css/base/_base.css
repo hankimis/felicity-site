@@ -1,0 +1,37 @@
+html {
+  /* ★★★ 핵심: html 태그의 배경색을 body와 동기화시킵니다. */
+  background-color: var(--bg-color);
+}
+
+body, html {
+      height: 100%;
+      width: 100%;
+      margin: 0;
+      padding: 0;
+      font-family: 'Pretendard', sans-serif;
+      
+      /* ★ background 속성을 이쪽으로 이동 */
+    background: var(--bg-color); 
+    color: var(--text-color);
+    line-height: 1.6;   
+    transition: background-color 0.3s, color 0.3s;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-secondary-color);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--primary-color);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #2563eb;
+} 
