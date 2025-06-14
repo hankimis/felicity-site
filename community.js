@@ -131,7 +131,7 @@ function renderMessage(msg) {
     }
     if (isMyMessage) {
         messageElement.classList.add('my-message');
-    }
+            }
 
     // 레벨별 채팅 스타일 적용 (게스트는 레벨 라벨 미출력)
     const userPoints = msg.data.points || 0;
@@ -254,7 +254,7 @@ function setupNewMessageListener() {
         snapshot.docChanges().forEach((change) => {
             if (change.type === "added") {
                 renderMessage({ id: change.doc.id, data: change.doc.data() });
-    }
+            }
         });
         
         // 사용자가 스크롤을 맨 아래에 두고 있었을 경우에만 자동으로 스크롤 (PC 버전만)
@@ -305,7 +305,7 @@ function censorMessage(text) {
     BANNED_KEYWORDS.forEach(keyword => {
         const regex = new RegExp(keyword, "gi");
         censoredText = censoredText.replace(regex, " *** ");
-    });
+        });
     return censoredText;
 }
 
@@ -330,8 +330,8 @@ messageForm.addEventListener('submit', async (e) => {
             photoURL: 'assets/@default-profile.png',
             points: 0,
             role: 'guest'
-        };
-    }
+    };
+}
 
     try {
         await addDoc(collection(db, 'community-chat'), {
@@ -408,8 +408,8 @@ function setupRealtimeListener() {
                 // 새 메시지만 추가 (기존 메시지 중복 방지)
                 if (!document.querySelector(`#${msg.id}`)) {
                     renderMessage(msg);
-                }
-            }
+    }
+}
         });
         
         // 사용자가 스크롤을 맨 아래에 두고 있었을 경우에만 자동으로 스크롤 (PC 버전만)

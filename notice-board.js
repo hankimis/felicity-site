@@ -33,10 +33,10 @@ function showWriteModal(show) {
 
 onAuthStateChanged(auth, (user) => {
   if (writeBtn) {
-    if (user && user.email === ADMIN_EMAIL) {
+  if (user && user.email === ADMIN_EMAIL) {
       writeBtn.style.display = 'flex';
-    } else {
-      writeBtn.style.display = 'none';
+  } else {
+    writeBtn.style.display = 'none';
       if (writeModal && writeModal.classList.contains('show')) {
         writeModal.classList.remove('show');
       }
@@ -68,35 +68,35 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   if (writeForm) {
-    writeForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
+writeForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
       console.log('공지사항 폼 제출됨');
       
-      const user = auth.currentUser;
+  const user = auth.currentUser;
       if (!user || user.email !== ADMIN_EMAIL) {
         alert('관리자만 공지사항을 작성할 수 있습니다.');
         showWriteModal(false);
         return;
       }
 
-      const title = document.getElementById('notice-title').value.trim();
-      const content = document.getElementById('notice-content').value.trim();
-      if (!title || !content) return;
+  const title = document.getElementById('notice-title').value.trim();
+  const content = document.getElementById('notice-content').value.trim();
+  if (!title || !content) return;
 
       try {
-        await addDoc(collection(db, 'notices'), {
-          title,
-          content,
-          uid: user.uid,
+  await addDoc(collection(db, 'notices'), {
+    title,
+    content,
+    uid: user.uid,
           displayName: '관리자',
-          createdAt: serverTimestamp(),
-          views: 0,
-          likes: 0,
+    createdAt: serverTimestamp(),
+    views: 0,
+    likes: 0,
           comments: 0
-        });
+  });
 
-        writeForm.reset();
-        showWriteModal(false);
+  writeForm.reset();
+  showWriteModal(false);
         location.reload(); // 공지사항 목록 새로고침
       } catch (error) {
         console.error('공지사항 작성 중 오류:', error);
