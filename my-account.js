@@ -84,6 +84,10 @@ profileUpdateForm.addEventListener('submit', async (e) => {
         showMessage('닉네임을 입력해주세요.', 'error');
         return;
     }
+    if (newDisplayName.length > 8) {
+        showMessage('닉네임은 8자 이하로 입력해주세요.', 'error');
+        return;
+    }
 
     saveProfileBtn.disabled = true;
     saveProfileBtn.innerHTML = '<span class="loading-spinner"></span> 저장 중...';
@@ -112,7 +116,7 @@ function showStatus(message, type) {
         uploadStatus.textContent = '';
         uploadStatus.className = 'upload-status';
     }, 4000);
-}
+} 
 
 function showMessage(message, type) {
     // 기존 메시지 제거

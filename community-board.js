@@ -8,24 +8,24 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 
 document.addEventListener('DOMContentLoaded', () => {
-  const writeBtn = document.getElementById('write-post-btn');
-  const writeModal = document.getElementById('write-modal');
-  const closeWriteModal = document.getElementById('close-write-modal');
-  const writeForm = document.getElementById('write-form');
-  const boardList = document.getElementById('board-list');
-  const popularCol1 = document.querySelector('.popular-posts-col:nth-child(1)');
-  const popularCol2 = document.querySelector('.popular-posts-col:nth-child(2)');
-  const subFilterBtns = document.querySelectorAll('.sub-filter-btn');
-  const loadMoreBtn = document.getElementById('load-more-btn');
-  const scrollTopBtn = document.getElementById('scroll-top-btn');
+const writeBtn = document.getElementById('write-post-btn');
+const writeModal = document.getElementById('write-modal');
+const closeWriteModal = document.getElementById('close-write-modal');
+const writeForm = document.getElementById('write-form');
+const boardList = document.getElementById('board-list');
+const popularCol1 = document.querySelector('.popular-posts-col:nth-child(1)');
+const popularCol2 = document.querySelector('.popular-posts-col:nth-child(2)');
+const subFilterBtns = document.querySelectorAll('.sub-filter-btn');
+const loadMoreBtn = document.getElementById('load-more-btn');
+const scrollTopBtn = document.getElementById('scroll-top-btn');
 
-  let lastVisible = null;
-  let currentPage = 1;
-  const POSTS_PER_PAGE = 10;
-  let currentFilter = 'latest';
-  let isLoading = false;
+let lastVisible = null;
+let currentPage = 1;
+const POSTS_PER_PAGE = 10;
+let currentFilter = 'latest';
+let isLoading = false;
 
-  function showWriteModal(show) {
+function showWriteModal(show) {
     if (show) {
       if (!auth.currentUser) {
         const loginModal = document.getElementById('login-modal');
@@ -36,20 +36,20 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
       writeModal.classList.remove('show');
     }
-  }
+}
 
   onAuthStateChanged(auth, (user) => {
     if (writeBtn) {
-      if (user) {
+  if (user) {
         writeBtn.style.display = 'flex';
-      } else {
-        writeBtn.style.display = 'none';
+  } else {
+    writeBtn.style.display = 'none';
         if (writeModal && writeModal.classList.contains('show')) {
           writeModal.classList.remove('show');
         }
       }
-    }
-  });
+  }
+});
 
   if (writeBtn && writeModal && closeWriteModal && writeForm) {
     writeBtn.addEventListener('click', () => {
@@ -68,11 +68,11 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
 
-    writeForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
+writeForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
       console.log('폼 제출됨');
       
-      const user = auth.currentUser;
+  const user = auth.currentUser;
       if (!user) {
         showWriteModal(false);
         const loginModal = document.getElementById('login-modal');
@@ -80,20 +80,20 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
-      const title = document.getElementById('post-title').value.trim();
-      const content = document.getElementById('post-content').value.trim();
-      if (!title || !content) return;
+  const title = document.getElementById('post-title').value.trim();
+  const content = document.getElementById('post-content').value.trim();
+  if (!title || !content) return;
 
       try {
-        await addDoc(collection(db, 'community-posts'), {
-          title,
-          content,
-          uid: user.uid,
-          displayName: user.displayName || '익명',
+  await addDoc(collection(db, 'community-posts'), {
+    title,
+    content,
+    uid: user.uid,
+    displayName: user.displayName || '익명',
           profileImg: user.photoURL || 'assets/@default-profile.png',
-          createdAt: serverTimestamp(),
-          views: 0,
-          likes: 0,
+    createdAt: serverTimestamp(),
+    views: 0,
+    likes: 0,
           comments: 0
         });
 
@@ -102,28 +102,28 @@ document.addEventListener('DOMContentLoaded', () => {
           console.log('게시글 작성 포인트 추가됨 (+15점)');
         }
 
-        writeForm.reset();
-        showWriteModal(false);
-        renderFeed(true);
+  writeForm.reset();
+  showWriteModal(false);
+  renderFeed(true);
       } catch (error) {
         console.error('게시글 작성 중 오류:', error);
         alert('게시글 작성 중 오류가 발생했습니다. 다시 시도해주세요.');
       }
-    });
+});
   }
 
-  // 인기글 렌더링 (댓글+좋아요수 기준 상위 10개)
-  async function renderPopularPosts() {
-    let q = query(collection(db, 'community-posts'), orderBy('likes', 'desc'), limit(20));
-    const snap = await getDocs(q);
-    let posts = [];
-    snap.forEach(doc => posts.push({ id: doc.id, ...doc.data() }));
-    // 댓글수 fetch 후 합산 정렬
-    for (let post of posts) {
-      const commentsSnap = await getCountFromServer(collection(db, `community-posts/${post.id}/comments`));
-      post.comments = commentsSnap.data().count;
-      post.popularScore = (post.likes || 0) + post.comments;
-    }
+// 인기글 렌더링 (댓글+좋아요수 기준 상위 10개)
+async function renderPopularPosts() {
+  let q = query(collection(db, 'community-posts'), orderBy('likes', 'desc'), limit(20));
+  const snap = await getDocs(q);
+  let posts = [];
+  snap.forEach(doc => posts.push({ id: doc.id, ...doc.data() }));
+  // 댓글수 fetch 후 합산 정렬
+  for (let post of posts) {
+    const commentsSnap = await getCountFromServer(collection(db, `community-posts/${post.id}/comments`));
+    post.comments = commentsSnap.data().count;
+    post.popularScore = (post.likes || 0) + post.comments;
+  }
     posts = posts.sort((a, b) => b.popularScore - a.popularScore).slice(0, 5);
     
     // 인기글 아이템 HTML 생성 함수
@@ -144,40 +144,40 @@ document.addEventListener('DOMContentLoaded', () => {
     const col2 = document.querySelectorAll('.popular-posts-col')[1];
     if (col2) col2.innerHTML = '';
 
-    // 클릭 이벤트
-    document.querySelectorAll('.popular-post-item2').forEach(item => {
-      item.addEventListener('click', () => {
-        window.location.href = `community-post.html?id=${item.dataset.id}`;
-      });
+  // 클릭 이벤트
+  document.querySelectorAll('.popular-post-item2').forEach(item => {
+    item.addEventListener('click', () => {
+      window.location.href = `community-post.html?id=${item.dataset.id}`;
     });
-  }
+  });
+}
 
   // 카테고리 탭/필터 이벤트
   // currentCategory, categoryTabs 관련 코드 완전 삭제
 
-  // 플로팅 버튼
+// 플로팅 버튼
   if (scrollTopBtn) {
-    scrollTopBtn.addEventListener('click', () => {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    });
+scrollTopBtn.addEventListener('click', () => {
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+});
   }
 
-  // 더보기 버튼
+// 더보기 버튼
   if (loadMoreBtn) {
-    loadMoreBtn.addEventListener('click', () => {
-      if (!isLoading) renderFeed(false);
-    });
+loadMoreBtn.addEventListener('click', () => {
+  if (!isLoading) renderFeed(false);
+});
   }
 
-  // 게시글 피드 렌더링 (카드 상단 카테고리 뱃지 포함)
-  async function renderFeed(reset = false) {
-    if (isLoading) return;
-    isLoading = true;
-    if (reset) {
-      boardList.innerHTML = '';
-      lastVisible = null;
-      currentPage = 1;
-    }
+// 게시글 피드 렌더링 (카드 상단 카테고리 뱃지 포함)
+async function renderFeed(reset = false) {
+  if (isLoading) return;
+  isLoading = true;
+  if (reset) {
+    boardList.innerHTML = '';
+    lastVisible = null;
+    currentPage = 1;
+  }
     let q;
     if (currentFilter === 'hot') {
       // HOT: 최신 200개 글을 모두 가져와서 (likes+comments) 합산 점수로 정렬
@@ -185,13 +185,13 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
       // 최신순
       q = query(collection(db, 'community-posts'), orderBy('createdAt', 'desc'), limit(POSTS_PER_PAGE));
-    }
+  }
     if (lastVisible && currentFilter !== 'hot') {
-      q = query(q, startAfter(lastVisible));
-    }
-    const snap = await getDocs(q);
+    q = query(q, startAfter(lastVisible));
+  }
+  const snap = await getDocs(q);
     let posts = [];
-    snap.forEach(doc => posts.push({ id: doc.id, ...doc.data() }));
+  snap.forEach(doc => posts.push({ id: doc.id, ...doc.data() }));
     if (currentFilter === 'hot') {
       // 각 게시글의 댓글 수 fetch 후 합산 정렬
       for (let post of posts) {
@@ -203,40 +203,40 @@ document.addEventListener('DOMContentLoaded', () => {
       posts = posts.slice(0, POSTS_PER_PAGE); // 페이지당 10개만
     }
     if (posts.length > 0 && currentFilter !== 'hot') lastVisible = snap.docs[snap.docs.length - 1];
-    // 카드 렌더링
-    posts.forEach(post => {
-      boardList.appendChild(postCard2(post));
-    });
-    isLoading = false;
-  }
+  // 카드 렌더링
+  posts.forEach(post => {
+    boardList.appendChild(postCard2(post));
+  });
+  isLoading = false;
+}
 
   // 게시글 카드 렌더링
-  function postCard2(post) {
-    const card = document.createElement('div');
-    card.className = 'post-card';
-    card.innerHTML = `
-      <div class="post-card-header">
+function postCard2(post) {
+  const card = document.createElement('div');
+  card.className = 'post-card';
+  card.innerHTML = `
+    <div class="post-card-header">
         <img class="post-profile-img" src="${post.profileImg || 'assets/@default-profile.png'}" alt="프로필">
         <div class="post-header-info">
-          <span class="post-nickname">${post.displayName}</span>
+      <span class="post-nickname">${post.displayName}</span>
           <span class="post-time">${post.createdAt ? timeAgo(post.createdAt.seconds*1000) : ''}${post.isEdited ? ' (수정됨)' : ''}</span>
         </div>
-        <span class="post-category-badge">${post.subCategory || post.category || '자유'}</span>
-      </div>
+      <span class="post-category-badge">${post.subCategory || post.category || '자유'}</span>
+    </div>
       <a href="community-post.html?id=${post.id}" class="post-card-content-wrapper">
         <h2 class="post-card-title">${post.title}</h2>
         <p class="post-card-content">${post.content ? post.content.slice(0, 120) : ''}</p>
         ${post.isNews ? `
           <div class="post-news-block">
-            <span class="post-news-icon"><i class="fas fa-chart-line"></i></span>
-            <div>
+      <span class="post-news-icon"><i class="fas fa-chart-line"></i></span>
+      <div>
               <h3 class="post-news-title">${post.newsTitle || '분석 "BTC, 3분기 횡보 전망"'}</h3>
               <p class="post-news-summary">${post.newsSummary || '비트코인 3분기 가격 횡보 예상, 투자자 심리 분석 등'}</p>
-            </div>
+      </div>
           </div>
         ` : ''}
       </a>
-      <div class="post-card-footer">
+    <div class="post-card-footer">
         <button class="post-footer-btn" data-action="like" data-post-id="${post.id}">
           <span class="icon"><i class="fas fa-heart"></i></span>
           <span class="count">${post.likes || 0}</span>
@@ -248,8 +248,8 @@ document.addEventListener('DOMContentLoaded', () => {
         <button class="post-footer-btn" data-action="share" data-post-id="${post.id}">
           <span class="icon"><i class="fas fa-share"></i></span>
         </button>
-      </div>
-    `;
+    </div>
+  `;
 
     // 반응 버튼 이벤트
     card.querySelectorAll('.post-footer-btn').forEach(btn => {
@@ -279,11 +279,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // 카드 클릭 이벤트 (버튼 제외)
     card.addEventListener('click', (e) => {
       if (!e.target.closest('.post-footer-btn')) {
-        window.location.href = `community-post.html?id=${post.id}`;
+    window.location.href = `community-post.html?id=${post.id}`;
       }
-    });
-    return card;
-  }
+  });
+  return card;
+}
 
   // 좋아요 처리 함수
   async function handleLike(postId, btn) {
@@ -341,15 +341,15 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  function timeAgo(date) {
-    const now = Date.now();
-    const diff = Math.floor((now - date) / 1000);
-    if (diff < 60) return `${diff}초 전`;
-    if (diff < 3600) return `${Math.floor(diff/60)}분 전`;
-    if (diff < 86400) return `${Math.floor(diff/3600)}시간 전`;
-    if (diff < 2592000) return `${Math.floor(diff/86400)}일 전`;
-    return new Date(date).toLocaleDateString();
-  }
+function timeAgo(date) {
+  const now = Date.now();
+  const diff = Math.floor((now - date) / 1000);
+  if (diff < 60) return `${diff}초 전`;
+  if (diff < 3600) return `${Math.floor(diff/60)}분 전`;
+  if (diff < 86400) return `${Math.floor(diff/3600)}시간 전`;
+  if (diff < 2592000) return `${Math.floor(diff/86400)}일 전`;
+  return new Date(date).toLocaleDateString();
+}
 
   // HOT/최신 필터 이벤트만 남김
   subFilterBtns.forEach(btn => {
@@ -365,7 +365,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // 초기 렌더링
-  renderPopularPosts();
-  renderFeed(true);
+// 초기 렌더링
+renderPopularPosts();
+renderFeed(true); 
 }); 

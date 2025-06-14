@@ -274,8 +274,6 @@ async function handleUpdateLevel(event) {
     }
 }
 
-
-
 function openNicknameModal(uid, currentName) {
     const modal = document.getElementById('nickname-modal');
     document.getElementById('nickname-uid').value = uid;
@@ -296,6 +294,10 @@ document.getElementById('nickname-form')?.addEventListener('submit', async (e) =
     
     if (!uid || !newName) {
         alert('닉네임을 입력하세요.');
+        return;
+    }
+    if (newName.length > 8) {
+        alert('닉네임은 8자 이하로 입력해주세요.');
         return;
     }
     

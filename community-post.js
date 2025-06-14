@@ -145,7 +145,7 @@ async function handleLike() {
       }
     } catch (levelError) {
       console.error('레벨 시스템 오류:', levelError);
-    }
+  }
   }
   
   // 새로고침 없이 카운트 갱신

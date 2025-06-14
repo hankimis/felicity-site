@@ -119,15 +119,23 @@ function renderMessage(msg) {
     messageElement.classList.add('message-item');
     messageElement.id = msg.id;
 
+    // 내 메시지 판별 (로그인/비회원 모두)
+    let isMyMessage = false;
     if (currentUser && msg.data.uid === currentUser.uid) {
+        isMyMessage = true;
+    } else if (!currentUser) {
+        const guestNumber = localStorage.getItem('guestNumber');
+        if (guestNumber && msg.data.uid === 'guest-' + guestNumber) {
+            isMyMessage = true;
+        }
+    }
+    if (isMyMessage) {
         messageElement.classList.add('my-message');
     }
 
-    // 레벨별 채팅 스타일 적용
+    // 레벨별 채팅 스타일 적용 (게스트는 레벨 라벨 미출력)
     const userPoints = msg.data.points || 0;
     let levelInfo;
-    
-    // 레벨 시스템이 로드되지 않은 경우 기본값 사용
     if (!window.levelSystem) {
         levelInfo = { name: "새싹", color: "#22c55e", gradient: "linear-gradient(135deg, #22c55e, #16a34a)", level: "새싹" };
     } else {
@@ -138,7 +146,6 @@ function renderMessage(msg) {
             levelInfo = window.levelSystem.calculateLevel(userPoints);
         }
     }
-    // 레벨별 클래스 부여 (효과 적용)
     const levelClassMap = {
       "새싹": "level-새싹",
       "초보": "level-초보",
@@ -165,12 +172,15 @@ function renderMessage(msg) {
         } else {
             dateObj = new Date(msg.data.timestamp);
         }
-        timeStr = dateObj.toLocaleString('ko-KR', {
-            timeZone: 'Asia/Seoul',
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: false
-        });
+        timeStr = dateObj.toLocaleString('ko-KR', { timeZone: 'Asia/Seoul', hour: '2-digit', minute: '2-digit', hour12: false });
+    }
+
+    // 게스트는 레벨 라벨 미출력 (role이 'guest'인 경우 level-badge를 출력하지 않음)
+    let levelBadgeHTML = "";
+    if (msg.data.role === 'admin') {
+        levelBadgeHTML = `<span class="admin-badge">Admin</span>`;
+    } else if (msg.data.role !== 'guest') {
+        levelBadgeHTML = `<span class="level-badge" style="background: ${levelInfo.gradient || levelInfo.color}">${levelInfo.name}</span>`;
     }
 
     messageElement.innerHTML = `
@@ -183,10 +193,7 @@ function renderMessage(msg) {
         </div>
         <div class="message-content">
             <div class="message-sender">
-                ${msg.data.role === 'admin' 
-                    ? `<span class="admin-badge">Admin</span>` 
-                    : `<span class="level-badge" style="background: ${levelInfo.gradient || levelInfo.color}">${levelInfo.name}</span>`
-                }
+                ${levelBadgeHTML}
                 <strong style="font-weight: normal;">${msg.data.displayName}</strong>
             </div>
             <p class="message-text" style="font-weight: normal;">${msg.data.text.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</p>
@@ -207,7 +214,7 @@ function renderMessage(msg) {
 async function loadInitialMessages() {
     const messagesContainer = document.getElementById('chat-messages');
     if (!messagesContainer) return;
-
+    
     isInitialLoad = true;
     messagesContainer.innerHTML = ''; // 컨테이너 비우기
     
@@ -231,7 +238,7 @@ async function loadInitialMessages() {
     } catch(e) {
         console.error("초기 메시지 로드 중 오류 발생: ", e);
     }
-    }
+}
 
 // 기존 setupNewMessageListener 함수를 아래 코드로 완전히 교체하세요.
 function setupNewMessageListener() {
@@ -281,14 +288,12 @@ onAuthStateChanged(auth, async (user) => {
         // 일일 로그인 포인트 (하루에 한 번만)
         await checkAndAddDailyLoginPoints();
     } else {
-        // 로그인하지 않은 사용자
+        // 비회원 (게스트)도 입력 가능하도록 수정
         currentUser = null;
-        
-        // 메시지 입력 비활성화
-        messageInput.disabled = true;
+        messageInput.disabled = false;
         const submitButton = messageForm.querySelector('button');
-        if(submitButton) submitButton.disabled = true;
-        messageInput.placeholder = '메시지를 보내려면 로그인이 필요합니다.';
+        if(submitButton) submitButton.disabled = false;
+        messageInput.placeholder = '메시지를 입력하세요...';
     }
     
     // 채팅 메시지는 로그인 여부와 관계없이 로드
@@ -304,30 +309,41 @@ function censorMessage(text) {
     return censoredText;
 }
 
-// 메시지 전송
-    messageForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-    
-    if (!currentUser) {
-        alert('메시지를 보내려면 로그인이 필요합니다.');
-        return;
-    }
+// --- 메시지 전송 (비회원 지원) ---
+messageForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
     
     const message = messageInput.value.trim();
     if (!message) return;
 
-            try {
+    let userObj = currentUser;
+    if (!userObj) {
+        // 비회원(게스트)인 경우, localStorage에 저장된 랜덤 숫자(또는 새로 생성)를 사용하여 게스트 객체 생성 (같은 게스트는 같은 숫자로 구분)
+        let guestNumber = localStorage.getItem('guestNumber');
+        if (!guestNumber) {
+            guestNumber = Math.floor(Math.random() * 10000).toString();
+            localStorage.setItem('guestNumber', guestNumber);
+        }
+        userObj = {
+            uid: "guest-" + guestNumber,
+            displayName: "게스트" + guestNumber,
+            photoURL: 'assets/@default-profile.png',
+            points: 0,
+            role: 'guest'
+        };
+    }
+
+    try {
         await addDoc(collection(db, 'community-chat'), {
             text: message,
-                    uid: currentUser.uid,
-                    displayName: currentUser.displayName,
-            photoURL: currentUser.photoURL || 'assets/@default-profile.png',
-            points: currentUser.points || 0,
-            role: currentUser.role || 'user',
+            uid: userObj.uid,
+            displayName: userObj.displayName,
+            photoURL: userObj.photoURL,
+            points: userObj.points,
+            role: userObj.role,
             timestamp: serverTimestamp()
         });
-        
-                messageInput.value = '';
+        messageInput.value = '';
     } catch (error) {
         console.error('메시지 전송 실패:', error);
         alert('메시지 전송에 실패했습니다.');
@@ -640,7 +656,7 @@ function showRocketOverlay() {
     }, 2500);
 }
 
-// --- 실시간 접속자 수 집계 ---
+/* --- 실시간 접속자 수 집계 (비회원 포함) --- */
 function setupChatPresenceCount() {
     const countEl = document.getElementById('chat-users-count');
     if (!countEl) {
@@ -650,27 +666,90 @@ function setupChatPresenceCount() {
     
     console.log('실시간 참여인원 설정 시작');
     
-    // 사용자가 로그인한 경우에만 presence 설정
+    // 페이지 언로드 시 presence 제거를 위한 함수
+    const cleanupPresence = (presenceRef) => {
+        if (presenceRef) {
+            remove(presenceRef).catch(console.error);
+        }
+    };
+
+    // 페이지 언로드 이벤트 리스너 설정
+    window.addEventListener('beforeunload', () => {
+        if (currentUser) {
+            cleanupPresence(dbRef(rtdb, `chat-presence/${currentUser.uid}`));
+        } else {
+            const guestUid = localStorage.getItem('guestNumber');
+            if (guestUid) {
+                cleanupPresence(dbRef(rtdb, `chat-presence/guest-${guestUid}`));
+            }
+        }
+    });
+
     if (currentUser) {
+        // 로그인한 사용자의 presence 설정
         const userPresenceRef = dbRef(rtdb, `chat-presence/${currentUser.uid}`);
-        
-        // 사용자 온라인 상태 설정
         set(userPresenceRef, {
             displayName: currentUser.displayName,
-            timestamp: Date.now()
-        });
+            timestamp: Date.now(),
+            type: 'user'
+        }).catch(console.error);
         
-        // 연결 해제 시 자동으로 제거
-        onDisconnect(userPresenceRef).remove();
+        // 연결 해제 시 presence 제거
+        onDisconnect(userPresenceRef).remove().catch(console.error);
+    } else {
+        // 비회원(게스트)의 presence 설정
+        const guestUid = localStorage.getItem('guestNumber');
+        if (guestUid) {
+            const guestPresenceRef = dbRef(rtdb, `chat-presence/guest-${guestUid}`);
+            
+            // presence 설정
+            set(guestPresenceRef, {
+                displayName: "게스트" + guestUid,
+                timestamp: Date.now(),
+                type: 'guest',
+                lastActive: Date.now()
+            }).catch(console.error);
+
+            // 30초마다 lastActive 업데이트
+            const updateInterval = setInterval(() => {
+                if (document.visibilityState === 'visible') {
+                    updateDoc(guestPresenceRef, {
+                        lastActive: Date.now()
+                    }).catch(console.error);
+                }
+            }, 30000);
+
+            // 페이지 언로드 시 interval 정리
+            window.addEventListener('beforeunload', () => {
+                clearInterval(updateInterval);
+            });
+
+            // 연결 해제 시 presence 제거
+            onDisconnect(guestPresenceRef).remove().catch(console.error);
+        }
     }
     
-    // 전체 접속자 수 모니터링
+    // 전체 접속자 수 모니터링 (비활성 게스트 제외)
     const allPresenceRef = dbRef(rtdb, 'chat-presence');
     onValue(allPresenceRef, (snap) => {
         const val = snap.val();
-        const count = val ? Object.keys(val).length : 0;
+        if (!val) {
+            countEl.textContent = '0';
+            return;
+        }
+
+        // 현재 시간 기준 1분 이상 비활성인 게스트 제외
+        const now = Date.now();
+        const activeUsers = Object.entries(val).filter(([_, data]) => {
+            if (data.type === 'guest') {
+                return (now - data.lastActive) < 60000; // 1분 이내 활동한 게스트만 포함
+            }
+            return true; // 로그인 사용자는 모두 포함
+        });
+
+        const count = activeUsers.length;
         countEl.textContent = count;
-        console.log('현재 접속자 수:', count);
+        console.log('현재 접속자 수:', count, '(게스트 포함)');
     }, (error) => {
         console.error('실시간 참여인원 오류:', error);
         countEl.textContent = '0';

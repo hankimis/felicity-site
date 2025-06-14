@@ -493,6 +493,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const confirmPassword = signupForm['signup-confirm-password'].value;
             const errorMsg = getElement('signup-error-message');
 
+            if (name.length > 8) {
+                if(errorMsg) errorMsg.textContent = "닉네임은 8자 이하로 입력해주세요.";
+                return;
+            }
             if (password !== confirmPassword) {
                 if(errorMsg) errorMsg.textContent = "비밀번호가 일치하지 않습니다.";
                 return;

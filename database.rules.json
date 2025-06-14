@@ -1,0 +1,26 @@
+{
+  "rules": {
+    "chat-presence": {
+      ".read": true,
+      ".write": true,
+      "$uid": {
+        ".validate": "newData.hasChildren(['displayName', 'timestamp', 'type'])",
+        "displayName": { ".validate": "newData.isString()" },
+        "timestamp": { ".validate": "newData.isNumber()" },
+        "type": { ".validate": "newData.isString() && (newData.val() === 'user' || newData.val() === 'guest')" },
+        "lastActive": { ".validate": "newData.isNumber()" }
+      }
+    },
+    "chat-messages": {
+      ".read": true,
+      ".write": "auth != null || newData.child('isGuest').val() === true",
+      "$messageId": {
+        ".validate": "newData.hasChildren(['text', 'timestamp'])",
+        "text": { ".validate": "newData.isString()" },
+        "timestamp": { ".validate": "newData.isNumber()" },
+        "displayName": { ".validate": "newData.isString()" },
+        "isGuest": { ".validate": "newData.isBoolean()" }
+      }
+    }
+  }
+} 
