@@ -471,14 +471,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const errorMsg = getElement('login-error-message');
             try {
                 const userCredential = await signInWithEmailAndPassword(auth, email, password);
-                // admin@site.com은 이메일 인증 예외
-                if (email !== 'admin@site.com' && !userCredential.user.emailVerified) {
-                    if(errorMsg) errorMsg.textContent = "이메일 인증이 필요합니다. 메일함을 확인해 주세요.";
-                    await sendEmailVerification(userCredential.user);
-                    await signOut(auth);
-                    // 로그인 모달을 닫지 않고, 폼도 reset하지 않음
-                    return;
-                }
                 // Firestore에 사용자 정보가 없으면 최초 로그인 → 정보 저장
                 const userDoc = await getDoc(doc(db, "users", userCredential.user.uid));
                 if (!userDoc.exists()) {
@@ -500,6 +492,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const signupForm = getElement('signup-form');
+    if (signupForm && !document.getElementById('cf-turnstile')) {
+        const turnstileDiv = document.createElement('div');
+        turnstileDiv.className = 'input-group';
+        turnstileDiv.innerHTML = `<div id="cf-turnstile" class="cf-turnstile" data-sitekey="0x4AAAAAABhG8vjyB5nsUxll" data-theme="light"></div>`;
+        signupForm.insertBefore(turnstileDiv, signupForm.querySelector('button'));
+    }
+
     if (signupForm) {
         signupForm.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -520,29 +519,26 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 const userCredential = await createUserWithEmailAndPassword(auth, email, password);
                 await updateProfile(userCredential.user, { displayName: name });
-                // admin@site.com은 이메일 인증 예외
-                if (email !== 'admin@site.com') {
-                    await sendEmailVerification(userCredential.user);
-                    controlModal('signup-modal', false);
-                    signupForm.reset();
-                    alert('회원가입이 완료되었습니다! 이메일로 전송된 인증 링크를 확인해 주세요.');
-                    await signOut(auth);
-                } else {
-                    // Firestore에 사용자 정보 저장
+                // Firestore에 사용자 정보 저장
                 await setDoc(doc(db, "users", userCredential.user.uid), {
                     displayName: name,
-                        email,
+                    email,
                     points: 0,
-                        level: "새싹",
-                        role: 'admin',
-                        createdAt: serverTimestamp()
+                    level: "새싹",
+                    role: email === 'admin@site.com' ? 'admin' : 'user',
+                    createdAt: serverTimestamp()
                 });
                 controlModal('signup-modal', false);
-                    signupForm.reset();
-                    alert('관리자 계정으로 회원가입이 완료되었습니다!');
-                }
+                signupForm.reset();
+                alert('회원가입이 완료되었습니다!');
             } catch (error) {
                 if(errorMsg) errorMsg.textContent = error.code === 'auth/email-already-in-use' ? '이미 사용 중인 이메일입니다.' : "회원가입 중 오류가 발생했습니다.";
+            }
+            // turnstile 토큰 체크
+            const turnstileToken = document.querySelector('#cf-turnstile input[name="cf-turnstile-response"]')?.value;
+            if (!turnstileToken) {
+                if(errorMsg) errorMsg.textContent = "자동 가입 방지 인증을 완료해 주세요.";
+                return;
             }
         });
     }

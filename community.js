@@ -131,7 +131,7 @@ function renderMessage(msg) {
     }
     if (isMyMessage) {
         messageElement.classList.add('my-message');
-            }
+    }
 
     // 레벨별 채팅 스타일 적용 (게스트는 레벨 라벨 미출력)
     const userPoints = msg.data.points || 0;
@@ -161,20 +161,6 @@ function renderMessage(msg) {
     const levelClass = levelClassMap[levelInfo.level || levelInfo.name] || "level-새싹";
     messageElement.classList.add(levelClass);
 
-    // 타임스탬프 포맷팅 (한국시간)
-    let timeStr = '';
-    if (msg.data.timestamp) {
-        let dateObj;
-        if (typeof msg.data.timestamp.toDate === 'function') {
-            dateObj = msg.data.timestamp.toDate();
-        } else if (msg.data.timestamp.seconds) {
-            dateObj = new Date(msg.data.timestamp.seconds * 1000);
-        } else {
-            dateObj = new Date(msg.data.timestamp);
-        }
-        timeStr = dateObj.toLocaleString('ko-KR', { timeZone: 'Asia/Seoul', hour: '2-digit', minute: '2-digit', hour12: false });
-    }
-
     // 게스트는 레벨 라벨 미출력 (role이 'guest'인 경우 level-badge를 출력하지 않음)
     let levelBadgeHTML = "";
     if (msg.data.role === 'admin') {
@@ -197,12 +183,10 @@ function renderMessage(msg) {
                 <strong style="font-weight: normal;">${msg.data.displayName}</strong>
             </div>
             <p class="message-text" style="font-weight: normal;">${msg.data.text.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</p>
-            <div class="message-time" style="text-align: right; font-size: 0.8em; color: #888; margin-top: 2px;">${timeStr}</div>
         </div>
     `;
 
     messagesContainer.appendChild(messageElement);
-    
     // 이미지 지연 로딩 관찰 시작
     const img = messageElement.querySelector('.chat-profile-pic');
     if (img) {
