@@ -1,666 +1,666 @@
 /* KOL Card Section */
 .kol-card-section {
-  margin: 0 auto;
-  max-width: 1200px;
-  padding: 40px 0;
-}
-
-.kol-title {
-  font-size: 1.3em;
-  font-weight: 700;
-  margin-bottom: 24px;
-  color: #f0f0f0;
-}
-
-.kol-card-list {
-  display: flex;
-  gap: 18px;
-  overflow-x: auto;
-  padding-bottom: 8px;
-}
-
-.kol-card-item {
-  background: #232733;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(49,130,246,0.08);
-  padding: 18px;
-  min-width: 180px;
-  text-align: center;
-}
-
-.kol-image-wrapper {
-  position: relative;
-  margin-bottom: 12px;
-}
-
-.kol-image-wrapper img {
-  width: 100%;
-  height: 180px;
-  object-fit: cover;
-  border-radius: 8px;
-}
-
-.platform-icon {
-  position: absolute;
-  bottom: 8px;
-  right: 8px;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: #fff;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
-}
-
-.kol-name {
-  font-size: 1em;
-  font-weight: 700;
-  color: #f0f0f0;
-}
-
-/* Bitget Banner */
-.bitget-banner {
-  margin: 32px auto 0 auto;
-  max-width: 600px;
-}
-
-.bitget-banner img {
-  width: 100%;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(49,130,246,0.08);
-}
-
-/* --- 주목할 혜택(benefit) 섹션 최신화 --- */
-.band-banner-section {
-  margin: 0 auto;
-  max-width: 1200px;
-  padding: 40px 0;
-  margin-bottom: 70px;
-}
-
-.band-banner-title {
-  font-size: 1.5em;
-  font-weight: 700;
-  text-align: center;
-  margin-bottom: 24px;
-  color: var(--text-color);
-}
-
-.benefit-banner-swiper-wrapper {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 20px;
-  justify-content: center;
-}
-
-.benefit-card {
-  aspect-ratio: 5/6;
-  height: auto;
-  max-width: 340px;
-  margin: 0 auto;
-  position: relative;
-  border-radius: 16px;
-  overflow: hidden;
-  cursor: pointer;
-  border: none;
-  background-size: cover;
-  background-position: center;
-  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-  min-height: 120px;
-  max-height: 408px;
-}
-.benefit-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
-}
-
-.text-overlay {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  padding: 16px;
-  box-sizing: border-box;
-  color: #fff;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.7), transparent);
-}
-
-.text-overlay .title {
-  font-size: 1.1em;
-  font-weight: 700;
-  margin: 0 0 4px 0;
-}
-
-.text-overlay .subtitle {
-  font-size: 0.9em;
-  font-weight: 400;
-  margin: 0;
-  opacity: 0.9;
-}
-
-/* Event Section */
-.event-section {
-  margin: 0 auto;
-  max-width: 1200px;
-  padding: 40px 0;
-}
-
-.event-history-container {
-  display: flex;
-  gap: 18px;
-  overflow-x: auto;
-  padding-bottom: 8px;
-}
-
-.event-box-wrapper {
-  background: var(--card-bg);
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  padding: 18px;
-  min-width: 320px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-}
-
-.event-box {
-  width: 100%;
-  text-align: left;
-}
-
-.timer-wrapper {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: var(--primary-color);
-  margin-bottom: 10px;
-  font-size: 0.98em;
-}
-
-.event-content-wrapper {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-}
-
-.event-content-left {
-  flex: 1;
-}
-
-.event-title {
-  font-size: 1.1em;
-  margin-bottom: 6px;
-  color: var(--text-color);
-  font-weight: 700;
-}
-
-.event-subtitle {
-  color: var(--text-color-secondary);
-  margin-bottom: 10px;
-  font-size: 0.98em;
-}
-
-.event-exchange {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.event-exchange img {
-  width: 24px;
-  height: 24px;
-}
-
-.event-content-right img {
-  width: 120px;
-  height: 80px;
-  object-fit: cover;
-  border-radius: 8px;
-}
-
-.section .exchange-card {
-  background: #232733;
-  border-radius: 16px;
-  box-shadow: 0 2px 12px rgba(49,130,246,0.08);
-  padding: 32px 24px 24px 24px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  transition: transform 0.15s, box-shadow 0.15s;
-  position: relative;
-  min-height: 180px;
-}
-.section .exchange-card:hover {
-  transform: translateY(-6px) scale(1.03);
-  box-shadow: 0 8px 32px rgba(49,130,246,0.16);
-}
-.section .exchange-logo {
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  background: #fff;
-  object-fit: contain;
-  margin-bottom: 18px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 8px;
-  border: 1px solid #e0e6ed;
-}
-.section .exchange-name {
-  font-size: 1.15em;
-  font-weight: 700;
-  color: #f0f0f0;
-  margin-bottom: 8px;
-  letter-spacing: -0.5px;
-}
-.section .payback {
-  color: #3182f6;
-  font-weight: 700;
-  font-size: 1.1em;
-  margin-bottom: 4px;
-}
-
-.info-card {
-  background-color: var(--card-bg);
-  border: 1px solid var(--border-color);
-  border-radius: 16px;
-  padding: 24px;
-  transition: transform 0.2s, box-shadow 0.2s;
-  box-shadow: 0 4px 12px var(--shadow-color);
-}
-
-.info-card:hover {
+    margin: 0 auto;
+    max-width: 1200px;
+    padding: 40px 0;
+  }
+  
+  .kol-title {
+    font-size: 1.3em;
+    font-weight: 700;
+    margin-bottom: 24px;
+    color: #f0f0f0;
+  }
+  
+  .kol-card-list {
+    display: flex;
+    gap: 18px;
+    overflow-x: auto;
+    padding-bottom: 8px;
+  }
+  
+  .kol-card-item {
+    background: #232733;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(49,130,246,0.08);
+    padding: 18px;
+    min-width: 180px;
+    text-align: center;
+  }
+  
+  .kol-image-wrapper {
+    position: relative;
+    margin-bottom: 12px;
+  }
+  
+  .kol-image-wrapper img {
+    width: 100%;
+    height: 180px;
+    object-fit: cover;
+    border-radius: 8px;
+  }
+  
+  .platform-icon {
+    position: absolute;
+    bottom: 8px;
+    right: 8px;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+  }
+  
+  .kol-name {
+    font-size: 1em;
+    font-weight: 700;
+    color: #f0f0f0;
+  }
+  
+  /* Bitget Banner */
+  .bitget-banner {
+    margin: 32px auto 0 auto;
+    max-width: 600px;
+  }
+  
+  .bitget-banner img {
+    width: 100%;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(49,130,246,0.08);
+  }
+  
+  /* --- 주목할 혜택(benefit) 섹션 최신화 --- */
+  .band-banner-section {
+    margin: 0 auto;
+    max-width: 1200px;
+    padding: 40px 0;
+    margin-bottom: 70px;
+  }
+  
+  .band-banner-title {
+    font-size: 1.5em;
+    font-weight: 700;
+    text-align: center;
+    margin-bottom: 24px;
+    color: var(--text-color);
+  }
+  
+  .benefit-banner-swiper-wrapper {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 20px;
+    justify-content: center;
+  }
+  
+  .benefit-card {
+    aspect-ratio: 5/6;
+    height: auto;
+    max-width: 340px;
+    margin: 0 auto;
+    position: relative;
+    border-radius: 16px;
+    overflow: hidden;
+    cursor: pointer;
+    border: none;
+    background-size: cover;
+    background-position: center;
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    min-height: 120px;
+    max-height: 408px;
+  }
+  .benefit-card:hover {
     transform: translateY(-5px);
-    box-shadow: 0 8px 20px var(--shadow-color);
-}
-
-.info-card .card-title {
-  font-size: 1.2em;
-  font-weight: 700;
-  margin-bottom: 20px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.info-card .card-rows {
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-}
-
-.info-card .card-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.info-card .row-left {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.info-card .row-left img {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  border: 1px solid var(--border-color);
-}
-
-.info-card .index {
-  font-weight: 700;
-  color: var(--text-color-secondary);
-  font-size: 1.1em;
-  width: 20px;
-}
-
-.info-card .exchange-name {
-    font-weight: 600;
-}
-
-.info-card .amount.blue {
-  font-weight: 700;
-  color: var(--primary-color);
-  font-size: 1em;
-}
-
-.info-card .banner-link {
-  display: block;
-  border-radius: 12px;
-  overflow: hidden;
-  position: relative;
-}
-
-.info-card .banner-image {
-  width: 100%;
-  height: auto;
-  display: block;
-  aspect-ratio: 16 / 9;
-  object-fit: cover;
-}
-
-.info-card .banner-content {
-    padding: 16px;
-    background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  }
+  
+  .text-overlay {
     position: absolute;
     bottom: 0;
     left: 0;
-    right: 0;
-}
-
-.info-card .banner-card-title {
+    width: 100%;
+    padding: 16px;
+    box-sizing: border-box;
     color: #fff;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.7), transparent);
+  }
+  
+  .text-overlay .title {
+    font-size: 1.1em;
+    font-weight: 700;
+    margin: 0 0 4px 0;
+  }
+  
+  .text-overlay .subtitle {
+    font-size: 0.9em;
+    font-weight: 400;
+    margin: 0;
+    opacity: 0.9;
+  }
+  
+  /* Event Section */
+  .event-section {
+    margin: 0 auto;
+    max-width: 1200px;
+    padding: 40px 0;
+  }
+  
+  .event-history-container {
+    display: flex;
+    gap: 18px;
+    overflow-x: auto;
+    padding-bottom: 8px;
+  }
+  
+  .event-box-wrapper {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 18px;
+    min-width: 320px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  
+  .event-box {
+    width: 100%;
+    text-align: left;
+  }
+  
+  .timer-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--primary-color);
+    margin-bottom: 10px;
+    font-size: 0.98em;
+  }
+  
+  .event-content-wrapper {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+  }
+  
+  .event-content-left {
+    flex: 1;
+  }
+  
+  .event-title {
+    font-size: 1.1em;
+    margin-bottom: 6px;
+    color: var(--text-color);
+    font-weight: 700;
+  }
+  
+  .event-subtitle {
+    color: var(--text-color-secondary);
+    margin-bottom: 10px;
+    font-size: 0.98em;
+  }
+  
+  .event-exchange {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .event-exchange img {
+    width: 24px;
+    height: 24px;
+  }
+  
+  .event-content-right img {
+    width: 120px;
+    height: 80px;
+    object-fit: cover;
+    border-radius: 8px;
+  }
+  
+  .section .exchange-card {
+    background: #232733;
+    border-radius: 16px;
+    box-shadow: 0 2px 12px rgba(49,130,246,0.08);
+    padding: 32px 24px 24px 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    transition: transform 0.15s, box-shadow 0.15s;
+    position: relative;
+    min-height: 180px;
+  }
+  .section .exchange-card:hover {
+    transform: translateY(-6px) scale(1.03);
+    box-shadow: 0 8px 32px rgba(49,130,246,0.16);
+  }
+  .section .exchange-logo {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: #fff;
+    object-fit: contain;
+    margin-bottom: 18px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px;
+    border: 1px solid #e0e6ed;
+  }
+  .section .exchange-name {
+    font-size: 1.15em;
+    font-weight: 700;
+    color: #f0f0f0;
+    margin-bottom: 8px;
+    letter-spacing: -0.5px;
+  }
+  .section .payback {
+    color: #3182f6;
     font-weight: 700;
     font-size: 1.1em;
     margin-bottom: 4px;
-}
-
-.info-card .banner-card-desc {
-    color: #e0e0e0;
-    font-size: 0.9em;
-}
-
-.notice-card {
-  background: var(--card-bg);
-  border-radius: 16px;
-  box-shadow: 0 4px 24px rgba(0,0,0,0.08);
-  padding: 24px;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  transition: all 0.2s ease;
-  border: 1px solid var(--border-color);
-  position: relative;
-  cursor: pointer;
-}
-
-:root.dark-mode .notice-card {
-  background: var(--card-bg);
-  border-color: var(--border-color);
-  box-shadow: 0 4px 24px rgba(0,0,0,0.15);
-}
-.notice-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 32px rgba(49,130,246,0.15);
-}
-.notice-title {
-  font-size: 1.18em;
-  font-weight: 800;
-  color: var(--text-color);
-  margin: 2px 0 2px 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-:root.dark-mode .notice-title {
-  color: var(--text-color);
-}
-.notice-content-preview {
-  color: var(--text-color-secondary);
-  font-size: 1.05em;
-  margin-bottom: 4px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.notice-meta {
-  display: flex;
-  gap: 18px;
-  font-size: 0.97em;
-  color: var(--text-color-secondary);
-  align-items: center;
-  flex-wrap: wrap;
-}
-.notice-meta .meta-item {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-.notice-meta .meta-item i {
-  color: var(--primary-color);
-  font-size: 1.08em;
-}
-
-.popular-posts-section {
-  max-width: 1100px;
-  margin: 0 auto 10px auto;
-  background: var(--card-bg);
-  border-radius: 16px;
-  box-shadow: 0 4px 24px rgba(0,0,0,0.08);
-  padding: 28px 24px 20px 24px;
-  border: none;
-}
-.popular-posts-section h2 {
-  font-size: 1.5em;
-  font-weight: 800;
-  margin-bottom: 20px;
-  color: var(--text-color);
-  display: block;
-  letter-spacing: -1px;
-}
-.popular-posts-list {
-  display: flex;
-  flex-direction: row;
-  gap: 48px;
-  justify-content: flex-start;
-}
-.popular-posts-row {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  flex: 1;
-}
-.popular-post-item2 {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 0;
-  border-radius: 0;
-  background: none;
-  border: none;
-  min-width: 0;
-  font-size: 1.13em;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.15s, color 0.15s;
-  box-shadow: none;
-}
-.popular-post-item2:hover {
-  background: none;
-  color: var(--primary-color);
-  transform: none;
-  box-shadow: none;
-}
-.popular-rank2 {
-  font-size: 1.25em;
-  font-weight: 900;
-  color: var(--primary-color);
-  width: 28px;
-  text-align: left;
-  flex-shrink: 0;
-}
-.popular-cat2 {
-  color: var(--text-color-secondary);
-  font-size: 0.98em;
-  padding: 0;
-  background: none;
-  border-radius: 0;
-  flex-shrink: 0;
-  font-weight: 500;
-}
-.popular-time2 {
-  color: var(--text-color-secondary);
-  font-size: 0.97em;
-  flex-shrink: 0;
-  font-weight: 400;
-}
-.popular-title2 {
-  flex: 1;
-  font-weight: 700;
-  color: #111;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 1.08em;
-}
-.popular-comments2 {
-  color: #2563eb;
-  font-size: 1.05em;
-  font-weight: 700;
-  margin-left: 8px;
-  flex-shrink: 0;
-  display: inline-block;
-  min-width: 18px;
-}
-.popular-comments2::before { display: none; }
-
-/* Featured Exchange Card (주목할 거래소) */
-.featured-exchange-card {
-  background: #fff;
-  border-radius: 18px;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
-  padding: 28px 24px 24px 24px;
-  margin-bottom: 0;
-}
-:root.dark-mode .featured-exchange-card {
-  background: #232733;
-}
-.featured-exchange-inner {
-  display: flex;
-  align-items: center;
-  gap: 28px;
-  background: #232733;
-  border-radius: 28px;
-  padding: 28px 32px;
-  margin-top: 10px;
-}
-:root.dark-mode .featured-exchange-inner {
-  background: #181c23;
-}
-.featured-exchange-logo {
-  width: 90px;
-  height: 90px;
-  border-radius: 18px;
-  object-fit: cover;
-  background: #00e6ff;
-  display: block;
-}
-.featured-exchange-content {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.featured-exchange-title {
-  font-size: 1.25em;
-  font-weight: 800;
-  color: #fff;
-  margin-bottom: 2px;
-}
-body:not(.dark-mode) .featured-exchange-title {
-  color: #232733;
-}
-.featured-exchange-desc {
-  color: #bfc9da;
-  font-size: 1.08em;
-  font-weight: 500;
-  line-height: 1.5;
-}
-body:not(.dark-mode) .featured-exchange-desc {
-  color: #6b7684;
-}
-.featured-exchange-hashtag {
-  color: #3182f6;
-  font-weight: 700;
-  margin-right: 4px;
-}
-
-@media (max-width: 900px) {
-    .kol-card-list,
-    .benefit-banner-swiper-wrapper,
-    .event-history-container,
-    .banner-card-list-wrapper {
-        flex-direction: column;
-        gap: 12px;
-    }
-    .benefit-card {
-        width: 100%;
-        height: 220px;
-        min-width: 0;
-    }
-    .text-overlay {
-        padding: 10px;
-    }
-    .bitget-banner img {
-        max-width: 100%;
-    }
-    .section .exchange-card {
-        padding: 24px 12px 18px 12px;
-        min-height: 120px;
-    }
-    .section .exchange-logo {
-        width: 40px;
-        height: 40px;
-        margin-bottom: 10px;
-        padding: 6px;
-    }
-    .notice-list {
-        max-width: 98vw;
-        padding: 0 8px;
-    }
-    .notice-card {
-        padding: 14px;
-        gap: 10px;
-    }
-    .notice-title {
-        font-size: 1.05em;
-    }
-    .popular-posts-section { padding: 16px 8px; }
-    .popular-posts-list { gap: 12px; }
-}
-
-@media (max-width: 700px) {
-    .featured-exchange-inner {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 16px;
-        padding: 18px 10px;
-    }
-    .featured-exchange-logo {
-        width: 60px;
-        height: 60px;
-    }
-    .featured-exchange-card {
-        padding: 16px 6px 12px 6px;
-    }
-}
-
-@media (max-width: 600px) {
-  .popular-posts-list { flex-direction: column; gap: 0; }
-  .popular-posts-row { flex-direction: row; gap: 0; }
-  .popular-post-item2 { font-size: 0.98em; gap: 7px; }
-  .popular-title2 { font-size: 1em; }
-  .popular-rank2 { font-size: 1.1em; width: 20px; }
-}
-
-/* Dark Mode Overrides */
-:root.dark-mode .info-card .banner-card-desc strong {
-    color: #f0f0f0;
-}
-
-:root.dark-mode .partner-logo-item {
-    background-color: #f8f9fa;
-    border-color: #f1f3f5;
-}
-
-:root.dark-mode .partner-logo-item img {
-    filter: none;
-    opacity: 1;
-}
-
-:root:not(.dark-mode) .red-highlight {
-  color: #ff5252;
-} 
+  }
+  
+  .info-card {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 24px;
+    transition: transform 0.2s, box-shadow 0.2s;
+    box-shadow: 0 4px 12px var(--shadow-color);
+  }
+  
+  .info-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 20px var(--shadow-color);
+  }
+  
+  .info-card .card-title {
+    font-size: 1.2em;
+    font-weight: 700;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .info-card .card-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+  
+  .info-card .card-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .info-card .row-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  
+  .info-card .row-left img {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 1px solid var(--border-color);
+  }
+  
+  .info-card .index {
+    font-weight: 700;
+    color: var(--text-color-secondary);
+    font-size: 1.1em;
+    width: 20px;
+  }
+  
+  .info-card .exchange-name {
+      font-weight: 600;
+  }
+  
+  .info-card .amount.blue {
+    font-weight: 700;
+    color: var(--primary-color);
+    font-size: 1em;
+  }
+  
+  .info-card .banner-link {
+    display: block;
+    border-radius: 12px;
+    overflow: hidden;
+    position: relative;
+  }
+  
+  .info-card .banner-image {
+    width: 100%;
+    height: auto;
+    display: block;
+    aspect-ratio: 16 / 9;
+    object-fit: cover;
+  }
+  
+  .info-card .banner-content {
+      padding: 16px;
+      background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+  }
+  
+  .info-card .banner-card-title {
+      color: #fff;
+      font-weight: 700;
+      font-size: 1.1em;
+      margin-bottom: 4px;
+  }
+  
+  .info-card .banner-card-desc {
+      color: #e0e0e0;
+      font-size: 0.9em;
+  }
+  
+  .notice-card {
+    background: var(--card-bg);
+    border-radius: 16px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    transition: all 0.2s ease;
+    border: 1px solid var(--border-color);
+    position: relative;
+    cursor: pointer;
+  }
+  
+  :root.dark-mode .notice-card {
+    background: var(--card-bg);
+    border-color: var(--border-color);
+    box-shadow: 0 4px 24px rgba(0,0,0,0.15);
+  }
+  .notice-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 32px rgba(49,130,246,0.15);
+  }
+  .notice-title {
+    font-size: 1.18em;
+    font-weight: 800;
+    color: var(--text-color);
+    margin: 2px 0 2px 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  
+  :root.dark-mode .notice-title {
+    color: var(--text-color);
+  }
+  .notice-content-preview {
+    color: var(--text-color-secondary);
+    font-size: 1.05em;
+    margin-bottom: 4px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .notice-meta {
+    display: flex;
+    gap: 18px;
+    font-size: 0.97em;
+    color: var(--text-color-secondary);
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .notice-meta .meta-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .notice-meta .meta-item i {
+    color: var(--primary-color);
+    font-size: 1.08em;
+  }
+  
+  .popular-posts-section {
+    max-width: 1100px;
+    margin: 0 auto 10px auto;
+    background: var(--card-bg);
+    border-radius: 16px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+    padding: 28px 24px 20px 24px;
+    border: none;
+  }
+  .popular-posts-section h2 {
+    font-size: 1.5em;
+    font-weight: 800;
+    margin-bottom: 20px;
+    color: var(--text-color);
+    display: block;
+    letter-spacing: -1px;
+  }
+  .popular-posts-list {
+    display: flex;
+    flex-direction: row;
+    gap: 48px;
+    justify-content: flex-start;
+  }
+  .popular-posts-row {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex: 1;
+  }
+  .popular-post-item2 {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0;
+    border-radius: 0;
+    background: none;
+    border: none;
+    min-width: 0;
+    font-size: 1.13em;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    box-shadow: none;
+  }
+  .popular-post-item2:hover {
+    background: none;
+    color: var(--primary-color);
+    transform: none;
+    box-shadow: none;
+  }
+  .popular-rank2 {
+    font-size: 1.25em;
+    font-weight: 900;
+    color: var(--primary-color);
+    width: 28px;
+    text-align: left;
+    flex-shrink: 0;
+  }
+  .popular-cat2 {
+    color: var(--text-color-secondary);
+    font-size: 0.98em;
+    padding: 0;
+    background: none;
+    border-radius: 0;
+    flex-shrink: 0;
+    font-weight: 500;
+  }
+  .popular-time2 {
+    color: var(--text-color-secondary);
+    font-size: 0.97em;
+    flex-shrink: 0;
+    font-weight: 400;
+  }
+  .popular-title2 {
+    flex: 1;
+    font-weight: 700;
+    color: #111;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 1.08em;
+  }
+  .popular-comments2 {
+    color: #2563eb;
+    font-size: 1.05em;
+    font-weight: 700;
+    margin-left: 8px;
+    flex-shrink: 0;
+    display: inline-block;
+    min-width: 18px;
+  }
+  .popular-comments2::before { display: none; }
+  
+  /* Featured Exchange Card (주목할 거래소) */
+  .featured-exchange-card {
+    background: #fff;
+    border-radius: 18px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    padding: 28px 24px 24px 24px;
+    margin-bottom: 0;
+  }
+  :root.dark-mode .featured-exchange-card {
+    background: #232733;
+  }
+  .featured-exchange-inner {
+    display: flex;
+    align-items: center;
+    gap: 28px;
+    background: #232733;
+    border-radius: 28px;
+    padding: 28px 32px;
+    margin-top: 10px;
+  }
+  :root.dark-mode .featured-exchange-inner {
+    background: #181c23;
+  }
+  .featured-exchange-logo {
+    width: 90px;
+    height: 90px;
+    border-radius: 18px;
+    object-fit: cover;
+    background: #00e6ff;
+    display: block;
+  }
+  .featured-exchange-content {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .featured-exchange-title {
+    font-size: 1.25em;
+    font-weight: 800;
+    color: #fff;
+    margin-bottom: 2px;
+  }
+  body:not(.dark-mode) .featured-exchange-title {
+    color: #232733;
+  }
+  .featured-exchange-desc {
+    color: #bfc9da;
+    font-size: 1.08em;
+    font-weight: 500;
+    line-height: 1.5;
+  }
+  body:not(.dark-mode) .featured-exchange-desc {
+    color: #6b7684;
+  }
+  .featured-exchange-hashtag {
+    color: #3182f6;
+    font-weight: 700;
+    margin-right: 4px;
+  }
+  
+  @media (max-width: 900px) {
+      .kol-card-list,
+      .benefit-banner-swiper-wrapper,
+      .event-history-container,
+      .banner-card-list-wrapper {
+          flex-direction: column;
+          gap: 12px;
+      }
+      .benefit-card {
+          width: 100%;
+          height: 220px;
+          min-width: 0;
+      }
+      .text-overlay {
+          padding: 10px;
+      }
+      .bitget-banner img {
+          max-width: 100%;
+      }
+      .section .exchange-card {
+          padding: 24px 12px 18px 12px;
+          min-height: 120px;
+      }
+      .section .exchange-logo {
+          width: 40px;
+          height: 40px;
+          margin-bottom: 10px;
+          padding: 6px;
+      }
+      .notice-list {
+          max-width: 98vw;
+          padding: 0 8px;
+      }
+      .notice-card {
+          padding: 14px;
+          gap: 10px;
+      }
+      .notice-title {
+          font-size: 1.05em;
+      }
+      .popular-posts-section { padding: 16px 8px; }
+      .popular-posts-list { gap: 12px; }
+  }
+  
+  @media (max-width: 700px) {
+      .featured-exchange-inner {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 16px;
+          padding: 18px 10px;
+      }
+      .featured-exchange-logo {
+          width: 60px;
+          height: 60px;
+      }
+      .featured-exchange-card {
+          padding: 16px 6px 12px 6px;
+      }
+  }
+  
+  @media (max-width: 600px) {
+    .popular-posts-list { flex-direction: column; gap: 0; }
+    .popular-posts-row { flex-direction: row; gap: 0; }
+    .popular-post-item2 { font-size: 0.98em; gap: 7px; }
+    .popular-title2 { font-size: 1em; }
+    .popular-rank2 { font-size: 1.1em; width: 20px; }
+  }
+  
+  /* Dark Mode Overrides */
+  :root.dark-mode .info-card .banner-card-desc strong {
+      color: #f0f0f0;
+  }
+  
+  :root.dark-mode .partner-logo-item {
+      background-color: #f8f9fa;
+      border-color: #f1f3f5;
+  }
+  
+  :root.dark-mode .partner-logo-item img {
+      filter: none;
+      opacity: 1;
+  }
+  
+  :root:not(.dark-mode) .red-highlight {
+    color: #ff5252;
+  } 

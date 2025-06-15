@@ -428,7 +428,17 @@
 }
 .signup-button[disabled], .signup-button:disabled {
   color: #bfc9da !important;
-  background: #b1b1b1 !important;
+  background: #f3f3f3 !important;
   border: 1.5px solid #3182f6 !important;
   opacity: 1 !important;
 } 
+
+.red-highlight {
+    color: #3182f6 !important;
+    font-weight: 700;
+  } 
+
+
+.exchange-table-wrapper td:nth-child(5) {
+    font-weight: 600;
+  } 

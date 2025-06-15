@@ -393,7 +393,16 @@ function createMobileMenuIfNeeded() {
           <a href="index.html" class="logo-container"><img id="mobile-main-logo" src="" alt="Onbit Logo" height="36"/></a>
           <button class="mobile-menu-close" data-action="close-mobile-menu" aria-label="메뉴 닫기"><i class="fas fa-times"></i></button>
         </div>
-        <div class="mobile-auth-section"></div>
+        <div class="mobile-auth-section">
+            <div style="display:flex; flex-direction:column; gap:12px; padding:20px 0;">
+                <button class="mobile-auth-btn login" data-action="open-login-modal" style="font-size:1.15rem; padding:14px 0; border-radius:12px; font-weight:700; display:flex; align-items:center; justify-content:center; gap:8px; background:var(--primary-color); color:#fff; border:none;">
+                    <i class="fas fa-sign-in-alt"></i> 로그인
+                </button>
+                <button class="mobile-auth-btn signup" data-action="open-signup-modal" style="font-size:1.15rem; padding:14px 0; border-radius:12px; font-weight:700; display:flex; align-items:center; justify-content:center; gap:8px; background:var(--bg-secondary-color); color:var(--primary-color); border:1.5px solid var(--primary-color);">
+                    <i class="fas fa-user-plus"></i> 회원가입
+                </button>
+            </div>
+        </div>
         <nav class="mobile-menu-nav">
           <ul>
             <li><a href="affiliated.html" data-action="close-mobile-menu"><i class="fas fa-building"></i> 제휴 거래소</a></li>

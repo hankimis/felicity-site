@@ -420,7 +420,7 @@ body.mobile-menu-open .navbar {
 @media (max-width: 768px) {
     .mobile-theme-display {
       display: flex;
-      align-items: flex-end;
+      align-items: center;
       gap: 8px;
       color: var(--text-color-secondary);
     }
@@ -503,9 +503,7 @@ body.mobile-menu-open .navbar {
     gap: 0;
   }
   .theme-button, #theme-toggle {
-    margin-right: 8px;
-    margin-left: 0;
-    order: 1;
+    display: none !important;
   }
   .mobile-menu-button {
     order: 2;
@@ -518,8 +516,7 @@ body.mobile-menu-open .navbar {
     gap: 16px;
   }
   .theme-button, #theme-toggle {
-    margin: 0;
-    order: unset;
+    display: block !important;
   }
   .mobile-menu-button {
     order: unset;

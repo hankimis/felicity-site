@@ -1,315 +1,523 @@
 .affiliate-section {
-  margin-bottom: 70px;
-  max-width: 1200px;
-  margin-left: auto;
-  margin-right: auto;
-  padding-left: 20px;
-  padding-right: 20px;
-  box-sizing: border-box;
-}
-
-.section-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 28px;
-}
-
-.section-title {
-    font-size: 1.8em;
-    font-weight: 900;
-    color: var(--text-color);
-}
-
-.more-button {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    text-decoration: none;
-    background: var(--bg-secondary-color);
-    border: 1px solid var(--border-color);
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    color: var(--text-color);
-    font-size: 1.2em;
-    transition: all 0.2s ease-in-out;
+    margin-bottom: 70px;
+    max-width: 1200px;
     margin-left: auto;
-}
-
-.more-button:hover {
-    background-color: var(--primary-color);
-    color: white;
-    border-color: var(--primary-color);
-}
-
-.affiliate-grid-container {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 28px;
-  max-width: 1200px;
-  margin-left: auto;
-  margin-right: auto;
-  padding-left: 20px;
-  padding-right: 20px;
-  box-sizing: border-box;
-}
-
-/* Pre-check Section */
-.pre-check-section {
-  margin-bottom: 50px;
-  max-width: 1200px;
-  margin-left: auto;
-  margin-right: auto;
-  padding-left: 20px;
-  padding-right: 20px;
-  box-sizing: border-box;
-}
-.pre-check-section .section-title {
-  text-align: left;
-  margin-bottom: 24px;
-}
-.check-card-container {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 24px;
-}
-.check-card {
-  background: var(--card-bg);
-  border: 1px solid var(--border-color);
-  border-radius: 16px;
-  padding: 24px;
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  transition: transform 0.2s, box-shadow 0.2s;
-}
-.check-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 6px 18px var(--shadow-color);
-}
-.check-card .card-icon-wrapper {
-  background: var(--bg-secondary-color);
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.4em;
-  color: var(--primary-color);
-  flex-shrink: 0;
-}
-.check-card .card-text p {
-  font-size: 1.05em;
-  font-weight: 600;
-  margin-bottom: 2px;
-}
-.check-card .card-text p.secondary {
-    font-size: 0.9em;
-    font-weight: 400;
-    color: var(--text-color-secondary);
-}
-:root:not(.dark-mode) .check-card .card-icon-wrapper {
-    background: #f1f3f5;
-}
-
-/* Payback Test Page */
-.payback-test-page {
+    margin-right: auto;
+    padding-left: 20px;
+    padding-right: 20px;
+    box-sizing: border-box;
+  }
+  
+  .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 28px;
+  }
+  
+  .section-title {
+      font-size: 1.8em;
+      font-weight: 900;
+      color: var(--text-color);
+  }
+  
+  .more-button {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+      background: var(--bg-secondary-color);
+      border: 1px solid var(--border-color);
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      color: var(--text-color);
+      font-size: 1.2em;
+      transition: all 0.2s ease-in-out;
+      margin-left: auto;
+  }
+  
+  .more-button:hover {
+      background-color: var(--primary-color);
+      color: white;
+      border-color: var(--primary-color);
+  }
+  
+  .affiliate-grid-container {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 28px;
+    max-width: 1200px;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 20px;
+    padding-right: 20px;
+    box-sizing: border-box;
+  }
+  
+  /* Pre-check Section */
+  .pre-check-section {
+    margin-bottom: 50px;
+    max-width: 1200px;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 20px;
+    padding-right: 20px;
+    box-sizing: border-box;
+  }
+  .pre-check-section .section-title {
+    text-align: left;
+    margin-bottom: 24px;
+  }
+  .check-card-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+  }
+  .check-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 24px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .check-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 6px 18px var(--shadow-color);
+  }
+  .check-card .card-icon-wrapper {
+    background: var(--bg-secondary-color);
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    text-align: center;
-    padding: 60px 20px;
-    min-height: calc(100vh - 250px); /* Adjust based on header/footer height */
-}
-.payback-test-container {
-    max-width: 480px;
-    width: 100%;
-}
-.payback-test-title {
-    font-size: 1.8em;
-    font-weight: 700;
-    line-height: 1.4;
-    margin-bottom: 12px;
-    color: var(--text-color);
-}
-.payback-test-subtitle {
-    color: var(--text-color-secondary);
-    margin-bottom: 32px;
-}
-.payback-result-card {
-    border-radius: 16px;
-    padding: 32px;
-    margin-bottom: 32px;
-    background-color: rgba(255, 237, 237, 0.3);
-    border: 1px solid rgba(255, 221, 221, 0.5);
-}
-.payback-card-icon {
-    width: 120px;
-    height: 120px;
-    object-fit: contain;
-    margin-bottom: 24px;
-}
-.payback-amount-box {
-    background-color: #fae1e1;
-    border-radius: 12px;
-    padding: 20px;
-}
-.payback-card-label {
-    font-size: 0.9em;
-    font-weight: 500;
-    margin-bottom: 8px;
-    color: #c58686;
-}
-.payback-card-amount {
-    font-size: 2em;
-    font-weight: 900;
-    color: #212529;
-}
-.payback-start-button {
-    display: block;
-    width: 100%;
-    padding: 18px;
-    border-radius: 8px;
-    background-color: var(--primary-color);
-    color: #fff;
-    font-size: 1.1em;
-    font-weight: 700;
-    transition: background-color 0.2s;
-}
-.payback-start-button:hover {
-    background-color: #2563eb;
-}
-:root.dark-mode .payback-result-card {
-    background-color: var(--card-bg);
-    border-color: var(--border-color);
-}
-:root.dark-mode .payback-amount-box {
-    background-color: var(--bg-secondary-color);
-}
-:root.dark-mode .payback-card-label,
-:root.dark-mode .payback-card-amount {
-    color: var(--text-color);
-}
-
-@media (max-width: 900px) {
-    .affiliate-section {
-      padding-left: 8px;
-      padding-right: 8px;
-    }
+    font-size: 1.4em;
+    color: var(--primary-color);
+    flex-shrink: 0;
+  }
+  .check-card .card-text p {
+    font-size: 1.05em;
+    font-weight: 600;
+    margin-bottom: 2px;
+  }
+  .check-card .card-text p.secondary {
+      font-size: 0.9em;
+      font-weight: 400;
+      color: var(--text-color-secondary);
+  }
+  :root:not(.dark-mode) .check-card .card-icon-wrapper {
+      background: #f1f3f5;
+  }
+  
+  /* Payback Test Page */
+  .payback-test-page {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 60px 20px;
+      min-height: calc(100vh - 250px); /* Adjust based on header/footer height */
+  }
+  .payback-test-container {
+      max-width: 480px;
+      width: 100%;
+  }
+  .payback-test-title {
+      font-size: 1.8em;
+      font-weight: 700;
+      line-height: 1.4;
+      margin-bottom: 12px;
+      color: var(--text-color);
+  }
+  .payback-test-subtitle {
+      color: var(--text-color-secondary);
+      margin-bottom: 32px;
+  }
+  .payback-result-card {
+      border-radius: 16px;
+      padding: 32px;
+      margin-bottom: 32px;
+      background-color: rgba(255, 237, 237, 0.3);
+      border: 1px solid rgba(255, 221, 221, 0.5);
+  }
+  .payback-card-icon {
+      width: 120px;
+      height: 120px;
+      object-fit: contain;
+      margin-bottom: 24px;
+  }
+  .payback-amount-box {
+      background-color: #fae1e1;
+      border-radius: 12px;
+      padding: 20px;
+  }
+  .payback-card-label {
+      font-size: 0.9em;
+      font-weight: 500;
+      margin-bottom: 8px;
+      color: #c58686;
+  }
+  .payback-card-amount {
+      font-size: 2em;
+      font-weight: 900;
+      color: #212529;
+  }
+  .payback-start-button {
+      display: block;
+      width: 100%;
+      padding: 18px;
+      border-radius: 8px;
+      background-color: var(--primary-color);
+      color: #fff;
+      font-size: 1.1em;
+      font-weight: 700;
+      transition: background-color 0.2s;
+  }
+  .payback-start-button:hover {
+      background-color: #2563eb;
+  }
+  :root.dark-mode .payback-result-card {
+      background-color: var(--card-bg);
+      border-color: var(--border-color);
+  }
+  :root.dark-mode .payback-amount-box {
+      background-color: var(--bg-secondary-color);
+  }
+  :root.dark-mode .payback-card-label,
+  :root.dark-mode .payback-card-amount {
+      color: var(--text-color);
+  }
+  
+  @media (max-width: 900px) {
+      .affiliate-section {
+        padding-left: 8px;
+        padding-right: 8px;
+      }
+      .affiliate-grid-container {
+        grid-template-columns: 1fr;
+      }
+      .check-card-container {
+          grid-template-columns: 1fr;
+      }
+  }
+  
+  @media (max-width: 1200px) {
     .affiliate-grid-container {
-      grid-template-columns: 1fr;
-    }
-    .check-card-container {
         grid-template-columns: 1fr;
     }
+  }
+  
+  /* ===================== 메인 컨테이너 ===================== */
+  .main-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+    box-sizing: border-box;
+  }
+  
+   /* Hide old swiper section and its styles */
+   .partner-swiper-section { display: none; }
+    
+   /* New Partner Slider Section */
+   .partner-slider-section {
+       padding: 80px 0;
+       text-align: center;
+       overflow: hidden;
+   }
+   .partner-grid-header {
+       margin-bottom: 40px;
+   }
+   .partner-grid-pre-title {
+       color: var(--primary-color);
+       font-weight: 700;
+       margin-bottom: 12px;
+   }
+   .partner-grid-title {
+       font-size: 2em;
+       font-weight: 900;
+       color: var(--text-color);
+       line-height: 1.4;
+   }
+   .partner-slider {
+       position: relative;
+       width: 100%;
+       display: flex;
+       flex-direction: column;
+       gap: 20px;
+   }
+   .partner-track {
+       display: flex;
+       width: fit-content;
+       gap: 20px;
+   }
+   #track1 {
+       animation: scroll-left 40s linear infinite;
+   }
+   #track2 {
+       animation: scroll-right 40s linear infinite;
+   }
+   .partner-slider:hover .partner-track {
+       animation-play-state: paused;
+   }
+   
+   .partner-logo-item {
+       background: var(--card-bg);
+       border: 1px solid var(--border-color);
+       border-radius: 12px;
+       padding: 20px;
+       display: flex;
+       justify-content: center;
+       align-items: center;
+       height: 80px;
+       width: 180px;
+       box-sizing: border-box;
+       flex-shrink: 0;
+       transition: all 0.2s ease-in-out;
+   }
+   
+   .partner-logo-item:hover {
+       transform: translateY(-5px);
+       box-shadow: 0 8px 20px var(--shadow-color);
+   }
+   
+   .partner-logo-item img {
+       max-height: 40px;
+       width: auto;
+       max-width: 100%;
+       object-fit: contain;
+       filter: none;
+       opacity: 1;
+   }
+   
+   :root.dark-mode .partner-logo-item {
+       background-color: #f8f9fa;
+       border-color: #f1f3f5;
+   }
+   
+   :root.dark-mode .partner-logo-item img {
+       filter: none;
+       opacity: 1;
+   }
+   
+   @keyframes scroll-left {
+       0% { transform: translateX(0); }
+       100% { transform: translateX(-50%); }
+   }
+   
+   @keyframes scroll-right {
+       0% { transform: translateX(-50%); }
+       100% { transform: translateX(0); }
+   }
+
+.affiliate-card-row {
+  display: flex;
+  gap: 32px;
+  justify-content: flex-start;
+  margin-top: 24px;
+}
+
+.affiliate-card {
+  background: #fff;
+  border-radius: 28px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+  padding: 36px 32px 32px 32px;
+  min-width: 380px;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  align-items: flex-start;
+  justify-content: flex-start;
+  box-sizing: border-box;
+}
+
+.affiliate-card .card-title {
+  font-size: 1.25em;
+  font-weight: 800;
+  margin-bottom: 18px;
+  color: #222;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.affiliate-card.honor .honor-list {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: none;
+  justify-content: flex-start;
+  height: auto;
+  overflow: hidden;
+}
+
+.affiliate-card .honor-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 1.1em;
+}
+.affiliate-card .honor-rank {
+  font-weight: 700;
+  color: #888;
+  width: 22px;
+}
+.affiliate-card .honor-img {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: contain;
+  background: #f4f4f4;
+}
+.affiliate-card .honor-name {
+  font-weight: 600;
+  color: #222;
+}
+.affiliate-card .honor-amount {
+  font-weight: 700;
+  color: #2584ff;
+  margin-left: auto;
+}
+
+.affiliate-card.event,
+.affiliate-card.featured {
+  position: relative;
+  overflow: hidden;
+}
+
+.affiliate-card.event .event-img,
+.affiliate-card.featured .featured-img {
+  position: absolute;
+  top: 0; left: 0; width: 100%; height: 100%;
+  object-fit: cover;
+  z-index: 1;
+  margin: 0; /* remove margin */
+}
+
+.affiliate-card.event::after,
+.affiliate-card.featured::after {
+  content: "";
+  position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+  background: linear-gradient(to top, rgba(0,0,0,0.8), rgba(0,0,0,0.2) 50%, transparent);
+  z-index: 2;
+}
+
+.affiliate-card.event .event-title,
+.affiliate-card.event .event-desc,
+.affiliate-card.featured .featured-title,
+.affiliate-card.featured .featured-desc {
+  position: relative; z-index: 3; /* overlay text above the image and gradient */
+  color: #fff; /* white text */
+}
+
+/* (Optional) adjust padding so that the overlay text is not too close to the bottom */
+.affiliate-card.event,
+.affiliate-card.featured {
+  padding-bottom: 32px; /* (adjust as needed) */
+}
+
+/* (Optional) remove (or comment out) the old margin-bottom on event-img and featured-img so that the overlay is flush */
+.affiliate-card .event-img,
+.affiliate-card .featured-img {
+  /* margin-bottom: 10px; */
+}
+
+/* Re-insert (overlaid) event (and featured) title and desc styles so that they are applied (with white color) on top of the image. (Fix typo: .affiliate.card.event -> .affiliate-card.event, and .affiliate.card.featured -> .affiliate-card.featured) */
+.affiliate-card.event .event-title,
+.affiliate-card.event .event-desc,
+.affiliate-card.featured .featured-title,
+.affiliate-card.featured .featured-desc {
+  font-size: 1.1em; /* (adjust as needed) */
+  font-weight: 700; /* (adjust as needed) */
+  margin-bottom: 6px; /* (adjust as needed) */
+  color: #fff; /* (white text) */
+}
+
+.affiliate-card.event .event-desc,
+.affiliate-card.featured .featured-desc {
+  font-size: 1em; /* (adjust as needed) */
+  color: #fff; /* (white text) */
 }
 
 @media (max-width: 1200px) {
-  .affiliate-grid-container {
-      grid-template-columns: 1fr;
+  .affiliate-card {
+    min-width: 0;
+    max-width: 100%;
+    width: 100%;
+  }
+}
+@media (max-width: 900px) {
+  .affiliate-card-row {
+    flex-direction: column;
+    gap: 18px;
+  }
+  .affiliate-card {
+    /* height: auto; */
+    min-width: 0;
+    max-width: 100%;
+    width: 100%;
+  }
+  .affiliate-card .event-img,
+  .affiliate-card .featured-img {
+    height: 140px;
   }
 }
 
-/* ===================== 메인 컨테이너 ===================== */
-.main-container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 20px;
+.event-img-wrapper {
+  position: relative;
+  background: #111;
+  border-radius: 20px;
+  overflow: hidden;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+}
+
+.event-img {
+  width: 100%;
+  display: block;
+  border-radius: 20px;
+}
+
+.event-overlay-text {
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  width: 100%;
+  padding: 24px 18px 16px 18px;
+  background: linear-gradient(to top, rgba(0,0,0,0.85), rgba(0,0,0,0.1) 60%, transparent 100%);
+  color: #fff;
+  z-index: 2;
   box-sizing: border-box;
 }
 
- /* Hide old swiper section and its styles */
- .partner-swiper-section { display: none; }
-  
- /* New Partner Slider Section */
- .partner-slider-section {
-     padding: 80px 0;
-     text-align: center;
-     overflow: hidden;
- }
- .partner-grid-header {
-     margin-bottom: 40px;
- }
- .partner-grid-pre-title {
-     color: var(--primary-color);
-     font-weight: 700;
-     margin-bottom: 12px;
- }
- .partner-grid-title {
-     font-size: 2em;
-     font-weight: 900;
-     color: var(--text-color);
-     line-height: 1.4;
- }
- .partner-slider {
-     position: relative;
-     width: 100%;
-     display: flex;
-     flex-direction: column;
-     gap: 20px;
- }
- .partner-track {
-     display: flex;
-     width: fit-content;
-     gap: 20px;
- }
- #track1 {
-     animation: scroll-left 40s linear infinite;
- }
- #track2 {
-     animation: scroll-right 40s linear infinite;
- }
- .partner-slider:hover .partner-track {
-     animation-play-state: paused;
- }
- 
- .partner-logo-item {
-     background: var(--card-bg);
-     border: 1px solid var(--border-color);
-     border-radius: 12px;
-     padding: 20px;
-     display: flex;
-     justify-content: center;
-     align-items: center;
-     height: 80px;
-     width: 180px;
-     box-sizing: border-box;
-     flex-shrink: 0;
-     transition: all 0.2s ease-in-out;
- }
- 
- .partner-logo-item:hover {
-     transform: translateY(-5px);
-     box-shadow: 0 8px 20px var(--shadow-color);
- }
- 
- .partner-logo-item img {
-     max-height: 40px;
-     width: auto;
-     max-width: 100%;
-     object-fit: contain;
-     filter: none;
-     opacity: 1;
- }
- 
- :root.dark-mode .partner-logo-item {
-     background-color: #f8f9fa;
-     border-color: #f1f3f5;
- }
- 
- :root.dark-mode .partner-logo-item img {
-     filter: none;
-     opacity: 1;
- }
- 
- @keyframes scroll-left {
-     0% { transform: translateX(0); }
-     100% { transform: translateX(-50%); }
- }
- 
- @keyframes scroll-right {
-     0% { transform: translateX(-50%); }
-     100% { transform: translateX(0); }
- }
+.event-overlay-text .event-title {
+  font-size: 1.15em;
+  font-weight: 700;
+  margin-bottom: 6px;
+  color: #fff;
+}
+.event-overlay-text .event-desc {
+  font-size: 1em;
+  color: #fff;
+}
+
+/* Remove previous overlay styles for .affiliate-card.event, .affiliate-card.featured, etc. */
+.affiliate-card.event,
+.affiliate-card.featured,
+.affiliate-card.event .event-img,
+.affiliate-card.featured .featured-img,
+.affiliate-card.event::after,
+.affiliate-card.featured::after {
+  position: static;
+  overflow: visible;
+  z-index: auto;
+  background: none;
+  box-shadow: none;
+}
