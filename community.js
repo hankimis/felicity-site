@@ -198,27 +198,21 @@ function renderMessage(msg) {
 async function loadInitialMessages() {
     const messagesContainer = document.getElementById('chat-messages');
     if (!messagesContainer) return;
-    
     isInitialLoad = true;
-    messagesContainer.innerHTML = ''; // 컨테이너 비우기
-    
+    messagesContainer.innerHTML = '';
     const q = query(collection(db, "community-chat"), orderBy("timestamp", "desc"), limit(50));
     try {
         const snapshot = await getDocs(q);
-        // DB에서 가져온 순서(최신->과거)를 뒤집어서(과거->최신)으로 만듭니다.
         const messages = snapshot.docs.map(doc => ({ id: doc.id, data: doc.data() })).reverse();
-        
-        // 과거 메시지부터 순서대로 화면에 추가합니다.
         messages.forEach(msg => renderMessage(msg));
-        
-        // 로드 후 스크롤을 맨 아래로 강제 이동시킵니다. (PC 버전만)
         setTimeout(() => {
-            if (window.innerWidth > 768) { // PC 버전만
+            if (window.innerWidth > 768) {
                 messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            } else {
+                messagesContainer.scrollTop = 0;
             }
             isInitialLoad = false;
         }, 100);
-        
     } catch(e) {
         console.error("초기 메시지 로드 중 오류 발생: ", e);
     }
@@ -342,30 +336,22 @@ async function loadMessages() {
             orderBy('timestamp', 'desc'),
             limit(50)
         );
-        
         const snapshot = await getDocs(messagesQuery);
         const messages = [];
-        
         snapshot.forEach((doc) => {
             messages.push({ id: doc.id, data: doc.data() });
         });
-        
-        // 시간순으로 정렬 (오래된 것부터)
         messages.reverse();
-        
         messagesContainer.innerHTML = '';
         messages.forEach(msg => renderMessage(msg));
-        
-        // PC 버전에서 스크롤을 맨 아래로 이동
-                    setTimeout(() => {
-            if (window.innerWidth > 768) { // PC 버전만
+        setTimeout(() => {
+            if (window.innerWidth > 768) {
                 messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            } else {
+                messagesContainer.scrollTop = 0;
             }
         }, 100);
-        
-        // 실시간 리스너 설정
         setupRealtimeListener();
-        
     } catch (error) {
         console.error('메시지 로드 실패:', error);
         messagesContainer.innerHTML = '<div class="chat-notice">메시지를 불러올 수 없습니다.</div>';
