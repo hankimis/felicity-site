@@ -304,6 +304,32 @@ function censorMessage(text) {
     return censoredText;
 }
 
+// 메시지 차단/금지 검사 함수
+function checkBlockOrMute(message) {
+    // 예시: 금지어/스팸/광고 등 조건에 따라 차단/금지 반환
+    const blockWords = ['불법', '스팸', '광고'];
+    for (const word of blockWords) {
+        if (message.includes(word)) {
+            return {
+                type: 'block',
+                reason: `${word} 단어 사용`,
+                duration: 'permanent',
+                unit: null
+            };
+        }
+    }
+    // 예시: 너무 짧은 메시지는 mute
+    if (message.length < 2) {
+        return {
+            type: 'mute',
+            reason: '너무 짧은 메시지',
+            duration: 10,
+            unit: 'minutes'
+        };
+    }
+    return null; // 이상 없음
+}
+
 // --- 메시지 전송 (비회원 지원) ---
 messageForm.addEventListener('submit', async (e) => {
     e.preventDefault();
