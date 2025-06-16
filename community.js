@@ -16,7 +16,7 @@ import {
     where,
     updateDoc
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { getDatabase, ref as dbRef, onValue, set, onDisconnect, remove } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import { getDatabase, ref as dbRef, onValue, set, onDisconnect, remove, update } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 import { firebaseConfig } from './firebase-config.js';
 import { triggerConfetti } from './effects.js';
 
@@ -683,7 +683,7 @@ function setupChatPresenceCount() {
             // 30초마다 lastActive 업데이트
             const updateInterval = setInterval(() => {
                 if (document.visibilityState === 'visible') {
-                    updateDoc(guestPresenceRef, {
+                    update(guestPresenceRef, {
                         lastActive: Date.now()
                     }).catch(console.error);
                 }
