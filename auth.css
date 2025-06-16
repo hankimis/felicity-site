@@ -16,6 +16,10 @@
     animation: fadeIn 0.3s ease;
 }
 
+.auth-modal.show {
+    display: flex !important;
+}
+
 @keyframes fadeIn {
     from { opacity: 0; }
     to { opacity: 1; }

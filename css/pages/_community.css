@@ -177,23 +177,23 @@
   box-sizing: border-box;
 }
 
-/* ====== 실시간 채팅(community.html)만 1600px ====== */
+/* ====== 실시간 채팅(community.html)만 전체 화면 사용 ====== */
 @media (min-width: 769px) {
   .main-container-community,
   .community-layout-community {
-    max-width: 1800px !important;
+    max-width: none !important;
     width: 100% !important;
-    margin-left: auto !important;
-    margin-right: auto !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
     padding-left: 0 !important;
     padding-right: 0 !important;
     box-sizing: border-box;
   }
   .chat-section-community {
-    max-width: 1600px !important;
+    max-width: none !important;
     width: 100% !important;
-    margin-left: auto !important;
-    margin-right: auto !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
     box-sizing: border-box;
   }
 }

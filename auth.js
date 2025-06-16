@@ -1,12 +1,10 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, updateProfile, sendEmailVerification, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore, doc, setDoc, getDoc, serverTimestamp, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { firebaseConfig } from './firebase-config.js';
 
-// 1. Firebase 초기화
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
+// Use the Firebase instances from window
+const auth = window.firebaseAuth;
+const db = window.firebaseFirestore;
 
 // 2. 전역 상태 변수
 let currentUser = null;
@@ -605,4 +603,49 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
-}); 
+});
+
+// =========================
+// 전략 데이터 구조 예시 및 공유/랭킹/백테스트 함수 틀
+// =========================
+
+// 전략 데이터 구조 예시
+const exampleStrategy = {
+    name: 'RSI+MACD 매수전략',
+    groups: [
+        {
+            name: 'A그룹',
+            conditions: [
+                { indicator: 'RSI', period: 14, operator: '<', value: 30 },
+                { indicator: 'MACD', cross: 'golden' }
+            ],
+            logic: 'AND'
+        }
+    ],
+    alertType: 'chat|push|marker'
+};
+
+// 전략 공유/랭킹 함수 틀
+function getPopularStrategies() {
+    // 서버/DB에서 인기 전략 리스트 받아오기 (샘플)
+    return [];
+}
+function getUserStrategies(userId) {
+    // 서버/DB에서 해당 유저의 전략 리스트 받아오기 (샘플)
+    return [];
+}
+function likeStrategy(strategyId) {
+    // 서버/DB에 좋아요 반영 (샘플)
+}
+function shareStrategy(strategy) {
+    // 서버/DB에 전략 저장 (샘플)
+}
+
+// 전략 백테스트 함수 틀
+function runBacktest(strategy, historicalData) {
+    // 실제 전략 로직에 따라 조건 충족 시점 기록 (샘플)
+    return [];
+}
+function showBacktestMarkers(results) {
+    // 차트에 마커 표시 (샘플)
+} 

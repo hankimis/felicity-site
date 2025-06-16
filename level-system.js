@@ -1,9 +1,7 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, doc, getDoc, updateDoc, setDoc, collection, addDoc, serverTimestamp, increment } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
-import { firebaseConfig } from './firebase-config.js';
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+// Use the Firebase instance from window
+const db = window.firebaseFirestore;
 
 // 레벨 경험치 시스템
 class LevelSystem {
