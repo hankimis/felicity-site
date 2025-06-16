@@ -1,5 +1,5 @@
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore, collection, getDocs, doc, getDoc, deleteDoc, updateDoc, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, collection, getDocs, doc, getDoc, deleteDoc, updateDoc, addDoc, serverTimestamp, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { firebaseConfig } from './firebase-config.js';
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 
@@ -18,6 +18,11 @@ const userSearch = document.getElementById('user-search');
 const refreshBtn = document.querySelector('.refresh-btn');
 
 let allUsers = [];
+
+// 차단/금지 관련 변수
+let currentBlockTab = 'banned';
+let blockedUsers = [];
+let mutedUsers = [];
 
 // 필수 요소가 없으면 스크립트 실행 중단
 if (!adminDashboard || !accessDenied || !usersTableBody) {
@@ -569,4 +574,282 @@ function showToast(message) {
             }, 300);
         }, 3000);
     }, 100);
-} 
+}
+
+// 차단/금지 목록 로드
+async function loadBlockedUsers() {
+    try {
+        // 차단된 사용자 목록 로드
+        const bannedSnapshot = await getDocs(collection(db, 'bannedUsers'));
+        blockedUsers = [];
+        bannedSnapshot.forEach(doc => {
+            const data = doc.data();
+            blockedUsers.push({
+                uid: doc.id,
+                ...data,
+                timestamp: data.timestamp?.toDate()
+            });
+        });
+
+        // 금지된 사용자 목록 로드
+        const mutedSnapshot = await getDocs(collection(db, 'mutedUsers'));
+        mutedUsers = [];
+        mutedSnapshot.forEach(doc => {
+            const data = doc.data();
+            mutedUsers.push({
+                uid: doc.id,
+                ...data,
+                timestamp: data.timestamp?.toDate()
+            });
+        });
+
+        renderBlockedUsers();
+    } catch (error) {
+        console.error('차단/금지 목록 로드 실패:', error);
+        showToast('차단/금지 목록을 불러오는데 실패했습니다.');
+    }
+}
+
+// 차단/금지 목록 렌더링
+function renderBlockedUsers() {
+    const bannedList = document.getElementById('banned-users-list');
+    const mutedList = document.getElementById('muted-users-list');
+    
+    if (!bannedList || !mutedList) return;
+
+    // 차단 목록 렌더링
+    bannedList.innerHTML = blockedUsers.map(user => {
+        const isActive = isBlockActive(user);
+        const status = getBlockStatus(user);
+        return `
+            <tr>
+                <td>${user.uid}</td>
+                <td>${user.reason}</td>
+                <td>${getDurationText(user.duration, user.unit)}</td>
+                <td>${formatDate(user.timestamp)}</td>
+                <td><span class="block-status ${isActive ? 'active' : 'expired'}">${status}</span></td>
+                <td>
+                    ${isActive ? `<button onclick="unblockUser('${user.uid}', 'banned')" class="btn-secondary">해제</button>` : ''}
+                </td>
+            </tr>
+        `;
+    }).join('');
+
+    // 금지 목록 렌더링
+    mutedList.innerHTML = mutedUsers.map(user => {
+        const isActive = isMuteActive(user);
+        const status = getMuteStatus(user);
+        return `
+            <tr>
+                <td>${user.uid}</td>
+                <td>${user.reason}</td>
+                <td>${getDurationText(user.duration, user.unit)}</td>
+                <td>${formatDate(user.timestamp)}</td>
+                <td><span class="block-status ${isActive ? 'active' : 'expired'}">${status}</span></td>
+                <td>
+                    ${isActive ? `<button onclick="unblockUser('${user.uid}', 'muted')" class="btn-secondary">해제</button>` : ''}
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+// 차단 상태 확인
+function isBlockActive(user) {
+    if (user.duration === 'permanent' || user.duration === 'delete') return true;
+    if (!user.timestamp) return false;
+    
+    const endTime = user.timestamp.getTime() + (user.duration * (user.unit === 'days' ? 24 * 60 * 60 * 1000 : 60 * 1000));
+    return endTime > Date.now();
+}
+
+// 금지 상태 확인
+function isMuteActive(user) {
+    if (!user.timestamp) return false;
+    const endTime = user.timestamp.getTime() + (user.duration * (user.unit === 'days' ? 24 * 60 * 60 * 1000 : 60 * 1000));
+    return endTime > Date.now();
+}
+
+// 차단 상태 텍스트
+function getBlockStatus(user) {
+    if (user.duration === 'permanent') return '영구 차단';
+    if (user.duration === 'delete') return '아이디 삭제';
+    if (!isBlockActive(user)) return '만료됨';
+    
+    const endTime = user.timestamp.getTime() + (user.duration * (user.unit === 'days' ? 24 * 60 * 60 * 1000 : 60 * 1000));
+    const remaining = Math.ceil((endTime - Date.now()) / (24 * 60 * 60 * 1000));
+    return `${remaining}일 남음`;
+}
+
+// 금지 상태 텍스트
+function getMuteStatus(user) {
+    if (!isMuteActive(user)) return '만료됨';
+    
+    const endTime = user.timestamp.getTime() + (user.duration * (user.unit === 'days' ? 24 * 60 * 60 * 1000 : 60 * 1000));
+    const remaining = Math.ceil((endTime - Date.now()) / (60 * 1000));
+    return `${remaining}분 남음`;
+}
+
+// 차단/금지 기간 텍스트
+function getDurationText(duration, unit) {
+    if (duration === 'permanent') return '영구';
+    if (duration === 'delete') return '아이디 삭제';
+    return `${duration}${unit === 'days' ? '일' : '분'}`;
+}
+
+// 날짜 포맷
+function formatDate(date) {
+    if (!date) return '-';
+    return date.toLocaleString('ko-KR', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+}
+
+// 탭 전환
+function switchBlockTab(tab) {
+    currentBlockTab = tab;
+    document.querySelectorAll('.block-list').forEach(list => list.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    
+    document.getElementById(`${tab}-list`).classList.add('active');
+    document.querySelector(`[onclick="switchBlockTab('${tab}')"]`).classList.add('active');
+}
+
+// 차단 모달 표시
+function showBlockUserModal() {
+    const modal = document.getElementById('block-user-modal');
+    if (modal) modal.style.display = 'block';
+}
+
+// 차단 모달 닫기
+function closeBlockModal() {
+    const modal = document.getElementById('block-user-modal');
+    if (modal) modal.style.display = 'none';
+}
+
+// 차단 사유 선택 시 직접 입력 필드 표시/숨김
+document.getElementById('block-reason')?.addEventListener('change', function(e) {
+    const customGroup = document.getElementById('custom-reason-group');
+    if (customGroup) {
+        customGroup.style.display = e.target.value === 'custom' ? 'block' : 'none';
+    }
+});
+
+// 차단 폼 제출
+document.getElementById('block-user-form')?.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const userId = document.getElementById('block-user-id').value;
+    const reason = document.getElementById('block-reason').value;
+    const customReason = document.getElementById('custom-block-reason').value;
+    const duration = document.getElementById('block-duration').value;
+    
+    if (!userId) {
+        showToast('사용자 UID를 입력해주세요.');
+        return;
+    }
+
+    try {
+        const blockData = {
+            reason: reason === 'custom' ? customReason : reason,
+            duration: duration,
+            unit: duration === 'permanent' || duration === 'delete' ? null : 'days',
+            timestamp: serverTimestamp()
+        };
+
+        await setDoc(doc(db, 'bannedUsers', userId), blockData);
+        showToast('사용자가 차단되었습니다.');
+        closeBlockModal();
+        loadBlockedUsers();
+    } catch (error) {
+        console.error('차단 실패:', error);
+        showToast('차단 처리에 실패했습니다.');
+    }
+});
+
+// 차단/금지 해제
+async function unblockUser(uid, type) {
+    if (!confirm('정말 해제하시겠습니까?')) return;
+
+    try {
+        await deleteDoc(doc(db, type === 'banned' ? 'bannedUsers' : 'mutedUsers', uid));
+        showToast('해제되었습니다.');
+        loadBlockedUsers();
+    } catch (error) {
+        console.error('해제 실패:', error);
+        showToast('해제 처리에 실패했습니다.');
+    }
+}
+
+// 사용자 검색
+async function searchBlockedUsers() {
+    const searchTerm = document.getElementById('block-search').value.toLowerCase();
+    if (!searchTerm) {
+        renderBlockedUsers();
+        return;
+    }
+
+    const filteredBanned = blockedUsers.filter(user => 
+        user.uid.toLowerCase().includes(searchTerm)
+    );
+    const filteredMuted = mutedUsers.filter(user => 
+        user.uid.toLowerCase().includes(searchTerm)
+    );
+
+    const bannedList = document.getElementById('banned-users-list');
+    const mutedList = document.getElementById('muted-users-list');
+    
+    if (bannedList) {
+        bannedList.innerHTML = filteredBanned.map(user => {
+            const isActive = isBlockActive(user);
+            const status = getBlockStatus(user);
+            return `
+                <tr>
+                    <td>${user.uid}</td>
+                    <td>${user.reason}</td>
+                    <td>${getDurationText(user.duration, user.unit)}</td>
+                    <td>${formatDate(user.timestamp)}</td>
+                    <td><span class="block-status ${isActive ? 'active' : 'expired'}">${status}</span></td>
+                    <td>
+                        ${isActive ? `<button onclick="unblockUser('${user.uid}', 'banned')" class="btn-secondary">해제</button>` : ''}
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    if (mutedList) {
+        mutedList.innerHTML = filteredMuted.map(user => {
+            const isActive = isMuteActive(user);
+            const status = getMuteStatus(user);
+            return `
+                <tr>
+                    <td>${user.uid}</td>
+                    <td>${user.reason}</td>
+                    <td>${getDurationText(user.duration, user.unit)}</td>
+                    <td>${formatDate(user.timestamp)}</td>
+                    <td><span class="block-status ${isActive ? 'active' : 'expired'}">${status}</span></td>
+                    <td>
+                        ${isActive ? `<button onclick="unblockUser('${user.uid}', 'muted')" class="btn-secondary">해제</button>` : ''}
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+}
+
+// 페이지 로드 시 차단/금지 목록 로드
+document.addEventListener('DOMContentLoaded', () => {
+    // ... existing code ...
+    loadBlockedUsers();
+});
+
+window.switchBlockTab = switchBlockTab;
+window.searchBlockedUsers = searchBlockedUsers;
+window.showBlockUserModal = showBlockUserModal;
+window.closeBlockModal = closeBlockModal;
+window.unblockUser = unblockUser; 

@@ -423,11 +423,7 @@ function createMobileMenuIfNeeded() {
 
 // 7. 스크립트 실행
 onAuthStateChanged(auth, async (user) => {
-    if (user && user.email !== 'admin@site.com' && !user.emailVerified) {
-        await signOut(auth);
-        // 안내 메시지는 로그인 시도 시 이미 표시됨
-        return;
-    }
+    // 이메일 인증 여부와 관계없이 로그인 허용
     updateAuthUI(user);
 });
 

@@ -14,7 +14,8 @@ import {
     startAfter,
     getDocs,
     where,
-    updateDoc
+    updateDoc,
+    setDoc
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getDatabase, ref as dbRef, onValue, set, onDisconnect, remove, update } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 import { firebaseConfig } from './firebase-config.js';
@@ -133,63 +134,22 @@ function renderMessage(msg) {
         messageElement.classList.add('my-message');
     }
 
-    // 레벨별 채팅 스타일 적용 (게스트는 레벨 라벨 미출력)
-    const userPoints = msg.data.points || 0;
-    let levelInfo;
-    if (!window.levelSystem) {
-        levelInfo = { name: "새싹", color: "#22c55e", gradient: "linear-gradient(135deg, #22c55e, #16a34a)", level: "새싹" };
-    } else {
-        if (currentUser && msg.data.uid === currentUser.uid) {
-            const latestPoints = window.currentUserData ? window.currentUserData.points : (currentUser.points || 0);
-            levelInfo = window.levelSystem.calculateLevel(latestPoints);
-        } else {
-            levelInfo = window.levelSystem.calculateLevel(userPoints);
-        }
-    }
-    const levelClassMap = {
-      "새싹": "level-새싹",
-      "초보": "level-초보",
-      "일반": "level-일반",
-      "숙련": "level-숙련",
-      "전문가": "level-전문가",
-      "고수": "level-고수",
-      "달인": "level-달인",
-      "마스터": "level-마스터",
-      "그랜드마스터": "level-그랜드마스터",
-      "레전드": "level-레전드"
-    };
-    const levelClass = levelClassMap[levelInfo.level || levelInfo.name] || "level-새싹";
-    messageElement.classList.add(levelClass);
-
-    // 게스트는 레벨 라벨 미출력 (role이 'guest'인 경우 level-badge를 출력하지 않음)
-    let levelBadgeHTML = "";
-    if (msg.data.role === 'admin') {
-        levelBadgeHTML = `<span class="admin-badge">Admin</span>`;
-    } else if (msg.data.role !== 'guest') {
-        levelBadgeHTML = `<span class="level-badge" style="background: ${levelInfo.gradient || levelInfo.color}">${levelInfo.name}</span>`;
-    }
-
     messageElement.innerHTML = `
         <div class="chat-profile-pic-wrap">
-            <img class="chat-profile-pic" 
-                 data-src="${profileImg}" 
-                 src="${profileImg}"
-                 alt="프로필" 
-                 onerror="this.onerror=null;this.src='assets/@default-profile.png';">
+            <img class="chat-profile-pic" src="${profileImg}" alt="프로필" loading="lazy" />
         </div>
         <div class="message-content">
             <div class="message-sender">
-                ${levelBadgeHTML}
-                <strong style="font-weight: normal;">${msg.data.displayName}</strong>
+                <strong>${msg.data.displayName}</strong>
             </div>
-            <p class="message-text" style="font-weight: normal;">${msg.data.text.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</p>
+            <div class="message-text">${msg.data.text.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</div>
         </div>
     `;
 
     messagesContainer.appendChild(messageElement);
     // 이미지 지연 로딩 관찰 시작
     const img = messageElement.querySelector('.chat-profile-pic');
-    if (img) {
+    if (img && typeof imageObserver !== 'undefined') {
         imageObserver.observe(img);
     }
 }
@@ -248,7 +208,6 @@ function setupNewMessageListener() {
 // --- Authentication Handler ---
 onAuthStateChanged(auth, async (user) => {
     if (user) {
-        // 로그인된 사용자
         const userDoc = await getDoc(doc(db, 'users', user.uid));
         currentUser = userDoc.exists() 
             ? { uid: user.uid, ...userDoc.data() }
@@ -256,13 +215,38 @@ onAuthStateChanged(auth, async (user) => {
         if (!currentUser.photoURL) {
             currentUser.photoURL = 'assets/@default-profile.png';
         }
-        
-        // 메시지 입력 활성화
+        // 차단/금지 상태 Firestore에서 조회
+        const blockSnap = await getDoc(doc(db, 'bannedUsers', currentUser.uid));
+        const muteSnap = await getDoc(doc(db, 'mutedUsers', currentUser.uid));
+        const blockData = blockSnap.exists() ? blockSnap.data() : null;
+        const muteData = muteSnap.exists() ? muteSnap.data() : null;
+        if (blockData) {
+            const { reason, duration, unit, timestamp } = blockData;
+            let blockEnd = null;
+            if (duration === 'permanent' || duration === 'delete') blockEnd = Infinity;
+            else if (timestamp) {
+                blockEnd = (timestamp.toDate().getTime() + (duration * (unit === 'days' ? 24 * 60 * 60 * 1000 : 60 * 1000)));
+            }
+            if (blockEnd && (blockEnd === Infinity || blockEnd > Date.now())) {
+                messageInput.disabled = true;
+                messageInput.placeholder = (duration === 'delete' ? '아이디 삭제/형사 고소 협조 대상입니다.' : (duration === 'permanent' ? '영구 차단 (사유: ' + reason + ') (관리자 문의)' : ('차단 (사유: ' + reason + ') (관리자 문의)')));
+                return;
+            }
+        }
+        if (muteData) {
+            const { reason, duration, unit, timestamp } = muteData;
+            let muteEnd = null;
+            if (timestamp) {
+                muteEnd = (timestamp.toDate().getTime() + (duration * (unit === 'days' ? 24 * 60 * 60 * 1000 : 60 * 1000)));
+            }
+            if (muteEnd && muteEnd > Date.now()) {
+                messageInput.disabled = true;
+                messageInput.placeholder = ('대화 금지 (사유: ' + reason + ') (관리자 문의)');
+                return;
+            }
+        }
         messageInput.disabled = false;
-        const submitButton = messageForm.querySelector('button');
-        if(submitButton) submitButton.disabled = false;
         messageInput.placeholder = '메시지를 입력하세요...';
-        
         // 일일 로그인 포인트 (하루에 한 번만)
         await checkAndAddDailyLoginPoints();
     } else {
@@ -272,8 +256,41 @@ onAuthStateChanged(auth, async (user) => {
         const submitButton = messageForm.querySelector('button');
         if(submitButton) submitButton.disabled = false;
         messageInput.placeholder = '메시지를 입력하세요...';
+        // 비회원 차단/금지 상태 조회
+        const guestNumber = localStorage.getItem('guestNumber');
+        if (guestNumber) {
+            const guestUid = "guest-" + guestNumber;
+            const blockSnap = await getDoc(doc(db, 'bannedUsers', guestUid));
+            const muteSnap = await getDoc(doc(db, 'mutedUsers', guestUid));
+            const blockData = blockSnap.exists() ? blockSnap.data() : null;
+            const muteData = muteSnap.exists() ? muteSnap.data() : null;
+            if (blockData) {
+                const { reason, duration, unit, timestamp } = blockData;
+                let blockEnd = null;
+                if (duration === 'permanent' || duration === 'delete') blockEnd = Infinity;
+                else if (timestamp) {
+                    blockEnd = (timestamp.toDate().getTime() + (duration * (unit === 'days' ? 24 * 60 * 60 * 1000 : 60 * 1000)));
+                }
+                if (blockEnd && (blockEnd === Infinity || blockEnd > Date.now())) {
+                    messageInput.disabled = true;
+                    messageInput.placeholder = (duration === 'delete' ? '아이디 삭제/형사 고소 협조 대상입니다.' : (duration === 'permanent' ? '영구 차단 (사유: ' + reason + ') (관리자 문의)' : ('차단 (사유: ' + reason + ') (관리자 문의)')));
+                    return;
+                }
+            }
+            if (muteData) {
+                const { reason, duration, unit, timestamp } = muteData;
+                let muteEnd = null;
+                if (timestamp) {
+                    muteEnd = (timestamp.toDate().getTime() + (duration * (unit === 'days' ? 24 * 60 * 60 * 1000 : 60 * 1000)));
+                }
+                if (muteEnd && muteEnd > Date.now()) {
+                    messageInput.disabled = true;
+                    messageInput.placeholder = ('대화 금지 (사유: ' + reason + ') (관리자 문의)');
+                    return;
+                }
+            }
+        }
     }
-    
     // 채팅 메시지는 로그인 여부와 관계없이 로드
     loadMessages();
 });
@@ -290,27 +307,36 @@ function censorMessage(text) {
 // --- 메시지 전송 (비회원 지원) ---
 messageForm.addEventListener('submit', async (e) => {
     e.preventDefault();
-    
     const message = messageInput.value.trim();
     if (!message) return;
-
     let userObj = currentUser;
     if (!userObj) {
-        // 비회원(게스트)인 경우, localStorage에 저장된 랜덤 숫자(또는 새로 생성)를 사용하여 게스트 객체 생성 (같은 게스트는 같은 숫자로 구분)
         let guestNumber = localStorage.getItem('guestNumber');
         if (!guestNumber) {
             guestNumber = Math.floor(Math.random() * 10000).toString();
             localStorage.setItem('guestNumber', guestNumber);
         }
-        userObj = {
-            uid: "guest-" + guestNumber,
-            displayName: "게스트" + guestNumber,
-            photoURL: 'assets/@default-profile.png',
-            points: 0,
-            role: 'guest'
-    };
-}
-
+        userObj = { uid: "guest-" + guestNumber, displayName: "게스트" + guestNumber, photoURL: 'assets/@default-profile.png', points: 0, role: 'guest' };
+    }
+    // 차단/금지 검사
+    const blockOrMute = checkBlockOrMute(message);
+    if (blockOrMute) {
+        // Firestore에 차단/금지 기록 저장
+        const data = {
+            reason: blockOrMute.reason,
+            duration: blockOrMute.duration,
+            unit: blockOrMute.unit,
+            timestamp: serverTimestamp()
+        };
+        if (blockOrMute.type === 'block') {
+            await setDoc(doc(db, 'bannedUsers', userObj.uid), data, { merge: true });
+            alert('차단 사유: ' + blockOrMute.reason + (blockOrMute.duration === 'permanent' ? ' (영구 차단)' : (blockOrMute.duration === 'delete' ? ' (아이디 삭제/형사 고소 협조)' : (' (' + blockOrMute.duration + ' ' + (blockOrMute.unit || 'days') + ') 차단'))) + '\n관리자 문의');
+        } else if (blockOrMute.type === 'mute') {
+            await setDoc(doc(db, 'mutedUsers', userObj.uid), data, { merge: true });
+            alert('대화 금지 사유: ' + blockOrMute.reason + ' (' + blockOrMute.duration + ' ' + (blockOrMute.unit || 'minutes') + ')\n관리자 문의');
+        }
+        return;
+    }
     try {
         await addDoc(collection(db, 'community-chat'), {
             text: message,
@@ -378,8 +404,8 @@ function setupRealtimeListener() {
                 // 새 메시지만 추가 (기존 메시지 중복 방지)
                 if (!document.querySelector(`#${msg.id}`)) {
                     renderMessage(msg);
-    }
-}
+                }
+            }
         });
         
         // 사용자가 스크롤을 맨 아래에 두고 있었을 경우에만 자동으로 스크롤 (PC 버전만)
@@ -459,6 +485,15 @@ function initializeChart() {
                 timeVisible: true,
                 secondsVisible: false,
                 timezone: 'Asia/Seoul',
+                tickMarkFormatter: (time, tickMarkType, locale) => {
+                    const date = new Date(time * 1000);
+                    return date.toLocaleTimeString('ko-KR', {
+                        timeZone: 'Asia/Seoul',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        hour12: false
+                    });
+                }
             },
             localization: {
                 timeFormatter: (time) => {
@@ -564,15 +599,12 @@ async function fetchHistoricalData(symbol, interval) {
         const response = await fetch(url);
         const data = await response.json();
         const candlestickData = data.map(d => {
-            const utcTime = d[0] / 1000;
-            const koreanTime = utcTime + (9 * 60 * 60);
-            
             return {
-                time: koreanTime,
-            open: parseFloat(d[1]),
-            high: parseFloat(d[2]),
-            low: parseFloat(d[3]),
-            close: parseFloat(d[4]),
+                time: d[0] / 1000,  // UTC 시간을 그대로 사용
+                open: parseFloat(d[1]),
+                high: parseFloat(d[2]),
+                low: parseFloat(d[3]),
+                close: parseFloat(d[4]),
             };
         });
         candlestickSeries.setData(candlestickData);
@@ -591,11 +623,8 @@ function setupWebSocket(symbol, interval) {
         const message = JSON.parse(event.data);
         const kline = message.k;
         
-        const utcTime = kline.t / 1000;
-        const koreanTime = utcTime + (9 * 60 * 60);
-        
         candlestickSeries.update({
-            time: koreanTime,
+            time: kline.t / 1000,  // UTC 시간을 그대로 사용
             open: parseFloat(kline.o),
             high: parseFloat(kline.h),
             low: parseFloat(kline.l),
