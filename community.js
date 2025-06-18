@@ -69,6 +69,7 @@ function renderMessage(msg) {
     const messageElement = document.createElement('div');
     messageElement.classList.add('message-item');
     messageElement.id = msg.id;
+    messageElement.dataset.uid = msg.data.uid;
 
     let isMyMessage = false;
     if (currentUser && msg.data.uid === currentUser.uid) {
@@ -167,6 +168,21 @@ function setupRealtimeListener() {
         }
     }, (error) => {
         console.error('실시간 메시지 리스너 오류:', error);
+    });
+}
+
+// 사용자가 로그인되면 기존 메시지의 스타일을 업데이트하는 함수
+function updateUserMessageStyles() {
+    if (!messagesContainer) return;
+
+    const messages = messagesContainer.querySelectorAll('.message-item');
+    messages.forEach(msgElement => {
+        const msgUid = msgElement.dataset.uid;
+        if (currentUser && msgUid === currentUser.uid) {
+            msgElement.classList.add('my-message');
+        } else {
+            msgElement.classList.remove('my-message');
+        }
     });
 }
 
@@ -463,7 +479,7 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log('User is signed out');
             updateUserInterface(null);
         }
-        loadMessages();
+        updateUserMessageStyles();
     });
 
     // 차트 초기화 (테마 초기화 후에 실행)
@@ -479,6 +495,9 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }, 1000); // 1초 후에 차트 초기화
+
+    // 페이지 로드 시 즉시 메시지 로딩 시작
+    loadMessages();
 
     // 메시지 전송 이벤트 리스너 설정
     setupChatForm();
