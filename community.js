@@ -21,6 +21,7 @@ let tempArrow = null; // 임시 화살표 요소
 let isDraggingArrow = false; // 화살표 드래그 중인지 확인
 
 const MESSAGES_PER_PAGE = 25;
+let isChatFormInitialized = false; // 채팅 폼 초기화 플래그
 
 // 코인 데이터 (실제로는 API에서 가져와야 함)
 const coinData = [
@@ -100,16 +101,19 @@ function renderMessage(msg) {
 async function loadMessages() {
     try {
         console.log('Loading messages...');
+        // 마지막 24시간의 메시지만 로드
+        const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+        
         const messagesQuery = db.collection('community-chat')
-            .orderBy('timestamp', 'desc')
-            .limit(MESSAGES_PER_PAGE);
+            .where('timestamp', '>=', twentyFourHoursAgo)
+            .orderBy('timestamp', 'asc'); // 클라이언트에서 뒤집을 필요 없도록 오름차순으로 가져옴
         
         const snapshot = await messagesQuery.get();
         const messages = [];
         snapshot.forEach((doc) => {
             messages.push({ id: doc.id, data: doc.data() });
         });
-        messages.reverse();
+        // messages.reverse(); // 이미 오름차순이므로 reverse 필요 없음
         
         if (messagesContainer) {
             messagesContainer.innerHTML = '';
@@ -118,13 +122,15 @@ async function loadMessages() {
                 if (window.innerWidth > 768) {
                     messagesContainer.scrollTop = messagesContainer.scrollHeight;
                 } else {
+                    // 모바일에서는 최신 메시지가 위로 가도록 스크롤을 맨 위로 설정
+                    // CSS에서 flex-direction: column-reverse; 를 사용한다고 가정
                     messagesContainer.scrollTop = 0;
                 }
             }, 100);
         }
         
         setupRealtimeListener();
-        console.log('Messages loaded successfully');
+        console.log(`${messages.length} messages loaded successfully`);
     } catch (error) {
         console.error('메시지 로드 실패:', error);
         if (messagesContainer) {
@@ -134,6 +140,10 @@ async function loadMessages() {
 }
 
 function setupRealtimeListener() {
+    if (messagesUnsubscribe) {
+        messagesUnsubscribe();
+    }
+    // 실시간 리스너는 현재 시간 이후의 새 메시지만 가져오도록 설정
     const messagesQuery = db.collection('community-chat')
         .where('timestamp', '>', new Date());
     
@@ -470,44 +480,8 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }, 1000); // 1초 후에 차트 초기화
 
-    // 메시지 전송 이벤트 리스너
-    if (messageForm) {
-        messageForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const message = messageInput.value.trim();
-            if (!message) return;
-
-            let userObj = currentUser;
-            if (!userObj) {
-                let guestNumber = localStorage.getItem('guestNumber');
-                if (!guestNumber) {
-                    guestNumber = Math.floor(Math.random() * 10000).toString();
-                    localStorage.setItem('guestNumber', guestNumber);
-                }
-                userObj = { 
-                    uid: "guest-" + guestNumber, 
-                    displayName: "게스트" + guestNumber, 
-                    photoURL: 'assets/@default-profile.png'
-                };
-            }
-
-            try {
-                await db.collection('community-chat').add({
-                    text: message,
-                    uid: userObj.uid,
-                    displayName: userObj.displayName,
-                    photoURL: userObj.photoURL,
-                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
-                });
-                messageInput.value = '';
-            } catch (error) {
-                console.error('메시지 전송 실패:', error);
-                alert('메시지 전송에 실패했습니다.');
-            }
-        });
-    }
-
-    // 코인 선택 이벤트는 setupCoinSearchModal()에서 처리
+    // 메시지 전송 이벤트 리스너 설정
+    setupChatForm();
 
     // 시간 간격 선택 이벤트
     document.querySelectorAll('.interval-button').forEach(button => {
@@ -534,6 +508,9 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // 초기 가격 정보 설정 (BTCUSDT 기본값)
     initializeDefaultCoinPrice();
+
+    // 키보드 단축키 설정
+    setupKeyboardShortcuts();
 });
 
 // 기본 코인(BTCUSDT) 가격 정보 초기화
@@ -969,9 +946,11 @@ function handleToolSelection(toolId) {
         case 'trendline':
             setDrawingMode('trendline');
             break;
+        case 'horizontal':
         case 'horizontal-line':
             setDrawingMode('horizontal');
             break;
+        case 'vertical':
         case 'vertical-line':
             setDrawingMode('vertical');
             break;
@@ -1210,34 +1189,6 @@ function takeChartSnapshot() {
     }
 }
 
-// 페이지 로드 시 초기화
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOM Content Loaded - Initializing...');
-    
-    // 약간의 지연을 두고 초기화 (DOM이 완전히 준비된 후)
-    setTimeout(() => {
-        // 모든 기능 초기화
-        initModals();
-        initThemeToggle();
-        initChart();
-        loadMessages();
-        setupCoinSearchModal();
-        initChartTools();
-        initChartSettingsModal();
-        setupChatForm();
-        setupKeyboardShortcuts();
-        
-        // Firebase 인증 상태 리스너
-        auth.onAuthStateChanged((user) => {
-            console.log('Auth state changed:', user);
-            currentUser = user;
-            updateUserInterface(user);
-        });
-        
-        console.log('All initialization completed');
-    }, 100);
-});
-
 // 키보드 단축키 설정
 function setupKeyboardShortcuts() {
     document.addEventListener('keydown', (e) => {
@@ -1270,7 +1221,7 @@ function undoLastDrawing() {
 
 // 채팅 폼 설정
 function setupChatForm() {
-    if (messageForm) {
+    if (messageForm && !isChatFormInitialized) {
         messageForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             if (!messageInput.value.trim()) return;
@@ -1291,6 +1242,7 @@ function setupChatForm() {
                 alert('메시지 전송에 실패했습니다.');
             }
         });
+        isChatFormInitialized = true;
     }
 }
 
