@@ -49,6 +49,9 @@ const firebaseConfig = {
     databaseURL: "https://livechattest-35101-default-rtdb.asia-southeast1.firebasedatabase.app/"
 };
 
+// 현재 호스트 이름을 기반으로 authDomain을 동적으로 설정
+firebaseConfig.authDomain = window.location.hostname;
+
 // Firebase 초기화
 const app = firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
@@ -469,18 +472,26 @@ document.addEventListener('DOMContentLoaded', () => {
     // 테마 토글 기능 초기화
     initThemeToggle();
     
-    // 인증 상태 변경 리스너
-    auth.onAuthStateChanged((user) => {
-        currentUser = user;
-        if (user) {
-            console.log('User is signed in:', user.displayName);
-            updateUserInterface(user);
-        } else {
-            console.log('User is signed out');
-            updateUserInterface(null);
-        }
-        updateUserMessageStyles();
-    });
+    // 인증 세션 지속성 설정 (페이지 로드 초기에 실행)
+    auth.setPersistence(firebase.auth.Auth.Persistence.SESSION)
+      .then(() => {
+        console.log('Firebase auth persistence set to session.');
+        // 인증 상태 변경 리스너 연결
+        auth.onAuthStateChanged((user) => {
+            currentUser = user;
+            if (user) {
+                console.log('User is signed in:', user.displayName);
+                updateUserInterface(user);
+            } else {
+                console.log('User is signed out');
+                updateUserInterface(null);
+            }
+            updateUserMessageStyles();
+        });
+      })
+      .catch((error) => {
+        console.error('Error setting auth persistence', error);
+      });
 
     // 차트 초기화 (테마 초기화 후에 실행)
     setTimeout(() => {
