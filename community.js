@@ -106,7 +106,8 @@ function renderMessage(msg) {
 async function loadMessages() {
     try {
         console.log('Loading messages...');
-        const messagesQuery = db.collection('community-chat')
+        if (!window.db) throw new Error('Firestore (window.db) not initialized');
+        const messagesQuery = window.db.collection('community-chat')
             .orderBy('timestamp', 'desc')
             .limit(MESSAGES_PER_PAGE);
         
@@ -146,7 +147,8 @@ function setupRealtimeListener() {
         messagesUnsubscribe();
     }
     // 실시간 리스너는 현재 시간 이후의 새 메시지만 가져오도록 설정
-    const messagesQuery = db.collection('community-chat')
+    if (!window.db) return; // Firestore not ready
+    const messagesQuery = window.db.collection('community-chat')
         .where('timestamp', '>', new Date());
     
     messagesUnsubscribe = messagesQuery.onSnapshot((snapshot) => {
@@ -313,13 +315,25 @@ async function initChart() {
 
         // 캔들스틱 시리즈 생성
         console.log('Adding candlestick series...');
-        candleSeries = chart.addCandlestickSeries({
-            upColor: '#26a69a',
-            downColor: '#ef5350',
-            borderVisible: false,
-            wickUpColor: '#26a69a',
-            wickDownColor: '#ef5350',
-        });
+        if (typeof chart.addCandlestickSeries === 'function') {
+            candleSeries = chart.addCandlestickSeries({
+                upColor: '#26a69a',
+                downColor: '#ef5350',
+                borderVisible: false,
+                wickUpColor: '#26a69a',
+                wickDownColor: '#ef5350',
+            });
+        } else if (typeof chart.addBarSeries === 'function') {
+            // Fallback for older/light versions without candlesticks
+            console.warn('addCandlestickSeries not found. Falling back to addBarSeries.');
+            candleSeries = chart.addBarSeries({
+                upColor: '#26a69a',
+                downColor: '#ef5350',
+                thinBars: false,
+            });
+        } else {
+            throw new Error('Neither addCandlestickSeries nor addBarSeries is available on chart object.');
+        }
         
         // 좌표 변환용 시리즈 참조 설정
         chartSeries = candleSeries;
@@ -589,9 +603,54 @@ function connectWebSocket() {
     };
 }
 
+// =========================
+// Firebase Auth readiness helper
+// =========================
+
+function waitForFirebaseAuth(maxAttempts = 50, intervalMs = 100) {
+    return new Promise((resolve, reject) => {
+        let attempts = 0;
+        const timer = setInterval(() => {
+            if (window.auth && window.db) {
+                clearInterval(timer);
+                resolve(window.auth);
+            } else if (++attempts >= maxAttempts) {
+                clearInterval(timer);
+                reject(new Error('Firebase auth not initialized in time'));
+            }
+        }, intervalMs);
+    });
+}
+
 // 이벤트 리스너 설정
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     console.log('DOM loaded, initializing...');
+    
+    // Ensure Firebase auth is ready before proceeding
+    try {
+        await waitForFirebaseAuth();
+        console.log('Firebase auth available in community.js');
+        // Expose alias so legacy code using global "auth" works.
+        if (!('auth' in window) && window.auth) {
+            window.auth = window.auth; // already set, ensure property exists
+        }
+        // Best-effort global alias (may fail if read-only)
+        try {
+            if (typeof auth === 'undefined') {
+                // eslint-disable-next-line no-global-assign
+                auth = window.auth;
+            }
+        } catch (e) { console.warn('Skipping auth alias (read-only)', e.message); }
+        // Best-effort global alias (may fail if read-only)
+        try {
+            if (typeof db === 'undefined' && window.db) {
+                // eslint-disable-next-line no-global-assign
+                db = window.db;
+            }
+        } catch (e) { console.warn('Skipping db alias (read-only)', e.message); }
+    } catch (err) {
+        console.error('Community page: Firebase auth not ready:', err);
+    }
     
     // 모달 기능 초기화
     initModals();
@@ -600,25 +659,29 @@ document.addEventListener('DOMContentLoaded', () => {
     initThemeToggle();
     
     // 인증 세션 지속성 설정 (페이지 로드 초기에 실행)
-    auth.setPersistence(firebase.auth.Auth.Persistence.SESSION)
-      .then(() => {
-        console.log('Firebase auth persistence set to session.');
-        // 인증 상태 변경 리스너 연결
-        auth.onAuthStateChanged((user) => {
-            currentUser = user;
-            if (user) {
-                console.log('User is signed in:', user.displayName);
-                updateUserInterface(user);
-            } else {
-                console.log('User is signed out');
-                updateUserInterface(null);
-            }
-            updateUserMessageStyles();
+    if (window.auth) {
+      window.auth.setPersistence(firebase.auth.Auth.Persistence.SESSION)
+        .then(() => {
+          console.log('Firebase auth persistence set to session.');
+          // 인증 상태 변경 리스너 연결
+          window.auth.onAuthStateChanged((user) => {
+              currentUser = user;
+              if (user) {
+                  console.log('User is signed in:', user.displayName);
+                  updateUserInterface(user);
+              } else {
+                  console.log('User is signed out');
+                  updateUserInterface(null);
+              }
+              updateUserMessageStyles();
+          });
+        })
+        .catch((error) => {
+          console.error('Error setting auth persistence', error);
         });
-      })
-      .catch((error) => {
-        console.error('Error setting auth persistence', error);
-      });
+    } else {
+        console.warn('window.auth is still undefined; skipping persistence setup.');
+    }
 
     // 차트 초기화 (테마 초기화 후에 실행)
     setTimeout(() => {
@@ -708,7 +771,7 @@ function initModals() {
     });
 
     // 모달 배경 클릭시 닫기
-    const modals = document.querySelectorAll('.auth-modal');
+    const modals = document.querySelectorAll('.auth-modal, .modal');
     modals.forEach(modal => {
         modal.addEventListener('click', (e) => {
             if (e.target === modal) {
@@ -808,6 +871,9 @@ function closeAllModals() {
     if (coinModal) {
         coinModal.classList.remove('show');
     }
+
+    // Restore scrolling
+    document.body.style.overflow = '';
 }
 
 // 테마 토글
@@ -880,7 +946,7 @@ async function handleLogin(e) {
     const errorMessage = document.getElementById('login-error-message');
 
     try {
-        await auth.signInWithEmailAndPassword(email, password);
+        await window.auth.signInWithEmailAndPassword(email, password);
         closeAllModals();
         if (errorMessage) errorMessage.textContent = '';
     } catch (error) {
@@ -906,7 +972,7 @@ async function handleSignup(e) {
     }
 
     try {
-        const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+        const userCredential = await window.auth.createUserWithEmailAndPassword(email, password);
         await userCredential.user.updateProfile({
             displayName: name
         });
@@ -923,7 +989,7 @@ async function handleSignup(e) {
 // 로그아웃 처리
 async function handleLogout() {
     try {
-        await auth.signOut();
+        await window.auth.signOut();
     } catch (error) {
         console.error('로그아웃 실패:', error);
     }
@@ -1090,7 +1156,7 @@ function setupChatForm() {
                     photoURL: window.currentUser ? window.currentUser.photoURL : null
                 };
 
-                await db.collection('community-chat').add(messageData);
+                if (window.db) await window.db.collection('community-chat').add(messageData);
                 messageInput.value = '';
             } catch (error) {
                 console.error('메시지 전송 실패:', error);

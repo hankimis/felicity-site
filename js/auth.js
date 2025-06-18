@@ -1,0 +1,628 @@
+// Firebase compat 버전 사용
+// import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, updateProfile, sendEmailVerification, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+// import { getFirestore, doc, setDoc, getDoc, serverTimestamp, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+// import { firebaseConfig } from './firebase-config.js';
+
+// Firebase 초기화 함수
+function initializeFirebase() {
+    return new Promise((resolve, reject) => {
+        const maxAttempts = 50; // 최대 5초 대기
+        let attempts = 0;
+        
+        const checkFirebase = () => {
+            attempts++;
+            try {
+                if (typeof firebase === 'undefined') {
+                    if (attempts < maxAttempts) {
+                        console.log(`Firebase SDK 로딩 대기 중... (${attempts}/${maxAttempts})`);
+                        setTimeout(checkFirebase, 100);
+                        return;
+                    } else {
+                        console.error('Firebase SDK 로딩 시간 초과');
+                        reject(new Error('Firebase SDK 로딩 시간 초과'));
+                        return;
+                    }
+                }
+
+                if (!firebase.apps.length) {
+                    // firebase-config.js에서 설정을 가져옴
+                    const firebaseConfig = {
+                        apiKey: "AIzaSyCbvgcol3P4wTUNh88-d9HPZl-2NC9WbqI",
+                        authDomain: "livechattest-35101.firebaseapp.com",
+                        projectId: "livechattest-35101",
+                        storageBucket: "livechattest-35101.firebasestorage.app",
+                        messagingSenderId: "880700591040",
+                        appId: "1:880700591040:web:a93e47bf19a9713a245625",
+                        measurementId: "G-ER1H2CCZW9",
+                        databaseURL: "https://livechattest-35101-default-rtdb.asia-southeast1.firebasedatabase.app/"
+                    };
+                    firebase.initializeApp(firebaseConfig);
+                }
+
+                // Firebase 서비스 초기화
+                window.auth = firebase.auth();
+                window.db = firebase.firestore();
+                
+                // Auth 상태 변경 리스너 설정
+                window.auth.onAuthStateChanged(updateAuthUI);
+                
+                // 테마 적용 및 헤더 버튼 이벤트 리스너 초기화
+                applyTheme();
+                initializeHeaderEventListeners();
+
+                console.log('Firebase 초기화 완료');
+                resolve(true);
+            } catch (error) {
+                console.error('Firebase 초기화 중 오류 발생:', error);
+                reject(error);
+            }
+        };
+        
+        checkFirebase();
+    });
+}
+
+// 전역에서 호출할 수 있는 시작 함수
+async function startApp() {
+    try {
+        await initializeFirebase();
+        console.log('Firebase 초기화 성공. 앱 시작.');
+    } catch (error) {
+        console.error('Firebase 초기화 실패:', error);
+        // 필요 시 재시도 로직 추가
+    }
+}
+window.startApp = startApp;
+
+// 헤더 관련 이벤트 리스너 초기화 함수 (인증 관련만)
+function initializeHeaderEventListeners() {
+    console.log("Initializing header event listeners...");
+    document.body.addEventListener('click', handleGlobalClick);
+}
+
+// 2. 전역 상태 변수
+let currentUser = null;
+window.currentUser = null;
+
+// 3. 핵심 헬퍼 함수
+const getElement = (id) => document.getElementById(id);
+
+function controlModal(modalId, show) {
+    const modal = getElement(modalId);
+    console.log(`controlModal: Attempting to ${show ? 'show' : 'hide'} modal with ID #${modalId}. Element found:`, modal);
+    if (modal) {
+        if (show) {
+            modal.classList.add('show', 'active');
+        } else {
+            modal.classList.remove('show', 'active');
+        }
+        document.body.style.overflow = show ? 'hidden' : '';
+        console.log(`controlModal: Modal #${modalId} class list:`, modal.classList);
+    }
+}
+
+function applyTheme() {
+    const theme = localStorage.getItem('theme');
+    document.documentElement.classList.toggle('dark-mode', theme === 'dark');
+    updateLogos();
+    updateThemeIcon();
+}
+
+function toggleTheme() {
+    console.log('Toggling theme...');
+    const currentTheme = localStorage.getItem('theme') || 'light';
+    const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+    document.documentElement.classList.toggle('dark-mode', newTheme === 'dark');
+    localStorage.setItem('theme', newTheme);
+    console.log(`Theme changed to ${newTheme}. Dark mode class present:`, document.documentElement.classList.contains('dark-mode'));
+    updateLogos();
+    updateThemeIcon();
+}
+
+function updateThemeIcon() {
+    const themeButton = document.querySelector('#theme-toggle');
+    if (themeButton) {
+        const isDarkMode = document.documentElement.classList.contains('dark-mode');
+        themeButton.innerHTML = isDarkMode ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+    }
+}
+
+function updateLogos() {
+    const isDarkMode = document.documentElement.classList.contains('dark-mode');
+    const logoSrc = isDarkMode ? '/assets/darklogo.png' : '/assets/lightlogo.png';
+    document.querySelectorAll('.logo img, #mobile-main-logo').forEach(img => {
+        if(img) img.src = logoSrc;
+    });
+}
+
+// 4. UI 업데이트 함수
+async function updateAuthUI(user) {
+    console.log("updateAuthUI called with user:", user);
+    const mobileAuthSection = document.querySelector('.mobile-auth-section');
+    const userProfile = getElement('user-profile');
+    const authButtons = document.querySelector('.auth-buttons');
+    const adminPageLink = getElement('admin-page-link');
+
+    if (user) {
+        try {
+            console.log("Fetching user data for:", user.uid);
+            const userDoc = await window.db.collection("users").doc(user.uid).get();
+            const _exists = typeof userDoc.exists === 'function' ? userDoc.exists() : userDoc.exists;
+            currentUser = _exists 
+                ? { uid: user.uid, ...userDoc.data() } 
+                : { uid: user.uid, displayName: user.displayName || "사용자", points: 0, level: "새싹" };
+            window.currentUser = currentUser;
+            console.log("User data fetched:", currentUser);
+
+            // 로그인 상태 UI 업데이트
+            if (userProfile) userProfile.style.display = 'flex';
+            if (authButtons) authButtons.style.display = 'none';
+            if (getElement('user-display-name')) getElement('user-display-name').textContent = currentUser.displayName;
+            
+            // 레벨 정보 업데이트
+            updateUserLevelDisplay();
+            
+            if (adminPageLink) adminPageLink.style.display = currentUser.role === 'admin' ? 'inline-block' : 'none';
+            
+            // 모바일 관리자 링크 업데이트
+            const mobileAdminLink = getElement('mobile-admin-link');
+            if (mobileAdminLink) mobileAdminLink.style.display = currentUser.role === 'admin' ? 'block' : 'none';
+
+            // 모바일 메뉴 업데이트
+            updateMobileMenuUserInfo();
+            
+            // 주기적 사용자 데이터 새로고침 시작
+            startUserDataRefresh();
+
+            // Ensure any authentication modal is closed
+            hideOpenAuthModals();
+        } catch (error) {
+            console.error("Error fetching user data:", error);
+            // 에러 발생 시 로그아웃 처리
+            window.auth.signOut().catch(console.error);
+        }
+    } else {
+        console.log("User is logged out");
+        currentUser = null;
+        window.currentUser = null;
+
+        // 주기적 새로고침 중지
+        stopUserDataRefresh();
+
+        // 로그아웃 상태 UI 업데이트
+        if (userProfile) userProfile.style.display = 'none';
+        if (authButtons) authButtons.style.display = 'flex';
+        if (adminPageLink) adminPageLink.style.display = 'none';
+
+        // 모바일 메뉴 업데이트
+        if (mobileAuthSection) {
+            mobileAuthSection.innerHTML = `
+                <div style="display:flex; flex-direction:column; gap:12px; padding:20px 0;">
+                    <button class="mobile-auth-btn login" data-action="open-login-modal" style="font-size:1.15rem; padding:14px 0; border-radius:12px; font-weight:700; display:flex; align-items:center; justify-content:center; gap:8px; background:var(--primary-color); color:#fff; border:none;">
+                        <i class="fas fa-sign-in-alt"></i> 로그인
+                    </button>
+                    <button class="mobile-auth-btn signup" data-action="open-signup-modal" style="font-size:1.15rem; padding:14px 0; border-radius:12px; font-weight:700; display:flex; align-items:center; justify-content:center; gap:8px; background:var(--bg-secondary-color); color:var(--primary-color); border:1.5px solid var(--primary-color);">
+                        <i class="fas fa-user-plus"></i> 회원가입
+                    </button>
+                </div>
+            `;
+        }
+    }
+}
+
+// 사용자 레벨 표시 업데이트
+function updateUserLevelDisplay() { /* level system removed */ }
+
+// 모바일 메뉴 사용자 정보 업데이트
+function updateMobileMenuUserInfo() {
+    const mobileAuthSection = document.querySelector('.mobile-auth-section');
+    if (!mobileAuthSection) return;
+    
+    if (!currentUser) {
+        // 로그인/회원가입 버튼 (비로그인 시)
+        mobileAuthSection.innerHTML = `
+            <div style="display:flex; flex-direction:column; gap:12px; padding:20px 0;">
+                <button class="mobile-auth-btn login" data-action="open-login-modal" style="font-size:1.15rem; padding:14px 0; border-radius:12px; font-weight:700; display:flex; align-items:center; justify-content:center; gap:8px; background:var(--primary-color); color:#fff; border:none;">
+                    <i class="fas fa-sign-in-alt"></i> 로그인
+                </button>
+                <button class="mobile-auth-btn signup" data-action="open-signup-modal" style="font-size:1.15rem; padding:14px 0; border-radius:12px; font-weight:700; display:flex; align-items:center; justify-content:center; gap:8px; background:var(--bg-secondary-color); color:var(--primary-color); border:1.5px solid var(--primary-color);">
+                    <i class="fas fa-user-plus"></i> 회원가입
+                </button>
+            </div>
+        `;
+        return;
+    }
+    
+    // 레벨 시스템이 로드될 때까지 기다림
+    if (!window.levelSystem) {
+        setTimeout(updateMobileMenuUserInfo, 100);
+        return;
+    }
+    
+    const levelInfo = window.levelSystem.calculateLevel(currentUser.points || 0);
+    
+    mobileAuthSection.innerHTML = `
+        <div class="mobile-user-profile">
+            <div class="mobile-user-info">
+                <span class="mobile-user-name">${currentUser.displayName}님</span>
+                <span class="mobile-user-level" style="color: ${levelInfo.color || levelInfo.gradient || '#22c55e'}">${levelInfo.name}</span>
+            </div>
+            <div class="mobile-user-stats">
+                <span class="mobile-user-points">${(currentUser.points || 0).toLocaleString()}P</span>
+            </div>
+            <button class="mobile-logout-btn" data-action="logout">로그아웃</button>
+        </div>`;
+}
+
+// 사용자 데이터 새로고침 함수 (관리자가 포인트 변경 시 호출)
+window.refreshUserData = async function() {
+    if (window.auth.currentUser) {
+        // 최신 사용자 데이터를 다시 가져와서 업데이트
+        try {
+            console.log('사용자 데이터 새로고침 시작...');
+            const userDoc = await window.db.collection("users").doc(window.auth.currentUser.uid).get();
+            if ( (typeof userDoc.exists === 'function' ? userDoc.exists() : userDoc.exists) ) {
+                const oldPoints = currentUser ? currentUser.points : 0;
+                const newUserData = userDoc.data();
+                
+                console.log('포인트 변경:', oldPoints, '->', newUserData.points);
+                
+                // 레벨 시스템이 로드될 때까지 기다림
+                if (!window.levelSystem) {
+                    console.log('레벨 시스템 로딩 대기 중...');
+                    setTimeout(window.refreshUserData, 200);
+                    return;
+                }
+                
+                // 헤더 레벨 업데이트
+                updateUserLevelDisplay();
+                
+                // 모바일 메뉴 업데이트
+                updateMobileMenuUserInfo();
+                
+                // 채팅에서 사용할 수 있도록 전역 변수 업데이트
+                window.currentUserLevel = window.levelSystem.calculateLevel(newUserData.points || 0);
+                window.currentUserData = { uid: window.auth.currentUser.uid, ...newUserData };
+                
+                // 마이페이지에서 사용할 수 있도록 이벤트 발생
+                window.dispatchEvent(new CustomEvent('userDataUpdated', { 
+                    detail: { user: window.currentUserData, level: window.currentUserLevel } 
+                }));
+                
+                console.log('사용자 데이터가 새로고침되었습니다:', window.currentUserData);
+                console.log('현재 레벨:', window.currentUserLevel);
+                
+                // currentUser 업데이트
+                currentUser = { uid: window.auth.currentUser.uid, ...newUserData };
+                window.currentUser = currentUser;
+            }
+        } catch (error) {
+            console.error('사용자 데이터 새로고침 오류:', error);
+        }
+    }
+}
+
+// 페이지 로드 시 주기적으로 사용자 데이터 확인 (5초마다)
+let userDataRefreshInterval;
+function startUserDataRefresh() {
+    if (userDataRefreshInterval) {
+        clearInterval(userDataRefreshInterval);
+    }
+    
+    userDataRefreshInterval = setInterval(async () => {
+        if (window.auth.currentUser && currentUser) {
+            try {
+                const userDoc = await window.db.collection("users").doc(window.auth.currentUser.uid).get();
+                if ( (typeof userDoc.exists === 'function' ? userDoc.exists() : userDoc.exists) ) {
+                    const newUserData = userDoc.data();
+                    
+                    // 포인트가 변경되었는지 확인
+                    if (newUserData.points !== currentUser.points) {
+                        console.log('포인트 변경 감지:', currentUser.points, '->', newUserData.points);
+                        await window.refreshUserData();
+                    }
+                }
+            } catch (error) {
+                console.error('주기적 사용자 데이터 확인 오류:', error);
+            }
+        }
+    }, 3000); // 3초마다 확인
+}
+
+function stopUserDataRefresh() {
+    if (userDataRefreshInterval) {
+        clearInterval(userDataRefreshInterval);
+        userDataRefreshInterval = null;
+    }
+}
+
+// 5. 이벤트 핸들러
+function handleGlobalClick(e) {
+    const target = e.target.closest('[data-action]');
+    if (!target) return;
+
+    const action = target.dataset.action;
+    e.preventDefault();
+
+    console.log("Handling action:", action);
+
+    const actions = {
+        'open-login': () => controlModal('login-modal', true),
+        'open-signup': () => controlModal('signup-modal', true),
+        'open-login-modal': () => controlModal('login-modal', true),
+        'open-signup-modal': () => controlModal('signup-modal', true),
+        'close-modal': () => {
+            const modal = target.closest('.auth-modal');
+            if (modal) {
+                console.log("Closing modal:", modal.id);
+                controlModal(modal.id, false);
+            }
+        },
+        'show-signup': () => { controlModal('login-modal', false); controlModal('signup-modal', true); },
+        'show-login': () => { controlModal('signup-modal', false); controlModal('login-modal', true); },
+        'toggle-theme': () => {
+            console.log("Toggling theme");
+            toggleTheme();
+        },
+        'logout': () => {
+            console.log("Logging out");
+            window.auth.signOut().catch(console.error);
+        },
+        'my-page': () => {
+            if (window.auth.currentUser) window.location.href = target.href;
+            else alert('로그인이 필요합니다.');
+        },
+        'open-mobile-menu': () => {
+            console.log('Opening mobile menu');
+            // 모바일 메뉴가 없으면 생성
+            if (!getElement('mobile-menu')) {
+                createMobileMenuIfNeeded();
+            }
+            const mobileMenu = getElement('mobile-menu');
+            if (mobileMenu) {
+                // 900px 미만에서 메뉴 열기
+                if (window.innerWidth < 900) {
+                    mobileMenu.style.display = 'flex';
+                }
+                mobileMenu.classList.add('is-open');
+                document.body.classList.add('mobile-menu-open');
+                console.log('Mobile menu opened');
+            } else {
+                console.log('Mobile menu element not found');
+            }
+        },
+        'close-mobile-menu': () => {
+            console.log('Closing mobile menu');
+            const mobileMenu = getElement('mobile-menu');
+            if (mobileMenu) {
+                mobileMenu.classList.remove('is-open');
+                document.body.classList.remove('mobile-menu-open');
+                console.log('Mobile menu closed');
+                
+                // 링크 클릭 시 페이지 이동 허용
+                if (target.tagName === 'A' && target.href && !target.href.includes('#')) {
+                    setTimeout(() => {
+                window.location.href = target.href;
+                    }, 100);
+                }
+            }
+        },
+    };
+
+    if (actions[action]) {
+        actions[action]();
+    }
+}
+
+// 6. 초기화 함수
+function createMobileMenuIfNeeded() {
+    // 기존 모바일 메뉴와 오버레이 제거
+    const existingMenu = getElement('mobile-menu');
+    const existingOverlay = document.querySelector('.mobile-menu-overlay');
+    if (existingMenu) existingMenu.remove();
+    if (existingOverlay) existingOverlay.remove();
+
+    // 오버레이 생성
+    const overlay = document.createElement('div');
+    overlay.className = 'mobile-menu-overlay';
+    overlay.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const mobileMenu = getElement('mobile-menu');
+        if (mobileMenu && mobileMenu.classList.contains('is-open')) {
+            mobileMenu.classList.remove('is-open');
+            document.body.classList.remove('mobile-menu-open');
+        }
+    });
+    document.body.appendChild(overlay);
+
+    // 메뉴 생성 (깔끔한 세로형, 큰 터치영역, 상단 사용자 정보)
+    const menu = document.createElement('div');
+    menu.id = 'mobile-menu';
+    menu.className = 'mobile-menu';
+    menu.innerHTML = `
+        <div class="mobile-menu-header">
+          <a href="index.html" class="logo-container"><img id="mobile-main-logo" src="" alt="Onbit Logo" height="36"/></a>
+          <button class="mobile-menu-close" data-action="close-mobile-menu" aria-label="메뉴 닫기"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="mobile-auth-section">
+            <div style="display:flex; flex-direction:column; gap:12px; padding:20px 0;">
+                <button class="mobile-auth-btn login" data-action="open-login-modal" style="font-size:1.15rem; padding:14px 0; border-radius:12px; font-weight:700; display:flex; align-items:center; justify-content:center; gap:8px; background:var(--primary-color); color:#fff; border:none;">
+                    <i class="fas fa-sign-in-alt"></i> 로그인
+                </button>
+                <button class="mobile-auth-btn signup" data-action="open-signup-modal" style="font-size:1.15rem; padding:14px 0; border-radius:12px; font-weight:700; display:flex; align-items:center; justify-content:center; gap:8px; background:var(--bg-secondary-color); color:var(--primary-color); border:1.5px solid var(--primary-color);">
+                    <i class="fas fa-user-plus"></i> 회원가입
+                </button>
+            </div>
+        </div>
+        <nav class="mobile-menu-nav">
+          <ul>
+            <li><a href="affiliated.html" data-action="close-mobile-menu"><i class="fas fa-building"></i> 제휴 거래소</a></li>
+            <li><a href="community.html" data-action="close-mobile-menu"><i class="fas fa-comments"></i> 실시간 채팅</a></li>
+            <li><a href="community-board.html" data-action="close-mobile-menu"><i class="fas fa-clipboard-list"></i> 자유 게시판</a></li>
+            <li><a href="attendance.html" data-action="close-mobile-menu"><i class="fas fa-calendar-check"></i> 출석체크</a></li>
+            <li><a href="notice-board.html" data-action="close-mobile-menu"><i class="fas fa-bullhorn"></i> 공지사항</a></li>
+            <li><a href="my-account.html" data-action="close-mobile-menu"><i class="fas fa-user"></i> 마이페이지</a></li>
+            <li><a href="#" data-action="toggle-theme"><i class="fas fa-adjust"></i> 테마 변경</a></li>
+          </ul>
+        </nav>
+        <div class="mobile-menu-footer" style="margin-top:auto; padding-top:20px; border-top:1px solid var(--border-color); text-align:center; color:var(--text-color-secondary); font-size:0.95em;">
+          <span>© 2024 Onbit</span>
+        </div>`;
+    document.body.appendChild(menu);
+    updateMobileMenuUserInfo();
+}
+
+// =========================
+// 전략 데이터 구조 예시 및 공유/랭킹/백테스트 함수 틀
+// =========================
+
+// 전략 데이터 구조 예시
+const exampleStrategy = {
+    name: 'RSI+MACD 매수전략',
+    groups: [
+        {
+            name: 'A그룹',
+            conditions: [
+                { indicator: 'RSI', period: 14, operator: '<', value: 30 },
+                { indicator: 'MACD', cross: 'golden' }
+            ],
+            logic: 'AND'
+        }
+    ],
+    alertType: 'chat|push|marker'
+};
+
+// 전략 공유/랭킹 함수 틀
+function getPopularStrategies() {
+    // 서버/DB에서 인기 전략 리스트 받아오기 (샘플)
+    return [];
+}
+function getUserStrategies(userId) {
+    // 서버/DB에서 해당 유저의 전략 리스트 받아오기 (샘플)
+    return [];
+}
+function likeStrategy(strategyId) {
+    // 서버/DB에 좋아요 반영 (샘플)
+}
+function shareStrategy(strategy) {
+    // 서버/DB에 전략 저장 (샘플)
+}
+
+// 전략 백테스트 함수 틀
+function runBacktest(strategy, historicalData) {
+    // 실제 전략 로직에 따라 조건 충족 시점 기록 (샘플)
+    return [];
+}
+function showBacktestMarkers(results) {
+    // 차트에 마커 표시 (샘플)
+}
+
+// =========================
+// Lazy form binding for header-injected modals (duplicated to ensure standalone functionality)
+// =========================
+
+if (!window.bindAuthForms) {
+    function bindAuthForms() {
+        const loginForm = document.getElementById('login-form');
+        if (loginForm && !loginForm.dataset.bound) {
+            loginForm.dataset.bound = 'true';
+            loginForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const email = loginForm['login-email'].value;
+                const password = loginForm['login-password'].value;
+                const errorMsg = document.getElementById('login-error-message');
+                try {
+                    const userCredential = await auth.signInWithEmailAndPassword(email, password);
+                    const userDoc = await db.collection("users").doc(userCredential.user.uid).get();
+                    const _exists = typeof userDoc.exists === 'function' ? userDoc.exists() : userDoc.exists;
+                    if (!_exists) {
+                        await db.collection("users").doc(userCredential.user.uid).set({
+                            displayName: userCredential.user.displayName || "사용자",
+                            email,
+                            points: 0,
+                            level: "새싹",
+                            role: 'user',
+                            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                    }
+                    controlModal('login-modal', false);
+                    loginForm.reset();
+                } catch (error) {
+                    if(errorMsg) errorMsg.textContent = "이메일 또는 비밀번호가 잘못되었습니다.";
+                }
+            });
+        }
+        const signupForm = document.getElementById('signup-form');
+        if (signupForm && !signupForm.dataset.bound) {
+            signupForm.dataset.bound = 'true';
+            if (!document.getElementById('cf-turnstile')) {
+                const turnstileDiv = document.createElement('div');
+                turnstileDiv.className = 'input-group';
+                turnstileDiv.innerHTML = `<div id="cf-turnstile" class="cf-turnstile" data-sitekey="0x4AAAAAABhG8vjyB5nsUxll" data-theme="light"></div>`;
+                signupForm.insertBefore(turnstileDiv, signupForm.querySelector('button'));
+            }
+            signupForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const name = signupForm['signup-name'].value;
+                const email = signupForm['signup-email'].value;
+                const password = signupForm['signup-password'].value;
+                const confirmPassword = signupForm['signup-confirm-password'].value;
+                const errorMsg = document.getElementById('signup-error-message');
+                if (name.length > 8) {
+                    if(errorMsg) errorMsg.textContent = "닉네임은 8자 이하로 입력해주세요.";
+                    return;
+                }
+                if (password !== confirmPassword) {
+                    if(errorMsg) errorMsg.textContent = "비밀번호가 일치하지 않습니다.";
+                    return;
+                }
+                const token = document.querySelector('#cf-turnstile input[name="cf-turnstile-response"]')?.value;
+                if (!token) {
+                    if(errorMsg) errorMsg.textContent = "자동 가입 방지 인증을 완료해 주세요.";
+                    return;
+                }
+                try {
+                    const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+                    await userCredential.user.updateProfile({ displayName: name });
+                    const userDoc = await db.collection("users").doc(userCredential.user.uid).get();
+                    const _exists = typeof userDoc.exists === 'function' ? userDoc.exists() : userDoc.exists;
+                    if (!_exists) {
+                        await db.collection("users").doc(userCredential.user.uid).set({
+                            displayName: name,
+                            email,
+                            points: 0,
+                            level: "새싹",
+                            role: email === 'admin@site.com' ? 'admin' : 'user',
+                            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                    }
+                    controlModal('signup-modal', false);
+                    signupForm.reset();
+                    alert('회원가입이 완료되었습니다!');
+                } catch (error) {
+                    if(errorMsg) errorMsg.textContent = error.code === 'auth/email-already-in-use' ? '이미 사용 중인 이메일입니다.' : "회원가입 중 오류가 발생했습니다.";
+                }
+            });
+        }
+    }
+    window.bindAuthForms = bindAuthForms;
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', bindAuthForms);
+    } else {
+        bindAuthForms();
+    }
+}
+
+// Utility: hide any auth modals that might still be open
+function hideOpenAuthModals() {
+    document.querySelectorAll('.auth-modal.show, .auth-modal.active').forEach(modal => {
+        modal.classList.remove('show', 'active');
+    });
+    document.body.style.overflow = '';
+}
+
+// Provide a minimal stub if level-system.js is not loaded
+if (!window.levelSystem) {
+  window.levelSystem = { calculateLevel: (points)=>({name:'Lv.0', color:'#22c55e'}) };
+} 

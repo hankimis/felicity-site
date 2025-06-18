@@ -322,6 +322,8 @@ function handleGlobalClick(e) {
     const actions = {
         'open-login': () => controlModal('login-modal', true),
         'open-signup': () => controlModal('signup-modal', true),
+        'open-login-modal': () => controlModal('login-modal', true),
+        'open-signup-modal': () => controlModal('signup-modal', true),
         'close-modal': () => {
             const modal = target.closest('.auth-modal');
             if (modal) {
@@ -672,4 +674,121 @@ function runBacktest(strategy, historicalData) {
 }
 function showBacktestMarkers(results) {
     // 차트에 마커 표시 (샘플)
+}
+
+// =========================
+// Lazy form binding for header-injected modals
+// =========================
+
+function bindAuthForms() {
+    // 로그인 폼
+    const loginForm = document.getElementById('login-form');
+    if (loginForm && !loginForm.dataset.bound) {
+        loginForm.dataset.bound = 'true';
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = loginForm['login-email'].value;
+            const password = loginForm['login-password'].value;
+            const errorMsg = document.getElementById('login-error-message');
+            try {
+                const userCredential = await auth.signInWithEmailAndPassword(email, password);
+                // Firestore에 사용자 정보가 없으면 최초 로그인 → 정보 저장
+                const userDoc = await db.collection("users").doc(userCredential.user.uid).get();
+                if (!userDoc.exists) {
+                    await db.collection("users").doc(userCredential.user.uid).set({
+                        displayName: userCredential.user.displayName || "사용자",
+                        email,
+                        points: 0,
+                        level: "새싹",
+                        role: 'user',
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                }
+                controlModal('login-modal', false);
+                loginForm.reset();
+            } catch (error) {
+                if(errorMsg) errorMsg.textContent = "이메일 또는 비밀번호가 잘못되었습니다.";
+            }
+        });
+    }
+
+    // 회원가입 폼
+    const signupForm = document.getElementById('signup-form');
+    if (signupForm && !signupForm.dataset.bound) {
+        signupForm.dataset.bound = 'true';
+        // turnstile 추가(중복 방지)
+        if (!document.getElementById('cf-turnstile')) {
+            const turnstileDiv = document.createElement('div');
+            turnstileDiv.className = 'input-group';
+            turnstileDiv.innerHTML = `<div id="cf-turnstile" class="cf-turnstile" data-sitekey="0x4AAAAAABhG8vjyB5nsUxll" data-theme="light"></div>`;
+            signupForm.insertBefore(turnstileDiv, signupForm.querySelector('button'));
+        }
+
+        signupForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = signupForm['signup-name'].value;
+            const email = signupForm['signup-email'].value;
+            const password = signupForm['signup-password'].value;
+            const confirmPassword = signupForm['signup-confirm-password'].value;
+            const errorMsg = document.getElementById('signup-error-message');
+
+            if (name.length > 8) {
+                if(errorMsg) errorMsg.textContent = "닉네임은 8자 이하로 입력해주세요.";
+                return;
+            }
+            if (password !== confirmPassword) {
+                if(errorMsg) errorMsg.textContent = "비밀번호가 일치하지 않습니다.";
+                return;
+            }
+
+            // turnstile 토큰 체크
+            const turnstileToken = document.querySelector('#cf-turnstile input[name="cf-turnstile-response"]')?.value;
+            if (!turnstileToken) {
+                if(errorMsg) errorMsg.textContent = "자동 가입 방지 인증을 완료해 주세요.";
+                return;
+            }
+
+            try {
+                const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+                await userCredential.user.updateProfile({ displayName: name });
+                await db.collection("users").doc(userCredential.user.uid).set({
+                    displayName: name,
+                    email,
+                    points: 0,
+                    level: "새싹",
+                    role: email === 'admin@site.com' ? 'admin' : 'user',
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                controlModal('signup-modal', false);
+                signupForm.reset();
+                alert('회원가입이 완료되었습니다!');
+            } catch (error) {
+                if(errorMsg) errorMsg.textContent = error.code === 'auth/email-already-in-use' ? '이미 사용 중인 이메일입니다.' : "회원가입 중 오류가 발생했습니다.";
+            }
+        });
+    }
+}
+
+window.bindAuthForms = bindAuthForms;
+// 기본적으로 DOMContentLoaded 시도, 이후 헤더 로더가 추가 호출
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', bindAuthForms);
+} else {
+    bindAuthForms();
+}
+
+// =========================
+// Compatibility shim to ensure full auth script is loaded
+// If this lightweight stub is included instead of js/auth.js, dynamically load the full script.
+// =========================
+
+if (typeof window.startApp === 'undefined') {
+  (function loadFullAuthScript() {
+    const existing = document.querySelector('script[src="js/auth.js"]');
+    if (existing) return; // full script already requested
+    const script = document.createElement('script');
+    script.src = 'js/auth.js';
+    script.defer = true;
+    document.head.appendChild(script);
+  })();
 } 
