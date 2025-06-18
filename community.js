@@ -50,7 +50,7 @@ const firebaseConfig = {
 };
 
 // 현재 호스트 이름을 기반으로 authDomain을 동적으로 설정
-firebaseConfig.authDomain = window.location.hostname;
+firebaseConfig.authDomain = "onbitlabs.com";
 
 // Firebase 초기화
 const app = firebase.initializeApp(firebaseConfig);
