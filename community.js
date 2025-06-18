@@ -19,6 +19,15 @@ let arrowStage = 0; // 0: 대기, 1: 첫 번째 클릭 완료, 2: 그리기 완�
 let tempArrow = null; // 임시 화살표 요소
 let isDraggingArrow = false; // 화살표 드래그 중인지 확인
 
+// TradingView widget instance and helper (added)
+let tvWidget = null; // TradingView Advanced Charts widget instance
+const TV_RESOLUTION_MAP = { '1m': '1', '5m': '5', '15m': '15', '1h': '60', '4h': '240', '1d': 'D' };
+const TV_SUPPORTED_RESOLUTIONS = ['1', '5', '15', '60', '240', 'D'];
+function intervalToTVRes(interval) { return TV_RESOLUTION_MAP[interval] || '1'; }
+
+// Convert Binance symbol to TradingView format (e.g., BTCUSDT -> BINANCE:BTCUSDT)
+function stripPrefix(symbol) { return symbol.includes(':') ? symbol.split(':')[1] : symbol; }
+
 // 차트 데이터 관리 변수
 let chartData = []; // 모든 차트 데이터 저장
 let isLoadingMoreData = false; // 데이터 로딩 중 플래그
@@ -31,19 +40,35 @@ let isChatFormInitialized = false; // 채팅 폼 초기화 플래그
 let prevDayClose = null;
 let last24hData = null;
 
-// 코인 데이터 (실제로는 API에서 가져와야 함)
-const coinData = [
-    { symbol: 'BTCUSDT', name: 'Bitcoin', type: 'PERPETUAL', platform: 'Binance', price: 107475.70, change: 1.69, icon: '₿', color: '#f7931a' },
-    { symbol: 'BTC_USDT', name: 'Bitcoin', type: 'PERPETUAL', platform: 'Gate', price: 107466.90, change: 1.84, icon: '₿', color: '#f7931a' },
-    { symbol: 'ETHUSDT', name: 'Ethereum', type: 'PERPETUAL', platform: 'Binance', price: 2641.01, change: 3.57, icon: 'Ξ', color: '#627eea' },
-    { symbol: 'ETH_USDT', name: 'Ethereum', type: 'PERPETUAL', platform: 'Gate', price: 2640.65, change: 3.95, icon: 'Ξ', color: '#627eea' },
-    { symbol: 'BNBUSDT', name: 'BNB', type: 'SPOT', platform: 'Binance', price: 707.20, change: 2.15, icon: 'B', color: '#f3ba2f' },
-    { symbol: 'XRPUSDT', name: 'XRP', type: 'SPOT', platform: 'Binance', price: 2.45, change: -1.23, icon: 'X', color: '#23292f' },
-    { symbol: 'DOGEUSDT', name: 'Dogecoin', type: 'FUTURES', platform: 'Binance', price: 0.3821, change: 4.67, icon: 'D', color: '#c2a633' },
-    { symbol: 'ADAUSDT', name: 'Cardano', type: 'SPOT', platform: 'Binance', price: 1.0234, change: -0.45, icon: 'A', color: '#0033ad' },
-    { symbol: 'SOLUSDT', name: 'Solana', type: 'PERPETUAL', platform: 'Binance', price: 245.67, change: 5.23, icon: 'S', color: '#9945ff' },
-    { symbol: 'MATICUSDT', name: 'Polygon', type: 'SPOT', platform: 'Binance', price: 0.4567, change: -2.34, icon: 'M', color: '#8247e5' }
-];
+let coinData = [];
+
+const binanceStreams = {};
+
+async function loadBinanceCoinData() {
+  try {
+    const resp = await fetch('https://api.binance.com/api/v3/ticker/24hr');
+    const data = await resp.json();
+    // filter USDT pairs and construct objects
+    coinData = data
+      .filter(t => t.symbol.endsWith('USDT'))
+      .map(t => {
+        const base = t.symbol.replace('USDT', '');
+        const logoUrl = `https://cdn.jsdelivr.net/npm/cryptocurrency-icons@0.17.1/32/color/${base.toLowerCase()}.png`;
+        return {
+          symbol: t.symbol,
+          name: base,
+          type: 'SPOT',
+          platform: 'Binance',
+          price: parseFloat(t.lastPrice),
+          change: parseFloat(t.priceChangePercent),
+          logo: logoUrl
+        };
+      });
+    console.log('Loaded', coinData.length, 'coins');
+  } catch(e){
+    console.error('Failed to load coin list', e);
+  }
+}
 
 // auth.js에서 초기화된 Firebase 인스턴스 사용
 // const firebaseConfig = { ... };
@@ -204,6 +229,43 @@ function updateUserMessageStyles() {
 async function initChart() {
     console.log('Starting chart initialization...');
     
+    // --- TradingView Advanced Charts integration ---
+    if (window.TradingView && window.TradingView.widget) {
+        if (isChartInitialized) {
+            console.log('TradingView chart already initialized');
+            return;
+        }
+        if (!chartContainer) {
+            console.error('Chart container not found for TradingView');
+            return;
+        }
+        const isDarkMode = document.documentElement.classList.contains('dark-mode');
+        const tvTheme = isDarkMode ? 'dark' : 'light';
+        const tvResolution = intervalToTVRes(currentInterval);
+        try {
+            // ensure coin list ready for searchSymbols
+            if (coinData.length === 0) await loadBinanceCoinData();
+            tvWidget = new TradingView.widget({
+                container: chartContainer,
+                symbol: currentSymbol,
+                interval: tvResolution,
+                autosize: true,
+                library_path: 'charting_library-master/charting_library/',
+                datafeed: createBinanceDatafeed(),
+                locale: 'ko',
+                theme: tvTheme,
+                disabled_features: ['use_localstorage_for_settings'],
+            });
+            isChartInitialized = true;
+            console.log('TradingView widget created');
+            connectWebSocket();
+        } catch (err) {
+            console.error('Failed to create TradingView widget:', err);
+        }
+        return; // skip LightweightCharts init below
+    }
+    // --- End TradingView integration ---
+
     if (isChartInitialized) {
         console.log('Chart already initialized');
         return;
@@ -559,8 +621,8 @@ function connectWebSocket() {
         binanceSocket.close();
     }
 
-    // 24시간 변화량 데이터를 위한 ticker 스트림과 차트 데이터를 위한 kline 스트림을 결합
-    const wsUrl = `wss://stream.binance.com:9443/ws/${currentSymbol.toLowerCase()}@ticker/${currentSymbol.toLowerCase()}@kline_${currentInterval}`;
+    // Binance ticker WebSocket URL (only ticker for price updates)
+    const wsUrl = `wss://stream.binance.com:9443/ws/${currentSymbol.toLowerCase()}@ticker`;
     console.log('Connecting to WebSocket:', wsUrl);
     
     binanceSocket = new WebSocket(wsUrl);
@@ -579,18 +641,6 @@ function connectWebSocket() {
             const priceChangePercent = parseFloat(data.P);
             
             updateCoinPriceDisplay(currentPrice, priceChange, priceChangePercent);
-        }
-        
-        // kline 데이터 처리
-        if (data.e === 'kline' && candleSeries) {
-            const candle = {
-                time: data.k.t / 1000 + (9 * 60 * 60),
-                open: parseFloat(data.k.o),
-                high: parseFloat(data.k.h),
-                low: parseFloat(data.k.l),
-                close: parseFloat(data.k.c)
-            };
-            candleSeries.update(candle);
         }
     };
 
@@ -711,13 +761,20 @@ document.addEventListener('DOMContentLoaded', async () => {
             currentInterval = e.target.dataset.interval;
             console.log('Interval changed to:', currentInterval);
             if (isChartInitialized) {
-                await loadChartData();
+                if (tvWidget && typeof tvWidget.activeChart === 'function') {
+                    const newRes = intervalToTVRes(currentInterval);
+                    tvWidget.activeChart().setResolution(newRes);
+                } else {
+                    // Fallback for LightweightCharts
+                    await loadChartData();
+                }
                 connectWebSocket();
             }
         });
     });
 
     // 코인 검색 모달 이벤트 리스너
+    await loadBinanceCoinData();
     setupCoinSearchModal();
 
     // 초기 가격 정보 설정 (BTCUSDT 기본값)
@@ -887,7 +944,14 @@ function toggleTheme() {
 // 차트 테마 업데이트
 function updateChartTheme(isDark) {
     console.log('Updating chart theme, isDark:', isDark);
-    if (chart) {
+    if (tvWidget) {
+        if (typeof tvWidget.changeTheme === 'function') {
+            try { tvWidget.changeTheme(isDark ? 'dark' : 'light'); return; } catch(e){}
+        } else if (typeof tvWidget.setTheme === 'function') {
+            try { tvWidget.setTheme(isDark ? 'dark' : 'light'); return; } catch(e){}
+        }
+    }
+    if (chart && typeof chart.applyOptions === 'function') {
         console.log('Applying chart theme options...');
         chart.applyOptions({
             layout: {
@@ -1077,8 +1141,8 @@ function renderCoinList(searchTerm = '', activeTab = 'all') {
         const coinItem = document.createElement('div');
         coinItem.className = 'coin-search-item';
         coinItem.innerHTML = `
-            <div class="coin-search-item-icon" style="background-color: ${coin.color}">
-                ${coin.icon}
+            <div class="coin-search-item-icon">
+                <img src="${coin.logo}" alt="${coin.symbol} logo" width="20" height="20"/>
             </div>
             <div class="coin-search-item-info">
                 <div class="coin-search-item-symbol">${coin.symbol}</div>
@@ -1114,7 +1178,7 @@ function selectCoin(coin) {
     const coinIcon = document.querySelector('.coin-selector .coin-icon');
     
     selectedCoinText.textContent = coin.symbol;
-    coinIcon.textContent = coin.icon;
+    coinIcon.textContent = coin.symbol;
     coinIcon.style.backgroundColor = coin.color;
     
     // 가격 정보 업데이트 (coinData에서 가져온 초기값 사용)
@@ -1125,8 +1189,12 @@ function selectCoin(coin) {
     document.getElementById('coin-search-modal').classList.remove('show');
     
     // 차트 업데이트 (차트가 초기화되어 있다면)
-    if (isChartInitialized && chart && candleSeries) {
-        loadChartData();
+    if (isChartInitialized) {
+        if (tvWidget && typeof tvWidget.activeChart === 'function') {
+            tvWidget.activeChart().setSymbol(currentSymbol, intervalToTVRes(currentInterval));
+        } else if (chart && candleSeries) {
+            loadChartData();
+        }
         connectWebSocket();
     }
     
@@ -1165,6 +1233,117 @@ function setupChatForm() {
         });
         isChatFormInitialized = true;
     }
+}
+
+function createBinanceDatafeed() {
+    const cfg = {
+        supported_resolutions: TV_SUPPORTED_RESOLUTIONS,
+        exchanges: [{ value: 'BINANCE', name: 'Binance', desc: 'Binance' }],
+    };
+    const intervalMap = { '1': '1m', '5': '5m', '15': '15m', '60': '1h', '240': '4h', 'D': '1d' };
+
+    return {
+        onReady: (cb) => setTimeout(() => cb(cfg), 0),
+        searchSymbols: (userInput, exchange, symbolType, onResult) => {
+            const term = userInput.toLowerCase();
+            const results = coinData
+                .filter(c => c.symbol.toLowerCase().includes(term) || c.name.toLowerCase().includes(term))
+                .slice(0, 50)
+                .map(c => ({
+                    symbol: c.symbol,
+                    full_name: c.symbol,
+                    description: c.name,
+                    exchange: 'BINANCE',
+                    ticker: c.symbol,
+                    type: 'crypto',
+                }));
+            onResult(results);
+        },
+        resolveSymbol: (symbolName, onResolve, onError) => {
+            const base = stripPrefix(symbolName.toUpperCase());
+            const symbol = base;
+            const priceScale = symbol.endsWith('USDT') ? 100 : 100000000; // rough guess
+            setTimeout(() => {
+                onResolve({
+                    name: symbol,
+                    full_name: symbol,
+                    ticker: symbol,
+                    description: symbol,
+                    type: 'crypto',
+                    session: '24x7',
+                    exchange: 'BINANCE',
+                    listed_exchange: 'BINANCE',
+                    timezone: 'Etc/UTC',
+                    minmov: 1,
+                    pricescale: priceScale,
+                    has_intraday: true,
+                    has_daily: true,
+                    has_weekly_and_monthly: true,
+                    supported_resolutions: cfg.supported_resolutions,
+                    volume_precision: 8,
+                    data_status: 'streaming',
+                });
+            }, 0);
+        },
+        getBars: async (symbolInfo, resolution, periodParams, onResult, onError) => {
+            try {
+                const interval = intervalMap[resolution] || '1m';
+                const symbol = stripPrefix(symbolInfo.name);
+                const params = new URLSearchParams({
+                    symbol,
+                    interval,
+                    limit: '1000',
+                });
+                // For back pagination, use periodParams.to as endTime (TradingView sends seconds)
+                if (!periodParams.firstDataRequest) {
+                    params.append('endTime', String(periodParams.to * 1000));
+                }
+                const url = `https://api.binance.com/api/v3/klines?${params.toString()}`;
+                const resp = await fetch(url);
+                const data = await resp.json();
+                const bars = data.map(c => ({
+                    time: c[0],
+                    open: parseFloat(c[1]),
+                    high: parseFloat(c[2]),
+                    low: parseFloat(c[3]),
+                    close: parseFloat(c[4]),
+                    volume: parseFloat(c[5]),
+                }));
+                const meta = { noData: bars.length === 0 };
+                onResult(bars, meta);
+            } catch(err) {
+                console.error('getBars error', err);
+                onError(err);
+            }
+        },
+        subscribeBars: (symbolInfo, resolution, updateCb, uid) => {
+            const interval = intervalMap[resolution] || '1m';
+            const symbol = stripPrefix(symbolInfo.name).toLowerCase();
+            const wsUrl = `wss://stream.binance.com:9443/ws/${symbol}@kline_${interval}`;
+            const socket = new WebSocket(wsUrl);
+            socket.onmessage = (e) => {
+                const data = JSON.parse(e.data);
+                if (data.e !== 'kline') return;
+                const k = data.k;
+                const bar = {
+                    time: k.t,
+                    open: parseFloat(k.o),
+                    high: parseFloat(k.h),
+                    low: parseFloat(k.l),
+                    close: parseFloat(k.c),
+                    volume: parseFloat(k.v)
+                };
+                updateCb(bar);
+            };
+            binanceStreams[uid] = socket;
+        },
+        unsubscribeBars: (uid) => {
+            if (binanceStreams[uid]) {
+                try { binanceStreams[uid].close(); } catch(e){}
+                delete binanceStreams[uid];
+            }
+        },
+    };
 }
 
 console.log('Community.js loaded successfully'); 

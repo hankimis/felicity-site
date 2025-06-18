@@ -120,13 +120,7 @@
         }
 
         .chart-section-header {
-            display: flex;
-            align-items: center;
-            padding: 0 16px;
-            height: 45px;
-            border-bottom: 1px solid var(--border-color);
-            gap: 16px;
-            flex-shrink: 0; /* 헤더 크기 고정 */
+            display: none !important;
         }
 
         .chart-section-header h2 {
@@ -720,8 +714,9 @@
     <!-- html2canvas for screenshots -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     
-    <!-- LightweightCharts for trading charts -->
-    <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
+    <!-- TradingView Advanced Charts -->
+    <script src="charting_library-master/charting_library/charting_library.standalone.js"></script>
+    <script src="charting_library-master/datafeeds/udf/dist/bundle.js"></script>
     
     <!-- Custom Scripts -->
     <script src="community.js"></script>

@@ -180,7 +180,7 @@ function displayNews(news) {
           <a href="${item.link}" target="_blank" rel="noopener" class="news-item" data-source="${item.source}">
             <img src="${item.image}" alt="" class="news-thumb" loading="lazy" onerror="this.src='assets/default-news.jpg';this.onerror=null;">
             <div class="news-body">
-              <div class="news-meta"><img src="assets/${item.source==='coindesk'?'coindesk.jpg':'cointele.jpg'}" alt="logo" class="news-logo"> ${sourceName} · ${formattedDate}</div>
+              <div class="news-meta"><img src="assets/news/${item.source==='coindesk'?'coindesk.jpg':'cointele.jpg'}" alt="logo" class="news-logo"> ${sourceName} · ${formattedDate}</div>
               <div class="news-title">${item.title}</div>
               <div class="news-desc">${item.contentSnippet}...</div>
             </div>
