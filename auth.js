@@ -1,13 +1,32 @@
-import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, updateProfile, sendEmailVerification, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore, doc, setDoc, getDoc, serverTimestamp, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { firebaseConfig } from './firebase-config.js';
+// Firebase compat 버전 사용
+// import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, updateProfile, sendEmailVerification, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+// import { getFirestore, doc, setDoc, getDoc, serverTimestamp, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+// import { firebaseConfig } from './firebase-config.js';
 
-// Use the Firebase instances from window
-const auth = window.firebaseAuth;
-const db = window.firebaseFirestore;
+// Firebase 초기화
+const firebaseConfig = {
+    apiKey: "AIzaSyCbvgcol3P4wTUNh88-d9HPZl-2NC9WbqI",
+    authDomain: "livechattest-35101.firebaseapp.com",
+    projectId: "livechattest-35101",
+    storageBucket: "livechattest-35101.firebasestorage.app",
+    messagingSenderId: "880700591040",
+    appId: "1:880700591040:web:a93e47bf19a9713a245625",
+    measurementId: "G-ER1H2CCZW9",
+    databaseURL: "https://livechattest-35101-default-rtdb.asia-southeast1.firebasedatabase.app/"
+};
+
+// Firebase 초기화 (compat 버전)
+if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+}
+
+// Firebase 서비스 가져오기
+const auth = firebase.auth();
+const db = firebase.firestore();
 
 // 2. 전역 상태 변수
 let currentUser = null;
+window.currentUser = null;
 
 // 3. 핵심 헬퍼 함수
 const getElement = (id) => document.getElementById(id);
@@ -63,10 +82,11 @@ async function updateAuthUI(user) {
     if (user) {
         try {
             console.log("Fetching user data for:", user.uid);
-            const userDoc = await getDoc(doc(db, "users", user.uid));
-            currentUser = userDoc.exists() 
+            const userDoc = await db.collection("users").doc(user.uid).get();
+            currentUser = userDoc.exists 
                 ? { uid: user.uid, ...userDoc.data() } 
                 : { uid: user.uid, displayName: user.displayName || "사용자", points: 0, level: "새싹" };
+            window.currentUser = currentUser;
             console.log("User data fetched:", currentUser);
 
             // 로그인 상태 UI 업데이트
@@ -91,11 +111,12 @@ async function updateAuthUI(user) {
         } catch (error) {
             console.error("Error fetching user data:", error);
             // 에러 발생 시 로그아웃 처리
-            signOut(auth).catch(console.error);
+            auth.signOut().catch(console.error);
         }
     } else {
         console.log("User is logged out");
         currentUser = null;
+        window.currentUser = null;
 
         // 주기적 새로고침 중지
         stopUserDataRefresh();
@@ -212,12 +233,12 @@ window.refreshUserData = async function() {
         // 최신 사용자 데이터를 다시 가져와서 업데이트
         try {
             console.log('사용자 데이터 새로고침 시작...');
-            const userDoc = await getDoc(doc(db, 'users', auth.currentUser.uid));
+            const userDoc = await db.collection("users").doc(auth.currentUser.uid).get();
             if (userDoc.exists()) {
                 const oldPoints = currentUser ? currentUser.points : 0;
-                currentUser = { uid: auth.currentUser.uid, ...userDoc.data() };
+                const newUserData = userDoc.data();
                 
-                console.log('포인트 변경:', oldPoints, '->', currentUser.points);
+                console.log('포인트 변경:', oldPoints, '->', newUserData.points);
                 
                 // 레벨 시스템이 로드될 때까지 기다림
                 if (!window.levelSystem) {
@@ -233,16 +254,20 @@ window.refreshUserData = async function() {
                 updateMobileMenuUserInfo();
                 
                 // 채팅에서 사용할 수 있도록 전역 변수 업데이트
-                window.currentUserLevel = window.levelSystem.calculateLevel(currentUser.points || 0);
-                window.currentUserData = currentUser;
+                window.currentUserLevel = window.levelSystem.calculateLevel(newUserData.points || 0);
+                window.currentUserData = { uid: auth.currentUser.uid, ...newUserData };
                 
                 // 마이페이지에서 사용할 수 있도록 이벤트 발생
                 window.dispatchEvent(new CustomEvent('userDataUpdated', { 
-                    detail: { user: currentUser, level: window.currentUserLevel } 
+                    detail: { user: window.currentUserData, level: window.currentUserLevel } 
                 }));
                 
-                console.log('사용자 데이터가 새로고침되었습니다:', currentUser);
+                console.log('사용자 데이터가 새로고침되었습니다:', window.currentUserData);
                 console.log('현재 레벨:', window.currentUserLevel);
+                
+                // currentUser 업데이트
+                currentUser = { uid: auth.currentUser.uid, ...newUserData };
+                window.currentUser = currentUser;
             }
         } catch (error) {
             console.error('사용자 데이터 새로고침 오류:', error);
@@ -260,7 +285,7 @@ function startUserDataRefresh() {
     userDataRefreshInterval = setInterval(async () => {
         if (auth.currentUser && currentUser) {
             try {
-                const userDoc = await getDoc(doc(db, 'users', auth.currentUser.uid));
+                const userDoc = await db.collection("users").doc(auth.currentUser.uid).get();
                 if (userDoc.exists()) {
                     const newUserData = userDoc.data();
                     
@@ -312,7 +337,7 @@ function handleGlobalClick(e) {
         },
         'logout': () => {
             console.log("Logging out");
-            signOut(auth).catch(console.error);
+            auth.signOut().catch(console.error);
         },
         'my-page': () => {
             if (auth.currentUser) window.location.href = target.href;
@@ -420,7 +445,7 @@ function createMobileMenuIfNeeded() {
 }
 
 // 7. 스크립트 실행
-onAuthStateChanged(auth, async (user) => {
+auth.onAuthStateChanged(async (user) => {
     // 이메일 인증 여부와 관계없이 로그인 허용
     updateAuthUI(user);
 });
@@ -464,17 +489,17 @@ document.addEventListener('DOMContentLoaded', () => {
             const password = loginForm['login-password'].value;
             const errorMsg = getElement('login-error-message');
             try {
-                const userCredential = await signInWithEmailAndPassword(auth, email, password);
+                const userCredential = await auth.signInWithEmailAndPassword(email, password);
                 // Firestore에 사용자 정보가 없으면 최초 로그인 → 정보 저장
-                const userDoc = await getDoc(doc(db, "users", userCredential.user.uid));
-                if (!userDoc.exists()) {
-                    await setDoc(doc(db, "users", userCredential.user.uid), {
+                const userDoc = await db.collection("users").doc(userCredential.user.uid).get();
+                if (!userDoc.exists) {
+                    await db.collection("users").doc(userCredential.user.uid).set({
                         displayName: userCredential.user.displayName || "사용자",
                         email,
                         points: 0,
                         level: "새싹",
                         role: 'user',
-                        createdAt: serverTimestamp()
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
                     });
                 }
                 controlModal('login-modal', false);
@@ -511,16 +536,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
             try {
-                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-                await updateProfile(userCredential.user, { displayName: name });
+                const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+                await userCredential.user.updateProfile({ displayName: name });
                 // Firestore에 사용자 정보 저장
-                await setDoc(doc(db, "users", userCredential.user.uid), {
+                await db.collection("users").doc(userCredential.user.uid).set({
                     displayName: name,
                     email,
                     points: 0,
                     level: "새싹",
                     role: email === 'admin@site.com' ? 'admin' : 'user',
-                    createdAt: serverTimestamp()
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
                 });
                 controlModal('signup-modal', false);
                 signupForm.reset();
@@ -570,7 +595,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     msg.style.color = '#ef5350';
                     return;
                 }
-                await sendPasswordResetEmail(auth, email);
+                await auth.sendPasswordResetEmail(email);
                 msg.textContent = '비밀번호 재설정 메일을 전송했습니다. 메일함을 확인해 주세요.';
                 msg.style.color = '#388e3c';
             } catch (error) {
@@ -587,8 +612,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const nickname = getElement('find-id-nickname').value.trim();
             const msg = getElement('find-id-message');
             try {
-                const q = query(collection(db, 'users'), where('displayName', '==', nickname));
-                const snapshot = await getDocs(q);
+                const snapshot = await db.collection('users').where('displayName', '==', nickname).get();
                 if (!snapshot.empty) {
                     const user = snapshot.docs[0].data();
                     msg.textContent = `이메일: ${user.email}`;

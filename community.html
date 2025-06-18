@@ -53,45 +53,39 @@
         }
 
         .main-container {
-            flex-grow: 1;
-            width: 100%;
-            margin: 0;
-            padding: 0;
+            width: 100vw !important;
+            max-width: none !important;
+            margin: 0 !important;
+            padding: 0 !important;
             box-sizing: border-box;
         }
 
         .community-layout {
             display: flex;
-            flex-direction: row;
-            gap: 0;
-            height: calc(100vh - 120px);
+            height: calc(100vh - 120px); /* Adjust based on header/top-bar height */
+        }
+
+        .community-layout-inner {
+            display: flex;
             width: 100%;
-            max-width: none;
         }
 
         .chart-section {
             flex: 1;
-            min-width: 0;
-            min-height: 500px;
             display: flex;
             flex-direction: column;
-            gap: 0;
-            position: relative;
-            padding: 0;
-            padding-left: 60px; /* 차트 도구 공간 확보 */
+            min-width: 0;
+            min-height: 600px; /* 최소 높이 설정 */
         }
 
         .chat-section {
             flex: 0 0 350px;
             width: 350px;
-            min-width: 350px;
-            max-width: 350px;
-            min-height: 350px;
+            border-left: 1px solid var(--border-color);
             display: flex;
             flex-direction: column;
-            border-left: 1px solid var(--border-color);
         }
-
+        
         @media (max-width: 1024px) {
             .community-layout {
                 flex-direction: column;
@@ -99,688 +93,368 @@
             }
             .chat-section {
                 width: 100%;
-                min-width: 0;
-                max-width: 100%;
+                border-left: none;
+                border-top: 1px solid var(--border-color);
+                flex: 0 0 400px; /* 모바일에서 채팅 영역 고정 높이 */
+            }
+            .chart-section {
+                min-height: 500px; /* 모바일에서 차트 최소 높이 */
             }
         }
 
-        .section-title-bar {
-            height: 45px;
-            background: var(--card-bg);
-            border-bottom: 1px solid var(--border-color);
+        .chart-section-header {
             display: flex;
             align-items: center;
-            justify-content: flex-start;
             padding: 0 16px;
-            margin: 0;
-            box-sizing: border-box;
+            height: 45px;
+            border-bottom: 1px solid var(--border-color);
+            gap: 16px;
+            flex-shrink: 0; /* 헤더 크기 고정 */
         }
 
-        .section-title-bar h2 {
+        .chart-section-header h2 {
             font-size: 14px;
-            font-weight: 600;
-            color: var(--text-color);
             margin: 0;
-            margin-right: 20px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
         }
-
-        .chart-controls {
-            display: flex;
-            align-items: center;
-            gap: 12px;
+        
+        #chart-container-wrapper {
+            flex: 1;
+            position: relative;
+            min-height: 0; /* flexbox에서 중요 */
         }
-
-        .coin-selector {
-            height: 28px;
-            padding: 0 8px;
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            background: var(--card-bg);
-            color: var(--text-color);
-            font-size: 12px;
-            font-weight: 500;
-            cursor: pointer;
-            outline: none;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            min-width: 80px;
-        }
-
-        .coin-selector:hover {
-            border-color: var(--primary-color);
-        }
-
-        .coin-selector .coin-icon {
-            width: 16px;
-            height: 16px;
-            border-radius: 50%;
-            background: #f7931a;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 10px;
-            color: white;
-            font-weight: bold;
-        }
-
-        .coin-price-display {
-            display: flex;
-            align-items: center;
-            margin-left: 16px;
-            gap: 12px;
-        }
-
-        .coin-price {
-            font-size: 14px;
-            font-weight: 700;
-            color: var(--text-color);
-            line-height: 1;
-        }
-
-        .coin-change-container {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 10px;
-            line-height: 1;
-        }
-
-        .coin-change {
-            font-weight: 600;
-        }
-
-        .coin-change-percent {
-            font-weight: 500;
-        }
-
-        .coin-change.positive,
-        .coin-change-percent.positive {
-            color: #22c55e;
-        }
-
-        .coin-change.negative,
-        .coin-change-percent.negative {
-            color: #ef4444;
-        }
-
-        .chart-intervals {
-            display: flex;
-            align-items: center;
-            gap: 2px;
-            background: var(--bg-secondary-color);
-            border-radius: 4px;
-            padding: 2px;
-        }
-
-        .interval-button {
-            height: 24px;
-            padding: 0 8px;
-            border: none;
-            background: transparent;
-            color: var(--text-color-secondary);
-            font-size: 11px;
-            font-weight: 500;
-            border-radius: 3px;
-            cursor: pointer;
-            transition: all 0.2s;
-            min-width: 28px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .interval-button:hover {
-            background: var(--card-bg);
-            color: var(--text-color);
-        }
-
-        .interval-button.active {
-            background: var(--primary-color);
-            color: white;
-            font-weight: 600;
-        }
-
+        
         #chart-container {
-            flex: 1;
-            width: 100%;
-            min-height: 400px;
-            position: relative;
-            background: var(--card-bg);
-            border-radius: 0;
-            overflow: hidden;
-            border: none;
-            border-top: 1px solid var(--border-color);
-        }
-
-        .chat-messages {
-            flex: 1;
-            overflow-y: auto;
-            padding: 12px;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        .chat-input-container {
-            display: flex;
-            gap: 12px;
-            padding: 16px 0 0;
-            border-top: 1px solid var(--border-color);
-            margin-top: 16px;
-        }
-
-        .chat-input {
-            flex: 1;
-            padding: 12px 16px;
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            background-color: var(--bg-secondary-color);
-            color: var(--text-color);
-            font-size: 1em;
-            resize: none;
-            min-height: 44px;
-            max-height: 120px;
-        }
-
-        .chat-input:focus {
-            outline: none;
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 2px rgba(49, 130, 246, 0.2);
-        }
-
-        .send-button {
-            padding: 12px 24px;
-            background-color: var(--primary-color);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .send-button:hover {
-            background-color: #2563eb;
-            transform: translateY(-1px);
-        }
-
-        .send-button:disabled {
-            background-color: var(--border-color);
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .message {
-            padding: 12px 16px;
-            border-radius: 12px;
-            max-width: 80%;
-            word-break: break-word;
-        }
-
-        .message.sent {
-            background-color: var(--primary-color);
-            color: white;
-            align-self: flex-end;
-        }
-
-        .message.received {
-            background-color: var(--bg-secondary-color);
-            color: var(--text-color);
-            align-self: flex-start;
-        }
-
-        .message-header {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-bottom: 4px;
-            font-size: 0.9em;
-        }
-
-        .message-header .username {
-            font-weight: 600;
-        }
-
-        .message-header .timestamp {
-            color: var(--text-color-secondary);
-            font-size: 0.85em;
-        }
-
-        .message.sent .message-header .timestamp {
-            color: rgba(255, 255, 255, 0.8);
-        }
-
-        @media (max-width: 768px) {
-            .main-container {
-                padding: 0 12px;
-            }
-
-            .community-layout {
-                gap: 12px;
-            }
-
-            .chart-section, .chat-section {
-                padding: 16px;
-            }
-
-            .section-title-bar h2 {
-                font-size: 1.2em;
-            }
-
-            .chart-controls {
-                flex-direction: column;
-                align-items: stretch;
-                gap: 12px;
-            }
-
-            .coin-selector {
-                width: 100%;
-            }
-
-            .coin-price-display {
-                margin-left: 0;
-                margin-top: 8px;
-                align-items: center;
-                gap: 8px;
-            }
-
-            .coin-price {
-                font-size: 12px;
-            }
-
-            .coin-change-container {
-                font-size: 9px;
-                gap: 4px;
-            }
-
-            .chart-intervals {
-                overflow-x: auto;
-                padding: 4px;
-                -webkit-overflow-scrolling: touch;
-            }
-
-            .interval-button {
-                white-space: nowrap;
-                padding: 6px 10px;
-                font-size: 0.85em;
-            }
-
-            .chat-input-container {
-                flex-direction: column;
-            }
-
-            .send-button {
-                width: 100%;
-            }
-        }
-
-        .chart-tools {
-            position: absolute;
-            left: 8px;
-            top: 50px;
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
-            z-index: 10;
-            background: var(--card-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            padding: 4px;
-            box-shadow: 0 2px 8px var(--shadow-color);
-            width: 44px;
-        }
-
-        .chart-tool-button {
-            width: 36px;
-            height: 36px;
-            border: none;
-            background: transparent;
-            color: var(--text-color);
-            border-radius: 4px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 16px;
-            transition: all 0.2s;
-            position: relative;
-        }
-
-        .chart-tool-button:hover {
-            background: var(--bg-secondary-color);
-        }
-
-        .chart-tool-button.active {
-            background: var(--primary-color);
-            color: white;
-        }
-
-        .chart-tool-separator {
-            height: 1px;
-            background: var(--border-color);
-            margin: 4px 0;
-        }
-
-        /* 툴팁 스타일 */
-        .chart-tool-button[title]:hover::after {
-            content: attr(title);
-            position: absolute;
-            left: 100%;
-            top: 50%;
-            transform: translateY(-50%);
-            background: rgba(0, 0, 0, 0.8);
-            color: white;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 12px;
-            white-space: nowrap;
-            z-index: 1000;
-            margin-left: 8px;
-        }
-
-        .chart-tool-button[title]:hover::before {
-            content: '';
-            position: absolute;
-            left: 100%;
-            top: 50%;
-            transform: translateY(-50%);
-            border: 4px solid transparent;
-            border-right-color: rgba(0, 0, 0, 0.8);
-            margin-left: 4px;
-            z-index: 1000;
-        }
-
-        .drawing-tools {
-            display: none;
-            position: absolute;
-            top: 0;
-            left: 0;
-            background: var(--card-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            padding: 8px;
-            z-index: 100;
-            box-shadow: 0 2px 8px var(--shadow-color);
-        }
-
-        .drawing-tools.active {
-            display: flex;
-            gap: 8px;
-        }
-
-        .drawing-tool {
-            padding: 6px;
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            background: var(--bg-secondary-color);
-            color: var(--text-color);
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .drawing-tool:hover {
-            border-color: var(--primary-color);
-            color: var(--primary-color);
-        }
-
-        .drawing-tool.active {
-            background: var(--primary-color);
-            color: white;
-            border-color: var(--primary-color);
-        }
-
-        @media (max-width: 768px) {
-            .chart-tools {
-                flex-direction: column;
-                gap: 8px;
-            }
-
-            .tool-group {
-                flex-wrap: wrap;
-            }
-
-            .indicator-select {
-                width: 100%;
-            }
-        }
-
-        /* 코인 검색 모달 스타일 */
-        .coin-search-modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: 1000;
-            align-items: center;
-            justify-content: center;
+            min-height: 500px; /* 차트 최소 높이 */
         }
 
-        .coin-search-modal.show {
-            display: flex;
+        /* 차트 로딩 인디케이터 */
+        .chart-loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            z-index: 10;
+            display: none;
         }
 
-        .coin-search-content {
+        .chart-loading.show {
+            display: block;
+        }
+
+        /* 차트 컨테이너 개선 */
+        #chart-container-wrapper {
+            position: relative;
             background: var(--card-bg);
-            border-radius: 12px;
-            width: 90%;
-            max-width: 600px;
-            max-height: 80vh;
-            overflow: hidden;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
         }
 
-        .coin-search-header {
-            padding: 20px 24px 16px;
-            border-bottom: 1px solid var(--border-color);
+        /* 차트 스크롤바 스타일링 */
+        .tv-lightweight-charts {
+            scrollbar-width: thin;
+            scrollbar-color: var(--border-color) transparent;
+        }
+
+        .tv-lightweight-charts::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        .tv-lightweight-charts::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .tv-lightweight-charts::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 4px;
+        }
+
+        .tv-lightweight-charts::-webkit-scrollbar-thumb:hover {
+            background: var(--text-color-secondary);
+        }
+
+        .chat-section-header {
             display: flex;
             align-items: center;
             justify-content: space-between;
+            padding: 0 16px;
+            height: 45px;
+            border-bottom: 1px solid var(--border-color);
         }
-
-        .coin-search-header h3 {
-            font-size: 18px;
-            font-weight: 600;
-            color: var(--text-color);
+        
+        .chat-section-header h2 {
+            font-size: 14px;
             margin: 0;
         }
+        
+        .chat-users-count {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .chat-wrapper {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 16px;
+            overflow: hidden;
+        }
 
+        #chat-messages {
+            flex: 1;
+            overflow-y: auto;
+        }
+        
+        .chat-input-form {
+            display: flex;
+            gap: 8px;
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid var(--border-color);
+        }
+        
+        #message-input {
+            flex: 1;
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+        }
+        
+        #chat-form button {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 6px;
+            background-color: var(--primary-color);
+            color: white;
+            cursor: pointer;
+        }
+        
+        .message {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 12px;
+            max-width: 95%;
+        }
+
+        .message-header {
+            font-size: 13px;
+            color: var(--text-color-secondary);
+            margin-bottom: 4px;
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+        
+        .message-header .username {
+            font-weight: 600;
+            color: var(--text-color);
+        }
+
+        .message-content {
+            border-radius: 18px;
+            line-height: 1.5;
+        }
+        
+        .message.sent {
+            align-self: flex-end;
+            align-items: flex-end;
+        }
+        
+        .message.sent .message-content {
+            background-color: var(--primary-color);
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+        
+        .message.received {
+            align-self: flex-start;
+            align-items: flex-start;
+        }
+        
+        .message.received .message-content {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-bottom-left-radius: 4px;
+        }
+
+        /* 코인 선택 모달 UI 개선 */
+        .coin-search-modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            background: rgba(0,0,0,0.45);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        .coin-search-modal.show {
+            display: flex !important;
+        }
+        .coin-search-content {
+            background: var(--card-bg, #fff);
+            border-radius: 18px;
+            width: 92vw;
+            max-width: 420px;
+            max-height: 80vh;
+            overflow: hidden;
+            box-shadow: 0 8px 40px rgba(0,0,0,0.18);
+            display: flex;
+            flex-direction: column;
+            padding: 0;
+        }
+        .coin-search-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px 24px 12px 24px;
+            border-bottom: 1px solid var(--border-color);
+            background: var(--card-bg, #fff);
+        }
+        .coin-search-header h3 {
+            font-size: 1.15em;
+            font-weight: 700;
+            margin: 0;
+            color: var(--text-color);
+        }
         .coin-search-close {
             background: none;
             border: none;
-            font-size: 24px;
+            font-size: 1.7em;
             color: var(--text-color-secondary);
             cursor: pointer;
-            padding: 0;
-            width: 32px;
-            height: 32px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            padding: 0 4px;
             border-radius: 6px;
+            transition: background 0.15s;
         }
-
         .coin-search-close:hover {
             background: var(--bg-secondary-color);
         }
-
         .coin-search-input-wrapper {
-            padding: 16px 24px;
+            padding: 16px 24px 8px 24px;
             border-bottom: 1px solid var(--border-color);
+            background: var(--card-bg, #fff);
         }
-
         .coin-search-input {
             width: 100%;
             height: 40px;
-            padding: 0 16px 0 40px;
+            padding: 0 16px;
             border: 1px solid var(--border-color);
             border-radius: 8px;
             background: var(--bg-secondary-color);
             color: var(--text-color);
-            font-size: 14px;
+            font-size: 15px;
             outline: none;
             box-sizing: border-box;
         }
-
         .coin-search-input:focus {
             border-color: var(--primary-color);
             background: var(--card-bg);
         }
-
-        .coin-search-input-wrapper {
-            position: relative;
-        }
-
-        .coin-search-input-wrapper::before {
-            content: "🔍";
-            position: absolute;
-            left: 16px;
-            top: 50%;
-            transform: translateY(-50%);
-            font-size: 16px;
-            color: var(--text-color-secondary);
-        }
-
         .coin-search-tabs {
             display: flex;
             padding: 0 24px;
             border-bottom: 1px solid var(--border-color);
+            background: var(--card-bg, #fff);
         }
-
         .coin-search-tab {
-            padding: 12px 16px;
+            flex: 1;
+            padding: 12px 0;
             border: none;
             background: none;
             color: var(--text-color-secondary);
-            font-size: 14px;
+            font-size: 15px;
             font-weight: 500;
             cursor: pointer;
             border-bottom: 2px solid transparent;
+            transition: color 0.15s, border-bottom 0.15s;
         }
-
         .coin-search-tab.active {
             color: var(--primary-color);
-            border-bottom-color: var(--primary-color);
+            border-bottom: 2px solid var(--primary-color);
         }
-
         .coin-search-list {
-            max-height: 400px;
+            flex: 1;
             overflow-y: auto;
             padding: 8px 0;
+            background: var(--card-bg, #fff);
         }
-
         .coin-search-item {
             display: flex;
             align-items: center;
-            padding: 12px 24px;
+            padding: 14px 24px;
             cursor: pointer;
-            transition: background 0.2s;
+            transition: background 0.18s;
+            border-bottom: 1px solid var(--border-color);
         }
-
+        .coin-search-item:last-child {
+            border-bottom: none;
+        }
         .coin-search-item:hover {
             background: var(--bg-secondary-color);
         }
-
         .coin-search-item-icon {
-            width: 24px;
-            height: 24px;
+            width: 28px;
+            height: 28px;
             border-radius: 50%;
-            margin-right: 12px;
+            margin-right: 14px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 12px;
+            font-size: 15px;
             color: white;
             font-weight: bold;
         }
-
         .coin-search-item-info {
             flex: 1;
         }
-
         .coin-search-item-symbol {
-            font-size: 14px;
+            font-size: 15px;
             font-weight: 600;
             color: var(--text-color);
-            margin-bottom: 2px;
         }
-
         .coin-search-item-name {
-            font-size: 12px;
+            font-size: 13px;
             color: var(--text-color-secondary);
         }
-
         .coin-search-item-price {
             text-align: right;
         }
-
         .coin-search-item-price-value {
-            font-size: 14px;
+            font-size: 15px;
             font-weight: 500;
             color: var(--text-color);
-            margin-bottom: 2px;
         }
-
         .coin-search-item-price-change {
-            font-size: 12px;
+            font-size: 13px;
             font-weight: 500;
         }
-
         .coin-search-item-price-change.positive {
             color: #22c55e;
         }
-
         .coin-search-item-price-change.negative {
             color: #ef4444;
         }
-
-        /* 차트 설정 모달 스타일 */
-        .chart-style-btn {
-            padding: 8px 16px;
-            border: 1px solid var(--border-color);
-            background: var(--bg-secondary-color);
-            color: var(--text-color);
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 12px;
-            transition: all 0.2s;
-        }
-
-        .chart-style-btn:hover {
-            border-color: var(--primary-color);
-        }
-
-        .chart-style-btn.active {
-            background: var(--primary-color);
-            color: white;
-            border-color: var(--primary-color);
-        }
-
-        .chart-settings-btn {
-            padding: 8px 16px;
-            border: 1px solid var(--primary-color);
-            background: var(--primary-color);
-            color: white;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 12px;
-            transition: all 0.2s;
-        }
-
-        .chart-settings-btn.secondary {
-            background: transparent;
-            color: var(--text-color);
-            border-color: var(--border-color);
-        }
-
-        .chart-settings-btn:hover {
-            opacity: 0.8;
+        @media (max-width: 600px) {
+            .coin-search-content {
+                max-width: 98vw;
+                width: 98vw;
+                border-radius: 10px;
+                padding: 0;
+            }
+            .coin-search-header, .coin-search-input-wrapper, .coin-search-tabs {
+                padding-left: 10px;
+                padding-right: 10px;
+            }
+            .coin-search-item {
+                padding: 12px 10px;
+            }
         }
     </style>
     <!-- Firebase SDK -->
@@ -791,31 +465,6 @@
     
     <!-- Lightweight Charts -->
     <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
-    
-    <!-- 커스텀 스크립트 -->
-    <script>
-        // 모든 의존성이 로드되었는지 확인
-        function checkDependencies() {
-            if (!window.firebase || !window.LightweightCharts) {
-                console.error('Required libraries not loaded:', {
-                    firebase: !!window.firebase,
-                    LightweightCharts: !!window.LightweightCharts,
-                    createChart: window.LightweightCharts ? !!window.LightweightCharts.createChart : false
-                });
-                return false;
-            }
-            console.log('LightweightCharts library loaded:', window.LightweightCharts);
-            console.log('LightweightCharts version:', window.LightweightCharts.version ? window.LightweightCharts.version() : 'unknown');
-            return true;
-        }
-
-        // 페이지 로드 완료 후 스크립트 실행
-        window.addEventListener('load', () => {
-            if (checkDependencies()) {
-                console.log('All dependencies loaded successfully');
-            }
-        });
-    </script>
 </head>
 <body>
     <div class="top-bar">
@@ -863,24 +512,25 @@
         </button>
     </header>
 
-    <main class="main-container main-container-community">
-        <div class="community-layout community-layout-community">
-            <section class="chart-section">
-                <div class="section-title-bar">
-                    <h2>실시간 차트</h2>
-                    <div class="chart-controls">
-                        <button id="coin-selector" class="coin-selector">
-                            <div class="coin-icon">₿</div>
+    <main class="main-container">
+        <div class="community-layout">
+            <div class="community-layout-inner">
+                <section class="chart-section">
+                    <div class="chart-section-header">
+                        <h2>실시간 차트</h2>
+                        <div id="coin-selector" class="coin-selector">
+                            <span class="coin-icon">₿</span>
                             <span id="selected-coin-text">BTCUSDT</span>
-                        </button>
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
                         <div id="coin-price-display" class="coin-price-display">
-                            <div class="coin-price" id="coin-current-price">107629.9</div>
+                            <div class="coin-price" id="coin-current-price" style="background-color: transparent; color: var(--text-color); transition: 0.3s;"></div>
                             <div class="coin-change-container">
-                                <span class="coin-change" id="coin-price-change">+2282.83</span>
-                                <span class="coin-change-percent" id="coin-price-change-percent">+2.12%</span>
+                                <span class="coin-change" id="coin-price-change"></span>
+                                <span class="coin-change-percent" id="coin-price-change-percent"></span>
                             </div>
                         </div>
-                        <div class="chart-intervals">
+                        <div class="interval-selector">
                             <button class="interval-button active" data-interval="1m">1분</button>
                             <button class="interval-button" data-interval="5m">5분</button>
                             <button class="interval-button" data-interval="15m">15분</button>
@@ -889,141 +539,28 @@
                             <button class="interval-button" data-interval="1d">1일</button>
                         </div>
                     </div>
-                </div>
-                <div class="chart-tools">
-                    <!-- 커서 도구 -->
-                    <button class="chart-tool-button active" id="cursor-tool" title="커서">
-                        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                            <path d="M2 2l12 5-5 1-2 6-5-12z"/>
-                        </svg>
-                    </button>
-                    
-                    <!-- 십자선 도구 -->
-                    <button class="chart-tool-button" id="crosshair-tool" title="십자선">
-                        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                            <path d="M8 0v16M0 8h16" stroke="currentColor" stroke-width="1" fill="none"/>
-                        </svg>
-                    </button>
-                    
-                    <div class="chart-tool-separator"></div>
-                    
-                    <!-- 추세선 -->
-                    <button class="chart-tool-button" id="trendline-tool" title="추세선">
-                        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                            <path d="M2 14L14 2" stroke="currentColor" stroke-width="1.5" fill="none"/>
-                            <circle cx="2" cy="14" r="1.5" fill="currentColor"/>
-                            <circle cx="14" cy="2" r="1.5" fill="currentColor"/>
-                        </svg>
-                    </button>
-                    
-                    <!-- 수평선 -->
-                    <button class="chart-tool-button" id="horizontal-line-tool" title="수평선">
-                        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                            <path d="M2 8h12" stroke="currentColor" stroke-width="1.5" fill="none"/>
-                            <circle cx="2" cy="8" r="1.5" fill="currentColor"/>
-                            <circle cx="14" cy="8" r="1.5" fill="currentColor"/>
-                        </svg>
-                    </button>
-                    
-                    <!-- 수직선 -->
-                    <button class="chart-tool-button" id="vertical-line-tool" title="수직선">
-                        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                            <path d="M8 2v12" stroke="currentColor" stroke-width="1.5" fill="none"/>
-                            <circle cx="8" cy="2" r="1.5" fill="currentColor"/>
-                            <circle cx="8" cy="14" r="1.5" fill="currentColor"/>
-                        </svg>
-                    </button>
-                    
-                    <!-- 직사각형 -->
-                    <button class="chart-tool-button" id="rectangle-tool" title="직사각형">
-                        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                            <rect x="3" y="4" width="10" height="8" stroke="currentColor" stroke-width="1.5" fill="none"/>
-                        </svg>
-                    </button>
-                    
-                    <div class="chart-tool-separator"></div>
-                    
-                    <!-- 피보나치 되돌림 -->
-                    <button class="chart-tool-button" id="fibonacci-tool" title="피보나치 되돌림">
-                        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                            <path d="M2 2v12h12" stroke="currentColor" stroke-width="1" fill="none"/>
-                            <path d="M2 4h12M2 6h12M2 8h12M2 10h12M2 12h12" stroke="currentColor" stroke-width="0.5" fill="none"/>
-                        </svg>
-                    </button>
-                    
-                    <!-- 텍스트 -->
-                    <button class="chart-tool-button" id="text-tool" title="텍스트">
-                        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                            <path d="M4 3h8v2H9v8H7V5H4V3z"/>
-                        </svg>
-                    </button>
-                    
-                    <!-- 화살표 -->
-                    <button class="chart-tool-button" id="arrow-tool" title="화살표">
-                        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                            <path d="M2 8h10l-3-3m3 3l-3 3" stroke="currentColor" stroke-width="1.5" fill="none"/>
-                        </svg>
-                    </button>
-                    
-                    <div class="chart-tool-separator"></div>
-                    
-                    <!-- 브러시 -->
-                    <button class="chart-tool-button" id="brush-tool" title="브러시">
-                        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                            <path d="M3 10l8-8 3 3-8 8-3-3z"/>
-                            <circle cx="3" cy="13" r="2" fill="currentColor"/>
-                        </svg>
-                    </button>
-                    
-                    <!-- 지우개 -->
-                    <button class="chart-tool-button" id="eraser-tool" title="지우개">
-                        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                            <path d="M8.086 2.207a2 2 0 0 1 2.828 0l3.879 3.879a2 2 0 0 1 0 2.828l-5.5 5.5A2 2 0 0 1 7.879 15H5.12a2 2 0 0 1-1.414-.586l-2.5-2.5a2 2 0 0 1 0-2.828l6.879-6.879z"/>
-                        </svg>
-                    </button>
-                    
-                    <div class="chart-tool-separator"></div>
-                    
-                    <!-- 설정 -->
-                    <button class="chart-tool-button" id="settings-tool" title="설정">
-                        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                            <path d="M8 4.754a3.246 3.246 0 1 0 0 6.492 3.246 3.246 0 0 0 0-6.492zM5.754 8a2.246 2.246 0 1 1 4.492 0 2.246 2.246 0 0 1-4.492 0z"/>
-                            <path d="M9.796 1.343c-.527-1.79-3.065-1.79-3.592 0l-.094.319a.873.873 0 0 1-1.255.52l-.292-.16c-1.64-.892-3.433.902-2.54 2.541l.159.292a.873.873 0 0 1-.52 1.255l-.319.094c-1.79.527-1.79 3.065 0 3.592l.319.094a.873.873 0 0 1 .52 1.255l-.16.292c-.892 1.64.901 3.434 2.541 2.54l.292-.159a.873.873 0 0 1 1.255.52l.094.319c.527 1.79 3.065 1.79 3.592 0l.094-.319a.873.873 0 0 1 1.255-.52l.292.16c1.64.893 3.434-.902 2.54-2.541l-.159-.292a.873.873 0 0 1 .52-1.255l.319-.094c1.79-.527 1.79-3.065 0-3.592l-.319-.094a.873.873 0 0 1-.52-1.255l.16-.292c.893-1.64-.902-3.433-2.541-2.54l-.292.159a.873.873 0 0 1-1.255-.52l-.094-.319zm-2.633.283c.246-.835 1.428-.835 1.674 0l.094.319a1.873 1.873 0 0 0 2.693 1.115l.291-.16c.764-.415 1.6.42 1.184 1.185l-.159.292a1.873 1.873 0 0 0 1.116 2.692l.318.094c.835.246.835 1.428 0 1.674l-.319.094a1.873 1.873 0 0 0-1.115 2.693l.16.291c.415.764-.42 1.6-1.185 1.184l-.291-.159a1.873 1.873 0 0 0-2.693 1.116l-.094.318c-.246.835-1.428.835-1.674 0l-.094-.319a1.873 1.873 0 0 0-2.692-1.115l-.292.16c-.764.415-1.6-.42-1.184-1.185l.159-.291A1.873 1.873 0 0 0 1.945 8.93l-.319-.094c-.835-.246-.835-1.428 0-1.674l.319-.094A1.873 1.873 0 0 0 3.06 4.377l-.16-.292c-.415-.764.42-1.6 1.185-1.184l.292.159a1.873 1.873 0 0 0 2.692-1.115l.094-.319z"/>
-                        </svg>
-                    </button>
-                    
-                    <!-- 스냅샷 -->
-                    <button class="chart-tool-button" id="snapshot-tool" title="스냅샷">
-                        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                            <path d="M10.5 8.5a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0z"/>
-                            <path d="M2 4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-1.172a2 2 0 0 1-1.414-.586L9.828 1.828A2 2 0 0 0 8.414 1.242H7.586a2 2 0 0 0-1.414.586L4.586 3.414A2 2 0 0 1 3.172 4H2zm.5 2a.5.5 0 1 1 0-1 .5.5 0 0 1 0 1zm9 2.5a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0z"/>
-                        </svg>
-                    </button>
-                </div>
-                <div id="chart-container" class="chart-display">
-                    <!-- 차트가 여기에 렌더링됩니다 -->
-                </div>
-                <div id="drawing-tools" class="drawing-tools" style="display: none;">
-                    <!-- 숨김 처리 -->
-                </div>
-            </section>
-            <section class="chat-section chat-section-community">
-                <div class="chat-section-header" style="display: flex; align-items: center; justify-content: space-between; padding: 0 16px; height: 45px;">
-                    <h2 style="margin: 0; font-size: 14px;">실시간 채팅</h2>
-                    <div class="chat-users-count" style="display: flex; align-items: center; gap: 6px; font-size: 14px; color: var(--text-color-secondary);">
-                        <i class="fas fa-user"></i>
-                        <span id="chat-users-count">0</span>
+                    <div id="chart-container-wrapper">
+                        <div id="chart-container"></div>
+                        <div class="chart-loading" id="chart-loading">데이터 로딩 중...</div>
                     </div>
-                </div>
-                <div class="chat-wrapper">
-                    <div id="chat-messages">
+                </section>
+                <section class="chat-section">
+                    <div class="chat-section-header">
+                        <h2>실시간 채팅</h2>
+                        <div class="chat-users-count">
+                            <i class="fas fa-user"></i>
+                            <span id="chat-users-count">0</span>
+                        </div>
                     </div>
-                    <form id="chat-form" class="chat-input-form">
-                        <input type="text" id="message-input" placeholder="메시지를 입력하세요..." autocomplete="off">
-                        <button type="submit">전송</button>
-                    </form>
-                </div>
-            </section>
+                    <div class="chat-wrapper">
+                        <div id="chat-messages"></div>
+                        <form id="chat-form" class="chat-input-form">
+                            <input type="text" id="message-input" placeholder="메시지를 입력하세요..." autocomplete="off">
+                            <button type="submit">전송</button>
+                        </form>
+                    </div>
+                </section>
+            </div>
         </div>
     </main>
 
@@ -1152,25 +689,22 @@
         </div>
     </div>
 
-    <!-- 코인 검색 모달 -->
+    <!-- Coin Search Modal -->
     <div id="coin-search-modal" class="coin-search-modal">
         <div class="coin-search-content">
             <div class="coin-search-header">
-                <h3>Search Symbol</h3>
-                <button class="coin-search-close" id="coin-search-close">×</button>
+                <h3>코인 선택</h3>
+                <button id="coin-search-close" class="coin-search-close">&times;</button>
             </div>
             <div class="coin-search-input-wrapper">
-                <input type="text" class="coin-search-input" id="coin-search-input" placeholder="Search">
+                <input type="text" id="coin-search-input" class="coin-search-input" placeholder="코인 검색...">
             </div>
             <div class="coin-search-tabs">
-                <button class="coin-search-tab active" data-tab="all">All</button>
-                <button class="coin-search-tab" data-tab="perpetual">PERPETUAL</button>
-                <button class="coin-search-tab" data-tab="spot">SPOT</button>
-                <button class="coin-search-tab" data-tab="futures">FUTURES</button>
+                <button class="coin-search-tab active" data-tab="all">전체</button>
+                <button class="coin-search-tab" data-tab="spot">현물</button>
+                <button class="coin-search-tab" data-tab="futures">선물</button>
             </div>
-            <div class="coin-search-list" id="coin-search-list">
-                <!-- 코인 목록이 여기에 동적으로 추가됩니다 -->
-            </div>
+            <div id="coin-search-list" class="coin-search-list"></div>
         </div>
     </div>
 
@@ -1178,6 +712,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     
     <!-- Custom Scripts -->
+    <script src="auth.js"></script>
     <script src="community.js"></script>
     <script>
       document.addEventListener('DOMContentLoaded', () => {

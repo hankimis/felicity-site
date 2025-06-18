@@ -2,7 +2,7 @@
 .message-item {
     display: flex !important;
     align-items: flex-start !important;
-    gap: 12px !important;
+    gap: 1px !important;
     margin-bottom: 16px;
     width: fit-content;
     max-width: 85%;

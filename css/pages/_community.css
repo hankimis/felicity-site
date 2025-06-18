@@ -203,8 +203,7 @@
   .main-container:not(.main-container-community),
   .community-layout:not(.community-layout-community),
   .chat-section:not(.chat-section-community) {
-    max-width: 1200px !important;
-    width: 100% !important;
+    width: 100vw !important;
     margin-left: auto !important;
     margin-right: auto !important;
     box-sizing: border-box;

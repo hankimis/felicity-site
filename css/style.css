@@ -30,4 +30,117 @@
   참고: @import는 CSS 파일의 최상단에 위치해야 합니다.
   @import url('https://fonts.googleapis.com/...') 와 같은 외부 폰트 임포트는
   이 파일의 가장 처음에 두는 것이 좋습니다.
-*/ 
+*/
+
+/* Community Page Chart Controls */
+.chart-section-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px;
+    height: 60px;
+    border-bottom: 1px solid var(--border-color);
+    background: var(--card-bg);
+}
+
+.chart-section-header h2 {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-color);
+    margin: 0;
+}
+
+.coin-price-display {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    font-weight: 600;
+    font-size: 14px;
+    margin-left: auto;
+}
+
+.coin-price {
+    background-color: transparent;
+    color: var(--text-color);
+    transition: 0.3s;
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.coin-change-container {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.coin-change.positive, 
+.coin-change-percent.positive {
+    color: rgb(38, 166, 154);
+}
+
+.coin-change.negative, 
+.coin-change-percent.negative {
+    color: rgb(239, 68, 68);
+}
+
+.chart-section-header button,
+.chart-section-header select {
+    height: 36px;
+    padding: 0 16px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-secondary-color);
+    color: var(--text-color);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.chart-section-header button:hover,
+.chart-section-header select:hover {
+    background: var(--bg-color);
+    border-color: var(--primary-color);
+}
+
+.chart-section-header button.active {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+    .chart-section-header {
+        height: auto;
+        flex-wrap: wrap;
+        padding: 12px;
+        gap: 8px;
+    }
+
+    .chart-section-header button,
+    .chart-section-header select {
+        height: 32px;
+        padding: 0 12px;
+        font-size: 12px;
+    }
+
+    .coin-price-display {
+        width: 100%;
+        order: -1;
+        margin-left: 0;
+        margin-bottom: 8px;
+    }
+}
+
+/* Community Page Layout */
+.community-layout-inner {
+    display: flex;
+    height: calc(100vh - 80px); /* Adjust based on header/footer height */
+}
+
+.chart-section, .chat-section {
+    height: 100%;
+} 

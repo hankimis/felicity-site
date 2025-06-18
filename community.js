@@ -2,7 +2,6 @@
 let chart = null;
 let candleSeries = null;
 let chartSeries = null; // 좌표 변환용 시리즈 참조
-let currentUser = null;
 let messagesUnsubscribe = null;
 let binanceSocket = null;
 let currentSymbol = 'BTCUSDT';
@@ -20,8 +19,17 @@ let arrowStage = 0; // 0: 대기, 1: 첫 번째 클릭 완료, 2: 그리기 완�
 let tempArrow = null; // 임시 화살표 요소
 let isDraggingArrow = false; // 화살표 드래그 중인지 확인
 
-const MESSAGES_PER_PAGE = 25;
+// 차트 데이터 관리 변수
+let chartData = []; // 모든 차트 데이터 저장
+let isLoadingMoreData = false; // 데이터 로딩 중 플래그
+let oldestTimestamp = null; // 가장 오래된 데이터의 타임스탬프
+let newestTimestamp = null; // 가장 최신 데이터의 타임스탬프
+
+const MESSAGES_PER_PAGE = 50; // 최적화를 위해 한 번에 로드할 메시지 수
 let isChatFormInitialized = false; // 채팅 폼 초기화 플래그
+
+let prevDayClose = null;
+let last24hData = null;
 
 // 코인 데이터 (실제로는 API에서 가져와야 함)
 const coinData = [
@@ -37,97 +45,87 @@ const coinData = [
     { symbol: 'MATICUSDT', name: 'Polygon', type: 'SPOT', platform: 'Binance', price: 0.4567, change: -2.34, icon: 'M', color: '#8247e5' }
 ];
 
-// Firebase 초기화 코드
-const firebaseConfig = {
-    apiKey: "AIzaSyCbvgcol3P4wTUNh88-d9HPZl-2NC9WbqI",
-    authDomain: "livechattest-35101.firebaseapp.com",
-    projectId: "livechattest-35101",
-    storageBucket: "livechattest-35101.firebasestorage.app",
-    messagingSenderId: "880700591040",
-    appId: "1:880700591040:web:a93e47bf19a9713a245625",
-    measurementId: "G-ER1H2CCZW9",
-    databaseURL: "https://livechattest-35101-default-rtdb.asia-southeast1.firebasedatabase.app/"
-};
-
-// 현재 호스트 이름을 기반으로 authDomain을 동적으로 설정
-firebaseConfig.authDomain = "onbitlabs.com";
-
-// Firebase 초기화
-const app = firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
-const db = firebase.firestore();
+// auth.js에서 초기화된 Firebase 인스턴스 사용
+// const firebaseConfig = { ... };
+// const app = firebase.initializeApp(firebaseConfig);
+// const auth = firebase.auth();
+// const db = firebase.firestore();
 
 // DOM Elements
 const messageForm = document.getElementById('chat-form');
 const messageInput = document.getElementById('message-input');
 const messagesContainer = document.getElementById('chat-messages');
 const chartContainer = document.getElementById('chart-container');
+const chartLoading = document.getElementById('chart-loading');
+
+// 로딩 인디케이터 함수들
+function showChartLoading() {
+    if (chartLoading) {
+        chartLoading.classList.add('show');
+    }
+}
+
+function hideChartLoading() {
+    if (chartLoading) {
+        chartLoading.classList.remove('show');
+    }
+}
 
 // 채팅 관련 함수들
+
+// 메시지 객체로부터 HTML 문자열을 생성하여 반환 (DOM 직접 조작 X)
 function renderMessage(msg) {
-    if (!messagesContainer) return;
-
     const profileImg = msg.data.photoThumbURL || msg.data.photoURL || 'assets/@default-profile.png';
-
-    const messageElement = document.createElement('div');
-    messageElement.classList.add('message-item');
-    messageElement.id = msg.id;
-    messageElement.dataset.uid = msg.data.uid;
-
+    
     let isMyMessage = false;
-    if (currentUser && msg.data.uid === currentUser.uid) {
+    if (window.currentUser && msg.data.uid === window.currentUser.uid) {
         isMyMessage = true;
-    } else if (!currentUser) {
+    } else if (!window.currentUser) {
         const guestNumber = localStorage.getItem('guestNumber');
         if (guestNumber && msg.data.uid === 'guest-' + guestNumber) {
             isMyMessage = true;
         }
     }
-    if (isMyMessage) {
-        messageElement.classList.add('my-message');
-    }
+    const myMessageClass = isMyMessage ? 'my-message' : '';
 
-    messageElement.innerHTML = `
-        <div class="chat-profile-pic-wrap">
-            <img class="chat-profile-pic" src="${profileImg}" alt="프로필" loading="lazy" />
-        </div>
-        <div class="message-content">
-            <div class="message-sender">
-                <strong>${msg.data.displayName}</strong>
+    return `
+        <div class="message-item ${myMessageClass}" id="${msg.id}" data-uid="${msg.data.uid}">
+            <div class="chat-profile-pic-wrap">
+                <img class="chat-profile-pic" src="${profileImg}" alt="프로필" loading="lazy" />
             </div>
-            <div class="message-text">${msg.data.text.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</div>
+            <div class="message-content">
+                <div class="message-sender">
+                    <strong>${msg.data.displayName}</strong>
+                </div>
+                <div class="message-text">${msg.data.text.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</div>
+            </div>
         </div>
     `;
-
-    messagesContainer.appendChild(messageElement);
 }
 
 async function loadMessages() {
     try {
         console.log('Loading messages...');
-        // 마지막 24시간의 메시지만 로드
-        const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-        
         const messagesQuery = db.collection('community-chat')
-            .where('timestamp', '>=', twentyFourHoursAgo)
-            .orderBy('timestamp', 'asc'); // 클라이언트에서 뒤집을 필요 없도록 오름차순으로 가져옴
+            .orderBy('timestamp', 'desc')
+            .limit(MESSAGES_PER_PAGE);
         
         const snapshot = await messagesQuery.get();
         const messages = [];
         snapshot.forEach((doc) => {
             messages.push({ id: doc.id, data: doc.data() });
         });
-        // messages.reverse(); // 이미 오름차순이므로 reverse 필요 없음
+        messages.reverse(); // 시간순으로 표시하기 위해 배열을 뒤집음
         
         if (messagesContainer) {
-            messagesContainer.innerHTML = '';
-            messages.forEach(msg => renderMessage(msg));
+            // 모든 메시지의 HTML을 한 번에 생성하여 innerHTML로 설정
+            const messagesHTML = messages.map(msg => renderMessage(msg)).join('');
+            messagesContainer.innerHTML = messagesHTML;
+            
             setTimeout(() => {
                 if (window.innerWidth > 768) {
                     messagesContainer.scrollTop = messagesContainer.scrollHeight;
                 } else {
-                    // 모바일에서는 최신 메시지가 위로 가도록 스크롤을 맨 위로 설정
-                    // CSS에서 flex-direction: column-reverse; 를 사용한다고 가정
                     messagesContainer.scrollTop = 0;
                 }
             }, 100);
@@ -154,18 +152,19 @@ function setupRealtimeListener() {
     messagesUnsubscribe = messagesQuery.onSnapshot((snapshot) => {
         if (!messagesContainer) return;
 
-        const isScrolledToBottom = messagesContainer.scrollHeight - messagesContainer.clientHeight <= messagesContainer.scrollTop + 20;
-
         snapshot.docChanges().forEach((change) => {
             if (change.type === 'added') {
                 const msg = { id: change.doc.id, data: change.doc.data() };
-                // CSS 선택자 안전성을 위해 getElementById 사용
                 if (!document.getElementById(msg.id)) {
-                    renderMessage(msg);
+                    // 새 메시지를 HTML로 렌더링하여 추가
+                    const messageHTML = renderMessage(msg);
+                    messagesContainer.insertAdjacentHTML('beforeend', messageHTML);
                 }
             }
         });
         
+        // 새 메시지 수신 시 스크롤 조정
+        const isScrolledToBottom = messagesContainer.scrollHeight - messagesContainer.clientHeight <= messagesContainer.scrollTop + 100;
         if (isScrolledToBottom && window.innerWidth > 768) {
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
         }
@@ -179,9 +178,19 @@ function updateUserMessageStyles() {
     if (!messagesContainer) return;
 
     const messages = messagesContainer.querySelectorAll('.message-item');
+    const guestNumber = localStorage.getItem('guestNumber');
+
     messages.forEach(msgElement => {
         const msgUid = msgElement.dataset.uid;
-        if (currentUser && msgUid === currentUser.uid) {
+        let isMyMessage = false;
+
+        if (window.currentUser && msgUid === window.currentUser.uid) {
+            isMyMessage = true;
+        } else if (!window.currentUser && guestNumber && msgUid === 'guest-' + guestNumber) {
+            isMyMessage = true;
+        }
+
+        if (isMyMessage) {
             msgElement.classList.add('my-message');
         } else {
             msgElement.classList.remove('my-message');
@@ -245,11 +254,40 @@ async function initChart() {
             },
             rightPriceScale: {
                 borderColor: isDarkMode ? '#404040' : '#cccccc',
+                scaleMargins: {
+                    top: 0.1,
+                    bottom: 0.1,
+                },
             },
             timeScale: {
                 borderColor: isDarkMode ? '#404040' : '#cccccc',
                 timeVisible: true,
                 secondsVisible: false,
+                rightOffset: 12,
+                barSpacing: 3,
+                minBarSpacing: 1,
+                fixLeftEdge: true,
+                lockVisibleTimeRangeOnResize: true,
+                rightBarStaysOnScroll: true,
+                borderVisible: false,
+                visible: true,
+                tickMarkFormatter: (time) => {
+                    const date = new Date(time * 1000);
+                    const hours = String(date.getHours()).padStart(2, '0');
+                    const minutes = String(date.getMinutes()).padStart(2, '0');
+                    return `${hours}:${minutes}`;
+                },
+            },
+            handleScroll: {
+                mouseWheel: true,
+                pressedMouseMove: true,
+                horzTouchDrag: true,
+                vertTouchDrag: true,
+            },
+            handleScale: {
+                axisPressedMouseMove: true,
+                mouseWheel: true,
+                pinch: true,
             },
             localization: {
                 // 한국어 로케일 설정
@@ -297,6 +335,21 @@ async function initChart() {
         });
         resizeObserver.observe(chartContainer);
 
+        // 차트 스크롤 이벤트 처리 (더 많은 과거 데이터 로드)
+        chart.timeScale().subscribeVisibleTimeRangeChange(() => {
+            const visibleRange = chart.timeScale().getVisibleRange();
+            if (visibleRange && !isLoadingMoreData) {
+                // 왼쪽 끝에 가까워지면 더 많은 과거 데이터 로드
+                const timeFrom = visibleRange.from;
+                const oldestVisible = oldestTimestamp;
+                
+                if (oldestVisible && timeFrom && timeFrom < oldestVisible + 100) {
+                    console.log('Loading more historical data...');
+                    loadMoreHistoricalData();
+                }
+            }
+        });
+
         // 초기 데이터 로드
         await loadChartData();
         
@@ -312,15 +365,6 @@ async function initChart() {
             console.log('Force applying dark theme after chart initialization');
             setTimeout(() => updateChartTheme(true), 100);
         }
-        
-        // 차트 이동/줌 이벤트 리스너 추가 (그린 것들이 차트와 함께 움직이도록)
-        chart.timeScale().subscribeVisibleTimeRangeChange(() => {
-            // 차트가 이동하거나 줌될 때 Canvas를 다시 그리기
-            setTimeout(() => redrawCanvas(), 10);
-        });
-        
-        // 차트 드로잉 이벤트 리스너 추가
-        setupChartDrawing();
     } catch (error) {
         console.error('Failed to initialize chart:', error);
         isChartInitialized = false;
@@ -329,9 +373,19 @@ async function initChart() {
 
 async function loadChartData() {
     try {
+        showChartLoading();
         console.log('Loading chart data...');
-        const response = await fetch(`https://api.binance.com/api/v3/klines?symbol=${currentSymbol}&interval=${currentInterval}&limit=100`);
         
+        // 24시간 변화량 데이터 가져오기
+        const tickerResponse = await fetch(`https://api.binance.com/api/v3/ticker/24hr?symbol=${currentSymbol}`);
+        if (!tickerResponse.ok) {
+            throw new Error(`HTTP error! status: ${tickerResponse.status}`);
+        }
+        last24hData = await tickerResponse.json();
+        console.log('24h ticker data:', last24hData);
+
+        // 현재 차트 데이터 로드
+        const response = await fetch(`https://api.binance.com/api/v3/klines?symbol=${currentSymbol}&interval=${currentInterval}&limit=200`);
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -340,9 +394,8 @@ async function loadChartData() {
         console.log('Raw chart data received:', data.length, 'candles');
 
         const formattedData = data.map(candle => {
-            // Binance API는 UTC 시간을 제공하므로, 한국시간으로 변환하여 저장
             const utcTime = candle[0] / 1000;
-            const kstTime = utcTime + (9 * 60 * 60); // 한국시간으로 변환
+            const kstTime = utcTime + (9 * 60 * 60);
             
             return {
                 time: kstTime,
@@ -355,6 +408,20 @@ async function loadChartData() {
 
         console.log('Formatted chart data:', formattedData.length, 'candles');
 
+        chartData = formattedData;
+        if (formattedData.length > 0) {
+            oldestTimestamp = formattedData[0].time;
+            newestTimestamp = formattedData[formattedData.length - 1].time;
+            
+            // 24시간 변화량으로 가격 표시 업데이트
+            if (last24hData) {
+                const currentPrice = parseFloat(last24hData.lastPrice);
+                const priceChange = parseFloat(last24hData.priceChange);
+                const priceChangePercent = parseFloat(last24hData.priceChangePercent);
+                updateCoinPriceDisplay(currentPrice, priceChange, priceChangePercent);
+            }
+        }
+
         if (candleSeries && formattedData.length > 0) {
             candleSeries.setData(formattedData);
             chart.timeScale().fitContent();
@@ -362,6 +429,79 @@ async function loadChartData() {
         }
     } catch (error) {
         console.error('Failed to load chart data:', error);
+    } finally {
+        hideChartLoading();
+    }
+}
+
+// 과거 데이터 로드 함수 (스크롤 시 호출)
+async function loadMoreHistoricalData() {
+    if (isLoadingMoreData || !oldestTimestamp) {
+        return;
+    }
+
+    isLoadingMoreData = true;
+    showChartLoading();
+    console.log('Loading more historical data from timestamp:', oldestTimestamp);
+
+    try {
+        // 과거 데이터 요청 (endTime을 oldestTimestamp로 설정)
+        const endTime = Math.floor(oldestTimestamp - (9 * 60 * 60)) * 1000; // UTC로 변환
+        const response = await fetch(`https://api.binance.com/api/v3/klines?symbol=${currentSymbol}&interval=${currentInterval}&limit=200&endTime=${endTime}`);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log('Historical data received:', data.length, 'candles');
+
+        if (data.length === 0) {
+            console.log('No more historical data available');
+            return;
+        }
+
+        const formattedData = data.map(candle => {
+            const utcTime = candle[0] / 1000;
+            const kstTime = utcTime + (9 * 60 * 60);
+            
+            return {
+                time: kstTime,
+                open: parseFloat(candle[1]),
+                high: parseFloat(candle[2]),
+                low: parseFloat(candle[3]),
+                close: parseFloat(candle[4])
+            };
+        });
+
+        // 중복 데이터 제거 및 정렬
+        const newData = formattedData.filter(newCandle => 
+            !chartData.some(existingCandle => existingCandle.time === newCandle.time)
+        );
+
+        if (newData.length > 0) {
+            // 기존 데이터와 새 데이터 합치기
+            const combinedData = [...newData, ...chartData].sort((a, b) => a.time - b.time);
+            
+            // 데이터가 너무 많아지면 오래된 데이터 제거 (최대 1000개 유지)
+            if (combinedData.length > 1000) {
+                combinedData.splice(0, combinedData.length - 1000);
+            }
+            
+            chartData = combinedData;
+            oldestTimestamp = chartData[0].time;
+            
+            // 차트 업데이트
+            if (candleSeries) {
+                candleSeries.setData(chartData);
+                console.log('Historical data added successfully. Total candles:', chartData.length);
+            }
+        }
+    } catch (error) {
+        console.error('Failed to load historical data:', error);
+    } finally {
+        isLoadingMoreData = false;
+        hideChartLoading();
     }
 }
 
@@ -384,16 +524,19 @@ function updateCoinPriceDisplay(currentPrice, priceChange, priceChangePercent) {
         const changePrefix = isPositive ? '+' : '';
         
         // 변화량 포맷
-        const formattedChange = priceChange >= 1 ? 
-            priceChange.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) :
-            priceChange.toFixed(6);
+        const formattedChange = Math.abs(priceChange) >= 1 ? 
+            Math.abs(priceChange).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) :
+            Math.abs(priceChange).toFixed(6);
         
         changeElement.textContent = `${changePrefix}${formattedChange}`;
-        changePercentElement.textContent = `${changePrefix}${priceChangePercent.toFixed(2)}%`;
+        changePercentElement.textContent = `${changePrefix}${Math.abs(priceChangePercent).toFixed(2)}%`;
         
         // 색상 클래스 업데이트
         changeElement.className = `coin-change ${isPositive ? 'positive' : 'negative'}`;
+        changeElement.style.color = isPositive ? 'rgb(38, 166, 154)' : 'rgb(239, 68, 68)';
+        
         changePercentElement.className = `coin-change-percent ${isPositive ? 'positive' : 'negative'}`;
+        changePercentElement.style.color = isPositive ? 'rgb(38, 166, 154)' : 'rgb(239, 68, 68)';
     }
 }
 
@@ -402,7 +545,8 @@ function connectWebSocket() {
         binanceSocket.close();
     }
 
-    const wsUrl = `wss://stream.binance.com:9443/ws/${currentSymbol.toLowerCase()}@kline_${currentInterval}`;
+    // 24시간 변화량 데이터를 위한 ticker 스트림과 차트 데이터를 위한 kline 스트림을 결합
+    const wsUrl = `wss://stream.binance.com:9443/ws/${currentSymbol.toLowerCase()}@ticker/${currentSymbol.toLowerCase()}@kline_${currentInterval}`;
     console.log('Connecting to WebSocket:', wsUrl);
     
     binanceSocket = new WebSocket(wsUrl);
@@ -413,42 +557,26 @@ function connectWebSocket() {
 
     binanceSocket.onmessage = (event) => {
         const data = JSON.parse(event.data);
-        if (data.k && candleSeries) {
-            // 실시간 가격 정보 업데이트
-            const currentPrice = parseFloat(data.k.c);
-            const openPrice = parseFloat(data.k.o);
-            const priceChange = currentPrice - openPrice;
-            const priceChangePercent = (priceChange / openPrice) * 100;
+        
+        // 24시간 ticker 데이터 처리
+        if (data.e === '24hrTicker') {
+            const currentPrice = parseFloat(data.c);
+            const priceChange = parseFloat(data.p);
+            const priceChangePercent = parseFloat(data.P);
             
             updateCoinPriceDisplay(currentPrice, priceChange, priceChangePercent);
-            
-            if (data.k.x) { // 캔들이 완성된 경우
-                // WebSocket 데이터도 한국시간으로 변환하여 저장
-                const utcTime = data.k.t / 1000;
-                const kstTime = utcTime + (9 * 60 * 60); // 한국시간으로 변환
-                
-                const candle = {
-                    time: kstTime,
-                    open: parseFloat(data.k.o),
-                    high: parseFloat(data.k.h),
-                    low: parseFloat(data.k.l),
-                    close: parseFloat(data.k.c)
-                };
-                candleSeries.update(candle);
-            } else {
-                // 현재 진행 중인 캔들 업데이트
-                const utcTime = data.k.t / 1000;
-                const kstTime = utcTime + (9 * 60 * 60);
-                
-                const candle = {
-                    time: kstTime,
-                    open: parseFloat(data.k.o),
-                    high: parseFloat(data.k.h),
-                    low: parseFloat(data.k.l),
-                    close: parseFloat(data.k.c)
-                };
-                candleSeries.update(candle);
-            }
+        }
+        
+        // kline 데이터 처리
+        if (data.e === 'kline' && candleSeries) {
+            const candle = {
+                time: data.k.t / 1000 + (9 * 60 * 60),
+                open: parseFloat(data.k.o),
+                high: parseFloat(data.k.h),
+                low: parseFloat(data.k.l),
+                close: parseFloat(data.k.c)
+            };
+            candleSeries.update(candle);
         }
     };
 
@@ -457,8 +585,7 @@ function connectWebSocket() {
     };
 
     binanceSocket.onclose = () => {
-        console.log('WebSocket closed');
-        setTimeout(() => connectWebSocket(), 5000);
+        console.log('WebSocket connection closed');
     };
 }
 
@@ -530,17 +657,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // 코인 검색 모달 이벤트 리스너
     setupCoinSearchModal();
 
-    // 차트 도구 기능 초기화
-    initChartTools();
-    
-    // 차트 설정 모달 기능 초기화
-    initChartSettingsModal();
-    
     // 초기 가격 정보 설정 (BTCUSDT 기본값)
     initializeDefaultCoinPrice();
-
-    // 키보드 단축키 설정
-    setupKeyboardShortcuts();
 });
 
 // 기본 코인(BTCUSDT) 가격 정보 초기화
@@ -819,35 +937,43 @@ function setupCoinSearchModal() {
     const coinSearchTabs = document.querySelectorAll('.coin-search-tab');
     
     // 코인 선택 버튼 클릭
-    coinSelector.addEventListener('click', () => {
-        coinSearchModal.classList.add('show');
-        renderCoinList();
-        coinSearchInput.focus();
-    });
+    if (coinSelector) {
+        coinSelector.addEventListener('click', () => {
+            if (coinSearchModal) coinSearchModal.classList.add('show');
+            renderCoinList();
+            if (coinSearchInput) coinSearchInput.focus();
+        });
+    }
     
     // 모달 닫기
-    coinSearchClose.addEventListener('click', () => {
-        coinSearchModal.classList.remove('show');
-    });
+    if (coinSearchClose) {
+        coinSearchClose.addEventListener('click', () => {
+            if (coinSearchModal) coinSearchModal.classList.remove('show');
+        });
+    }
     
     // 모달 배경 클릭시 닫기
-    coinSearchModal.addEventListener('click', (e) => {
-        if (e.target === coinSearchModal) {
-            coinSearchModal.classList.remove('show');
-        }
-    });
+    if (coinSearchModal) {
+        coinSearchModal.addEventListener('click', (e) => {
+            if (e.target === coinSearchModal) {
+                coinSearchModal.classList.remove('show');
+            }
+        });
+    }
     
     // ESC 키로 모달 닫기
     document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && coinSearchModal.classList.contains('show')) {
+        if (e.key === 'Escape' && coinSearchModal && coinSearchModal.classList.contains('show')) {
             coinSearchModal.classList.remove('show');
         }
     });
     
     // 검색 입력
-    coinSearchInput.addEventListener('input', (e) => {
-        renderCoinList(e.target.value);
-    });
+    if (coinSearchInput) {
+        coinSearchInput.addEventListener('input', (e) => {
+            renderCoinList(e.target.value);
+        });
+    }
     
     // 탭 클릭
     coinSearchTabs.forEach(tab => {
@@ -911,6 +1037,12 @@ function renderCoinList(searchTerm = '', activeTab = 'all') {
 function selectCoin(coin) {
     currentSymbol = coin.symbol;
     
+    // 차트 데이터 초기화
+    chartData = [];
+    oldestTimestamp = null;
+    newestTimestamp = null;
+    isLoadingMoreData = false;
+    
     // UI 업데이트
     const selectedCoinText = document.getElementById('selected-coin-text');
     const coinIcon = document.querySelector('.coin-selector .coin-icon');
@@ -935,320 +1067,6 @@ function selectCoin(coin) {
     console.log(`선택된 코인: ${coin.symbol}`);
 }
 
-// 차트 도구 기능 초기화
-function initChartTools() {
-    const toolButtons = document.querySelectorAll('.chart-tool-button');
-    
-    toolButtons.forEach(button => {
-        button.addEventListener('click', (e) => {
-            e.preventDefault();
-            
-            // 모든 버튼에서 active 클래스 제거
-            toolButtons.forEach(btn => btn.classList.remove('active'));
-            
-            // 클릭된 버튼에 active 클래스 추가
-            button.classList.add('active');
-            
-            // 현재 도구 설정
-            const toolId = button.id.replace('-tool', '');
-            currentTool = toolId;
-            
-            console.log('Selected tool:', currentTool);
-            
-            // 도구별 기능 실행
-            handleToolSelection(toolId);
-        });
-    });
-    
-    // 차트 드로잉 설정
-    setupChartDrawing();
-}
-
-// 도구 선택 처리
-function handleToolSelection(toolId) {
-    switch(toolId) {
-        case 'cursor':
-            setCursorMode();
-            break;
-        case 'crosshair':
-            setCrosshairMode();
-            break;
-        case 'trendline':
-            setDrawingMode('trendline');
-            break;
-        case 'horizontal':
-        case 'horizontal-line':
-            setDrawingMode('horizontal');
-            break;
-        case 'vertical':
-        case 'vertical-line':
-            setDrawingMode('vertical');
-            break;
-        case 'rectangle':
-            setDrawingMode('rectangle');
-            break;
-        case 'fibonacci':
-            setDrawingMode('fibonacci');
-            break;
-        case 'text':
-            setDrawingMode('text');
-            break;
-        case 'arrow':
-            setDrawingMode('arrow');
-            break;
-        case 'brush':
-            setDrawingMode('brush');
-            break;
-        case 'eraser':
-            clearAllDrawings();
-            break;
-        case 'settings':
-            openChartSettings();
-            break;
-        case 'snapshot':
-            takeChartSnapshot();
-            break;
-        default:
-            console.log('Unknown tool:', toolId);
-    }
-}
-
-// 커서 모드 설정
-function setCursorMode() {
-    if (chart) {
-        // 기본 커서 모드로 설정
-        console.log('Cursor mode activated');
-        const chartContainer = document.getElementById('chart-container');
-        if (chartContainer) {
-            chartContainer.style.cursor = 'default';
-        }
-    }
-}
-
-// 십자선 모드 설정
-function setCrosshairMode() {
-    if (chart) {
-        // 십자선 모드 설정
-        console.log('Crosshair mode activated');
-    }
-}
-
-// 그리기 모드 설정
-function setDrawingMode(mode) {
-    console.log('Drawing mode activated:', mode);
-    
-    // 이전 화살표 상태 리셋
-    if (currentTool === 'arrow' && arrowStage === 1) {
-        const chartContainer = document.getElementById('chart-container');
-        if (tempArrow && chartContainer.contains(tempArrow)) {
-            chartContainer.removeChild(tempArrow);
-        }
-        arrowStage = 0;
-        tempArrow = null;
-        startPoint = null;
-    }
-    
-    currentTool = mode;
-    
-    // 차트 커서 스타일 변경
-    const chartContainer = document.getElementById('chart-container');
-    if (chartContainer) {
-        if (mode === 'arrow') {
-            chartContainer.style.cursor = 'pointer';
-        } else {
-            chartContainer.style.cursor = 'crosshair';
-        }
-    }
-}
-
-// 모든 그리기 지우기
-function clearAllDrawings() {
-    console.log('Clearing all drawings');
-    drawings.forEach(drawing => {
-        if (drawing.element && drawing.element.parentNode) {
-            drawing.element.parentNode.removeChild(drawing.element);
-        }
-    });
-    drawings = [];
-    
-    // Canvas도 지우기
-    const drawingCanvas = document.getElementById('drawing-canvas');
-    if (drawingCanvas) {
-        const ctx = drawingCanvas.getContext('2d');
-        ctx.clearRect(0, 0, drawingCanvas.width, drawingCanvas.height);
-    }
-}
-
-// 차트 설정 열기
-function openChartSettings() {
-    console.log('Opening chart settings');
-    const modal = document.getElementById('chart-settings-modal');
-    if (modal) {
-        modal.classList.add('show');
-    }
-}
-
-// 차트 설정 모달 기능 초기화
-function initChartSettingsModal() {
-    // 차트 스타일 버튼들
-    const styleButtons = document.querySelectorAll('.chart-style-btn');
-    styleButtons.forEach(btn => {
-        btn.addEventListener('click', () => {
-            styleButtons.forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-        });
-    });
-    
-    // 설정 적용 버튼
-    const applyButton = document.getElementById('apply-settings');
-    if (applyButton) {
-        applyButton.addEventListener('click', () => {
-            applyChartSettings();
-            closeAllModals();
-        });
-    }
-    
-    // 모달 닫기 버튼들
-    const closeButtons = document.querySelectorAll('#chart-settings-modal .close-btn, #chart-settings-modal [data-action="close-modal"]');
-    closeButtons.forEach(btn => {
-        btn.addEventListener('click', () => {
-            closeAllModals();
-        });
-    });
-    
-    // 모달 배경 클릭으로 닫기
-    const modal = document.getElementById('chart-settings-modal');
-    if (modal) {
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal) {
-                closeAllModals();
-            }
-        });
-    }
-}
-
-// 차트 설정 적용
-function applyChartSettings() {
-    if (!candleSeries) return;
-    
-    const upColor = document.getElementById('up-color').value;
-    const downColor = document.getElementById('down-color').value;
-    const showGrid = document.getElementById('show-grid').checked;
-    
-    // 캔들스틱 색상 변경
-    candleSeries.applyOptions({
-        upColor: upColor,
-        downColor: downColor,
-        wickUpColor: upColor,
-        wickDownColor: downColor
-    });
-    
-    // 그리드 표시 설정
-    if (chart) {
-        chart.applyOptions({
-            grid: {
-                vertLines: {
-                    visible: showGrid
-                },
-                horzLines: {
-                    visible: showGrid
-                }
-            }
-        });
-    }
-    
-    console.log('Chart settings applied');
-}
-
-// 차트 스냅샷 촬영 (전체 창)
-function takeChartSnapshot() {
-    console.log('Taking chart snapshot');
-    
-    if (typeof html2canvas === 'undefined') {
-        alert('스크린샷을 촬영하려면 브라우저의 스크린샷 기능을 사용하세요.\n\nWindows: Win + Shift + S\nMac: Cmd + Shift + 4\nChrome: Ctrl/Cmd + Shift + I → Sources → ⋮ → Capture screenshot');
-        return;
-    }
-    
-    try {
-        const mainContainer = document.querySelector('.main-container');
-        if (mainContainer) {
-            // 로딩 표시
-            const loadingDiv = document.createElement('div');
-            loadingDiv.style.cssText = `
-                position: fixed;
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%);
-                background: rgba(0, 0, 0, 0.8);
-                color: white;
-                padding: 20px;
-                border-radius: 8px;
-                z-index: 9999;
-                font-size: 14px;
-            `;
-            loadingDiv.textContent = '스크린샷 생성 중...';
-            document.body.appendChild(loadingDiv);
-            
-            html2canvas(mainContainer, {
-                allowTaint: true,
-                useCORS: true,
-                scale: 1,
-                backgroundColor: null,
-                width: mainContainer.offsetWidth,
-                height: mainContainer.offsetHeight
-            }).then(canvas => {
-                // 로딩 제거
-                document.body.removeChild(loadingDiv);
-                
-                // 다운로드 링크 생성
-                const link = document.createElement('a');
-                link.download = `trading-chart-${currentSymbol}-${new Date().getTime()}.png`;
-                link.href = canvas.toDataURL('image/png');
-                link.click();
-                
-                console.log('Screenshot saved successfully');
-            }).catch(error => {
-                document.body.removeChild(loadingDiv);
-                console.error('Failed to take screenshot:', error);
-                alert('스크린샷 생성에 실패했습니다. 브라우저의 스크린샷 기능을 사용해주세요.');
-            });
-        }
-    } catch (error) {
-        console.error('Failed to take snapshot:', error);
-        alert('스크린샷 기능을 사용할 수 없습니다.');
-    }
-}
-
-// 키보드 단축키 설정
-function setupKeyboardShortcuts() {
-    document.addEventListener('keydown', (e) => {
-        // Ctrl+Z 또는 Cmd+Z로 실행 취소
-        if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
-            e.preventDefault();
-            undoLastDrawing();
-        }
-    });
-}
-
-// 실행 취소 기능
-function undoLastDrawing() {
-    if (drawings.length === 0) return;
-    
-    const lastDrawing = drawings.pop();
-    
-    // DOM 요소가 있는 경우 제거
-    if (lastDrawing.element && lastDrawing.element.parentNode) {
-        lastDrawing.element.parentNode.removeChild(lastDrawing.element);
-    }
-    
-    // Canvas 그리기인 경우 전체 Canvas를 다시 그리기
-    if (lastDrawing.type === 'canvas-brush' || lastDrawing.type === 'canvas-arrow') {
-        redrawCanvas();
-    }
-    
-    console.log('Undid last drawing. Remaining drawings:', drawings.length);
-}
-
 // 채팅 폼 설정
 function setupChatForm() {
     if (messageForm && !isChatFormInitialized) {
@@ -1257,12 +1075,19 @@ function setupChatForm() {
             if (!messageInput.value.trim()) return;
 
             try {
+                // 게스트 번호 처리 - 한 번만 생성하고 저장
+                let guestNumber = localStorage.getItem('guestNumber');
+                if (!guestNumber) {
+                    guestNumber = Math.floor(Math.random() * 10000).toString();
+                    localStorage.setItem('guestNumber', guestNumber);
+                }
+
                 const messageData = {
                     text: messageInput.value.trim(),
                     timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-                    uid: currentUser ? currentUser.uid : 'guest-' + (localStorage.getItem('guestNumber') || Math.floor(Math.random() * 10000)),
-                    displayName: currentUser ? (currentUser.displayName || currentUser.email) : '게스트' + (localStorage.getItem('guestNumber') || Math.floor(Math.random() * 10000)),
-                    photoURL: currentUser ? currentUser.photoURL : null
+                    uid: window.currentUser ? window.currentUser.uid : 'guest-' + guestNumber,
+                    displayName: window.currentUser ? (window.currentUser.displayName || window.currentUser.email) : '게스트' + guestNumber,
+                    photoURL: window.currentUser ? window.currentUser.photoURL : null
                 };
 
                 await db.collection('community-chat').add(messageData);
@@ -1274,533 +1099,6 @@ function setupChatForm() {
         });
         isChatFormInitialized = true;
     }
-}
-
-// 차트 드로잉 설정
-function setupChartDrawing() {
-    const chartContainer = document.getElementById('chart-container');
-    if (!chartContainer) return;
-
-    // Canvas 생성 (그리기용)
-    let drawingCanvas = document.getElementById('drawing-canvas');
-    if (!drawingCanvas) {
-        drawingCanvas = document.createElement('canvas');
-        drawingCanvas.id = 'drawing-canvas';
-        drawingCanvas.style.position = 'absolute';
-        drawingCanvas.style.top = '0';
-        drawingCanvas.style.left = '0';
-        drawingCanvas.style.width = '100%';
-        drawingCanvas.style.height = '100%';
-        drawingCanvas.style.pointerEvents = 'none';
-        drawingCanvas.style.zIndex = '5';
-        chartContainer.appendChild(drawingCanvas);
-        
-        // Canvas 크기 설정
-        const rect = chartContainer.getBoundingClientRect();
-        drawingCanvas.width = rect.width;
-        drawingCanvas.height = rect.height;
-    }
-    
-    const ctx = drawingCanvas.getContext('2d');
-    
-    // 브러쉬 관련 변수
-    let brushPath = [];
-    let lastPoint = null;
-
-    chartContainer.addEventListener('mousedown', (e) => {
-        if (currentTool === 'cursor' || currentTool === 'crosshair') return;
-        
-        const rect = chartContainer.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-        
-        // 화살표 도구 특별 처리
-        if (currentTool === 'arrow') {
-            handleArrowMouseDown(e, x, y);
-            return;
-        }
-        
-        startPoint = { x, y };
-        isDrawing = true;
-        
-        // 브러쉬 도구의 경우 Canvas로 처리
-        if (currentTool === 'brush') {
-            brushPath = [{ x, y }];
-            lastPoint = { x, y };
-            
-            // Canvas에 브러쉬 설정
-            ctx.strokeStyle = '#ff6b6b';
-            ctx.lineWidth = 3;
-            ctx.lineCap = 'round';
-            ctx.lineJoin = 'round';
-            ctx.globalCompositeOperation = 'source-over';
-            
-            ctx.beginPath();
-            ctx.moveTo(x, y);
-        } else {
-            // 다른 도구들은 기존 방식 유지
-            currentDrawing = createDrawingElement(currentTool, x, y);
-            chartContainer.appendChild(currentDrawing);
-        }
-    });
-
-    chartContainer.addEventListener('mousemove', (e) => {
-        const rect = chartContainer.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-        
-        // 화살표 도구 특별 처리
-        if (currentTool === 'arrow') {
-            handleArrowMouseMove(e, x, y);
-            return;
-        }
-        
-        if (!isDrawing || !startPoint) return;
-        
-        if (currentTool === 'brush') {
-            // Canvas로 브러쉬 그리기
-            if (lastPoint) {
-                // 부드러운 곡선을 위한 quadratic curve 사용
-                const midX = (lastPoint.x + x) / 2;
-                const midY = (lastPoint.y + y) / 2;
-                
-                ctx.quadraticCurveTo(lastPoint.x, lastPoint.y, midX, midY);
-                ctx.stroke();
-                
-                brushPath.push({ x, y });
-                lastPoint = { x, y };
-            }
-        } else if (currentDrawing) {
-            updateDrawingElement(currentDrawing, currentTool, startPoint, { x, y });
-        }
-    });
-
-    chartContainer.addEventListener('mouseup', (e) => {
-        // 화살표 도구 특별 처리
-        if (currentTool === 'arrow') {
-            handleArrowMouseUp(e);
-            return;
-        }
-        
-        if (!isDrawing) return;
-        
-        isDrawing = false;
-        
-        const rect = chartContainer.getBoundingClientRect();
-        const endPoint = { 
-            x: e.clientX - rect.left, 
-            y: e.clientY - rect.top 
-        };
-        
-        if (currentTool === 'brush') {
-            // 브러쉬 완료 처리
-            if (brushPath.length > 1) {
-                // 브러쉬 스트로크를 차트 좌표로 변환해서 저장
-                const convertedPath = brushPath.map(point => pixelToChartCoordinate(point.x, point.y));
-                drawings.push({
-                    type: 'canvas-brush',
-                    tool: 'brush',
-                    chartPath: convertedPath, // 차트 좌표로 저장
-                    path: [...brushPath], // 픽셀 좌표도 임시로 보관
-                    startPoint: startPoint,
-                    endPoint: endPoint,
-                    style: {
-                        color: '#ff6b6b',
-                        lineWidth: 3
-                    }
-                });
-                console.log('Brush stroke completed:', drawings.length);
-            }
-            brushPath = [];
-            lastPoint = null;
-        } else if (currentDrawing) {
-            // 텍스트 도구의 경우 프롬프트로 텍스트 입력받기
-            if (currentTool === 'text') {
-                const text = prompt('입력할 텍스트를 적어주세요:');
-                if (text) {
-                    currentDrawing.textContent = text;
-                    currentDrawing.style.color = '#3182ce';
-                    currentDrawing.style.fontWeight = 'bold';
-                    currentDrawing.style.fontSize = '14px';
-                    currentDrawing.style.backgroundColor = 'rgba(255, 255, 255, 0.9)';
-                    currentDrawing.style.padding = '4px 8px';
-                    currentDrawing.style.borderRadius = '4px';
-                } else {
-                    // 텍스트가 입력되지 않으면 요소 제거
-                    chartContainer.removeChild(currentDrawing);
-                    currentDrawing = null;
-                    startPoint = null;
-                    return;
-                }
-            }
-            
-            // 드로잉 완료, 저장
-            drawings.push({
-                element: currentDrawing,
-                tool: currentTool,
-                startPoint: startPoint,
-                endPoint: endPoint
-            });
-            
-            console.log('Drawing completed:', currentTool, drawings.length);
-        }
-        
-        startPoint = null;
-        currentDrawing = null;
-    });
-
-    // 더블클릭으로 화살표 편집 모드 종료
-    chartContainer.addEventListener('dblclick', (e) => {
-        if (currentTool === 'arrow' && arrowStage === 1) {
-            finishArrow();
-        }
-    });
-    
-    // Canvas 크기 조정 감지
-    const resizeObserver = new ResizeObserver(entries => {
-        for (let entry of entries) {
-            const rect = entry.contentRect;
-            drawingCanvas.width = rect.width;
-            drawingCanvas.height = rect.height;
-            redrawCanvas(); // Canvas 내용 다시 그리기
-        }
-    });
-    resizeObserver.observe(chartContainer);
-}
-
-// 픽셀 좌표를 차트 좌표로 변환
-function pixelToChartCoordinate(x, y) {
-    if (!chart || !chartSeries) return { time: null, price: null };
-    
-    try {
-        const timeScale = chart.timeScale();
-        // 메인 시리즈의 가격 스케일 사용
-        const priceScale = chartSeries.priceScale();
-        
-        const time = timeScale.coordinateToTime(x);
-        const price = priceScale.coordinateToPrice(y);
-        
-        return { time: time, price: price };
-    } catch (error) {
-        console.error('Error converting pixel to chart coordinate:', error);
-        return { time: null, price: null };
-    }
-}
-
-// 차트 좌표를 픽셀 좌표로 변환
-function chartToPixelCoordinate(time, price) {
-    if (!chart || !chartSeries) return { x: 0, y: 0 };
-    
-    try {
-        const timeScale = chart.timeScale();
-        // 메인 시리즈의 가격 스케일 사용
-        const priceScale = chartSeries.priceScale();
-        
-        // 시간이 유효한지 확인
-        if (time === null || time === undefined) {
-            return { x: 0, y: 0 };
-        }
-        
-        const x = timeScale.timeToCoordinate(time);
-        const y = priceScale.priceToCoordinate(price);
-        
-        return { x: x || 0, y: y || 0 };
-    } catch (error) {
-        console.error('Error converting chart to pixel coordinate:', error);
-        return { x: 0, y: 0 };
-    }
-}
-
-// Canvas 다시 그리기 함수 (차트 좌표 기반)
-function redrawCanvas() {
-    const drawingCanvas = document.getElementById('drawing-canvas');
-    if (!drawingCanvas) return;
-    
-    const ctx = drawingCanvas.getContext('2d');
-    ctx.clearRect(0, 0, drawingCanvas.width, drawingCanvas.height);
-    
-    // 저장된 그리기들 다시 그리기
-    drawings.forEach(drawing => {
-        if (drawing.type === 'canvas-brush' && drawing.chartPath) {
-            // 브러쉬 스트로크 그리기 (차트 좌표를 픽셀 좌표로 변환)
-            const pixelPath = drawing.chartPath.map(point => {
-                if (!point || point.time === null || point.time === undefined) {
-                    return null;
-                }
-                return chartToPixelCoordinate(point.time, point.price);
-            }).filter(point => point && point.x !== null && point.y !== null && !isNaN(point.x) && !isNaN(point.y));
-            
-            if (pixelPath.length > 1) {
-                ctx.strokeStyle = drawing.style.color;
-                ctx.lineWidth = drawing.style.lineWidth;
-                ctx.lineCap = 'round';
-                ctx.lineJoin = 'round';
-                ctx.globalCompositeOperation = 'source-over';
-                
-                ctx.beginPath();
-                ctx.moveTo(pixelPath[0].x, pixelPath[0].y);
-                
-                for (let i = 1; i < pixelPath.length; i++) {
-                    if (i === pixelPath.length - 1) {
-                        ctx.lineTo(pixelPath[i].x, pixelPath[i].y);
-                    } else {
-                        const midX = (pixelPath[i].x + pixelPath[i + 1].x) / 2;
-                        const midY = (pixelPath[i].y + pixelPath[i + 1].y) / 2;
-                        ctx.quadraticCurveTo(pixelPath[i].x, pixelPath[i].y, midX, midY);
-                    }
-                }
-                ctx.stroke();
-            }
-        } else if (drawing.type === 'canvas-arrow' && drawing.chartStartPoint && drawing.chartEndPoint) {
-            // 화살표 그리기 (차트 좌표를 픽셀 좌표로 변환)
-            if (drawing.chartStartPoint.time && drawing.chartEndPoint.time) {
-                const startPixel = chartToPixelCoordinate(drawing.chartStartPoint.time, drawing.chartStartPoint.price);
-                const endPixel = chartToPixelCoordinate(drawing.chartEndPoint.time, drawing.chartEndPoint.price);
-                
-                if (startPixel.x !== null && startPixel.y !== null && endPixel.x !== null && endPixel.y !== null &&
-                    !isNaN(startPixel.x) && !isNaN(startPixel.y) && !isNaN(endPixel.x) && !isNaN(endPixel.y)) {
-                    drawArrowOnCanvas(
-                        ctx,
-                        startPixel.x,
-                        startPixel.y,
-                        endPixel.x,
-                        endPixel.y,
-                        drawing.style.color,
-                        drawing.style.lineWidth,
-                        false
-                    );
-                }
-            }
-        }
-    });
-}
-
-// 드로잉 요소 생성
-function createDrawingElement(tool, x, y) {
-    const element = document.createElement('div');
-    element.style.position = 'absolute';
-    element.style.pointerEvents = 'none';
-    element.style.zIndex = '5';
-    
-    switch (tool) {
-        case 'trendline':
-            element.style.borderTop = '2px solid #3182ce';
-            element.style.transformOrigin = '0 0';
-            break;
-        case 'horizontal':
-        case 'horizontal-line':
-            element.style.borderTop = '2px solid #3182ce';
-            element.style.width = '100%';
-            element.style.left = '0';
-            element.style.top = y + 'px';
-            break;
-        case 'vertical':
-        case 'vertical-line':
-            element.style.borderLeft = '2px solid #3182ce';
-            element.style.height = '100%';
-            element.style.top = '0';
-            element.style.left = x + 'px';
-            break;
-        case 'rectangle':
-            element.style.border = '2px solid #3182ce';
-            element.style.backgroundColor = 'rgba(49, 130, 206, 0.1)';
-            break;
-        case 'fibonacci':
-            element.style.border = '1px solid #ffa500';
-            element.style.backgroundColor = 'rgba(255, 165, 0, 0.1)';
-            break;
-        case 'text':
-            element.style.border = '1px dashed #3182ce';
-            element.style.minWidth = '50px';
-            element.style.minHeight = '20px';
-            element.style.display = 'flex';
-            element.style.alignItems = 'center';
-            element.style.justifyContent = 'center';
-            break;
-    }
-    
-    return element;
-}
-
-// 드로잉 요소 업데이트
-function updateDrawingElement(element, tool, start, end) {
-    switch (tool) {
-        case 'trendline':
-            const dx = end.x - start.x;
-            const dy = end.y - start.y;
-            const length = Math.sqrt(dx * dx + dy * dy);
-            const angle = Math.atan2(dy, dx) * 180 / Math.PI;
-            
-            element.style.left = start.x + 'px';
-            element.style.top = start.y + 'px';
-            element.style.width = length + 'px';
-            element.style.height = '2px';
-            element.style.transform = `rotate(${angle}deg)`;
-            break;
-        case 'rectangle':
-            const left = Math.min(start.x, end.x);
-            const top = Math.min(start.y, end.y);
-            const width = Math.abs(end.x - start.x);
-            const height = Math.abs(end.y - start.y);
-            
-            element.style.left = left + 'px';
-            element.style.top = top + 'px';
-            element.style.width = width + 'px';
-            element.style.height = height + 'px';
-            break;
-        case 'fibonacci':
-            // 피보나치 되돌림 레벨 (23.6%, 38.2%, 50%, 61.8%, 78.6%)
-            const fibLeft = Math.min(start.x, end.x);
-            const fibTop = Math.min(start.y, end.y);
-            const fibWidth = Math.abs(end.x - start.x);
-            const fibHeight = Math.abs(end.y - start.y);
-            
-            element.style.left = fibLeft + 'px';
-            element.style.top = fibTop + 'px';
-            element.style.width = fibWidth + 'px';
-            element.style.height = fibHeight + 'px';
-            
-            // 피보나치 레벨 선들 추가 (간단한 구현)
-            element.innerHTML = '';
-            const levels = [0, 0.236, 0.382, 0.5, 0.618, 0.786, 1];
-            levels.forEach(level => {
-                const line = document.createElement('div');
-                line.style.position = 'absolute';
-                line.style.left = '0';
-                line.style.right = '0';
-                line.style.top = (level * fibHeight) + 'px';
-                line.style.borderTop = '1px solid #ffa500';
-                line.style.fontSize = '10px';
-                line.style.color = '#ffa500';
-                if (level > 0 && level < 1) {
-                    line.textContent = (level * 100).toFixed(1) + '%';
-                }
-                element.appendChild(line);
-            });
-            break;
-        case 'text':
-            element.style.left = start.x + 'px';
-            element.style.top = start.y + 'px';
-            break;
-    }
-}
-
-// 화살표 도구 마우스 다운 처리 (Canvas 기반으로 개선)
-function handleArrowMouseDown(e, x, y) {
-    const chartContainer = document.getElementById('chart-container');
-    
-    if (arrowStage === 0) {
-        // 첫 번째 클릭: 시작점 설정
-        arrowStage = 1;
-        startPoint = { x, y };
-        
-        // Canvas에 임시 화살표 그리기 시작
-        const drawingCanvas = document.getElementById('drawing-canvas');
-        if (drawingCanvas) {
-            const ctx = drawingCanvas.getContext('2d');
-            ctx.strokeStyle = '#3182ce';
-            ctx.lineWidth = 2;
-            ctx.lineCap = 'round';
-        }
-        
-        console.log('Arrow start point set:', startPoint);
-    } else if (arrowStage === 1) {
-        // 두 번째 클릭: 화살표 완성
-        finishArrow(x, y);
-    }
-}
-
-// 화살표 도구 마우스 이동 처리 (Canvas 기반)
-function handleArrowMouseMove(e, x, y) {
-    if (arrowStage === 1 && startPoint) {
-        const drawingCanvas = document.getElementById('drawing-canvas');
-        if (!drawingCanvas) return;
-        
-        const ctx = drawingCanvas.getContext('2d');
-        
-        // Canvas 지우고 다시 그리기 (임시 미리보기)
-        redrawCanvas();
-        
-        // 임시 화살표 그리기
-        drawArrowOnCanvas(ctx, startPoint.x, startPoint.y, x, y, '#3182ce', 2, true);
-    }
-}
-
-// 화살표 도구 마우스 업 처리
-function handleArrowMouseUp(e) {
-    // 마우스 업으로는 아무것도 하지 않음 (클릭으로만 제어)
-}
-
-// 화살표 완성 (Canvas 기반)
-function finishArrow(endX, endY) {
-    if (startPoint) {
-        // 화살표를 차트 좌표로 변환해서 저장
-        const chartStartPoint = pixelToChartCoordinate(startPoint.x, startPoint.y);
-        const chartEndPoint = pixelToChartCoordinate(endX, endY);
-        
-        drawings.push({
-            type: 'canvas-arrow',
-            tool: 'arrow',
-            chartStartPoint: chartStartPoint, // 차트 좌표로 저장
-            chartEndPoint: chartEndPoint, // 차트 좌표로 저장
-            startPoint: startPoint, // 픽셀 좌표도 임시로 보관
-            endPoint: { x: endX, y: endY }, // 픽셀 좌표도 임시로 보관
-            style: {
-                color: '#3182ce',
-                lineWidth: 2
-            }
-        });
-        
-        // Canvas에 최종 화살표 그리기
-        const drawingCanvas = document.getElementById('drawing-canvas');
-        if (drawingCanvas) {
-            const ctx = drawingCanvas.getContext('2d');
-            redrawCanvas(); // 전체 다시 그리기
-        }
-        
-        console.log('Arrow completed:', drawings.length);
-    }
-    
-    // 상태 리셋
-    arrowStage = 0;
-    startPoint = null;
-}
-
-// Canvas에 화살표 그리기 함수
-function drawArrowOnCanvas(ctx, startX, startY, endX, endY, color = '#3182ce', lineWidth = 2, isTemporary = false) {
-    ctx.strokeStyle = color;
-    ctx.fillStyle = color;
-    ctx.lineWidth = lineWidth;
-    ctx.lineCap = 'round';
-    
-    // 화살표 방향과 길이 계산
-    const angle = Math.atan2(endY - startY, endX - startX);
-    const headLength = 12;
-    const headAngle = Math.PI / 6; // 30도
-    
-    // 화살표 머리 끝에서 선까지의 거리를 고려해서 선 길이 조정
-    const adjustedEndX = endX - headLength * 0.7 * Math.cos(angle);
-    const adjustedEndY = endY - headLength * 0.7 * Math.sin(angle);
-    
-    // 화살표 선 그리기 (시작점에서 조정된 끝점까지)
-    ctx.beginPath();
-    ctx.moveTo(startX, startY);
-    ctx.lineTo(adjustedEndX, adjustedEndY);
-    ctx.stroke();
-    
-    // 끝점에만 깔끔한 삼각형 화살표 머리 그리기
-    ctx.beginPath();
-    ctx.moveTo(endX, endY);
-    ctx.lineTo(
-        endX - headLength * Math.cos(angle - headAngle),
-        endY - headLength * Math.sin(angle - headAngle)
-    );
-    ctx.lineTo(
-        endX - headLength * Math.cos(angle + headAngle),
-        endY - headLength * Math.sin(angle + headAngle)
-    );
-    ctx.closePath();
-    ctx.fill();
 }
 
 console.log('Community.js loaded successfully'); 
