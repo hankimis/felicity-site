@@ -1292,7 +1292,7 @@ function createBinanceDatafeed() {
                 const params = new URLSearchParams({
                     symbol,
                     interval,
-                    limit: '1000',
+                    limit: periodParams.firstDataRequest ? '500' : '1000',
                 });
                 // For back pagination, use periodParams.to as endTime (TradingView sends seconds)
                 if (!periodParams.firstDataRequest) {
