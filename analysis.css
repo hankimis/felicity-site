@@ -549,8 +549,8 @@ html, body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 10px;
-    height: 35px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border-color);
     flex-shrink: 0;
 }
 
@@ -1098,32 +1098,49 @@ html, body {
 .indicators-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
-    flex: 1;
-    align-content: space-around;
+    gap: 12px;
+    height: 100%;
+    align-content: start;
 }
 
 .indicator-item {
     display: flex;
-    flex-direction: column;
+    justify-content: space-between;
     align-items: center;
-    justify-content: center;
-    padding: 10px;
-    background: var(--bg-secondary);
-    border-radius: 8px;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--border-color);
+    font-size: 0.8rem;
 }
 
-.indicator-label {
+.indicator-item:last-child {
+    border-bottom: none;
+    min-width: 80px;
+}
+
+.indicator-name {
+    font-size: 0.85rem;
     color: var(--text-secondary);
-    font-size: 0.8rem;
-    margin-bottom: 0.5rem;
-    display: block;
 }
 
 .indicator-value {
+    font-size: 0.9rem;
+    font-weight: bold;
     color: var(--text-primary);
-    font-size: clamp(1rem, 1.5vw, 1.3rem);
-    font-weight: 700;
+}
+
+.indicator-value.long {
+    background-color: rgba(16, 185, 129, 0.2);
+    color: #10b981;
+}
+
+.indicator-value.short {
+    background-color: rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+}
+
+.indicator-value.neutral {
+    background-color: rgba(100, 116, 139, 0.2);
+    color: var(--text-muted);
 }
 
 /* 감정분석 카드 */
@@ -1186,24 +1203,72 @@ html, body {
 
 /* 오더북 카드 */
 .orderbook-container {
-    flex: 1;
     display: grid;
-    grid-template-rows: 1fr auto 1fr;
-    gap: 5px;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    height: 100%;
 }
 
-.orderbook-asks,
-.orderbook-bids {
+.orderbook-side {
     display: flex;
     flex-direction: column;
-    gap: 2px;
 }
 
-.orderbook-spread {
-    padding: 5px 0;
-    text-align: center;
-    font-size: 0.9em;
+.orderbook-side h4 {
+    margin: 0 0 10px 0;
+    font-size: 0.9rem;
     color: var(--text-secondary);
+}
+
+.orderbook-orders {
+    flex: 1;
+    overflow-y: auto;
+    font-size: 0.8rem;
+    display: flex;
+    flex-direction: column;
+}
+
+.order-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 4px 6px;
+    position: relative;
+    z-index: 1;
+}
+
+.order-row::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: var(--depth-percent, 0%);
+    z-index: -1;
+    transition: width 0.2s ease-in-out;
+}
+
+.order-row.ask::before {
+    background-color: rgba(220, 53, 69, 0.2);
+    right: 0;
+    left: auto;
+}
+
+.order-row.bid::before {
+    background-color: rgba(40, 167, 69, 0.2);
+}
+
+.liquidation-chart {
+    flex: 1;
+    position: relative;
+    min-height: 150px;
+}
+
+.liquidation-chart canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
 }
 
 /* 히트맵 카드 */
@@ -2238,12 +2303,14 @@ html, body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 8px 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 6px 0;
+    border-bottom: 1px solid var(--border-color);
+    font-size: 0.8rem;
 }
 
 .indicator-item:last-child {
     border-bottom: none;
+    min-width: 80px;
 }
 
 .indicator-name {
@@ -2300,4 +2367,32 @@ html, body {
     left: 0;
     width: 100%;
     height: 100%;
+}
+
+.indicator-summary {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.summary-gauge {
+    width: 100px;
+    height: 8px;
+    background-color: rgba(239, 68, 68, 0.4);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.summary-bar {
+    width: 50%; /* JS에서 업데이트 */
+    height: 100%;
+    background: linear-gradient(90deg, #10b981, #34d399);
+    border-radius: 4px;
+    transition: width 0.5s ease-in-out;
+}
+
+.summary-text {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--text-secondary);
 } 

@@ -245,7 +245,7 @@
                 </div>
 
                 <!-- 오더북 카드 (4x6) - 오른쪽 중간 -->
-                <div class="grid-stack-item" gs-x="6" gs-y="0" gs-w="2" gs-h="2" gs-min-w="2" gs-min-h="2">
+                <div class="grid-stack-item" gs-x="6" gs-y="0" gs-w="2" gs-h="3" gs-min-w="2" gs-min-h="2">
                     <div class="grid-stack-item-content">
                         <div class="dashboard-card orderbook-card" data-card-id="orderbook" draggable="false">
                             <div class="card-header">
@@ -279,7 +279,7 @@
                 </div>
 
                 <!-- 기술지표 카드 (3x6) - 왼쪽 하단 -->
-                <div class="grid-stack-item" gs-x="8" gs-y="0" gs-w="2" gs-h="2" gs-min-w="2" gs-min-h="2">
+                <div class="grid-stack-item" gs-x="8" gs-y="0" gs-w="4" gs-h="3" gs-min-w="2" gs-min-h="2">
                     <div class="grid-stack-item-content">
                         <div class="dashboard-card indicators-card" data-card-id="indicators" draggable="false">
                             <div class="card-header">
@@ -287,19 +287,51 @@
                                     <i class="fas fa-chart-bar"></i>
                                     <h3>기술지표</h3>
                                 </div>
+                                <div class="indicator-summary">
+                                    <div class="summary-gauge">
+                                        <div class="summary-bar" id="indicator-summary-bar"></div>
+                                    </div>
+                                    <span class="summary-text" id="indicator-summary-text">종합: 계산 중...</span>
+                                </div>
                             </div>
                             <div class="card-content">
-                                <div class="indicator-item">
-                                    <span class="indicator-name">RSI</span>
-                                    <span class="indicator-value" id="rsi-value">50</span>
-                                </div>
-                                <div class="indicator-item">
-                                    <span class="indicator-name">MACD</span>
-                                    <span class="indicator-value" id="macd-value">0</span>
-                                </div>
-                                <div class="indicator-item">
-                                    <span class="indicator-name">볼린저 밴드</span>
-                                    <span class="indicator-value" id="bb-value">중간</span>
+                                <div class="indicators-grid">
+                                    <div class="indicator-item">
+                                        <span class="indicator-name">RSI (14)</span>
+                                        <span class="indicator-value" id="rsi-value">계산 중...</span>
+                                    </div>
+                                    <div class="indicator-item">
+                                        <span class="indicator-name">Stochastic</span>
+                                        <span class="indicator-value" id="stoch-value">계산 중...</span>
+                                    </div>
+                                    <div class="indicator-item">
+                                        <span class="indicator-name">MACD</span>
+                                        <span class="indicator-value" id="macd-value">계산 중...</span>
+                                    </div>
+                                    <div class="indicator-item">
+                                        <span class="indicator-name">Williams %R</span>
+                                        <span class="indicator-value" id="williams-r-value">계산 중...</span>
+                                    </div>
+                                    <div class="indicator-item">
+                                        <span class="indicator-name">Moving Average</span>
+                                        <span class="indicator-value" id="sma-value">계산 중...</span>
+                                    </div>
+                                    <div class="indicator-item">
+                                        <span class="indicator-name">Ichimoku Cloud</span>
+                                        <span class="indicator-value" id="ichimoku-value">계산 중...</span>
+                                    </div>
+                                     <div class="indicator-item">
+                                        <span class="indicator-name">Volume Oscillator</span>
+                                        <span class="indicator-value" id="vo-value">계산 중...</span>
+                                    </div>
+                                    <div class="indicator-item">
+                                        <span class="indicator-name">Awesome Osc.</span>
+                                        <span class="indicator-value" id="ao-value">계산 중...</span>
+                                    </div>
+                                     <div class="indicator-item">
+                                        <span class="indicator-name">ATR (변동성)</span>
+                                        <span class="indicator-value" id="atr-value">계산 중...</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -307,7 +339,7 @@
                 </div>
 
                 <!-- 심리지수 카드 (3x6) - 중앙 하단 -->
-                <div class="grid-stack-item" gs-x="10" gs-y="0" gs-w="2" gs-h="2" gs-min-w="2" gs-min-h="2">
+                <div class="grid-stack-item" gs-x="0" gs-y="8" gs-w="2" gs-h="2" gs-min-w="2" gs-min-h="2">
                     <div class="grid-stack-item-content">
                         <div class="dashboard-card sentiment-card" data-card-id="sentiment" draggable="false">
                             <div class="card-header">

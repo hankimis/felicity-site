@@ -450,7 +450,8 @@ class TradingAnalyticsPlatform {
                 this.generateHeatmap();
                 break;
             case 'orderbook':
-                this.startOrderbookTracking();
+                // OrderbookTracker가 별도로 처리하므로 여기서는 아무것도 하지 않음
+                console.log('📚 Orderbook tab initialized - using OrderbookTracker module');
                 break;
         }
     }
@@ -2391,90 +2392,7 @@ class TradingAnalyticsPlatform {
     }
 
     // ===== 오더북 기능 =====
-    startOrderbookTracking() {
-        this.generateOrderbookData();
-        
-        if (this.intervals.orderbook) return;
-        
-        this.intervals.orderbook = setInterval(() => {
-            if (this.isTracking) {
-                this.updateOrderbookData();
-            }
-        }, 1000);
-    }
-
-    generateOrderbookData() {
-        const basePrice = 104000;
-        this.orderbook.asks = [];
-        this.orderbook.bids = [];
-
-        for (let i = 0; i < 20; i++) {
-            const price = basePrice + (i + 1) * 10;
-            const quantity = Math.random() * 5 + 0.1;
-            this.orderbook.asks.push({
-                price: price,
-                quantity: quantity,
-                total: price * quantity
-            });
-        }
-
-        for (let i = 0; i < 20; i++) {
-            const price = basePrice - (i + 1) * 10;
-            const quantity = Math.random() * 5 + 0.1;
-            this.orderbook.bids.push({
-                price: price,
-                quantity: quantity,
-                total: price * quantity
-            });
-        }
-
-        this.updateOrderbookDisplay();
-    }
-
-    updateOrderbookData() {
-        this.orderbook.asks.forEach(ask => {
-            ask.quantity = Math.max(0.01, ask.quantity + (Math.random() - 0.5) * 0.5);
-            ask.total = ask.price * ask.quantity;
-        });
-
-        this.orderbook.bids.forEach(bid => {
-            bid.quantity = Math.max(0.01, bid.quantity + (Math.random() - 0.5) * 0.5);
-            bid.total = bid.price * bid.quantity;
-        });
-
-        this.updateOrderbookDisplay();
-    }
-
-    updateOrderbookDisplay() {
-        const asksContainer = document.getElementById('asks-list');
-        const bidsContainer = document.getElementById('bids-list');
-        
-        if (asksContainer) {
-            asksContainer.innerHTML = this.orderbook.asks.slice(0, 15).reverse().map(ask => `
-                <div class="orderbook-item ask">
-                    <span>$${ask.price.toFixed(2)}</span>
-                    <span class="orderbook-quantity">${ask.quantity.toFixed(4)}</span>
-                    <span class="orderbook-total">$${(ask.total / 1000).toFixed(1)}K</span>
-                </div>
-            `).join('');
-        }
-
-        if (bidsContainer) {
-            bidsContainer.innerHTML = this.orderbook.bids.slice(0, 15).map(bid => `
-                <div class="orderbook-item bid">
-                    <span>$${bid.price.toFixed(2)}</span>
-                    <span class="orderbook-quantity">${bid.quantity.toFixed(4)}</span>
-                    <span class="orderbook-total">$${(bid.total / 1000).toFixed(1)}K</span>
-                </div>
-            `).join('');
-        }
-
-        const currentPrice = (this.orderbook.asks[0]?.price + this.orderbook.bids[0]?.price) / 2;
-        const spread = this.orderbook.asks[0]?.price - this.orderbook.bids[0]?.price;
-
-        document.getElementById('ob-current-price').textContent = '$' + currentPrice.toFixed(2);
-        document.getElementById('spread').textContent = '스프레드: $' + spread.toFixed(2);
-    }
+    // (중복 방지: orderbook-tracker.js만 사용)
 
     // ===== 시뮬레이션 데이터 생성 =====
     generateSimulationData() {
