@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Whale Tracker Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #1a1a1a;
+            color: #ffffff;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .card {
+            background-color: #2a2a2a;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid #333;
+        }
+        .card h2 {
+            margin-top: 0;
+            color: #00ff88;
+        }
+        .status {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .status span {
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        button {
+            background-color: #00ff88;
+            color: #000;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        button:hover {
+            background-color: #00cc6a;
+        }
+        button.active {
+            background-color: #ff4444;
+        }
+        .transactions {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #333;
+            border-radius: 4px;
+            padding: 10px;
+        }
+        .whale-transaction {
+            background-color: #333;
+            margin-bottom: 10px;
+            padding: 10px;
+            border-radius: 4px;
+            border-left: 4px solid #00ff88;
+        }
+        .transaction-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 12px;
+            color: #ccc;
+        }
+        .transaction-details {
+            display: flex;
+            justify-content: space-between;
+            font-weight: bold;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        .stat-item {
+            background-color: #333;
+            padding: 15px;
+            border-radius: 4px;
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #00ff88;
+        }
+        .stat-label {
+            font-size: 12px;
+            color: #ccc;
+            margin-top: 5px;
+        }
+        .error {
+            color: #ff4444;
+            background-color: #442222;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+        .success {
+            color: #00ff88;
+            background-color: #224422;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🐋 Whale Tracker Test</h1>
+        
+        <div class="card">
+            <h2>Whale Tracker</h2>
+            <div id="whale-status" class="status"></div>
+            <div class="controls">
+                <button id="toggle-whale-tracking">Start Tracking</button>
+                <button id="refresh-whale-data">Refresh</button>
+                <input type="number" id="whale-threshold" value="100" min="10" max="1000" step="10">
+                <label for="whale-threshold">K USD</label>
+            </div>
+            <div class="stats">
+                <div class="stat-item">
+                    <div id="total-whale-volume" class="stat-value">$0</div>
+                    <div class="stat-label">Total Volume</div>
+                </div>
+                <div class="stat-item">
+                    <div id="total-whale-count" class="stat-value">0</div>
+                    <div class="stat-label">Total Count</div>
+                </div>
+            </div>
+            <div id="whale-transactions" class="transactions">
+                <div class="success">Waiting for whale transactions...</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Liquidation Tracker</h2>
+            <div class="controls">
+                <button id="toggle-liquidation-tracking">Start Tracking</button>
+                <button id="refresh-liquidation-data">Refresh</button>
+                <select id="liquidation-timeframe">
+                    <option value="1h">1 Hour</option>
+                    <option value="4h">4 Hours</option>
+                    <option value="24h">24 Hours</option>
+                </select>
+            </div>
+            <div class="stats">
+                <div class="stat-item">
+                    <div id="long-liquidation" class="stat-value">$0</div>
+                    <div class="stat-label">Long Liquidations</div>
+                </div>
+                <div class="stat-item">
+                    <div id="short-liquidation" class="stat-value">$0</div>
+                    <div class="stat-label">Short Liquidations</div>
+                </div>
+                <div class="stat-item">
+                    <div id="long-liquidation-count" class="stat-value">0</div>
+                    <div class="stat-label">Long Count</div>
+                </div>
+                <div class="stat-item">
+                    <div id="short-liquidation-count" class="stat-value">0</div>
+                    <div class="stat-label">Short Count</div>
+                </div>
+            </div>
+            <canvas id="liquidation-chart" width="400" height="200"></canvas>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // Global formatNumber function
+        window.formatNumber = function(num) {
+            if (num >= 1000000) {
+                return (num / 1000000).toFixed(1) + 'M';
+            } else if (num >= 1000) {
+                return (num / 1000).toFixed(1) + 'K';
+            }
+            return num.toFixed(0);
+        };
+    </script>
+    <script src="js/analysis/whale-tracker.js"></script>
+    <script src="js/analysis/liquidation-tracker.js"></script>
+    <script>
+        // Test initialization
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 Initializing test...');
+            
+            try {
+                // Initialize whale tracker
+                const whaleTracker = new WhaleTracker({
+                    minThreshold: 100000, // $100k
+                    maxTransactions: 50
+                });
+                
+                // Initialize liquidation tracker
+                const liquidationTracker = new LiquidationTracker();
+                
+                // Update connection status
+                function updateConnectionStatus() {
+                    const statusEl = document.getElementById('whale-status');
+                    if (statusEl) {
+                        const status = whaleTracker.exchangeStatus;
+                        const statusHTML = Object.entries(status)
+                            .map(([exchange, connected]) => {
+                                const icon = connected ? '🟢' : '🔴';
+                                return `<span style="background-color: ${connected ? '#224422' : '#442222'}">${icon} ${exchange.toUpperCase()}</span>`;
+                            })
+                            .join(' ');
+                        statusEl.innerHTML = statusHTML;
+                    }
+                }
+                
+                // Update connection status every 5 seconds
+                setInterval(updateConnectionStatus, 5000);
+                updateConnectionStatus();
+                
+                console.log('✅ Test initialized successfully');
+                
+            } catch (error) {
+                console.error('❌ Error initializing test:', error);
+                document.body.innerHTML += `<div class="error">Error: ${error.message}</div>`;
+            }
+        });
+    </script>
+</body>
+</html> 

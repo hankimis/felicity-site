@@ -1,0 +1,822 @@
+/* Advanced Whale Tracker CSS - AGGR Style */
+
+/* Main Container */
+.whale-trades-container {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #1a1a1a;
+    color: #ffffff;
+    border-radius: 8px;
+    padding: 0;
+    margin: 0;
+    overflow-y: auto;
+    max-height: calc(100vh - 200px);
+    height: calc(100vh - 200px);
+    display: flex;
+    flex-direction: column;
+    scrollbar-width: thin;
+    scrollbar-color: #333 #1a1a1a;
+}
+
+.whale-trades-container::-webkit-scrollbar {
+    width: 8px;
+}
+
+.whale-trades-container::-webkit-scrollbar-track {
+    background: #1a1a1a;
+}
+
+.whale-trades-container::-webkit-scrollbar-thumb {
+    background: #333;
+    border-radius: 4px;
+}
+
+/* Trade List */
+.whale-trades-container ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    overflow-y: auto;
+    max-height: calc(100vh - 60px);
+    scrollbar-width: thin;
+    scrollbar-color: #333 #1a1a1a;
+}
+
+.whale-trades-container ul::-webkit-scrollbar {
+    width: 6px;
+}
+
+.whale-trades-container ul::-webkit-scrollbar-track {
+    background: #1a1a1a;
+}
+
+.whale-trades-container ul::-webkit-scrollbar-thumb {
+    background: #333;
+    border-radius: 3px;
+}
+
+/* Individual Trade Items */
+.trade {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    margin: 2px 0;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    position: relative;
+    font-size: 0.875rem;
+    line-height: 1.4;
+    border-left: 3px solid transparent;
+    animation: tradeSlideIn 0.3s ease-out;
+}
+
+.trade:hover {
+    transform: translateX(2px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+/* Trade Levels */
+.trade-level-0 {
+    font-size: 0.875rem;
+    opacity: 0.8;
+}
+
+.trade-level-1 {
+    font-size: 1rem;
+    opacity: 0.9;
+}
+
+.trade-level-2 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    opacity: 1;
+    box-shadow: 0 0 10px rgba(0,0,0,0.3);
+}
+
+.trade-level-3 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    opacity: 1;
+    box-shadow: 0 0 20px rgba(0,0,0,0.5);
+    animation: whalePulse 2s infinite;
+}
+
+/* Trade Side Colors */
+.trade-buy {
+    background: linear-gradient(90deg, rgba(34, 197, 94, 0.1) 0%, rgba(34, 197, 94, 0.05) 100%);
+    border-left-color: #22c55e;
+    color: #22c55e;
+}
+
+.trade-sell {
+    background: linear-gradient(90deg, rgba(239, 68, 68, 0.1) 0%, rgba(239, 68, 68, 0.05) 100%);
+    border-left-color: #ef4444;
+    color: #ef4444;
+}
+
+/* Trade Content Layout */
+.trade-exchange-icon {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 8px;
+    font-size: 1.2em;
+}
+
+.trade-exchange {
+    font-weight: 600;
+    min-width: 80px;
+    margin-right: 12px;
+}
+
+.trade-price {
+    font-weight: 700;
+    min-width: 100px;
+    margin-right: 12px;
+    text-align: right;
+}
+
+.trade-amount {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    margin-right: 12px;
+}
+
+.trade-amount-quote {
+    font-weight: 600;
+    font-size: 1.1em;
+}
+
+.trade-amount-base {
+    font-size: 0.8em;
+    opacity: 0.7;
+}
+
+.trade-time {
+    font-size: 0.75em;
+    opacity: 0.6;
+    min-width: 40px;
+    text-align: right;
+}
+
+/* Whale Alerts */
+.whale-alert {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
+    border: 2px solid;
+    border-radius: 8px;
+    padding: 16px;
+    min-width: 300px;
+    max-width: 400px;
+    z-index: 10000;
+    animation: alertSlideIn 0.5s ease-out;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+}
+
+.whale-alert-buy {
+    border-color: #22c55e;
+    box-shadow: 0 8px 32px rgba(34, 197, 94, 0.2);
+}
+
+.whale-alert-sell {
+    border-color: #ef4444;
+    box-shadow: 0 8px 32px rgba(239, 68, 68, 0.2);
+}
+
+.whale-alert-level-2 {
+    border-width: 3px;
+    transform: scale(1.05);
+}
+
+.whale-alert-level-3 {
+    border-width: 4px;
+    transform: scale(1.1);
+    animation: whaleAlertPulse 1s infinite;
+}
+
+.whale-alert-content {
+    color: #ffffff;
+}
+
+.whale-alert-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    font-weight: 700;
+}
+
+.whale-alert-exchange {
+    font-size: 1.1em;
+}
+
+.whale-alert-side {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.8em;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.whale-alert-buy .whale-alert-side {
+    background: #22c55e;
+    color: #000;
+}
+
+.whale-alert-sell .whale-alert-side {
+    background: #ef4444;
+    color: #fff;
+}
+
+.whale-alert-details {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.whale-alert-price {
+    font-size: 1.5em;
+    font-weight: 700;
+}
+
+.whale-alert-amount {
+    font-size: 1.2em;
+    font-weight: 600;
+    opacity: 0.9;
+}
+
+.whale-alert-time {
+    font-size: 0.8em;
+    opacity: 0.6;
+    text-align: right;
+}
+
+/* Controls Panel */
+.whale-controls {
+    background: #2a2a2a;
+    padding: 16px;
+    border-bottom: 1px solid #333;
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.whale-controls label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9em;
+    color: #ccc;
+}
+
+.whale-controls input[type="range"] {
+    width: 100px;
+    height: 4px;
+    background: #444;
+    border-radius: 2px;
+    outline: none;
+    -webkit-appearance: none;
+}
+
+.whale-controls input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px;
+    height: 16px;
+    background: #22c55e;
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+.whale-controls input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: #22c55e;
+}
+
+/* Stats Panel */
+.whale-stats {
+    background: #2a2a2a;
+    padding: 12px 16px;
+    border-bottom: 1px solid #333;
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8em;
+    color: #ccc;
+}
+
+.whale-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.whale-stat-value {
+    font-size: 1.2em;
+    font-weight: 700;
+    color: #22c55e;
+}
+
+.whale-stat-label {
+    font-size: 0.7em;
+    opacity: 0.7;
+    text-transform: uppercase;
+}
+
+/* Animations */
+@keyframes tradeSlideIn {
+    from {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes whalePulse {
+    0%, 100% {
+        box-shadow: 0 0 20px rgba(0,0,0,0.5);
+    }
+    50% {
+        box-shadow: 0 0 30px rgba(34, 197, 94, 0.3);
+    }
+}
+
+@keyframes alertSlideIn {
+    from {
+        opacity: 0;
+        transform: translateX(100px) scale(0.8);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0) scale(1);
+    }
+}
+
+@keyframes whaleAlertPulse {
+    0%, 100% {
+        box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+    }
+    50% {
+        box-shadow: 0 8px 32px rgba(34, 197, 94, 0.4);
+    }
+}
+
+/* Exchange-specific styling */
+.trade-binance {
+    border-left-color: #f3ba2f;
+}
+
+.trade-binance_futures {
+    border-left-color: #f3ba2f;
+}
+
+.trade-bybit {
+    border-left-color: #00d4aa;
+}
+
+.trade-okx {
+    border-left-color: #000000;
+}
+
+.trade-bitget {
+    border-left-color: #00c2ff;
+}
+
+.trade-mexc {
+    border-left-color: #ff6b35;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .whale-trades-container {
+        font-size: 0.8rem;
+    }
+    
+    .trade {
+        padding: 6px 8px;
+    }
+    
+    .trade-exchange {
+        min-width: 60px;
+        font-size: 0.8em;
+    }
+    
+    .trade-price {
+        min-width: 80px;
+        font-size: 0.9em;
+    }
+    
+    .whale-alert {
+        top: 10px;
+        right: 10px;
+        left: 10px;
+        min-width: auto;
+        max-width: none;
+    }
+    
+    .whale-controls {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .whale-controls label {
+        justify-content: space-between;
+    }
+}
+
+@media (max-width: 480px) {
+    .trade {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+    }
+    
+    .trade-amount {
+        flex-direction: row;
+        gap: 8px;
+    }
+    
+    .whale-alert {
+        padding: 12px;
+    }
+    
+    .whale-alert-price {
+        font-size: 1.2em;
+    }
+    
+    .whale-alert-amount {
+        font-size: 1em;
+    }
+}
+
+/* Dark/Light Theme Support */
+@media (prefers-color-scheme: light) {
+    .whale-trades-container {
+        background: #ffffff;
+        color: #1a1a1a;
+    }
+    
+    .trade {
+        background: #f8f9fa;
+        border: 1px solid #e9ecef;
+    }
+    
+    .trade-buy {
+        background: linear-gradient(90deg, rgba(34, 197, 94, 0.1) 0%, rgba(34, 197, 94, 0.05) 100%);
+    }
+    
+    .trade-sell {
+        background: linear-gradient(90deg, rgba(239, 68, 68, 0.1) 0%, rgba(239, 68, 68, 0.05) 100%);
+    }
+    
+    .whale-alert {
+        background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+        color: #1a1a1a;
+    }
+    
+    .whale-controls {
+        background: #f8f9fa;
+        border-bottom: 1px solid #e9ecef;
+    }
+    
+    .whale-stats {
+        background: #f8f9fa;
+        border-bottom: 1px solid #e9ecef;
+    }
+}
+
+/* Loading States */
+.whale-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    color: #666;
+}
+
+.whale-loading::after {
+    content: '';
+    width: 20px;
+    height: 20px;
+    border: 2px solid #333;
+    border-top: 2px solid #22c55e;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-left: 10px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Connection Status */
+.whale-connection-status {
+    display: flex;
+    gap: 8px;
+    padding: 8px 16px;
+    background: #2a2a2a;
+    border-bottom: 1px solid #333;
+    font-size: 0.8em;
+}
+
+.whale-connection-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.whale-connection-connected {
+    color: #22c55e;
+}
+
+.whale-connection-disconnected {
+    color: #ef4444;
+}
+
+/* Performance Optimizations */
+.whale-trades-container {
+    will-change: transform;
+    contain: layout style paint;
+}
+
+.trade {
+    contain: layout style;
+}
+
+.whale-alert {
+    will-change: transform, opacity;
+}
+
+.trades-list {
+    margin: 0;
+    padding: 0;
+    overflow-y: auto;
+    max-height: calc(100vh - 60px);
+    height: 100%;
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.3) rgba(255, 255, 255, 0.1);
+}
+
+.trades-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.trades-list::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.trades-list::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.3);
+    border-radius: 3px;
+}
+
+.trade {
+    display: flex;
+    background-position: center center;
+    background-size: cover;
+    background-blend-mode: overlay;
+    position: relative;
+    padding: 0 2rem 0 1.25rem;
+    align-items: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.trade:after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    opacity: 0;
+    background-color: #fff;
+    animation: 1s cubic-bezier(.16,1,.3,1) highlight;
+    pointer-events: none;
+}
+
+.trade.-sell {
+    background-color: rgba(239, 67, 82, 0.1);
+    color: #ef4352;
+}
+
+.trade.-buy {
+    background-color: rgba(100, 157, 102, 0.1);
+    color: #649d66;
+}
+
+/* Trade size levels */
+.trade.-level-0 {
+    line-height: 1.875em;
+    font-size: 0.875em;
+    padding: 0.3em 2rem 0.3em 1.25rem;
+}
+
+.trade.-level-1 {
+    line-height: 1.875em;
+    font-size: 1em;
+    padding: 0.4em 2rem 0.4em 1.25rem;
+}
+
+.trade.-level-2 {
+    line-height: 1.75em;
+    font-size: 1.125em;
+    font-weight: 600;
+    padding: 0.5em 2rem 0.5em 1.25rem;
+}
+
+.trade.-level-3 {
+    line-height: 2em;
+    box-shadow: 0 0 20px rgba(0,0,0,0.5);
+    z-index: 1;
+    font-size: 1.25em;
+    padding: 0.6em 2rem 0.6em 1.25rem;
+    font-weight: 600;
+}
+
+.trade > div {
+    flex-grow: 1;
+    flex-basis: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.trade .trade__exchange {
+    width: 24px;
+    height: 24px;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    margin-right: 8px;
+    flex-grow: 0;
+    flex-shrink: 0;
+}
+
+.trade .trade__price {
+    direction: rtl;
+    min-width: 120px;
+    flex-grow: 0;
+}
+
+.trade .trade__amount {
+    flex-grow: 1;
+    text-align: right;
+    padding-right: 20px;
+}
+
+.trade .trade__time {
+    position: absolute;
+    right: 0.5rem;
+    text-align: right;
+    overflow: visible;
+    font-size: 0.875em;
+    opacity: 0.7;
+    min-width: 70px;
+}
+
+/* Exchange icons */
+.trade .-BINANCE .trade__exchange {
+    background-image: url('../img/exchanges/binance.svg');
+}
+
+.trade .-BYBIT .trade__exchange {
+    background-image: url('../img/exchanges/bybit.svg');
+}
+
+.trade .-OKX .trade__exchange {
+    background-image: url('../img/exchanges/okx.svg');
+}
+
+.trade .-BITGET .trade__exchange {
+    background-image: url('../img/exchanges/bitget.svg');
+}
+
+.trade .-MEXC .trade__exchange {
+    background-image: url('../img/exchanges/mexc.svg');
+}
+
+/* Animation for $1M+ trades */
+@keyframes megaWhale {
+    0% {
+        background-color: rgba(255,255,255,0.2);
+    }
+    50% {
+        background-color: rgba(255,255,255,0.1);
+    }
+    100% {
+        background-color: rgba(255,255,255,0);
+    }
+}
+
+.trade.-mega-whale {
+    animation: megaWhale 2s ease-out;
+}
+
+/* Highlight animation */
+@keyframes highlight {
+    0% {
+        opacity: 0.75;
+    }
+    100% {
+        opacity: 0;
+    }
+}
+
+/* Container styles */
+#whale-tracker {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 400px;
+    background-color: rgba(0, 0, 0, 0.8);
+    border-left: 1px solid #333;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+}
+
+/* Long/Short Ratio Gauge */
+.ls-gauge {
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 200px;
+    height: 100px;
+    background-color: rgba(0, 0, 0, 0.5);
+    border-radius: 8px;
+    padding: 10px;
+}
+
+.gauge-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+.gauge-background {
+    position: absolute;
+    width: 180px;
+    height: 90px;
+    border-radius: 90px 90px 0 0;
+    background: linear-gradient(90deg, 
+        #ef4352 0%, 
+        #ef7643 30%, 
+        #649d66 70%, 
+        #37c437 100%
+    );
+    overflow: hidden;
+}
+
+.gauge-needle {
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    width: 2px;
+    height: 80px;
+    background-color: #ffffff;
+    transform-origin: bottom center;
+    transform: rotate(0deg);
+    transition: transform 0.5s ease-out;
+}
+
+.gauge-value {
+    position: absolute;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 14px;
+    color: #ffffff;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.gauge-labels {
+    position: absolute;
+    bottom: -5px;
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.gauge-labels span:first-child {
+    margin-left: 10px;
+}
+
+.gauge-labels span:last-child {
+    margin-right: 10px;
+} 

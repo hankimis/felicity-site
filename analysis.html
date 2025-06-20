@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>실시간 거래 분석 대시보드 - Onbit</title>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/auth.css">
+    <link rel="stylesheet" href="analysis.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
+    <link rel="icon" type="image/png" href="/onbit/favicon-96x96.png" sizes="96x96">
+    <link rel="icon" type="image/svg+xml" href="/onbit/favicon.svg">
+    <link rel="shortcut icon" href="/onbit/favicon.ico">
+    <link rel="apple-touch-icon" sizes="180x180" href="/onbit/apple-touch-icon.png">
+    <meta name="apple-mobile-web-app-title" content="Onbit">
+    <link rel="manifest" href="/onbit/site.webmanifest">
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Web3.js -->
+    <script src="https://cdn.jsdelivr.net/npm/web3@4.15.0/dist/web3.min.js"></script>
+    
+    <!-- Axios -->
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    
+    <!-- Plotly.js for advanced charts -->
+    <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
+    
+    <!-- Common Scripts -->
+    <script src="js/auth.js"></script>
+    <script src="js/level-system.js"></script>
+    <!-- Unified Header Loader -->
+    <script src="js/header-loader.js" defer></script>
+    
+    <!-- Analysis Modules -->
+    <script src="js/analysis/whale-tracker.js"></script>
+    <script src="js/analysis/liquidation-tracker.js"></script>
+    <script src="js/analysis/longshort-tracker.js"></script>
+    <script src="js/analysis/realtime-trades.js"></script>
+    <script src="js/analysis/technical-indicators.js"></script>
+    <script src="js/analysis/sentiment-analysis.js"></script>
+    <script src="js/analysis/orderbook-tracker.js"></script>
+    <script src="js/analysis/market-heatmap.js"></script>
+    
+    <!-- GridStack.js -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gridstack@9.3.0/dist/gridstack.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/gridstack@9.3.0/dist/gridstack-all.js"></script>
+    
+    <!-- Main Analysis Controller -->
+    <script src="js/analysis/analysis-controller.js"></script>
+</head>
+<body>
+
+    <main class="analysis-main">
+        <div class="analysis-container">
+            <!-- Dashboard Controls -->
+            <div class="dashboard-controls">
+                <div class="controls-title">
+                    <h1>실시간 거래 분석 대시보드</h1>
+                    <span class="subtitle">Real-time Trading Analytics Dashboard</span>
+                </div>
+                <div class="controls-actions">
+                    <div class="status-badge" id="global-status">
+                        <span class="status-dot active"></span>
+                        <span class="status-text">실시간 연결됨</span>
+                    </div>
+                    <button id="layout-toggle" class="control-btn secondary">
+                        <i class="fas fa-edit"></i>
+                        <span>레이아웃 편집</span>
+                    </button>
+                    <button id="layout-reset" class="control-btn warning">
+                        <i class="fas fa-undo"></i>
+                        <span>초기화</span>
+                    </button>
+                    <button id="layout-save" class="control-btn success" style="display: none;">
+                        <i class="fas fa-save"></i>
+                        <span>저장</span>
+                    </button>
+                    <button id="refresh-all" class="control-btn primary">
+                        <i class="fas fa-sync-alt"></i>
+                        <span>새로고침</span>
+                    </button>
+                    <button id="settings-btn" class="control-btn secondary">
+                        <i class="fas fa-cog"></i>
+                        <span>설정</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Dashboard Grid -->
+            <div class="grid-stack grid-background" id="dashboard-grid">
+
+                <!-- 고래 탐지 카드 (2x4) - 왼쪽 상단 -->
+                <div class="grid-stack-item" gs-x="0" gs-y="0" gs-w="2" gs-h="4" gs-min-w="2" gs-min-h="3">
+                    <div class="grid-stack-item-content">
+                        <div class="dashboard-card whale-card" data-card-id="whale">
+                            <div class="card-header">
+                                <div class="card-title">
+                                    <i class="fas fa-whale"></i>
+                                    <h3>고래 탐지</h3>
+                                </div>
+                                <div class="card-controls">
+                                    <select id="whale-symbol" class="symbol-selector">
+                                        <option value="BTCUSDT">BTC/USDT</option>
+                                        <option value="ETHUSDT">ETH/USDT</option>
+                                        <option value="ADAUSDT">ADA/USDT</option>
+                                        <option value="SOLUSDT">SOL/USDT</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="card-content">
+                                <div class="whale-stats">
+                                    <div class="stat-item">
+                                        <span class="stat-label">대형 거래</span>
+                                        <span class="stat-value" id="large-trades">0</span>
+                                    </div>
+                                    <div class="stat-item">
+                                        <span class="stat-label">누적 거래량</span>
+                                        <span class="stat-value" id="total-volume">$0</span>
+                                    </div>
+                                </div>
+                                <div class="whale-trades-container" id="whale-trades-container">
+                                    <!-- 고래 거래 목록이 여기에 동적으로 추가됩니다 -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 실시간 거래 카드 (6x8) - 오른쪽 상단 -->
+                <div class="grid-stack-item" gs-x="2" gs-y="0" gs-w="2" gs-h="4" gs-min-w="2" gs-min-h="3">
+                    <div class="grid-stack-item-content">
+                        <div class="dashboard-card realtime-card" data-card-id="realtime" draggable="false">
+                            <div class="card-header">
+                                <div class="card-title">
+                                    <i class="fas fa-chart-line"></i>
+                                    <h3>실시간 거래</h3>
+                                </div>
+                                <div class="card-controls">
+                                    <select id="realtime-symbol" class="symbol-selector">
+                                        <option value="BTCUSDT">BTC/USDT</option>
+                                        <option value="ETHUSDT">ETH/USDT</option>
+                                        <option value="ADAUSDT">ADA/USDT</option>
+                                        <option value="SOLUSDT">SOL/USDT</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="card-content">
+                                <div class="realtime-price" id="realtime-price">$0.00</div>
+                                <div class="realtime-trades" id="realtime-trades">
+                                    <div class="trade-item">
+                                        <span class="trade-time">--:--:--</span>
+                                        <span class="trade-price">$0.00</span>
+                                        <span class="trade-size">0.000</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 청산 정보 카드 (4x6) - 왼쪽 중간 -->
+                <div class="grid-stack-item" gs-x="4" gs-y="3" gs-w="2" gs-h="2" gs-min-w="2" gs-min-h="2">
+                    <div class="grid-stack-item-content">
+                        <div class="dashboard-card liquidation-card" data-card-id="liquidation" draggable="false">
+                            <div class="card-header">
+                                <div class="card-title">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                    <h3>청산 정보</h3>
+                                </div>
+                                <div class="card-controls">
+                                    <select id="liquidation-symbol" class="symbol-selector">
+                                        <option value="BTCUSDT">BTC/USDT</option>
+                                        <option value="ETHUSDT">ETH/USDT</option>
+                                        <option value="ADAUSDT">ADA/USDT</option>
+                                        <option value="SOLUSDT">SOL/USDT</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="card-content">
+                                <div class="liquidation-summary">
+                                    <div class="liquidation-item long">
+                                        <span class="liquidation-type">롱 청산</span>
+                                        <span class="liquidation-amount" id="long-liquidation">$0</span>
+                                    </div>
+                                    <div class="liquidation-item short">
+                                        <span class="liquidation-type">숏 청산</span>
+                                        <span class="liquidation-amount" id="short-liquidation">$0</span>
+                                    </div>
+                                </div>
+                                <div class="liquidation-chart">
+                                    <canvas id="liquidation-chart" width="300" height="150"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 롱/숏 비율 카드 (4x6) - 중앙 중간 -->
+                <div class="grid-stack-item" gs-x="4" gs-y="2" gs-w="2" gs-h="2" gs-min-w="2" gs-min-h="2">
+                    <div class="grid-stack-item-content">
+                        <div class="dashboard-card longshort-card" data-card-id="longshort" draggable="false">
+                            <div class="card-header">
+                                <div class="card-title">
+                                    <i class="fas fa-balance-scale"></i>
+                                    <h3>롱/숏 비율</h3>
+                                </div>
+                                <div class="card-controls">
+                                    <select id="longshort-symbol" class="symbol-selector">
+                                        <option value="BTCUSDT">BTC/USDT</option>
+                                        <option value="ETHUSDT">ETH/USDT</option>
+                                        <option value="ADAUSDT">ADA/USDT</option>
+                                        <option value="SOLUSDT">SOL/USDT</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="card-content">
+                                <div class="longshort-ratio">
+                                    <div class="ratio-display">
+                                        <span class="ratio-label">롱/숏 비율</span>
+                                        <span class="ratio-value" id="longshort-ratio">1.00</span>
+                                    </div>
+                                    <div class="ratio-bar">
+                                        <div class="ratio-fill" id="ratio-fill"></div>
+                                    </div>
+                                </div>
+                                <div class="longshort-chart">
+                                    <canvas id="longshort-chart" width="300" height="150"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 오더북 카드 (4x6) - 오른쪽 중간 -->
+                <div class="grid-stack-item" gs-x="6" gs-y="0" gs-w="2" gs-h="2" gs-min-w="2" gs-min-h="2">
+                    <div class="grid-stack-item-content">
+                        <div class="dashboard-card orderbook-card" data-card-id="orderbook" draggable="false">
+                            <div class="card-header">
+                                <div class="card-title">
+                                    <i class="fas fa-list"></i>
+                                    <h3>오더북</h3>
+                                </div>
+                                <div class="card-controls">
+                                    <select id="orderbook-symbol" class="symbol-selector">
+                                        <option value="BTCUSDT">BTC/USDT</option>
+                                        <option value="ETHUSDT">ETH/USDT</option>
+                                        <option value="ADAUSDT">ADA/USDT</option>
+                                        <option value="SOLUSDT">SOL/USDT</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="card-content">
+                                <div class="orderbook-container">
+                                    <div class="orderbook-side asks">
+                                        <h4>매도</h4>
+                                        <div class="orderbook-orders" id="asks-orders"></div>
+                                    </div>
+                                    <div class="orderbook-side bids">
+                                        <h4>매수</h4>
+                                        <div class="orderbook-orders" id="bids-orders"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 기술지표 카드 (3x6) - 왼쪽 하단 -->
+                <div class="grid-stack-item" gs-x="8" gs-y="0" gs-w="2" gs-h="2" gs-min-w="2" gs-min-h="2">
+                    <div class="grid-stack-item-content">
+                        <div class="dashboard-card indicators-card" data-card-id="indicators" draggable="false">
+                            <div class="card-header">
+                                <div class="card-title">
+                                    <i class="fas fa-chart-bar"></i>
+                                    <h3>기술지표</h3>
+                                </div>
+                            </div>
+                            <div class="card-content">
+                                <div class="indicator-item">
+                                    <span class="indicator-name">RSI</span>
+                                    <span class="indicator-value" id="rsi-value">50</span>
+                                </div>
+                                <div class="indicator-item">
+                                    <span class="indicator-name">MACD</span>
+                                    <span class="indicator-value" id="macd-value">0</span>
+                                </div>
+                                <div class="indicator-item">
+                                    <span class="indicator-name">볼린저 밴드</span>
+                                    <span class="indicator-value" id="bb-value">중간</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 심리지수 카드 (3x6) - 중앙 하단 -->
+                <div class="grid-stack-item" gs-x="10" gs-y="0" gs-w="2" gs-h="2" gs-min-w="2" gs-min-h="2">
+                    <div class="grid-stack-item-content">
+                        <div class="dashboard-card sentiment-card" data-card-id="sentiment" draggable="false">
+                            <div class="card-header">
+                                <div class="card-title">
+                                    <i class="fas fa-brain"></i>
+                                    <h3>심리지수</h3>
+                                </div>
+                            </div>
+                            <div class="card-content">
+                                <div class="sentiment-gauge">
+                                    <canvas id="sentiment-gauge" width="120" height="120"></canvas>
+                                    <div class="sentiment-value" id="sentiment-value">50</div>
+                                </div>
+                                <div class="sentiment-label" id="sentiment-label">중립</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 시장 히트맵 카드 (6x6) - 오른쪽 하단 -->
+                <div class="grid-stack-item" gs-x="6" gs-y="14" gs-w="6" gs-h="6" gs-min-w="4" gs-min-h="4">
+                    <div class="grid-stack-item-content">
+                        <div class="dashboard-card heatmap-card" data-card-id="heatmap" draggable="false">
+                            <div class="card-header">
+                                <div class="card-title">
+                                    <i class="fas fa-fire"></i>
+                                    <h3>시장 히트맵</h3>
+                                </div>
+                            </div>
+                            <div class="card-content">
+                                <div class="heatmap-container" id="heatmap-container">
+                                    <!-- 히트맵이 여기에 동적으로 생성됩니다 -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <!-- Toast 알림 -->
+    <div id="toast-container"></div>
+
+    <!-- 설정 모달 -->
+    <div id="settings-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>대시보드 설정</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="setting-group">
+                    <label for="whale-btc-threshold">BTC 고래 임계값</label>
+                    <input type="number" id="whale-btc-threshold" value="50" min="1" max="1000">
+                </div>
+                <div class="setting-group">
+                    <label for="whale-eth-threshold">ETH 고래 임계값</label>
+                    <input type="number" id="whale-eth-threshold" value="1000" min="100" max="10000">
+                </div>
+                <div class="setting-group">
+                    <label>
+                        <input type="checkbox" id="enable-notifications" checked>
+                        알림 활성화
+                    </label>
+                </div>
+                <div class="setting-group">
+                    <label>
+                        <input type="checkbox" id="enable-sound" checked>
+                        사운드 알림
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" id="cancel-settings">취소</button>
+                <button class="btn-primary" id="save-settings">저장</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mock Data Generator (개발용) -->
+    <script src="js/mock-data-generator.js"></script>
+    
+    <!-- Analysis.js - 게이지 시스템 -->
+    <script src="analysis.js"></script>
+    
+    <!-- Analysis Controller -->
+    <script src="js/analysis/analysis-controller.js"></script>
+    
+    <!-- Layout Manager Script -->
+    <script src="js/layout-manager.js"></script>
+
+    <!-- Initialize Dashboard -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Initializing dashboard...');
+            
+            // WhaleTracker 인스턴스 생성
+            if (window.WhaleTracker) {
+                window.whaleTracker = new window.WhaleTracker();
+            }
+            
+            // TradingAnalyticsPlatform 초기화 (게이지 시스템용)
+            if (window.TradingAnalyticsPlatform) {
+                window.tradingPlatform = new window.TradingAnalyticsPlatform();
+                console.log('✅ TradingAnalyticsPlatform initialized');
+            }
+            
+            // AnalysisController 초기화
+            window.analysisDashboard = new AnalysisController();
+            
+            // 게이지 테스트 실행 (3초 후)
+            setTimeout(() => {
+                console.log('🧪 Starting gauge test...');
+                if (window.tradingPlatform && window.tradingPlatform.runWhaleGaugeTest) {
+                    window.tradingPlatform.runWhaleGaugeTest();
+                }
+            }, 3000);
+            
+            // Layout Manager 초기화 (GridStack)
+            setTimeout(() => {
+                console.log('Initializing layout manager...');
+                window.layoutManager = new LayoutManager();
+            }, 1000);
+        });
+    </script>
+
+</body>
+</html> 

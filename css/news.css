@@ -204,7 +204,7 @@
         margin: 0 auto;
         max-width: 400px;
     }
-}
+} 
 
 /* --- List layout added --- */
 .news-list{display:flex;flex-direction:column;gap:24px;padding:0 12px;}

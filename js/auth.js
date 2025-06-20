@@ -156,7 +156,7 @@ async function updateAuthUI(user) {
 
             // 로그인 상태 UI 업데이트
             if (userProfile) userProfile.style.display = 'flex';
-            if (authButtons) authButtons.style.display = 'none';
+        if (authButtons) authButtons.style.display = 'none';
             if (getElement('user-display-name')) getElement('user-display-name').textContent = currentUser.displayName;
             
             // 레벨 정보 업데이트
@@ -195,7 +195,7 @@ async function updateAuthUI(user) {
         if (adminPageLink) adminPageLink.style.display = 'none';
 
         // 모바일 메뉴 업데이트
-        if (mobileAuthSection) {
+    if (mobileAuthSection) {
             mobileAuthSection.innerHTML = `
                 <div style="display:flex; flex-direction:column; gap:12px; padding:20px 0;">
                     <button class="mobile-auth-btn login" data-action="open-login-modal" style="font-size:1.15rem; padding:14px 0; border-radius:12px; font-weight:700; display:flex; align-items:center; justify-content:center; gap:8px; background:var(--primary-color); color:#fff; border:none;">
@@ -251,7 +251,7 @@ function updateMobileMenuUserInfo() {
                 <span class="mobile-user-points">${(currentUser.points || 0).toLocaleString()}P</span>
             </div>
             <button class="mobile-logout-btn" data-action="logout">로그아웃</button>
-        </div>`;
+                </div>`;
 }
 
 // 사용자 데이터 새로고침 함수 (관리자가 포인트 변경 시 호출)

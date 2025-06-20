@@ -1,0 +1,3325 @@
+// Whale Tracking Analysis JavaScript
+class TradingAnalyticsPlatform {
+    constructor() {
+        this.isTracking = false;
+        this.currentTab = 'whales';
+        this.charts = {};
+        this.intervals = {};
+        
+        // Whale tracking - 개선된 버전
+        this.whaleTracker = null;
+        this.btcThreshold = 100000; // $100k
+        this.ethThreshold = 100000; // $100k
+        this.allTransactions = [];
+        this.currentFilter = 'all';
+        this.displayedCount = 20;
+        
+        // Stats object initialization
+        this.stats = {
+            btcCount: 0,
+            ethCount: 0,
+            totalVolume: 0,
+            lastUpdate: Date.now()
+        };
+        
+        // 거래소 주소 매핑 추가
+        this.exchangeNames = {
+            '0x28c6c06298d514db089934071355e5743bf21d60': 'Binance',
+            '0x21a31ee1afc51d94c2efccaa2092ad1028285549': 'Binance',
+            '0x564286362092d8e7936f0549571a803b203aaced': 'Binance',
+            '0x6262998ced04146fa42253a5c0af90ca02dfd2a3': 'Coinbase',
+            '0xa9d1e08c7793af67e9d92fe308d5697fb81d3e43': 'Coinbase',
+            '0x77696bb39917c91a0c3908d577d5e322095425ca': 'Coinbase',
+            '0x503828976d22510aad0201ac7ec88293211d23da': 'Coinbase'
+        };
+        
+        // Liquidations
+        this.liquidationData = {
+            long: { amount: 0, count: 0 },
+            short: { amount: 0, count: 0 },
+            history: []
+        };
+        
+        // Long/Short ratios
+        this.longShortRatios = {
+            overall: { long: 50, short: 50 },
+            exchanges: {
+                binance: { long: 60, short: 40 },
+                okx: { long: 55, short: 45 }
+            }
+        };
+        
+        // Realtime trades
+        this.realtimeTrades = [];
+        this.realtimeSymbol = 'BTCUSDT';
+        this.realtimePaused = false;
+        
+        // Technical indicators
+        this.indicators = {
+            rsi: 50,
+            macd: 0,
+            bb: 'middle',
+            stoch: 50
+        };
+        
+        // Fear & Greed Index
+        this.fearGreedIndex = {
+            value: 50,
+            label: '중립',
+            factors: {
+                volatility: 50,
+                volume: 50,
+                social: 50,
+                survey: 50
+            }
+        };
+        
+        // Orderbook
+        this.orderbook = {
+            asks: [],
+            bids: [],
+            symbol: 'BTCUSDT'
+        };
+        
+        // Recent trades for gauge calculation
+        this.recentTrades = [];
+        
+        // 전역 객체로 설정
+        window.tradingPlatform = this;
+        
+        this.init();
+    }
+    
+    init() {
+        console.log('🚀 Initializing Trading Analytics Platform...');
+        
+        // DOM이 완전히 로드된 후 초기화
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => this.initializeComponents());
+        } else {
+            this.initializeComponents();
+        }
+    }
+
+    initializeComponents() {
+        console.log('🔧 Initializing platform components...');
+        this.initializeWhaleTracker();
+        // this.initializeLiquidationTracker(); // ... other trackers
+        
+        // Deprecated: Whale gauge initialization is disabled.
+        // if (this.settings.enableWhaleGauge) {
+        //     setTimeout(() => this.initializeWhaleGauge(), 1000); 
+        // }
+    }
+
+    initializeWhaleTracker() {
+        console.log('🐋 Initializing WhaleTracker...');
+        
+        // WhaleTracker 모듈 초기화
+        if (typeof WhaleTracker !== 'undefined') {
+            try {
+                // 컨테이너 없이 WhaleTracker 초기화
+                this.whaleTracker = new WhaleTracker(null, {}); // 빈 설정 객체 전달
+                console.log('🐋 WhaleTracker module initialized');
+            } catch (error) {
+                console.error('❌ Error initializing WhaleTracker:', error);
+                // Fallback to simulation mode
+                this.startWhaleSimulation();
+            }
+        } else {
+            console.warn('WhaleTracker module not found, using fallback');
+            // 데모 거래 생성
+            this.startWhaleSimulation();
+        }
+    }
+
+    startWhaleSimulation() {
+        console.log('🐋 Starting whale trade simulation...');
+        
+        // 초기 리스트가 비어있으면 기본 거래 추가
+        if (!this.recentTrades) this.recentTrades = [];
+        
+        const generateRandomTrade = () => {
+            if (!this.isTracking) return;
+            
+            const exchanges = ['BINANCE', 'BYBIT', 'OKX', 'BITGET', 'MEXC'];
+            const exchange = exchanges[Math.floor(Math.random() * exchanges.length)];
+            const price = 100000 + (Math.random() - 0.5) * 10000; // BTC price around 100k
+            const amount = Math.random() * 50 + 10; // 10-60 BTC
+            const side = Math.random() > 0.5 ? 'BUY' : 'SELL';
+            
+            this.addSimulatedTrade(exchange, price, amount, side);
+        };
+        
+        // 즉시 첫 거래 생성
+        generateRandomTrade();
+        
+        // 초기 거래 몇 개 더 생성
+        for (let i = 1; i < 10; i++) {
+            setTimeout(() => generateRandomTrade(), i * 300);
+        }
+        
+        // 지속적으로 거래 생성
+        this.whaleSimulationInterval = setInterval(() => {
+            if (Math.random() < 0.4) { // 40% 확률로 거래 생성 (더 자주)
+                generateRandomTrade();
+            }
+        }, 1500); // 1.5초마다 체크
+    }
+
+    addSimulatedTrade(exchange, price, amount, side) {
+        const tradeAmount = price * amount;
+        
+        // $100k 이상만 표시
+        if (tradeAmount < 100000) return;
+
+        console.log(`💰 Adding simulated trade: ${exchange} ${side} ${this.formatAmount(tradeAmount)}`);
+
+        // 거래를 롱/숏 추적에 추가 (마지막 20개만 유지)
+        if (!this.recentTrades) this.recentTrades = [];
+        this.recentTrades.push({
+            timestamp: Date.now(),
+            side: side,
+            amount: tradeAmount
+        });
+
+        // 마지막 20개 거래만 유지
+        if (this.recentTrades.length > 20) {
+            this.recentTrades = this.recentTrades.slice(-20);
+        }
+
+        console.log(`📊 Recent trades count: ${this.recentTrades.length}`);
+
+        // 실시간 게이지 업데이트 (마지막 20개 거래 기반)
+        this.updateGaugeFromRecentTrades();
+    }
+
+    updateGaugeFromRecentTrades() {
+        if (!this.recentTrades || this.recentTrades.length === 0) {
+            this.updateWhaleRatioDisplay(50, 0);
+            return;
+        }
+
+        console.log('📊 Calculating from', this.recentTrades.length, 'trades');
+
+        // 롱/숏 볼륨 계산 (마지막 20개 거래) - 일관된 필터링
+        const longVolume = this.recentTrades
+            .filter(t => t.side === 'BUY')
+            .reduce((sum, t) => sum + t.amount, 0);
+        
+        const shortVolume = this.recentTrades
+            .filter(t => t.side === 'SELL')
+            .reduce((sum, t) => sum + t.amount, 0);
+
+        // 비율 계산
+        const totalVolume = longVolume + shortVolume;
+        let longRatio = 50; // 기본값
+
+        if (totalVolume > 0) {
+            longRatio = (longVolume / totalVolume) * 100;
+        }
+
+        console.log(`📊 Real-time gauge update: ${longRatio.toFixed(1)}% (${this.recentTrades.length}/20 trades, Long: $${(longVolume/1000000).toFixed(1)}M, Short: $${(shortVolume/1000000).toFixed(1)}M)`);
+
+        // 게이지 업데이트
+        this.updateWhaleRatioDisplay(longRatio, this.recentTrades.length);
+    }
+
+    updateWhaleLSRatio() {
+        if (!this.recentTrades || this.recentTrades.length === 0) {
+            this.updateWhaleHeaderGauge(50);
+            return;
+        }
+
+        console.log('📊 Calculating from', this.recentTrades.length, 'trades');
+
+        // 마지막 20개 거래만 유지
+        if (this.recentTrades.length > 20) {
+            this.recentTrades = this.recentTrades.slice(-20);
+        }
+
+        // 롱/숏 볼륨 계산 (마지막 20개 거래)
+        const longVolume = this.recentTrades
+            .filter(t => t.side === 'BUY' || t.side === 'buy')
+            .reduce((sum, t) => sum + t.amount, 0);
+        
+        const shortVolume = this.recentTrades
+            .filter(t => t.side === 'SELL' || t.side === 'sell')
+            .reduce((sum, t) => sum + t.amount, 0);
+
+        // 비율 계산
+        const totalVolume = longVolume + shortVolume;
+        const longRatio = totalVolume > 0 ? (longVolume / totalVolume) * 100 : 50;
+
+        this.updateWhaleHeaderGauge(longRatio);
+    }
+
+    updateWhaleHeaderGauge(longRatio) {
+        console.log('🎯 updateWhaleHeaderGauge called with longRatio:', longRatio);
+        
+        // 단일 게이지 업데이트 함수 사용
+        this.updateWhaleRatioDisplay(longRatio, 0);
+    }
+
+    // 게이지 테스트 함수 추가
+    testWhaleGauge() {
+        console.log('🧪 Testing whale gauge...');
+        
+        let testRatio = 20; // 시작값
+        const testInterval = setInterval(() => {
+            this.updateWhaleRatioDisplay(testRatio, 0);
+            testRatio += 10;
+            
+            if (testRatio > 80) {
+                clearInterval(testInterval);
+                console.log('🧪 Gauge test completed');
+                
+                // 다시 실제 값으로 돌아가기
+                setTimeout(() => {
+                    this.updateWhaleLSRatio();
+                }, 2000);
+            }
+        }, 500);
+    }
+
+    // 테스트 거래 추가 함수
+    addTestTrades() {
+        console.log('🧪 Adding test trades...');
+        
+        // 테스트 거래들 추가
+        const testTrades = [
+            { exchange: 'BINANCE', side: 'BUY', amount: 25 },
+            { exchange: 'BYBIT', side: 'SELL', amount: 15 },
+            { exchange: 'OKX', side: 'BUY', amount: 30 },
+            { exchange: 'BITGET', side: 'BUY', amount: 20 },
+            { exchange: 'MEXC', side: 'SELL', amount: 10 }
+        ];
+
+        testTrades.forEach((trade, index) => {
+            setTimeout(() => {
+                const price = 100000 + (Math.random() - 0.5) * 10000;
+                const quantity = trade.amount;
+                this.addSimulatedTrade(trade.exchange, price, quantity, trade.side);
+            }, index * 500);
+        });
+    }
+
+    getTradeLevel(amount) {
+        if (amount >= 1000000) return 3; // $1M+
+        if (amount >= 500000) return 2;  // $500k+
+        if (amount >= 250000) return 1;  // $250k+
+        return 0; // $100k+
+    }
+
+    formatAmount(amount) {
+        if (amount >= 1000000) {
+            return `$${(amount / 1000000).toFixed(1)}M`;
+        }
+        return `$${(amount / 1000).toFixed(1)}K`;
+    }
+
+    initializeCharts() {
+        console.log('📊 Initializing charts...');
+        // Chart.js 차트들 초기화는 각 탭이 활성화될 때 실행
+    }
+
+    loadInitialData() {
+        // Generate simulation data first
+        this.generateSimulationData();
+        
+        // Initial whale data display
+        this.generateInitialWhaleData();
+        
+        // Fear & Greed Index initialization moved to after DOM is ready
+        setTimeout(() => {
+            try {
+                this.updateFearGreedIndex();
+            } catch (error) {
+                console.warn('Fear & Greed Index elements not ready yet:', error);
+            }
+        }, 1000);
+    }
+
+    generateInitialWhaleData() {
+        // 페이지 로드 시 즉시 보여줄 샘플 고래 거래 생성
+        const sampleWhales = [
+            {
+                id: 'initial_btc_1',
+                hash: generateRandomHash(),
+                amount: 156.789,
+                type: 'bitcoin',
+                timestamp: Date.now() - 300000, // 5분 전
+                fromAddress: generateRandomAddress(),
+                toAddress: generateRandomAddress(),
+                usdValue: 156.789 * 104000,
+                fee: 0.002345,
+                size: 1024,
+                confirmed: true,
+                blockHeight: 875432
+            },
+            {
+                id: 'initial_btc_2',
+                hash: generateRandomHash(),
+                amount: 89.234,
+                type: 'bitcoin',
+                timestamp: Date.now() - 600000, // 10분 전
+                fromAddress: generateRandomAddress(),
+                toAddress: generateRandomAddress(),
+                usdValue: 89.234 * 104000,
+                fee: 0.001876,
+                size: 856,
+                confirmed: false,
+                isMempool: true
+            },
+            {
+                id: 'initial_eth_1',
+                hash: generateRandomHash(),
+                amount: 2456.78,
+                type: 'ethereum',
+                timestamp: Date.now() - 450000, // 7.5분 전
+                fromAddress: generateRandomAddress(),
+                toAddress: generateRandomAddress(),
+                usdValue: 2456.78 * 3400,
+                fee: 0.0234,
+                size: 512,
+                confirmed: true,
+                blockHeight: 19234567
+            }
+        ];
+
+        this.allTransactions = sampleWhales;
+        this.stats.btcCount = 2;
+        this.stats.ethCount = 1;
+        this.stats.totalVolume = sampleWhales.reduce((sum, tx) => sum + tx.usdValue, 0);
+        
+        // 즉시 표시 업데이트
+        this.updateWhaleDisplay();
+        this.updateStats();
+    }
+
+    switchTab(tabName) {
+        if (!tabName || this.currentTab === tabName) return;
+        
+        // 이전 탭 비활성화
+        document.querySelectorAll('.tab-button').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        document.querySelectorAll('.tab-content').forEach(content => {
+            content.classList.remove('active');
+        });
+        
+        // 새 탭 활성화
+        const tabButton = document.querySelector(`[data-tab="${tabName}"]`);
+        const tabContent = document.getElementById(`${tabName}-tab`);
+        
+        if (tabButton && tabContent) {
+            tabButton.classList.add('active');
+            tabContent.classList.add('active');
+            this.currentTab = tabName;
+            
+            // 각 탭별 초기화
+            this.initializeTab(tabName);
+        }
+    }
+
+    initializeTab(tabName) {
+        switch(tabName) {
+            case 'whales':
+                this.updateWhaleDisplay();
+                break;
+            case 'liquidations':
+                this.initializeLiquidationChart();
+                this.updateLiquidationData();
+                break;
+            case 'longsshorts':
+                this.initializeLongShortChart();
+                this.updateLongShortDisplay();
+                break;
+            case 'realtime':
+                this.startRealtimeTracking();
+                break;
+            case 'indicators':
+                this.initializeIndicatorCharts();
+                this.updateIndicators();
+                break;
+            case 'sentiment':
+                this.initializeFearGreedGauge();
+                this.initializeSentimentChart();
+                break;
+            case 'heatmap':
+                this.generateHeatmap();
+                break;
+            case 'orderbook':
+                this.startOrderbookTracking();
+                break;
+        }
+    }
+
+    startAllTracking() {
+        this.isTracking = true;
+        // document.getElementById('start-all-tracking').disabled = true;
+        // document.getElementById('stop-all-tracking').disabled = false;
+        
+        this.updateGlobalStatus('connected', '전체 추적 중...');
+        
+        // 모든 기능 시작
+        this.startWhaleTracking();
+        this.startLiquidationTracking();
+        this.startLongShortTracking();
+        this.startRealtimeTracking();
+        this.startIndicatorTracking();
+        this.startSentimentTracking();
+        
+        this.showNotification('🚀 모든 추적 기능이 시작되었습니다!', 'success');
+    }
+
+    stopAllTracking() {
+        this.isTracking = false;
+        // document.getElementById('start-all-tracking').disabled = false;
+        // document.getElementById('stop-all-tracking').disabled = true;
+        
+        this.updateGlobalStatus('connecting', '대기 중...');
+        
+        // 모든 간격 정리
+        Object.values(this.intervals).forEach(interval => {
+            if (interval) clearInterval(interval);
+        });
+        this.intervals = {};
+        
+        // Whale 관련 간격 정리
+        if (this.whaleSimulationInterval) {
+            clearInterval(this.whaleSimulationInterval);
+            this.whaleSimulationInterval = null;
+        }
+        this.stopWhaleLSUpdate();
+        
+        this.showNotification('⏹️ 모든 추적이 중지되었습니다.', 'info');
+    }
+
+    updateGlobalStatus(status, text) {
+        const statusElement = document.getElementById('global-status');
+        if (statusElement) {
+            const dot = statusElement.querySelector('.status-dot');
+            const textElement = statusElement.querySelector('.status-text');
+            
+            if (dot && textElement) {
+                dot.classList.remove('connecting', 'connected', 'error');
+                dot.classList.add(status);
+                textElement.textContent = text;
+            }
+        }
+    }
+    
+    setupEventListeners() {
+        // Global controls (사용되지 않는 버튼 리스너 제거)
+        // document.getElementById('start-all-tracking')?.addEventListener('click', () => this.startAllTracking());
+        // document.getElementById('stop-all-tracking')?.addEventListener('click', () => this.stopAllTracking());
+        
+        // Tab switching
+        document.querySelectorAll('.tab-button').forEach(btn => {
+            btn.addEventListener('click', (e) => this.switchTab(e.target.dataset.tab));
+        });
+        
+        // Realtime controls
+        document.getElementById('realtime-symbol')?.addEventListener('change', (e) => {
+            this.realtimeSymbol = e.target.value;
+            this.startRealtimeTracking();
+        });
+        
+        document.getElementById('realtime-toggle')?.addEventListener('click', () => {
+            this.toggleRealtimeTracking();
+        });
+        
+        // Whale tracking controls
+        document.getElementById('btc-threshold')?.addEventListener('change', (e) => {
+            this.btcThreshold = parseFloat(e.target.value);
+        });
+        
+        document.getElementById('eth-threshold')?.addEventListener('change', (e) => {
+            this.ethThreshold = parseFloat(e.target.value);
+        });
+        
+        document.getElementById('crypto-filter')?.addEventListener('change', (e) => {
+            this.currentFilter = e.target.value;
+            this.updateWhaleDisplay();
+        });
+        
+        document.getElementById('refresh-data')?.addEventListener('click', () => {
+            this.refreshWhaleData();
+        });
+        
+        document.getElementById('load-more')?.addEventListener('click', () => {
+            this.loadMoreTransactions();
+        });
+    }
+    
+    async initializeWeb3() {
+        try {
+            console.log('⚡ Web3 초기화 시작...');
+            
+            // Web3가 없어도 작동하도록 시뮬레이션 모드로 설정
+            this.enableSimulationMode();
+            console.log('🎭 시뮬레이션 모드로 초기화 완료');
+            
+            return; // Web3 연결 시도 없이 바로 시뮬레이션 모드로
+            
+            // 여러 RPC 엔드포인트 시도 (무료 공개 RPC 사용)
+            const rpcEndpoints = [
+                'https://eth.llamarpc.com',
+                'https://rpc.ankr.com/eth',
+                'https://ethereum.publicnode.com',
+                'https://eth-mainnet.public.blastapi.io',
+                'https://eth.drpc.org'
+            ];
+            
+            let connected = false;
+            
+            for (const endpoint of rpcEndpoints) {
+                try {
+                    console.log(`Trying RPC endpoint: ${endpoint}`);
+                    
+                    // HTTP Provider with timeout
+                    const provider = new Web3.providers.HttpProvider(endpoint, {
+                        timeout: 10000, // 10초 타임아웃
+                        headers: [
+                            {
+                                name: 'User-Agent',
+                                value: 'Onbit-WhaleTracker/1.0'
+                            }
+                        ]
+                    });
+                    
+                    this.web3 = new Web3(provider);
+                    
+                    // 연결 테스트 (타임아웃 추가)
+                    const blockNumber = await Promise.race([
+                        this.web3.eth.getBlockNumber(),
+                        new Promise((_, reject) => 
+                            setTimeout(() => reject(new Error('Timeout')), 8000)
+                        )
+                    ]);
+                    
+                    console.log(`Connected to ${endpoint}, current block: ${blockNumber}`);
+                    this.updateStatus('eth', 'connected', 'HTTP 연결됨');
+                    connected = true;
+                    break;
+                    
+                } catch (error) {
+                    console.log(`Failed to connect to ${endpoint}:`, error.message);
+                    this.web3 = null;
+                    continue;
+                }
+            }
+            
+            if (!connected) {
+                throw new Error('All RPC endpoints failed');
+            }
+            
+        } catch (error) {
+            console.error('Web3 initialization failed:', error);
+            this.updateStatus('eth', 'error', '연결 실패');
+            
+            // 시뮬레이션 모드로 전환
+            this.enableSimulationMode();
+        }
+    }
+    
+    enableSimulationMode() {
+        console.log('Enabling simulation mode for Ethereum tracking');
+        this.updateStatus('eth', 'connected', '시뮬레이션 모드');
+        this.web3 = null; // Web3 비활성화
+        
+        // 시뮬레이션 알림
+        this.showNotification('🔧 실제 API 연결 실패, 시뮬레이션 모드로 전환됩니다.', 'warning');
+        
+        // 5초 후 추가 안내 메시지
+        setTimeout(() => {
+            this.showNotification('💡 시뮬레이션 모드에서도 고래 추적을 체험할 수 있습니다!', 'info');
+        }, 5000);
+    }
+    
+    startTracking() {
+        if (this.isTracking) return;
+        
+        this.isTracking = true;
+        document.getElementById('start-tracking').disabled = true;
+        document.getElementById('stop-tracking').disabled = false;
+        
+        // 상태 업데이트
+        this.updateStatus('btc', 'connected', '추적 중...');
+        this.updateStatus('eth', 'connected', '추적 중...');
+        
+        // 비트코인 추적 시작
+        this.startBitcoinTracking();
+        
+        // 이더리움 추적 시작
+        this.startEthereumTracking();
+        
+        // UI 업데이트 간격 설정
+        this.trackingInterval = setInterval(() => {
+            this.updateLastUpdateTime();
+        }, 1000);
+        
+        this.showNotification('고래 추적을 시작했습니다!', 'success');
+    }
+    
+    stopTracking() {
+        if (!this.isTracking) return;
+        
+        this.isTracking = false;
+        document.getElementById('start-tracking').disabled = false;
+        document.getElementById('stop-tracking').disabled = true;
+        
+        // 상태 업데이트
+        this.updateStatus('btc', 'connecting', '대기 중...');
+        this.updateStatus('eth', 'connecting', '대기 중...');
+        
+        // 간격 정리
+        if (this.trackingInterval) {
+            clearInterval(this.trackingInterval);
+            this.trackingInterval = null;
+        }
+        
+        this.showNotification('고래 추적을 중지했습니다.', 'info');
+    }
+    
+    async startBitcoinTracking() {
+        console.log('🔄 비트코인 고래 추적 시작 - mempool.space API 사용');
+        this.updateStatus('btc', 'connecting', '비트코인 네트워크 연결 중...');
+        this.bitcoinFailCount = 0;
+
+        // WebSocket 연결 시도
+        try {
+            await this.connectBitcoinWebSocket();
+        } catch (error) {
+            console.log('WebSocket 연결 실패, REST API 폴링으로 전환');
+            this.startBitcoinPolling();
+        }
+    }
+
+    async connectBitcoinWebSocket() {
+        return new Promise((resolve, reject) => {
+            try {
+                this.bitcoinWs = new WebSocket('wss://mempool.space/api/v1/ws');
+                
+                let connected = false;
+                
+                this.bitcoinWs.onopen = () => {
+                    console.log('✅ 비트코인 WebSocket 연결 성공');
+                    this.updateStatus('btc', 'connected', '실시간 모니터링 중');
+                    connected = true;
+                    
+                    // 실시간 거래 데이터 구독
+                    this.bitcoinWs.send(JSON.stringify({
+                        "action": "want", 
+                        "data": ["mempool-blocks", "stats"]
+                    }));
+                    
+                    resolve();
+                };
+
+                this.bitcoinWs.onmessage = (event) => {
+                    try {
+                        const data = JSON.parse(event.data);
+                        this.processBitcoinWebSocketData(data);
+                    } catch (e) {
+                        console.error('WebSocket 데이터 파싱 오류:', e);
+                    }
+                };
+
+                this.bitcoinWs.onerror = (error) => {
+                    console.error('비트코인 WebSocket 오류:', error);
+                    if (!connected) {
+                        reject(error);
+                    }
+                };
+
+                this.bitcoinWs.onclose = () => {
+                    console.log('비트코인 WebSocket 연결 종료');
+                    this.updateStatus('btc', 'reconnecting', '재연결 중...');
+                    
+                    // 3초 후 재연결 시도
+                    setTimeout(() => {
+                        if (this.isTracking) {
+                            this.connectBitcoinWebSocket().catch(() => {
+                                this.startBitcoinPolling();
+                            });
+                        }
+                    }, 3000);
+                };
+
+                // 10초 후에도 연결되지 않으면 실패로 처리
+                setTimeout(() => {
+                    if (!connected) {
+                        reject(new Error('WebSocket 연결 타임아웃'));
+                    }
+                }, 10000);
+
+            } catch (error) {
+                reject(error);
+            }
+        });
+    }
+
+    processBitcoinWebSocketData(data) {
+        // 멤풀 블록 데이터 처리
+        if (data['mempool-blocks']) {
+            const mempoolBlocks = data['mempool-blocks'];
+            this.processMempoolBlocks(mempoolBlocks);
+        }
+
+        // 멤풀 통계 업데이트
+        if (data.mempoolInfo && data.fees) {
+            this.updateBitcoinMempoolStats(data.mempoolInfo, data.vBytesPerSecond || 0, data.fees);
+        }
+    }
+
+    processMempoolBlocks(blocks) {
+        if (!blocks || blocks.length === 0) return;
+
+        blocks.forEach((block, index) => {
+            // 수수료가 높은 블록 = 고액 거래 포함 가능성
+            if (block.totalFees > 50000000) { // 0.5 BTC 이상 총 수수료
+                const estimatedWhaleValue = block.totalFees / 100000000 * 20; // 추정 고래 거래 크기
+                
+                const whaleTransaction = {
+                    id: `mempool_${Date.now()}_${index}`,
+                    hash: `mempool_block_${block.blockSize}_${Date.now()}`,
+                    amount: estimatedWhaleValue,
+                    type: 'bitcoin',
+                    timestamp: Date.now(),
+                    fromAddress: 'Multiple Inputs',
+                    toAddress: 'Multiple Outputs',
+                    usdValue: estimatedWhaleValue * 104000,
+                    fee: block.totalFees / 100000000,
+                    size: block.blockSize,
+                    txCount: block.nTx,
+                    medianFee: block.medianFee,
+                    confirmed: false,
+                    isMempool: true
+                };
+
+                // 중복 방지
+                if (!this.allTransactions.find(t => t.id === whaleTransaction.id)) {
+                    this.allTransactions.unshift(whaleTransaction);
+                    this.stats.btcCount++;
+                    this.stats.totalVolume += whaleTransaction.usdValue;
+                    
+                    // 최대 200개 거래만 유지
+                    if (this.allTransactions.length > 200) {
+                        this.allTransactions = this.allTransactions.slice(0, 200);
+                    }
+                    
+                    this.updateTransactionDisplay();
+                    this.updateStats();
+                    
+                    // 대형 거래 알림
+                    if (whaleTransaction.usdValue > 10000000) { // $10M 이상
+                        this.showNotification(
+                            `🐋 대형 비트코인 거래 감지: ${whaleTransaction.amount.toFixed(2)} BTC ($${(whaleTransaction.usdValue/1000000).toFixed(1)}M)`,
+                            'whale'
+                        );
+                    }
+                }
+            }
+        });
+    }
+
+    updateBitcoinMempoolStats(mempoolInfo, vBytesPerSecond, fees) {
+        // 멤풀 통계를 고래 추적 탭에 표시
+        const statsContainer = document.querySelector('#whale-tracking .stats-grid');
+        if (statsContainer) {
+            // 기존 통계 뒤에 멤풀 통계 추가
+            let mempoolStatsElement = document.getElementById('bitcoin-mempool-stats');
+            if (!mempoolStatsElement) {
+                mempoolStatsElement = document.createElement('div');
+                mempoolStatsElement.id = 'bitcoin-mempool-stats';
+                mempoolStatsElement.className = 'stat-card mempool-stats';
+                statsContainer.appendChild(mempoolStatsElement);
+            }
+            
+            mempoolStatsElement.innerHTML = `
+                <h3>📊 비트코인 멤풀 현황</h3>
+                <div class="mempool-stat-grid">
+                    <div class="mempool-stat">
+                        <span class="stat-label">멤풀 크기:</span>
+                        <span class="stat-value">${(mempoolInfo.bytes / 1024 / 1024).toFixed(1)} MB</span>
+                    </div>
+                    <div class="mempool-stat">
+                        <span class="stat-label">대기 거래:</span>
+                        <span class="stat-value">${mempoolInfo.size.toLocaleString()}개</span>
+                    </div>
+                    <div class="mempool-stat">
+                        <span class="stat-label">처리 속도:</span>
+                        <span class="stat-value">${vBytesPerSecond} vB/s</span>
+                    </div>
+                    <div class="mempool-stat">
+                        <span class="stat-label">빠른 수수료:</span>
+                        <span class="stat-value">${fees.fastestFee} sat/vB</span>
+                    </div>
+                    <div class="mempool-stat">
+                        <span class="stat-label">경제적 수수료:</span>
+                        <span class="stat-value">${fees.economyFee} sat/vB</span>
+                    </div>
+                    <div class="mempool-stat">
+                        <span class="stat-label">최소 수수료:</span>
+                        <span class="stat-value">${fees.minimumFee} sat/vB</span>
+                    </div>
+                </div>
+            `;
+        }
+    }
+
+    async startBitcoinPolling() {
+        console.log('📡 비트코인 REST API 폴링 시작');
+        this.updateStatus('btc', 'polling', 'REST API 모니터링 중');
+
+        const pollBitcoin = async () => {
+            if (!this.isTracking) return;
+
+            try {
+                // 최신 블록 높이 조회
+                const tipResponse = await fetch('https://mempool.space/api/blocks/tip/height');
+                if (!tipResponse.ok) throw new Error('블록 높이 조회 실패');
+                
+                const currentHeight = await tipResponse.json();
+                
+                // 최신 블록의 거래들 조회
+                const blockTxsResponse = await fetch(`https://mempool.space/api/block/${currentHeight}/txs/0`);
+                if (!blockTxsResponse.ok) throw new Error('블록 거래 조회 실패');
+                
+                const transactions = await blockTxsResponse.json();
+                this.processBitcoinBlockTransactions(transactions, currentHeight);
+                
+                // 멤풀 통계 조회
+                const mempoolResponse = await fetch('https://mempool.space/api/mempool');
+                if (mempoolResponse.ok) {
+                    const mempoolData = await mempoolResponse.json();
+                    
+                    // 수수료 정보 조회
+                    const feesResponse = await fetch('https://mempool.space/api/v1/fees/recommended');
+                    const feesData = feesResponse.ok ? await feesResponse.json() : {};
+                    
+                    this.updateBitcoinMempoolStats(mempoolData, 0, feesData);
+                }
+                
+                this.updateStatus('btc', 'connected', 'REST API 모니터링 중');
+                this.bitcoinFailCount = 0;
+                
+            } catch (error) {
+                console.error('비트코인 폴링 오류:', error);
+                this.bitcoinFailCount++;
+                
+                if (this.bitcoinFailCount >= 3) {
+                    console.log('🔄 API 연결 실패, 시뮬레이션 모드로 전환');
+                    this.updateStatus('btc', 'simulation', '시뮬레이션 모드');
+                    this.startBitcoinSimulation();
+                    return;
+                } else {
+                    this.updateStatus('btc', 'error', `API 오류 (${this.bitcoinFailCount}/3)`);
+                }
+            }
+            
+            // 30초 후 다시 폴링
+            if (this.isTracking) {
+                setTimeout(pollBitcoin, 30000);
+            }
+        };
+
+        await pollBitcoin();
+    }
+
+    processBitcoinBlockTransactions(transactions, blockHeight) {
+        if (!transactions || transactions.length === 0) return;
+
+        transactions.forEach(tx => {
+            // 총 출력값 계산
+            const totalOutput = tx.vout.reduce((sum, output) => sum + output.value, 0);
+            const btcAmount = totalOutput / 100000000; // satoshi to BTC
+            
+            // 50 BTC 이상 거래를 고래로 간주 (실제 고래 기준)
+            if (btcAmount >= 50) {
+                const whaleTransaction = {
+                    id: tx.txid,
+                    hash: tx.txid,
+                    amount: btcAmount,
+                    type: 'bitcoin',
+                    timestamp: Date.now(),
+                    fromAddress: this.extractFromAddress(tx),
+                    toAddress: this.extractToAddress(tx),
+                    usdValue: btcAmount * 104000, // 현재 BTC 가격
+                    fee: tx.fee / 100000000,
+                    size: tx.size,
+                    blockHeight: blockHeight,
+                    confirmed: true,
+                    vsize: tx.vsize || tx.size
+                };
+
+                // 중복 방지
+                if (!this.allTransactions.find(t => t.id === whaleTransaction.id)) {
+                    this.allTransactions.unshift(whaleTransaction);
+                    this.stats.btcCount++;
+                    this.stats.totalVolume += whaleTransaction.usdValue;
+                    
+                    if (this.allTransactions.length > 200) {
+                        this.allTransactions = this.allTransactions.slice(0, 200);
+                    }
+                    
+                    this.updateTransactionDisplay();
+                    this.updateStats();
+                    
+                    // 고래 등급별 알림
+                    if (whaleTransaction.usdValue > 50000000) { // $50M+ = 초대형 고래
+                        this.showNotification(
+                            `🐋🐋🐋 초대형 고래: ${whaleTransaction.amount.toFixed(2)} BTC ($${(whaleTransaction.usdValue/1000000).toFixed(0)}M)`,
+                            'mega-whale'
+                        );
+                    } else if (whaleTransaction.usdValue > 10000000) { // $10M+ = 대형 고래
+                        this.showNotification(
+                            `🐋🐋 대형 고래: ${whaleTransaction.amount.toFixed(2)} BTC ($${(whaleTransaction.usdValue/1000000).toFixed(1)}M)`,
+                            'whale'
+                        );
+                    } else if (whaleTransaction.usdValue > 5000000) { // $5M+ = 중형 고래
+                        this.showNotification(
+                            `🐋 중형 고래: ${whaleTransaction.amount.toFixed(2)} BTC ($${(whaleTransaction.usdValue/1000000).toFixed(1)}M)`,
+                            'info'
+                        );
+                    }
+                }
+            }
+        });
+    }
+
+    extractFromAddress(tx) {
+        // 첫 번째 입력의 주소 추출
+        if (tx.vin && tx.vin[0] && tx.vin[0].prevout) {
+            return tx.vin[0].prevout.scriptpubkey_address || 'Unknown';
+        }
+        return generateRandomAddress();
+    }
+
+    extractToAddress(tx) {
+        // 가장 큰 출력의 주소 추출
+        if (tx.vout && tx.vout.length > 0) {
+            const largestOutput = tx.vout.reduce((max, current) => 
+                current.value > max.value ? current : max
+            );
+            return largestOutput.scriptpubkey_address || 'Unknown';
+        }
+        return generateRandomAddress();
+    }
+    
+    // 기존 processBitcoinTransactions 함수는 새로운 mempool.space API 버전으로 대체됨
+    
+    startBitcoinSimulation() {
+        console.log('🎭 비트코인 고래 시뮬레이션 모드 시작');
+        
+        // 시뮬레이션 멤풀 통계 생성
+        this.generateSimulatedMempoolStats();
+        
+        const generateSimulatedBtcTx = () => {
+            if (!this.isTracking) return;
+            
+            // 5% 확률로 고래 거래 생성 (실제보다 높은 빈도)
+            if (Math.random() < 0.05) {
+                // 현실적인 고래 거래 크기 분포
+                let btcAmount;
+                const rand = Math.random();
+                if (rand < 0.6) {
+                    btcAmount = Math.random() * 100 + 50; // 50-150 BTC (60%)
+                } else if (rand < 0.85) {
+                    btcAmount = Math.random() * 200 + 150; // 150-350 BTC (25%)
+                } else if (rand < 0.95) {
+                    btcAmount = Math.random() * 500 + 350; // 350-850 BTC (10%)
+                } else {
+                    btcAmount = Math.random() * 1000 + 850; // 850-1850 BTC (5%)
+                }
+                
+                const whaleTransaction = {
+                    id: 'sim_btc_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+                    hash: generateRandomHash(),
+                    amount: btcAmount,
+                    type: 'bitcoin',
+                    timestamp: Date.now(),
+                    fromAddress: generateRandomAddress(),
+                    toAddress: generateRandomAddress(),
+                    usdValue: btcAmount * 104000,
+                    fee: Math.random() * 0.005 + 0.001, // 0.001-0.006 BTC 수수료
+                    size: Math.floor(Math.random() * 300) + 200,
+                    confirmed: Math.random() > 0.3, // 70% 확정, 30% 멤풀
+                    blockHeight: Math.random() > 0.3 ? Math.floor(Math.random() * 1000) + 875000 : null
+                };
+                
+                this.allTransactions.unshift(whaleTransaction);
+                this.stats.btcCount++;
+                this.stats.totalVolume += whaleTransaction.usdValue;
+                
+                if (this.allTransactions.length > 200) {
+                    this.allTransactions = this.allTransactions.slice(0, 200);
+                }
+                
+                this.updateTransactionDisplay();
+                this.updateStats();
+                
+                // 등급별 알림 (실제 API와 동일)
+                if (whaleTransaction.usdValue > 50000000) {
+                    this.showNotification(
+                        `🐋🐋🐋 [시뮬레이션] 초대형 고래: ${whaleTransaction.amount.toFixed(2)} BTC ($${(whaleTransaction.usdValue/1000000).toFixed(0)}M)`,
+                        'mega-whale'
+                    );
+                } else if (whaleTransaction.usdValue > 10000000) {
+                    this.showNotification(
+                        `🐋🐋 [시뮬레이션] 대형 고래: ${whaleTransaction.amount.toFixed(2)} BTC ($${(whaleTransaction.usdValue/1000000).toFixed(1)}M)`,
+                        'whale'
+                    );
+                } else if (whaleTransaction.usdValue > 5000000) {
+                    this.showNotification(
+                        `🐋 [시뮬레이션] 중형 고래: ${whaleTransaction.amount.toFixed(2)} BTC ($${(whaleTransaction.usdValue/1000000).toFixed(1)}M)`,
+                        'info'
+                    );
+                }
+            }
+            
+            // 10-30초 후 다시 실행 (더 자주)
+            if (this.isTracking) {
+                setTimeout(generateSimulatedBtcTx, Math.random() * 20000 + 10000);
+            }
+        };
+        
+        // 시뮬레이션 시작
+        setTimeout(generateSimulatedBtcTx, 2000);
+    }
+
+    generateSimulatedMempoolStats() {
+        // 시뮬레이션용 멤풀 통계 생성
+        const simulatedMempoolInfo = {
+            size: Math.floor(Math.random() * 50000) + 150000, // 150K-200K 거래
+            bytes: Math.floor(Math.random() * 50000000) + 100000000, // 100-150MB
+            usage: Math.floor(Math.random() * 100000000) + 500000000
+        };
+
+        const simulatedFees = {
+            fastestFee: Math.floor(Math.random() * 50) + 20, // 20-70 sat/vB
+            halfHourFee: Math.floor(Math.random() * 30) + 15,
+            hourFee: Math.floor(Math.random() * 20) + 10,
+            economyFee: Math.floor(Math.random() * 10) + 5,
+            minimumFee: Math.floor(Math.random() * 5) + 1
+        };
+
+        const vBytesPerSecond = Math.floor(Math.random() * 3000) + 1000; // 1000-4000 vB/s
+
+        this.updateBitcoinMempoolStats(simulatedMempoolInfo, vBytesPerSecond, simulatedFees);
+
+        // 30초마다 멤풀 통계 업데이트
+        if (this.isTracking) {
+            setTimeout(() => this.generateSimulatedMempoolStats(), 30000);
+        }
+    }
+    
+    async startEthereumTracking() {
+        if (!this.web3) {
+            console.log('Web3 not available, starting simulation mode');
+            this.startEthereumSimulation();
+            return;
+        }
+        
+        try {
+            // HTTP 방식으로 폴링 (공개 RPC는 대부분 HTTP만 지원)
+            this.startEthereumPollingTracking();
+            
+        } catch (error) {
+            console.error('Ethereum tracking error:', error);
+            this.updateStatus('eth', 'error', '추적 오류');
+            // 실패시 시뮬레이션 모드로 전환
+            this.startEthereumSimulation();
+        }
+    }
+    
+    startEthereumSimulation() {
+        console.log('Starting Ethereum simulation mode');
+        this.updateStatus('eth', 'connected', '시뮬레이션 중...');
+        
+        const generateSimulatedEthTx = () => {
+            if (!this.isTracking) return;
+            
+            // 5% 확률로 고래 거래 생성
+            if (Math.random() < 0.05) {
+                const ethAmount = Math.random() * 3000 + 1000; // 1000-4000 ETH
+                
+                const whaleTransaction = {
+                    id: 'sim_eth_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+                    hash: '0x' + generateRandomHash(),
+                    amount: ethAmount,
+                    type: 'ethereum',
+                    timestamp: Date.now(),
+                    fromAddress: generateRandomAddress(),
+                    toAddress: generateRandomAddress(),
+                    usdValue: ethAmount * 3400,
+                    gasPrice: Math.random() * 50 + 10
+                };
+                
+                this.allTransactions.unshift(whaleTransaction);
+                this.stats.ethCount++;
+                this.stats.totalVolume += ethAmount * 3400;
+                
+                if (this.allTransactions.length > 200) {
+                    this.allTransactions = this.allTransactions.slice(0, 200);
+                }
+                
+                this.updateTransactionDisplay();
+                this.updateStats();
+                
+                if (ethAmount >= this.ethThreshold * 2) {
+                    this.showNotification(
+                        `🐋 시뮬레이션: 대형 이더리움 거래 ${ethAmount.toFixed(2)} ETH`, 
+                        'warning'
+                    );
+                }
+            }
+            
+            // 10-30초 후 다시 실행
+            if (this.isTracking) {
+                setTimeout(generateSimulatedEthTx, Math.random() * 20000 + 10000);
+            }
+        };
+        
+        // 시뮬레이션 시작
+        setTimeout(generateSimulatedEthTx, 5000);
+    }
+    
+    async startEthereumWebSocketTracking() {
+        try {
+            const subscription = this.web3.eth.subscribe('newBlockHeaders');
+            
+            subscription.on('data', async (blockHeader) => {
+                if (!this.isTracking) return;
+                await this.processEthereumBlock(blockHeader.number);
+            });
+            
+            subscription.on('error', (error) => {
+                console.error('Ethereum subscription error:', error);
+                this.updateStatus('eth', 'error', '연결 오류');
+                // WebSocket 실패시 폴링으로 전환
+                this.startEthereumPollingTracking();
+            });
+            
+        } catch (error) {
+            console.error('WebSocket tracking failed:', error);
+            this.startEthereumPollingTracking();
+        }
+    }
+    
+    async startEthereumPollingTracking() {
+        let lastBlockNumber = 0n; // BigInt로 초기화
+        
+        const pollBlocks = async () => {
+            if (!this.isTracking) return;
+            
+            try {
+                const currentBlockNumber = await this.web3.eth.getBlockNumber();
+                const currentBlockBigInt = BigInt(currentBlockNumber);
+                
+                if (currentBlockBigInt > lastBlockNumber) {
+                    // 최신 블록만 처리 (너무 많은 블록을 처리하지 않도록)
+                    const blocksToProcess = Math.min(Number(currentBlockBigInt - lastBlockNumber), 5);
+                    
+                    for (let i = 0; i < blocksToProcess; i++) {
+                        const blockNum = currentBlockBigInt - BigInt(blocksToProcess - 1 - i);
+                        await this.processEthereumBlock(Number(blockNum));
+                    }
+                    lastBlockNumber = currentBlockBigInt;
+                }
+                
+                this.updateStatus('eth', 'connected', 'HTTP 폴링 중...');
+            } catch (error) {
+                console.error('Polling error:', error);
+                this.updateStatus('eth', 'error', '폴링 오류');
+                
+                // 3번 연속 실패시 시뮬레이션 모드로 전환
+                if (!this.pollingErrorCount) this.pollingErrorCount = 0;
+                this.pollingErrorCount++;
+                
+                if (this.pollingErrorCount >= 3) {
+                    console.log('Too many polling errors, switching to simulation');
+                    this.startEthereumSimulation();
+                    return;
+                }
+            }
+            
+            // 15초마다 폴링
+            if (this.isTracking) {
+                setTimeout(pollBlocks, 15000);
+            }
+        };
+        
+        // 초기 블록 번호 설정
+        try {
+            const initialBlock = await this.web3.eth.getBlockNumber();
+            lastBlockNumber = BigInt(initialBlock);
+            this.pollingErrorCount = 0;
+            console.log(`Starting Ethereum polling from block: ${lastBlockNumber}`);
+            pollBlocks();
+        } catch (error) {
+            console.error('Initial block number fetch failed:', error);
+            this.startEthereumSimulation();
+        }
+    }
+    
+    async processEthereumBlock(blockNumber) {
+        try {
+            const block = await this.web3.eth.getBlock(blockNumber, true);
+            
+            if (block && block.transactions && Array.isArray(block.transactions)) {
+                let processedCount = 0;
+                
+                for (const tx of block.transactions) {
+                    if (tx && tx.value) {
+                        try {
+                            // BigInt 값을 안전하게 처리
+                            const txValue = typeof tx.value === 'bigint' ? tx.value.toString() : tx.value;
+                            const ethAmount = this.web3.utils.fromWei(txValue, 'ether');
+                            const ethAmountNum = parseFloat(ethAmount);
+                            
+                            if (ethAmountNum >= this.ethThreshold) {
+                                // Gas price 안전하게 처리
+                                let gasPriceGwei = 0;
+                                if (tx.gasPrice) {
+                                    try {
+                                        const gasPrice = typeof tx.gasPrice === 'bigint' ? tx.gasPrice.toString() : tx.gasPrice;
+                                        gasPriceGwei = parseFloat(this.web3.utils.fromWei(gasPrice, 'gwei'));
+                                    } catch (gasPriceError) {
+                                        console.log('Gas price conversion error:', gasPriceError);
+                                    }
+                                }
+                                
+                                const whaleTransaction = {
+                                    id: tx.hash,
+                                    hash: tx.hash,
+                                    amount: ethAmountNum,
+                                    type: 'ethereum',
+                                    timestamp: Date.now(),
+                                    from: tx.from || 'Unknown',
+                                    to: tx.to || 'Unknown',
+                                    gasPrice: gasPriceGwei
+                                };
+                                
+                                // 중복 방지
+                                if (!this.ethTransactions.find(t => t.id === whaleTransaction.id)) {
+                                    this.ethTransactions.unshift(whaleTransaction);
+                                    this.stats.ethCount++;
+                                    this.stats.totalVolume += ethAmountNum * 3000; // 임시 ETH 가격
+                                    
+                                    // 최대 50개 거래만 유지
+                                    if (this.ethTransactions.length > 50) {
+                                        this.ethTransactions = this.ethTransactions.slice(0, 50);
+                                    }
+                                    
+                                    this.updateTransactionDisplay();
+                                    this.updateStats();
+                                    
+                                    processedCount++;
+                                    
+                                    // 큰 거래에 대한 알림
+                                    if (ethAmountNum >= this.ethThreshold * 2) {
+                                        this.showNotification(
+                                            `🐋 대형 이더리움 거래 감지: ${ethAmountNum.toFixed(2)} ETH`, 
+                                            'warning'
+                                        );
+                                    }
+                                }
+                            }
+                        } catch (txError) {
+                            console.log('Transaction processing error:', txError);
+                            continue;
+                        }
+                    }
+                }
+                
+                if (processedCount > 0) {
+                    console.log(`Processed ${processedCount} whale transactions from block ${blockNumber}`);
+                }
+            }
+        } catch (error) {
+            console.error(`Block ${blockNumber} processing error:`, error);
+        }
+    }
+    
+    updateWhaleDisplay() {
+        // whale-transactions 컨테이너가 없으면 함수 종료
+        const container = document.getElementById('whale-transactions');
+        if (!container) {
+            console.log('📝 whale-transactions 컨테이너가 없어서 표시를 건너뜁니다.');
+            return;
+        }
+
+        const loadMoreBtn = document.getElementById('load-more');
+        
+        // 필터링된 거래들
+        let filteredTransactions = this.allTransactions;
+        if (this.currentFilter !== 'all') {
+            filteredTransactions = this.allTransactions.filter(tx => tx.type === this.currentFilter);
+        }
+        
+        if (filteredTransactions.length === 0) {
+            container.innerHTML = `
+                <div class="no-whale-data">
+                    <i class="fas fa-search"></i>
+                    <p>추적을 시작하면 고래 거래가 여기에 표시됩니다.</p>
+                </div>
+            `;
+            if (loadMoreBtn) {
+                loadMoreBtn.style.display = 'none';
+            }
+            return;
+        }
+        
+        // 표시할 거래들 (displayedCount 개수만큼)
+        const displayTransactions = filteredTransactions.slice(0, this.displayedCount);
+        
+        container.innerHTML = displayTransactions.map(tx => this.createTransactionHTML(tx)).join('');
+        
+        // Load More 버튼 표시/숨김
+        if (loadMoreBtn) {
+            if (filteredTransactions.length > this.displayedCount) {
+                loadMoreBtn.style.display = 'block';
+            } else {
+                loadMoreBtn.style.display = 'none';
+            }
+        }
+    }
+
+    // ===== 실시간 거래 기능 =====
+    startRealtimeTracking() {
+        this.generateRealtimeTrades();
+        
+        if (this.intervals.realtime) return;
+        
+        this.intervals.realtime = setInterval(() => {
+            if (!this.realtimePaused && this.isTracking) {
+                this.addRealtimeTrade();
+            }
+        }, 500); // 500ms마다 새 거래 추가
+    }
+
+    generateRealtimeTrades() {
+        const tradesContainer = document.getElementById('trades-list');
+        if (!tradesContainer) return;
+
+        this.realtimeTrades = [];
+        
+        for (let i = 0; i < 20; i++) {
+            this.addRealtimeTrade(false);
+        }
+        
+        this.updateRealtimeDisplay();
+        this.updateRealtimeStats();
+    }
+
+    addRealtimeTrade(updateDisplay = true) {
+        const symbols = ['BTCUSDT', 'ETHUSDT', 'ADAUSDT'];
+        const symbol = this.realtimeSymbol || symbols[Math.floor(Math.random() * symbols.length)];
+        
+        const basePrice = symbol === 'BTCUSDT' ? 104000 : symbol === 'ETHUSDT' ? 3400 : 2.5;
+        const price = basePrice * (1 + (Math.random() - 0.5) * 0.02);
+        const quantity = Math.random() * 10 + 0.1;
+        const isBuy = Math.random() > 0.5;
+        
+        const trade = {
+            time: new Date().toLocaleTimeString(),
+            price: price.toFixed(symbol === 'ADAUSDT' ? 4 : 2),
+            quantity: quantity.toFixed(4),
+            type: isBuy ? 'buy' : 'sell',
+            timestamp: Date.now()
+        };
+
+        this.realtimeTrades.unshift(trade);
+        
+        // 최대 100개 거래만 유지
+        if (this.realtimeTrades.length > 100) {
+            this.realtimeTrades = this.realtimeTrades.slice(0, 100);
+        }
+
+        if (updateDisplay) {
+            this.updateRealtimeDisplay();
+            this.updateRealtimeStats();
+        }
+    }
+
+    updateRealtimeDisplay() {
+        const container = document.getElementById('trades-list');
+        if (!container) return;
+
+        const displayTrades = this.realtimeTrades.slice(0, 50);
+        
+        container.innerHTML = `
+            <div class="trade-header-row" style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 1rem; padding: 0.8rem 1rem; border-bottom: 2px solid #374151; font-weight: 600; color: #9ca3af; margin-bottom: 0.5rem; background: #111827;">
+                <span>시간</span>
+                <span>가격</span>
+                <span>수량</span>
+                <span>유형</span>
+            </div>
+            ${displayTrades.map(trade => `
+                <div class="trade-item">
+                    <span class="trade-time">${trade.time}</span>
+                    <span class="trade-price">$${trade.price}</span>
+                    <span class="trade-quantity">${trade.quantity}</span>
+                    <span class="trade-type ${trade.type}">${trade.type.toUpperCase()}</span>
+                </div>
+            `).join('')}
+        `;
+    }
+
+    updateRealtimeStats() {
+        const currentPrice = this.realtimeTrades.length > 0 ? this.realtimeTrades[0].price : '0';
+        const priceChange = (Math.random() - 0.5) * 10;
+        const volume = Math.random() * 1000000 + 500000;
+
+        document.getElementById('current-price').textContent = '$' + currentPrice;
+        
+        const changeElement = document.getElementById('price-change');
+        changeElement.textContent = (priceChange >= 0 ? '+' : '') + priceChange.toFixed(2) + '%';
+        changeElement.style.color = priceChange >= 0 ? '#10b981' : '#ef4444';
+        
+        document.getElementById('volume-24h').textContent = (volume / 1000).toFixed(0) + 'K';
+    }
+
+    toggleRealtimeTracking() {
+        this.realtimePaused = !this.realtimePaused;
+        const btn = document.getElementById('realtime-toggle');
+        if (btn) {
+            btn.innerHTML = this.realtimePaused ? 
+                '<i class="fas fa-play"></i> 재개' : 
+                '<i class="fas fa-pause"></i> 일시정지';
+        }
+    }
+
+    // ===== 기술지표 기능 =====
+    updateIndicators(symbol = 'BTCUSDT') {
+        // RSI 계산 (시뮬레이션)
+        const rsi = Math.random() * 100;
+        this.indicators.rsi = rsi;
+        
+        document.getElementById('rsi-value').textContent = rsi.toFixed(1);
+        document.getElementById('rsi-fill').style.width = rsi + '%';
+        
+        let rsiStatus = '중립';
+        if (rsi > 70) rsiStatus = '과매수';
+        else if (rsi < 30) rsiStatus = '과매도';
+        document.getElementById('rsi-status').textContent = rsiStatus;
+
+        // MACD
+        const macd = (Math.random() - 0.5) * 1000;
+        this.indicators.macd = macd;
+        document.getElementById('macd-value').textContent = macd.toFixed(2);
+        document.getElementById('macd-status').textContent = macd > 0 ? '강세' : '약세';
+
+        // 볼린저 밴드
+        const bbPosition = ['상단', '중간', '하단'][Math.floor(Math.random() * 3)];
+        document.getElementById('bb-position').textContent = bbPosition;
+        document.getElementById('bb-status').textContent = bbPosition === '중간' ? '정상' : '주의';
+
+        // 스토캐스틱
+        const stoch = Math.random() * 100;
+        this.indicators.stoch = stoch;
+        document.getElementById('stoch-value').textContent = stoch.toFixed(1);
+        
+        let stochStatus = '중립';
+        if (stoch > 80) stochStatus = '과매수';
+        else if (stoch < 20) stochStatus = '과매도';
+        document.getElementById('stoch-status').textContent = stochStatus;
+    }
+
+    initializeIndicatorCharts() {
+        const canvas = document.getElementById('indicators-chart');
+        if (!canvas) return;
+
+        // 가격 차트와 지표들을 함께 표시
+        this.charts.indicators = new Chart(canvas, {
+            type: 'line',
+            data: {
+                labels: Array.from({length: 50}, (_, i) => i),
+                datasets: [{
+                    label: '가격',
+                    data: Array.from({length: 50}, () => Math.random() * 1000 + 30000),
+                    borderColor: 'rgb(59, 130, 246)',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    yAxisID: 'y'
+                }, {
+                    label: 'RSI',
+                    data: Array.from({length: 50}, () => Math.random() * 100),
+                    borderColor: 'rgb(245, 158, 11)',
+                    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                    yAxisID: 'y1'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        type: 'linear',
+                        display: true,
+                        position: 'left',
+                        ticks: {
+                            color: '#9ca3af'
+                        },
+                        grid: {
+                            color: '#374151'
+                        }
+                    },
+                    y1: {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        max: 100,
+                        min: 0,
+                        ticks: {
+                            color: '#9ca3af'
+                        },
+                        grid: {
+                            drawOnChartArea: false,
+                            color: '#374151'
+                        }
+                    },
+                    x: {
+                        ticks: {
+                            color: '#9ca3af'
+                        },
+                        grid: {
+                            color: '#374151'
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        labels: {
+                            color: '#ffffff'
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    startIndicatorTracking() {
+        if (this.intervals.indicators) return;
+        
+        this.intervals.indicators = setInterval(() => {
+            if (this.isTracking) {
+                this.updateIndicators();
+            }
+        }, 3000); // 3초마다 업데이트
+    }
+    
+    createTransactionHTML(tx) {
+        const whaleLevel = this.getWhaleLevel(tx.type, tx.amount);
+        const whaleEmojis = '🐋'.repeat(whaleLevel);
+        const exchangeName = this.getExchangeName(tx.fromAddress) || this.getExchangeName(tx.toAddress);
+        const timeAgo = this.getTimeAgo(tx.timestamp);
+        
+        // USD 가치 계산 (시뮬레이션용)
+        let usdValue = tx.usdValue;
+        if (!usdValue) {
+            if (tx.type === 'bitcoin') {
+                usdValue = tx.amount * 104000; // 대략적인 BTC 가격
+            } else {
+                usdValue = tx.amount * 3400; // 대략적인 ETH 가격
+            }
+        }
+        
+        const fromDisplay = this.formatAddress(tx.fromAddress);
+        const toDisplay = this.formatAddress(tx.toAddress);
+        
+        // 거래 상태 결정
+        const isMempool = tx.isMempool || tx.confirmed === false;
+        const statusBadge = isMempool ? 
+            '<span class="mempool-badge">📡 멤풀</span>' : 
+            `<span class="confirmed-badge">✅ 확정 ${tx.blockHeight ? `#${tx.blockHeight}` : ''}</span>`;
+        
+        // 고래 크기 설명
+        const whaleSize = this.getWhaleSizeDescription(tx.type, tx.amount);
+        const whaleDescription = this.getWhaleDescription(usdValue);
+        
+        // 지갑 유형 설명
+        const fromWalletType = this.getWalletTypeDescription(tx.fromAddress);
+        const toWalletType = this.getWalletTypeDescription(tx.toAddress);
+        
+        return `
+            <div class="whale-transaction-item ${isMempool ? 'mempool' : 'confirmed'}">
+                <div class="whale-header">
+                    <div class="crypto-icon ${tx.type}">
+                        ${tx.type === 'bitcoin' ? '₿' : 'Ξ'}
+                    </div>
+                    <div class="whale-grade">
+                        <div class="whale-level">${whaleEmojis}</div>
+                        <span class="whale-size">${whaleSize}</span>
+                    </div>
+                    <div class="transaction-time">${timeAgo}</div>
+                </div>
+                
+                <div class="transaction-main-info">
+                    <div class="amount-section">
+                        <div class="amount-display">
+                            <span class="amount-number">${tx.amount.toLocaleString()}</span>
+                            <span class="amount-currency">${tx.type === 'bitcoin' ? 'BTC' : 'ETH'}</span>
+                        </div>
+                        <div class="amount-usd">≈ $${(usdValue/1000000).toFixed(1)}M USD</div>
+                        <div class="whale-explanation">${whaleDescription}</div>
+                        ${statusBadge}
+                    </div>
+                    
+                    <div class="transfer-section">
+                        <div class="transfer-title">💰 자금 이동 현황</div>
+                        <div class="wallet-flow">
+                            <div class="wallet-from">
+                                <div class="wallet-label">보낸 곳</div>
+                                <div class="wallet-type">${fromWalletType}</div>
+                                <div class="wallet-address">${fromDisplay}</div>
+                            </div>
+                            <div class="transfer-arrow">
+                                <i class="fas fa-arrow-right"></i>
+                            </div>
+                            <div class="wallet-to">
+                                <div class="wallet-label">받는 곳</div>
+                                <div class="wallet-type">${toWalletType}</div>
+                                <div class="wallet-address">${toDisplay}</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    ${tx.fee ? `
+                    <div class="transaction-details">
+                        <div class="detail-item">
+                            <span class="detail-label">💸 네트워크 수수료:</span>
+                            <span class="detail-value">${tx.fee.toFixed(6)} ${tx.type === 'bitcoin' ? 'BTC' : 'ETH'} (약 $${(tx.fee * (tx.type === 'bitcoin' ? 104000 : 3400)).toFixed(0)})</span>
+                        </div>
+                        ${tx.size ? `
+                        <div class="detail-item">
+                            <span class="detail-label">📦 거래 크기:</span>
+                            <span class="detail-value">${(tx.size/1024).toFixed(1)} KB</span>
+                        </div>
+                        ` : ''}
+                        ${tx.txCount ? `
+                        <div class="detail-item">
+                            <span class="detail-label">📊 포함된 거래:</span>
+                            <span class="detail-value">${tx.txCount.toLocaleString()}개</span>
+                        </div>
+                        ` : ''}
+                    </div>
+                    ` : ''}
+                </div>
+            </div>
+        `;
+    }
+    
+    getWhaleLevel(type, amount) {
+        if (type === 'bitcoin') {
+            if (amount >= 1000) return 10;
+            if (amount >= 500) return 8;
+            if (amount >= 200) return 6;
+            if (amount >= 100) return 4;
+            return 3;
+        } else { // ethereum
+            if (amount >= 10000) return 10;
+            if (amount >= 5000) return 8;
+            if (amount >= 3000) return 6;
+            if (amount >= 2000) return 4;
+            return 3;
+        }
+    }
+
+    getWhaleSizeDescription(type, amount) {
+        if (type === 'bitcoin') {
+            if (amount >= 1000) return '🐋🐋🐋 슈퍼 고래 (Ultra Whale)';
+            if (amount >= 500) return '🐋🐋 메가 고래 (Mega Whale)';
+            if (amount >= 200) return '🐋 대형 고래 (Large Whale)';
+            if (amount >= 100) return '🐋 중형 고래 (Medium Whale)';
+            return '🐋 소형 고래 (Small Whale)';
+        } else {
+            if (amount >= 10000) return '🐋🐋🐋 슈퍼 고래 (Ultra Whale)';
+            if (amount >= 5000) return '🐋🐋 메가 고래 (Mega Whale)';
+            if (amount >= 3000) return '🐋 대형 고래 (Large Whale)';
+            if (amount >= 2000) return '🐋 중형 고래 (Medium Whale)';
+            return '🐋 소형 고래 (Small Whale)';
+        }
+    }
+
+    getWhaleDescription(usdValue) {
+        if (usdValue >= 100000000) {
+            return '🚨 초거대 자금 이동! 시장에 큰 영향을 줄 수 있는 규모입니다.';
+        } else if (usdValue >= 50000000) {
+            return '⚡ 대규모 자금 이동! 기관투자자 또는 고액자산가의 거래로 추정됩니다.';
+        } else if (usdValue >= 10000000) {
+            return '📈 상당한 규모의 거래입니다. 가격 변동 가능성이 있습니다.';
+        } else if (usdValue >= 5000000) {
+            return '💼 중규모 고래 거래입니다. 시장 동향을 주시하세요.';
+        } else {
+            return '🏦 소규모 고래 거래입니다. 일반적인 대형 거래 범주입니다.';
+        }
+    }
+
+    getWalletTypeDescription(address) {
+        if (!address) return '🔍 알 수 없는 지갑';
+        
+        const exchangeName = this.getExchangeName(address);
+        if (exchangeName) {
+            return `🏢 ${exchangeName} 거래소`;
+        }
+        
+        // 특정 패턴으로 지갑 유형 추정
+        if (address.includes('Multiple')) {
+            return '📦 복수 입력 거래';
+        } else if (address.length > 40) {
+            return '👤 개인 지갑 (Private Wallet)';
+        } else if (address.startsWith('bc1') || address.startsWith('3')) {
+            return '🔒 개인 지갑 (Bitcoin Address)';
+        } else if (address.startsWith('0x')) {
+            return '💎 개인 지갑 (Ethereum Address)';
+        } else {
+            return '📱 개인 지갑 (Private Wallet)';
+        }
+    }
+    
+    getExchangeName(address) {
+        if (!address || !this.exchangeNames) return 'Unknown';
+        return this.exchangeNames[address.toLowerCase()] || 'Unknown';
+    }
+    
+    formatAddress(address) {
+        if (!address) return 'unknown wallet';
+        if (this.getExchangeName(address)) return this.getExchangeName(address);
+        return `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
+    }
+    
+    getTimeAgo(timestamp) {
+        const now = Date.now();
+        const diff = now - timestamp;
+        
+        const minutes = Math.floor(diff / 60000);
+        const hours = Math.floor(diff / 3600000);
+        const days = Math.floor(diff / 86400000);
+        
+        if (minutes < 1) return '방금 전';
+        if (minutes < 60) return `${minutes}분 전`;
+        if (hours < 24) return `${hours}시간 전`;
+        return `${days} 일전`;
+    }
+    
+    loadMoreTransactions() {
+        this.displayedCount += 20;
+        this.updateTransactionDisplay();
+    }
+    
+    refreshData() {
+        const btn = document.getElementById('refresh-data');
+        btn.style.transform = 'rotate(360deg)';
+        setTimeout(() => {
+            btn.style.transform = 'rotate(0deg)';
+        }, 500);
+        
+        this.updateTransactionDisplay();
+        this.updateStats();
+    }
+    
+    updateStats() {
+        // 기존 통계 업데이트 (하위 호환성)
+        const btcElement = document.getElementById('btc-total-transactions');
+        const ethElement = document.getElementById('eth-total-transactions');
+        const volumeElement = document.getElementById('total-volume');
+        
+        if (btcElement) btcElement.textContent = this.stats.btcCount;
+        if (ethElement) ethElement.textContent = this.stats.ethCount;
+        if (volumeElement) volumeElement.textContent = `$${this.stats.totalVolume.toLocaleString()}`;
+        
+        // 새로운 헤더 통계 업데이트
+        this.updateHeaderStats();
+    }
+
+    updateHeaderStats() {
+        const headerBtc = document.getElementById('header-btc-count');
+        const headerEth = document.getElementById('header-eth-count');
+        const headerVolume = document.getElementById('header-total-volume');
+        
+        if (headerBtc) headerBtc.textContent = this.stats.btcCount.toLocaleString();
+        if (headerEth) headerEth.textContent = this.stats.ethCount.toLocaleString();
+        if (headerVolume) {
+            const volume = this.stats.totalVolume;
+            if (volume >= 1000000000) {
+                headerVolume.textContent = `$${(volume / 1000000000).toFixed(1)}B`;
+            } else if (volume >= 1000000) {
+                headerVolume.textContent = `$${(volume / 1000000).toFixed(1)}M`;
+            } else if (volume >= 1000) {
+                headerVolume.textContent = `$${(volume / 1000).toFixed(1)}K`;
+            } else {
+                headerVolume.textContent = `$${volume.toFixed(0)}`;
+            }
+        }
+    }
+    
+    updateLastUpdateTime() {
+        const now = new Date();
+        document.getElementById('last-update').textContent = now.toLocaleTimeString();
+    }
+    
+    switchTab(tabName) {
+        // 탭 버튼 업데이트
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+        
+        // 탭 패널 업데이트
+        document.querySelectorAll('.tab-panel').forEach(panel => {
+            panel.classList.remove('active');
+        });
+        document.getElementById(`${tabName}-panel`).classList.add('active');
+    }
+    
+    clearTransactions() {
+        this.allTransactions = [];
+        this.stats.btcCount = 0;
+        this.stats.ethCount = 0;
+        this.stats.totalVolume = 0;
+        this.displayedCount = 20;
+        
+        this.updateTransactionDisplay();
+        this.updateStats();
+        this.showNotification('모든 거래 기록이 삭제되었습니다.', 'info');
+    }
+    
+    updateStatus(coin, status, text) {
+        const statusElement = document.getElementById(`${coin}-status`);
+        if (!statusElement) {
+            console.log(`Status element not found: ${coin}-status`);
+            return;
+        }
+        
+        const dot = statusElement.querySelector('.status-dot');
+        const textElement = statusElement.querySelector('.status-text');
+        
+        if (dot && textElement) {
+            // 기존 클래스 제거
+            dot.classList.remove('connecting', 'connected', 'error');
+            dot.classList.add(status);
+            textElement.textContent = text;
+        }
+    }
+    
+    formatTime(timestamp) {
+        const date = new Date(timestamp);
+        return date.toLocaleTimeString('ko-KR', {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        });
+    }
+    
+    showNotification(message, type = 'info') {
+        // 간단한 토스트 알림 생성
+        const notification = document.createElement('div');
+        notification.className = `notification notification-${type}`;
+        notification.innerHTML = `
+            <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'warning' ? 'exclamation-triangle' : 'info-circle'}"></i>
+            <span>${message}</span>
+        `;
+        
+        // 스타일 추가
+        notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: ${type === 'success' ? '#4CAF50' : type === 'warning' ? '#ff9800' : '#2196F3'};
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 500;
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+        `;
+        
+        document.body.appendChild(notification);
+        
+        // 애니메이션
+        setTimeout(() => {
+            notification.style.transform = 'translateX(0)';
+        }, 100);
+        
+        // 자동 제거
+        setTimeout(() => {
+            notification.style.transform = 'translateX(100%)';
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+            }, 300);
+        }, 3000);
+    }
+    
+    // ===== 청산 정보 기능 =====
+    initializeLiquidationChart() {
+        const canvas = document.getElementById('liquidation-chart');
+        if (!canvas) return;
+
+        this.charts.liquidation = new Chart(canvas, {
+            type: 'bar',
+            data: {
+                labels: ['1시간', '2시간', '3시간', '4시간', '5시간', '6시간'],
+                datasets: [{
+                    label: '롱 청산',
+                    data: [12000000, 8500000, 15000000, 9800000, 11200000, 13400000],
+                    backgroundColor: 'rgba(16, 185, 129, 0.8)',
+                }, {
+                    label: '숏 청산',
+                    data: [8000000, 12000000, 7500000, 14000000, 9600000, 10800000],
+                    backgroundColor: 'rgba(239, 68, 68, 0.8)',
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            color: '#9ca3af',
+                            callback: function(value) {
+                                return '$' + (value / 1000000).toFixed(1) + 'M';
+                            }
+                        },
+                        grid: {
+                            color: '#374151'
+                        }
+                    },
+                    x: {
+                        ticks: {
+                            color: '#9ca3af'
+                        },
+                        grid: {
+                            color: '#374151'
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: true,
+                        labels: {
+                            color: '#ffffff'
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    updateLiquidationData(exchange = 'all') {
+        // 시뮬레이션 데이터 생성
+        const longLiquidation = Math.random() * 50000000 + 10000000; // 10-60M
+        const shortLiquidation = Math.random() * 40000000 + 15000000; // 15-55M
+        
+        this.liquidationData.long.amount = longLiquidation;
+        this.liquidationData.short.amount = shortLiquidation;
+        this.liquidationData.long.count = Math.floor(Math.random() * 500) + 100;
+        this.liquidationData.short.count = Math.floor(Math.random() * 400) + 120;
+
+        // UI 업데이트
+        document.getElementById('long-liquidation').textContent = '$' + (longLiquidation / 1000000).toFixed(1) + 'M';
+        document.getElementById('short-liquidation').textContent = '$' + (shortLiquidation / 1000000).toFixed(1) + 'M';
+        document.getElementById('long-count').textContent = this.liquidationData.long.count + '건';
+        document.getElementById('short-count').textContent = this.liquidationData.short.count + '건';
+
+        this.updateLiquidationList();
+    }
+
+    updateLiquidationList() {
+        const container = document.getElementById('liquidation-list');
+        if (!container) return;
+
+        const liquidations = [];
+        for (let i = 0; i < 20; i++) {
+            liquidations.push({
+                symbol: ['BTCUSDT', 'ETHUSDT', 'ADAUSDT', 'SOLUSDT'][Math.floor(Math.random() * 4)],
+                side: Math.random() > 0.5 ? 'Long' : 'Short',
+                amount: Math.random() * 1000000 + 100000,
+                price: Math.random() * 100000 + 30000,
+                time: new Date(Date.now() - Math.random() * 3600000).toLocaleTimeString()
+            });
+        }
+
+        container.innerHTML = `
+            <div class="liquidation-header-row" style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr 1fr; gap: 1rem; padding: 0.8rem 0; border-bottom: 2px solid #374151; font-weight: 600; color: #9ca3af; margin-bottom: 0.5rem;">
+                <span>심볼</span>
+                <span>방향</span>
+                <span>금액</span>
+                <span>가격</span>
+                <span>시간</span>
+            </div>
+            ${liquidations.map(liq => `
+                <div class="liquidation-item">
+                    <span class="liq-symbol">${liq.symbol}</span>
+                    <span class="liq-side ${liq.side.toLowerCase()}">${liq.side}</span>
+                    <span class="liq-amount">$${(liq.amount / 1000).toFixed(0)}K</span>
+                    <span class="liq-price">$${liq.price.toFixed(2)}</span>
+                    <span class="liq-time">${liq.time}</span>
+                </div>
+            `).join('')}
+        `;
+    }
+
+    startLiquidationTracking() {
+        if (this.intervals.liquidation) return;
+        
+        this.intervals.liquidation = setInterval(() => {
+            if (this.isTracking) {
+                this.updateLiquidationData();
+            }
+        }, 10000); // 10초마다 업데이트
+    }
+
+    // ===== 롱숏 비율 기능 =====
+    initializeLongShortChart() {
+        const canvas = document.getElementById('longsshorts-chart');
+        if (!canvas) return;
+
+        this.charts.longshort = new Chart(canvas, {
+            type: 'line',
+            data: {
+                labels: Array.from({length: 24}, (_, i) => `${i}:00`),
+                datasets: [{
+                    label: '롱 비율',
+                    data: Array.from({length: 24}, () => Math.random() * 30 + 45),
+                    borderColor: 'rgb(16, 185, 129)',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    tension: 0.4
+                }, {
+                    label: '숏 비율',
+                    data: Array.from({length: 24}, () => Math.random() * 30 + 25),
+                    borderColor: 'rgb(239, 68, 68)',
+                    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        ticks: {
+                            color: '#9ca3af',
+                            callback: function(value) {
+                                return value + '%';
+                            }
+                        },
+                        grid: {
+                            color: '#374151'
+                        }
+                    },
+                    x: {
+                        ticks: {
+                            color: '#9ca3af'
+                        },
+                        grid: {
+                            color: '#374151'
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        labels: {
+                            color: '#ffffff'
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    updateLongShortDisplay() {
+        const longPercent = Math.random() * 30 + 45; // 45-75%
+        const shortPercent = 100 - longPercent;
+
+        document.getElementById('long-percentage').textContent = longPercent.toFixed(1) + '%';
+        document.getElementById('short-percentage').textContent = shortPercent.toFixed(1) + '%';
+
+        // 거래소별 업데이트
+        this.updateExchangeRatios();
+    }
+
+    updateExchangeRatios() {
+        const exchanges = ['binance', 'okx'];
+        exchanges.forEach(exchange => {
+            const longPercent = Math.random() * 20 + 50; // 50-70%
+            const shortPercent = 100 - longPercent;
+
+            const longBar = document.getElementById(`${exchange}-long`);
+            const shortBar = document.getElementById(`${exchange}-short`);
+            const card = longBar?.closest('.exchange-ratio-card');
+
+            if (longBar && shortBar && card) {
+                longBar.style.width = longPercent + '%';
+                shortBar.style.width = shortPercent + '%';
+
+                const longNum = card.querySelector('.long-num');
+                const shortNum = card.querySelector('.short-num');
+                if (longNum) longNum.textContent = longPercent.toFixed(0) + '%';
+                if (shortNum) shortNum.textContent = shortPercent.toFixed(0) + '%';
+            }
+        });
+    }
+
+    startLongShortTracking() {
+        if (this.intervals.longshort) return;
+        
+        this.intervals.longshort = setInterval(() => {
+            if (this.isTracking) {
+                this.updateLongShortDisplay();
+            }
+        }, 5000); // 5초마다 업데이트
+    }
+
+    updateUI() {
+        this.updateWhaleDisplay();
+        this.updateStats();
+        this.updateLastUpdateTime();
+    }
+
+    // ===== Fear & Greed Index 기능 =====
+    updateFearGreedIndex() {
+        const value = Math.floor(Math.random() * 100);
+        this.fearGreedIndex.value = value;
+        
+        let label = '';
+        if (value <= 25) label = '극단적 공포';
+        else if (value <= 45) label = '공포';
+        else if (value <= 55) label = '중립';
+        else if (value <= 75) label = '탐욕';
+        else label = '극단적 탐욕';
+        
+        this.fearGreedIndex.label = label;
+
+        try {
+            // UI 업데이트 with correct element IDs
+            const sentimentValue = document.getElementById('sentiment-value');
+            const sentimentLabel = document.getElementById('sentiment-label');
+            
+            if (sentimentValue) sentimentValue.textContent = value;
+            if (sentimentLabel) sentimentLabel.textContent = label;
+
+            // Update gauge if available
+            const canvas = document.getElementById('fear-greed-canvas');
+            if (canvas) {
+                const ctx = canvas.getContext('2d');
+                this.drawFearGreedGauge(ctx, value);
+            }
+        } catch (error) {
+            console.warn('Error updating Fear & Greed Index display:', error);
+        }
+    }
+
+    initializeFearGreedGauge() {
+        const canvas = document.getElementById('fear-greed-gauge');
+        if (!canvas) return;
+
+        const ctx = canvas.getContext('2d');
+        this.drawFearGreedGauge(ctx, this.fearGreedIndex.value);
+    }
+
+    drawFearGreedGauge(ctx, value) {
+        const centerX = 150;
+        const centerY = 120;
+        const radius = 80;
+
+        // 배경 호
+        ctx.lineWidth = 15;
+        ctx.strokeStyle = '#374151';
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, radius, Math.PI, 2 * Math.PI);
+        ctx.stroke();
+
+        // 그라디언트 호
+        const gradient = ctx.createLinearGradient(centerX - radius, centerY, centerX + radius, centerY);
+        gradient.addColorStop(0, '#dc2626');
+        gradient.addColorStop(0.25, '#f59e0b');
+        gradient.addColorStop(0.5, '#6b7280');
+        gradient.addColorStop(0.75, '#10b981');
+        gradient.addColorStop(1, '#059669');
+
+        ctx.strokeStyle = gradient;
+        ctx.beginPath();
+        const angle = Math.PI + (value / 100) * Math.PI;
+        ctx.arc(centerX, centerY, radius, Math.PI, angle);
+        ctx.stroke();
+
+        // 포인터
+        ctx.save();
+        ctx.translate(centerX, centerY);
+        ctx.rotate(angle - Math.PI / 2);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(-2, -radius - 10, 4, 20);
+        ctx.restore();
+    }
+
+    initializeSentimentChart() {
+        const canvas = document.getElementById('sentiment-chart');
+        if (!canvas) return;
+
+        const historyData = Array.from({length: 30}, () => Math.floor(Math.random() * 100));
+        
+        this.charts.sentiment = new Chart(canvas, {
+            type: 'line',
+            data: {
+                labels: Array.from({length: 30}, (_, i) => i + 1),
+                datasets: [{
+                    label: 'Fear & Greed Index',
+                    data: historyData,
+                    borderColor: '#f59e0b',
+                    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        min: 0,
+                        max: 100,
+                        ticks: {
+                            color: '#9ca3af',
+                            callback: function(value) {
+                                if (value <= 25) return '극단적 공포';
+                                if (value <= 45) return '공포';
+                                if (value <= 55) return '중립';
+                                if (value <= 75) return '탐욕';
+                                return '극단적 탐욕';
+                            }
+                        },
+                        grid: {
+                            color: '#374151'
+                        }
+                    },
+                    x: {
+                        ticks: {
+                            color: '#9ca3af'
+                        },
+                        grid: {
+                            color: '#374151'
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        labels: {
+                            color: '#ffffff'
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    startSentimentTracking() {
+        if (this.intervals.sentiment) return;
+        
+        this.intervals.sentiment = setInterval(() => {
+            if (this.isTracking) {
+                this.updateFearGreedIndex();
+                if (this.charts.sentiment) {
+                    const newValue = Math.floor(Math.random() * 100);
+                    this.charts.sentiment.data.datasets[0].data.push(newValue);
+                    this.charts.sentiment.data.datasets[0].data.shift();
+                    this.charts.sentiment.update('none');
+                }
+            }
+        }, 30000);
+    }
+
+    // ===== 히트맵 기능 =====
+    generateHeatmap() {
+        const container = document.getElementById('heatmap-container');
+        if (!container) return;
+
+        const coins = [
+            { name: 'BTC', change: (Math.random() - 0.5) * 20, size: 100 },
+            { name: 'ETH', change: (Math.random() - 0.5) * 25, size: 80 },
+            { name: 'ADA', change: (Math.random() - 0.5) * 30, size: 40 },
+            { name: 'SOL', change: (Math.random() - 0.5) * 35, size: 35 },
+            { name: 'DOT', change: (Math.random() - 0.5) * 25, size: 30 },
+            { name: 'AVAX', change: (Math.random() - 0.5) * 40, size: 25 },
+            { name: 'LINK', change: (Math.random() - 0.5) * 30, size: 20 },
+            { name: 'UNI', change: (Math.random() - 0.5) * 35, size: 18 },
+            { name: 'MATIC', change: (Math.random() - 0.5) * 40, size: 15 },
+            { name: 'ATOM', change: (Math.random() - 0.5) * 30, size: 12 }
+        ];
+
+        container.innerHTML = `
+            <div class="heatmap-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; padding: 20px;">
+                ${coins.map(coin => {
+                    const color = coin.change > 0 ? 
+                        `rgba(16, 185, 129, ${Math.abs(coin.change) / 20})` : 
+                        `rgba(239, 68, 68, ${Math.abs(coin.change) / 20})`;
+                    
+                    return `
+                        <div class="heatmap-item" style="
+                            background: ${color};
+                            padding: 15px;
+                            border-radius: 8px;
+                            text-align: center;
+                            color: white;
+                            font-weight: 600;
+                            min-height: ${coin.size}px;
+                            display: flex;
+                            flex-direction: column;
+                            justify-content: center;
+                        ">
+                            <div style="font-size: 1.2rem;">${coin.name}</div>
+                            <div style="font-size: 0.9rem; margin-top: 5px;">
+                                ${coin.change >= 0 ? '+' : ''}${coin.change.toFixed(2)}%
+                            </div>
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+        `;
+    }
+
+    // ===== 오더북 기능 =====
+    startOrderbookTracking() {
+        this.generateOrderbookData();
+        
+        if (this.intervals.orderbook) return;
+        
+        this.intervals.orderbook = setInterval(() => {
+            if (this.isTracking) {
+                this.updateOrderbookData();
+            }
+        }, 1000);
+    }
+
+    generateOrderbookData() {
+        const basePrice = 104000;
+        this.orderbook.asks = [];
+        this.orderbook.bids = [];
+
+        for (let i = 0; i < 20; i++) {
+            const price = basePrice + (i + 1) * 10;
+            const quantity = Math.random() * 5 + 0.1;
+            this.orderbook.asks.push({
+                price: price,
+                quantity: quantity,
+                total: price * quantity
+            });
+        }
+
+        for (let i = 0; i < 20; i++) {
+            const price = basePrice - (i + 1) * 10;
+            const quantity = Math.random() * 5 + 0.1;
+            this.orderbook.bids.push({
+                price: price,
+                quantity: quantity,
+                total: price * quantity
+            });
+        }
+
+        this.updateOrderbookDisplay();
+    }
+
+    updateOrderbookData() {
+        this.orderbook.asks.forEach(ask => {
+            ask.quantity = Math.max(0.01, ask.quantity + (Math.random() - 0.5) * 0.5);
+            ask.total = ask.price * ask.quantity;
+        });
+
+        this.orderbook.bids.forEach(bid => {
+            bid.quantity = Math.max(0.01, bid.quantity + (Math.random() - 0.5) * 0.5);
+            bid.total = bid.price * bid.quantity;
+        });
+
+        this.updateOrderbookDisplay();
+    }
+
+    updateOrderbookDisplay() {
+        const asksContainer = document.getElementById('asks-list');
+        const bidsContainer = document.getElementById('bids-list');
+        
+        if (asksContainer) {
+            asksContainer.innerHTML = this.orderbook.asks.slice(0, 15).reverse().map(ask => `
+                <div class="orderbook-item ask">
+                    <span>$${ask.price.toFixed(2)}</span>
+                    <span class="orderbook-quantity">${ask.quantity.toFixed(4)}</span>
+                    <span class="orderbook-total">$${(ask.total / 1000).toFixed(1)}K</span>
+                </div>
+            `).join('');
+        }
+
+        if (bidsContainer) {
+            bidsContainer.innerHTML = this.orderbook.bids.slice(0, 15).map(bid => `
+                <div class="orderbook-item bid">
+                    <span>$${bid.price.toFixed(2)}</span>
+                    <span class="orderbook-quantity">${bid.quantity.toFixed(4)}</span>
+                    <span class="orderbook-total">$${(bid.total / 1000).toFixed(1)}K</span>
+                </div>
+            `).join('');
+        }
+
+        const currentPrice = (this.orderbook.asks[0]?.price + this.orderbook.bids[0]?.price) / 2;
+        const spread = this.orderbook.asks[0]?.price - this.orderbook.bids[0]?.price;
+
+        document.getElementById('ob-current-price').textContent = '$' + currentPrice.toFixed(2);
+        document.getElementById('spread').textContent = '스프레드: $' + spread.toFixed(2);
+    }
+
+    // ===== 시뮬레이션 데이터 생성 =====
+    generateSimulationData() {
+        for (let i = 0; i < 10; i++) {
+            if (Math.random() > 0.5) {
+                const amount = Math.random() * 200 + 50;
+                const tx = {
+                    id: 'sim_btc_' + Date.now() + '_' + i,
+                    hash: generateRandomHash(),
+                    amount: amount,
+                    type: 'bitcoin',
+                    timestamp: Date.now() - Math.random() * 3600000,
+                    fromAddress: generateRandomAddress(),
+                    toAddress: generateRandomAddress(),
+                    usdValue: amount * 104000
+                };
+                this.allTransactions.push(tx);
+            } else {
+                const amount = Math.random() * 3000 + 1000;
+                const tx = {
+                    id: 'sim_eth_' + Date.now() + '_' + i,
+                    hash: '0x' + generateRandomHash(),
+                    amount: amount,
+                    type: 'ethereum',
+                    timestamp: Date.now() - Math.random() * 3600000,
+                    fromAddress: generateRandomAddress(),
+                    toAddress: generateRandomAddress(),
+                    usdValue: amount * 3400
+                };
+                this.allTransactions.push(tx);
+            }
+        }
+
+        this.allTransactions.sort((a, b) => b.timestamp - a.timestamp);
+    }
+
+    startWhaleTracking() {
+        console.log('🐋 Starting whale tracking...');
+        
+        if (this.whaleTracker) {
+            console.log('🐋 Enhanced whale tracking (100k+) available');
+            // WhaleTracker는 자동으로 시작됨
+        } else {
+            console.log('🐋 Starting simulation whale tracking...');
+            this.startWhaleSimulation();
+        }
+        
+        // 게이지 업데이트 시작
+        this.startWhaleLSUpdate();
+    }
+
+    refreshWhaleData() {
+        if (this.whaleTracker) {
+            this.whaleTracker.refresh();
+        } else {
+            this.refreshData();
+        }
+    }
+
+    startWhaleLSUpdate() {
+        // 기존 간격이 있으면 제거
+        if (this.whaleLSInterval) {
+            clearInterval(this.whaleLSInterval);
+        }
+        
+        // 게이지 업데이트 시작
+        this.whaleLSInterval = setInterval(() => {
+            if (this.isTracking) {
+                this.updateWhaleLSRatio();
+                console.log('🔄 Whale L/S ratio updated:', this.recentTrades?.length || 0, 'trades');
+            }
+        }, 1000); // 1초마다 업데이트
+        
+        // 즉시 한 번 업데이트
+        this.updateWhaleLSRatio();
+        console.log('✅ Whale L/S gauge update started');
+    }
+
+    stopWhaleLSUpdate() {
+        if (this.whaleLSInterval) {
+            clearInterval(this.whaleLSInterval);
+            this.whaleLSInterval = null;
+        }
+    }
+
+    // 완전히 새로운 실시간 고래 게이지 시스템 - 실제 거래 데이터 기반
+    initializeWhaleGauge(retryCount = 0) {
+        console.log('🎯 Initializing whale trade data based gauge system...');
+        
+        // 컨테이너 존재 확인
+        const tradeContainer = document.getElementById('whale-transactions');
+        if (!tradeContainer) {
+            if (retryCount < 5) {
+                console.warn(`❌ whale-transactions container not found, retrying in 1 second... (${retryCount + 1}/5)`);
+                setTimeout(() => this.initializeWhaleGauge(retryCount + 1), 1000);
+            } else {
+                console.error('❌ Failed to find whale-transactions container after 5 retries');
+            }
+            return;
+        }
+        
+        // 즉시 DOM 요소 확인 및 초기화
+        this.initializeWhaleRatioDisplay();
+        
+        // 게이지 데이터 초기화
+        this.whaleGaugeData = {
+            longVolume: 0,
+            shortVolume: 0,
+            recentTrades: [],
+            lastUpdate: Date.now(),
+            isActive: true
+        };
+        
+        // 실시간 업데이트 시작
+        this.startRealTimeGaugeUpdates();
+        
+        // 즉시 테스트 실행
+        this.runWhaleGaugeTest();
+        
+        console.log('✅ Whale trade data based gauge system initialized');
+    }
+    
+    initializeWhaleRatioDisplay() {
+        console.log('🔍 Initializing whale ratio display elements...');
+        
+        // DOM 요소 확인
+        const whaleRatioDisplay = document.querySelector('.whale-ratio-display');
+        const gaugeFillMini = document.getElementById('whale-ls-fill-mini');
+        const ratioValueMini = document.getElementById('whale-ls-ratio-mini');
+        const longPercentageMini = document.getElementById('long-percentage-mini');
+        const shortPercentageMini = document.getElementById('short-percentage-mini');
+        
+        console.log('Elements found:', {
+            whaleRatioDisplay: !!whaleRatioDisplay,
+            gaugeFillMini: !!gaugeFillMini,
+            ratioValueMini: !!ratioValueMini,
+            longPercentageMini: !!longPercentageMini,
+            shortPercentageMini: !!shortPercentageMini
+        });
+        
+        if (!whaleRatioDisplay || !gaugeFillMini || !ratioValueMini) {
+            console.error('❌ Whale ratio display elements not found, retrying...');
+            setTimeout(() => this.initializeWhaleRatioDisplay(), 500);
+            return;
+        }
+        
+        // 미니 게이지 초기 상태 설정
+        gaugeFillMini.style.width = '50%';
+        gaugeFillMini.style.transition = 'width 0.3s ease';
+        gaugeFillMini.style.background = 'linear-gradient(90deg, #ef4444 0%, #f59e0b 50%, #10b981 100%)';
+        gaugeFillMini.style.visibility = 'visible';
+        gaugeFillMini.style.opacity = '1';
+        gaugeFillMini.style.display = 'block';
+        gaugeFillMini.style.height = '100%';
+        gaugeFillMini.style.borderRadius = '3px';
+        gaugeFillMini.style.position = 'relative';
+        
+        ratioValueMini.textContent = '50.0%';
+        ratioValueMini.style.color = '#ffffff';
+        ratioValueMini.style.background = 'rgba(0, 0, 0, 0.3)';
+        ratioValueMini.style.visibility = 'visible';
+        ratioValueMini.style.opacity = '1';
+        ratioValueMini.style.display = 'inline-block';
+        ratioValueMini.style.fontWeight = '700';
+        ratioValueMini.style.fontSize = '0.7rem';
+        ratioValueMini.style.padding = '1px 4px';
+        ratioValueMini.style.borderRadius = '8px';
+        ratioValueMini.style.minWidth = '25px';
+        ratioValueMini.style.textAlign = 'center';
+        
+        // 미니 퍼센티지 초기 상태 설정
+        if (longPercentageMini && shortPercentageMini) {
+            longPercentageMini.textContent = '50.0%';
+            shortPercentageMini.textContent = '50.0%';
+        }
+        
+        console.log('✅ Whale ratio display elements initialized');
+    }
+    
+    // 실제 거래 컨테이너에서 데이터를 읽어와서 게이지 계산
+    calculateGaugeFromTradeContainer() {
+        // whale-trades-container에서 데이터 가져오기
+        const tradeContainer = document.getElementById('whale-trades-container') || document.getElementById('whale-transactions');
+        if (!tradeContainer) {
+            console.error('❌ Trade container not found');
+            return;
+        }
+        
+        // 거래 아이템들 수집 (최근 10개)
+        const tradeItems = tradeContainer.querySelectorAll('.trade-item, .trade');
+        if (tradeItems.length === 0) {
+            console.log('No trades found, setting gauge to neutral');
+            this.updateWhaleRatioDisplay(50, 0);
+            return;
+        }
+        
+        // 최근 10개 거래의 롱/숏 비율 계산
+        const recentTrades = Array.from(tradeItems).slice(0, 10);
+        let buyCount = 0;
+        let sellCount = 0;
+        
+        recentTrades.forEach(trade => {
+            const sideElement = trade.querySelector('.trade-side');
+            if (sideElement) {
+                const isBuy = sideElement.textContent.includes('매수') || 
+                             trade.classList.contains('buy') || 
+                             trade.classList.contains('trade-buy');
+                if (isBuy) {
+                    buyCount++;
+                } else {
+                    sellCount++;
+                }
+            }
+        });
+        
+        // 비율 계산 (매수 비율)
+        const totalTrades = buyCount + sellCount;
+        const longRatio = totalTrades > 0 ? (buyCount / totalTrades) * 100 : 50;
+        
+        console.log(`📊 Calculated from ${totalTrades} trades: ${longRatio.toFixed(1)}% (Buy: ${buyCount}, Sell: ${sellCount})`);
+        
+        // 게이지 업데이트
+        this.updateWhaleRatioDisplay(longRatio, totalTrades);
+    }
+    
+    updateWhaleRatioDisplay(ratio, tradeCount) {
+        const gaugeFillMini = document.getElementById('whale-ls-fill-mini');
+        const gaugeNeedle = document.getElementById('whale-ls-needle');
+        
+        if (!gaugeFillMini || !gaugeNeedle) {
+            console.warn('❌ Gauge elements not found for update, skipping.');
+            return;
+        }
+        
+        try {
+            // 게이지 업데이트
+            gaugeFillMini.style.width = `${ratio}%`;
+            gaugeFillMini.style.transition = 'width 0.5s ease-out';
+            
+            // 바늘 위치 업데이트
+            gaugeNeedle.style.left = `${ratio}%`;
+            gaugeNeedle.style.transition = 'left 0.5s ease-out';
+            
+            console.log(`✅ Whale ratio display updated: ${ratio.toFixed(1)}% (${tradeCount} trades)`);
+            
+        } catch (error) {
+            console.error('❌ Error updating whale ratio display:', error);
+        }
+    }
+    
+    startRealTimeGaugeUpdates() {
+        // 기존 간격 정리
+        if (this.gaugeUpdateInterval) {
+            clearInterval(this.gaugeUpdateInterval);
+        }
+        
+        // 실시간 업데이트 시작 (1초마다)
+        this.gaugeUpdateInterval = setInterval(() => {
+            this.updateGaugeFromRealData();
+        }, 1000);
+        
+        console.log('🔄 Real-time gauge updates started');
+    }
+    
+    updateGaugeFromRealData() {
+        if (!this.whaleGaugeData || !this.whaleGaugeData.isActive) return;
+        
+        // 컨테이너 존재 확인
+        const tradeContainer = document.getElementById('whale-transactions');
+        if (!tradeContainer) {
+            console.warn('❌ Trade container not found in updateGaugeFromRealData');
+            return;
+        }
+        
+        // 실제 거래 컨테이너에서 데이터를 읽어와서 계산
+        this.calculateGaugeFromTradeContainer();
+    }
+    
+    updateGaugeDisplay(ratio, tradeCount) {
+        // 새로운 시스템 사용
+        this.updateWhaleRatioDisplay(ratio, tradeCount);
+    }
+    
+    // 실제 거래 데이터를 게이지에 추가
+    addTradeToGauge(exchange, price, amount, side) {
+        const tradeAmount = price * amount;
+        
+        // $100k 이상만 게이지에 반영
+        if (tradeAmount < 100000) return;
+        
+        if (!this.whaleGaugeData) {
+            this.whaleGaugeData = {
+                longVolume: 0,
+                shortVolume: 0,
+                recentTrades: [],
+                lastUpdate: Date.now(),
+                isActive: true
+            };
+        }
+        
+        // 거래 추가
+        this.whaleGaugeData.recentTrades.push({
+            timestamp: Date.now(),
+            side: side,
+            amount: tradeAmount,
+            exchange: exchange,
+            price: price,
+            quantity: amount
+        });
+        
+        console.log(`💰 Added to gauge: ${exchange} ${side} $${(tradeAmount/1000000).toFixed(2)}M`);
+        
+        // 즉시 업데이트
+        this.updateGaugeFromRealData();
+    }
+    
+    // 게이지 테스트 함수 (디버깅용)
+    testGaugeWithRealData() {
+        console.log('🧪 Testing gauge with simulated real data...');
+        
+        // 테스트 거래들 추가
+        const testTrades = [
+            { exchange: 'BINANCE', price: 100000, amount: 15, side: 'BUY' },
+            { exchange: 'BYBIT', price: 100000, amount: 12, side: 'BUY' },
+            { exchange: 'OKX', price: 100000, amount: 8, side: 'SELL' },
+            { exchange: 'BITGET', price: 100000, amount: 20, side: 'BUY' },
+            { exchange: 'MEXC', price: 100000, amount: 10, side: 'SELL' }
+        ];
+        
+        testTrades.forEach(trade => {
+            this.addTradeToGauge(trade.exchange, trade.price, trade.amount, trade.side);
+        });
+        
+        console.log('✅ Test data added to gauge');
+    }
+
+    runWhaleGaugeTest() {
+        console.log('🧪 Running whale gauge test...');
+        
+        // 2초 후 첫 번째 테스트
+        setTimeout(() => {
+            this.updateWhaleRatioDisplay(75, 5);
+            console.log('✅ Test 1: 75% (Long bias)');
+        }, 2000);
+        
+        // 5초 후 두 번째 테스트
+        setTimeout(() => {
+            this.updateWhaleRatioDisplay(25, 8);
+            console.log('✅ Test 2: 25% (Short bias)');
+        }, 5000);
+        
+        // 8초 후 중립으로 복귀
+        setTimeout(() => {
+            this.updateWhaleRatioDisplay(50, 0);
+            console.log('✅ Test 3: 50% (Neutral)');
+        }, 8000);
+    }
+
+    // 레이아웃 관리 기능
+    initializeLayoutManager() {
+        this.layoutMode = false;
+        const grid = document.getElementById('dashboard-grid');
+        const cards = document.querySelectorAll('.dashboard-card');
+        
+        cards.forEach(card => {
+            card.addEventListener('mousedown', (e) => this.handleMouseDown(e, card));
+            
+            // 리사이즈 핸들 추가
+            const resizeHandle = document.createElement('div');
+            resizeHandle.className = 'resize-handle';
+            card.appendChild(resizeHandle);
+            
+            resizeHandle.addEventListener('mousedown', (e) => this.handleResizeStart(e, card));
+        });
+    }
+
+    toggleLayoutEditMode() {
+        this.layoutMode = !this.layoutMode;
+        const grid = document.getElementById('dashboard-grid');
+        const cards = document.querySelectorAll('.dashboard-card');
+        
+        if (this.layoutMode) {
+            grid.classList.add('layout-edit-mode');
+            cards.forEach(card => {
+                card.setAttribute('draggable', 'true');
+                card.classList.add('editable');
+            });
+            document.getElementById('layout-reset').style.display = 'inline-flex';
+            document.getElementById('layout-save').style.display = 'inline-flex';
+            document.getElementById('layout-toggle').classList.add('active');
+        } else {
+            grid.classList.remove('layout-edit-mode');
+            cards.forEach(card => {
+                card.setAttribute('draggable', 'false');
+                card.classList.remove('editable');
+            });
+            document.getElementById('layout-reset').style.display = 'none';
+            document.getElementById('layout-save').style.display = 'none';
+            document.getElementById('layout-toggle').classList.remove('active');
+        }
+    }
+
+    handleMouseDown(e, card) {
+        if (!this.layoutMode) return;
+        
+        const startX = e.clientX;
+        const startY = e.clientY;
+        const startLeft = card.offsetLeft;
+        const startTop = card.offsetTop;
+        
+        card.classList.add('dragging');
+        
+        const handleMouseMove = (e) => {
+            const dx = e.clientX - startX;
+            const dy = e.clientY - startY;
+            
+            card.style.transform = `translate(${dx}px, ${dy}px)`;
+        };
+        
+        const handleMouseUp = () => {
+            card.classList.remove('dragging');
+            card.style.transform = '';
+            
+            document.removeEventListener('mousemove', handleMouseMove);
+            document.removeEventListener('mouseup', handleMouseUp);
+            
+            this.updateCardPosition(card);
+        };
+        
+        document.addEventListener('mousemove', handleMouseMove);
+        document.addEventListener('mouseup', handleMouseUp);
+    }
+
+    updateCardPosition(card) {
+        const grid = document.getElementById('dashboard-grid');
+        const rect = grid.getBoundingClientRect();
+        const cards = Array.from(document.querySelectorAll('.dashboard-card'));
+        const index = cards.indexOf(card);
+        
+        // 새 위치 계산
+        const cardRect = card.getBoundingClientRect();
+        const centerX = cardRect.left + cardRect.width / 2;
+        const centerY = cardRect.top + cardRect.height / 2;
+        
+        // 가장 가까운 카드 찾기
+        let closestCard = null;
+        let minDistance = Infinity;
+        
+        cards.forEach((otherCard, otherIndex) => {
+            if (otherCard === card) return;
+            
+            const otherRect = otherCard.getBoundingClientRect();
+            const otherCenterX = otherRect.left + otherRect.width / 2;
+            const otherCenterY = otherRect.top + otherRect.height / 2;
+            
+            const distance = Math.sqrt(
+                Math.pow(centerX - otherCenterX, 2) + 
+                Math.pow(centerY - otherCenterY, 2)
+            );
+            
+            if (distance < minDistance) {
+                minDistance = distance;
+                closestCard = otherCard;
+            }
+        });
+        
+        if (closestCard) {
+            const closestIndex = cards.indexOf(closestCard);
+            if (closestIndex > index) {
+                closestCard.parentNode.insertBefore(card, closestCard.nextSibling);
+            } else {
+                closestCard.parentNode.insertBefore(card, closestCard);
+            }
+        }
+    }
+    
+    handleResizeStart(e, card) {
+        if (!this.layoutMode) return;
+        e.preventDefault();
+        
+        const startWidth = card.offsetWidth;
+        const startHeight = card.offsetHeight;
+        const startX = e.clientX;
+        const startY = e.clientY;
+        
+        const handleMouseMove = (e) => {
+            const width = startWidth + (e.clientX - startX);
+            const height = startHeight + (e.clientY - startY);
+            
+            // 그리드 내에서만 크기 조절되도록 제한
+            const grid = document.getElementById('dashboard-grid');
+            const gridRect = grid.getBoundingClientRect();
+            const cardLeft = parseInt(card.style.left || 0);
+            const maxWidth = gridRect.width - cardLeft;
+            
+            card.style.width = `${Math.max(280, Math.min(maxWidth, width))}px`;
+            card.style.height = `${Math.max(200, height)}px`;
+            
+            // 그리드 높이 자동 조정
+            const bottomY = parseInt(card.style.top || 0) + height + 100;
+            if (bottomY > grid.offsetHeight) {
+                grid.style.minHeight = `${bottomY}px`;
+            }
+        };
+        
+        const handleMouseUp = () => {
+            document.removeEventListener('mousemove', handleMouseMove);
+            document.removeEventListener('mouseup', handleMouseUp);
+            this.saveLayout();
+        };
+        
+        document.addEventListener('mousemove', handleMouseMove);
+        document.addEventListener('mouseup', handleMouseUp);
+    }
+    
+    saveLayout() {
+        const grid = document.getElementById('dashboard-grid');
+        const cards = grid.querySelectorAll('.dashboard-card');
+        
+        const layout = Array.from(cards).map(card => ({
+            id: card.dataset.cardId,
+            width: card.style.width,
+            height: card.style.height,
+            top: card.style.top,
+            left: card.style.left
+        }));
+        
+        localStorage.setItem('dashboardLayout', JSON.stringify(layout));
+    }
+    
+    loadLayout() {
+        const savedLayout = localStorage.getItem('dashboardLayout');
+        if (!savedLayout) return;
+        
+        try {
+            const layout = JSON.parse(savedLayout);
+            const grid = document.getElementById('dashboard-grid');
+            
+            layout.forEach(item => {
+                const card = grid.querySelector(`[data-card-id="${item.id}"]`);
+                if (card) {
+                    if (item.width) card.style.width = item.width;
+                    if (item.height) card.style.height = item.height;
+                    if (item.top) card.style.top = item.top;
+                    if (item.left) card.style.left = item.left;
+                }
+            });
+        } catch (error) {
+            console.error('레이아웃 로드 중 오류:', error);
+        }
+    }
+
+    /**
+     * @deprecated The whale gauge feature is no longer in use. This function is kept to prevent errors from old calls.
+     */
+    initializeWhaleGauge() {
+        // This function is deprecated and intentionally left empty.
+        console.warn("initializeWhaleGauge is deprecated and no longer used.");
+    }
+
+    /**
+     * @deprecated The whale display feature is no longer in use. This function is kept to prevent errors from old calls.
+     */
+    updateWhaleDisplay() {
+        // This function is deprecated and intentionally left empty.
+    }
+
+    /**
+     * @deprecated The whale ratio display feature is no longer in use. This function is kept to prevent errors from old calls.
+     */
+    updateWhaleRatioDisplay() {
+        // This function is deprecated and intentionally left empty.
+    }
+}
+
+// 데모 데이터 생성 함수 (테스트용)
+function generateDemoData() {
+    const tracker = window.tradingPlatform;
+    if (!tracker) {
+        console.error('Trading Platform not initialized');
+        return;
+    }
+    
+    const now = Date.now();
+    const randomBtcAmount = Math.random() * 100 + 50;
+    const randomEthAmount = Math.random() * 2000 + 1000;
+    
+    const demoBtcTx = {
+        id: 'demo_btc_' + now + '_' + Math.random().toString(36).substr(2, 9),
+        hash: generateRandomHash(),
+        amount: randomBtcAmount,
+        type: 'bitcoin',
+        timestamp: now,
+        fromAddress: generateRandomAddress(),
+        toAddress: generateRandomAddress(),
+        usdValue: randomBtcAmount * 104000
+    };
+    
+    const demoEthTx = {
+        id: 'demo_eth_' + now + '_' + Math.random().toString(36).substr(2, 9),
+        hash: '0x' + generateRandomHash(),
+        amount: randomEthAmount,
+        type: 'ethereum',
+        timestamp: now,
+        fromAddress: generateRandomAddress(),
+        toAddress: generateRandomAddress(),
+        usdValue: randomEthAmount * 3400
+    };
+    
+    tracker.allTransactions.unshift(demoBtcTx);
+    tracker.allTransactions.unshift(demoEthTx);
+    
+    tracker.updateWhaleDisplay();
+    tracker.updateStats();
+    tracker.showNotification(`데모 데이터 추가: ${randomBtcAmount.toFixed(2)} BTC, ${randomEthAmount.toFixed(2)} ETH`, 'success');
+}
+
+// 랜덤 해시 생성
+function generateRandomHash() {
+    return Array.from({length: 64}, () => Math.floor(Math.random() * 16).toString(16)).join('');
+}
+
+// 랜덤 이더리움 주소 생성
+function generateRandomAddress() {
+    const hash = generateRandomHash();
+    return '0x' + hash.substring(0, 40);
+}
+
+// 페이지 로드 시 초기화
+document.addEventListener('DOMContentLoaded', () => {
+    // 글로벌 함수들 즉시 등록
+    window.testGaugeManual = function(ratio) {
+        console.log(`🎯 Manual gauge test with ratio: ${ratio}%`);
+        if (window.tradingPlatform) {
+            window.tradingPlatform.updateWhaleRatioDisplay(ratio, 0);
+        } else {
+            console.error('TradingPlatform not found!');
+        }
+    };
+
+    window.calculateFromContainer = function() {
+        console.log('📊 Calculating gauge from trade container...');
+        if (window.tradingPlatform) {
+            window.tradingPlatform.calculateGaugeFromTradeContainer();
+        } else {
+            console.error('TradingPlatform not found!');
+        }
+    };
+
+    window.testGaugeWithRealData = function() {
+        console.log('🧪 Testing gauge with real data simulation...');
+        if (window.tradingPlatform) {
+            window.tradingPlatform.testGaugeWithRealData();
+        } else {
+            console.error('TradingPlatform not found!');
+        }
+    };
+
+    window.addTestTrade = function(exchange = 'BINANCE', side = 'BUY', amount = 20) {
+        console.log(`💰 Adding test trade: ${exchange} ${side} ${amount} BTC`);
+        if (window.tradingPlatform) {
+            window.tradingPlatform.addSimulatedTrade(exchange, 100000, amount, side);
+        } else {
+            console.error('TradingPlatform not found!');
+        }
+    };
+
+    window.clearGaugeData = function() {
+        console.log('🗑️ 게이지 데이터 초기화 중...');
+        if (window.tradingPlatform) {
+            window.tradingPlatform.recentTrades = [];
+            window.tradingPlatform.updateWhaleRatioDisplay(50, 0);
+            console.log('✅ 게이지 데이터가 초기화되었습니다');
+        } else {
+            console.error('❌ TradingPlatform을 찾을 수 없습니다! 페이지를 새로고침해주세요.');
+        }
+    };
+
+    window.addMultipleTestTrades = function() {
+        console.log('💰 테스트 거래들을 추가하는 중...');
+        if (window.tradingPlatform) {
+            const trades = [
+                { exchange: 'BINANCE', side: 'BUY', amount: 25 },
+                { exchange: 'BYBIT', side: 'SELL', amount: 15 },
+                { exchange: 'OKX', side: 'BUY', amount: 30 },
+                { exchange: 'BITGET', side: 'BUY', amount: 20 },
+                { exchange: 'MEXC', side: 'SELL', amount: 10 }
+            ];
+
+            trades.forEach((trade, index) => {
+                setTimeout(() => {
+                    const price = 100000 + (Math.random() - 0.5) * 10000;
+                    const quantity = trade.amount;
+                    window.tradingPlatform.addSimulatedTrade(trade.exchange, price, quantity, trade.side);
+                }, index * 500);
+            });
+            console.log('✅ 테스트 거래들이 추가되었습니다');
+        } else {
+            console.error('❌ TradingPlatform을 찾을 수 없습니다! 페이지를 새로고침해주세요.');
+        }
+    };
+
+    window.addSingleTestTrade = function(side = 'BUY') {
+        console.log(`💰 단일 테스트 거래 추가: ${side}`);
+        if (window.tradingPlatform) {
+            const exchanges = ['BINANCE', 'BYBIT', 'OKX', 'BITGET', 'MEXC'];
+            const exchange = exchanges[Math.floor(Math.random() * exchanges.length)];
+            const price = 100000 + (Math.random() - 0.5) * 10000;
+            const amount = Math.random() * 50 + 10;
+            window.tradingPlatform.addSimulatedTrade(exchange, price, amount, side);
+        } else {
+            console.error('❌ TradingPlatform을 찾을 수 없습니다! 페이지를 새로고침해주세요.');
+        }
+    };
+
+    window.showTradeStats = function() {
+        if (window.tradingPlatform) {
+            console.log('📊 거래 통계:');
+            console.log('최근 거래 수:', window.tradingPlatform.recentTrades.length);
+            console.log('최근 거래들:', window.tradingPlatform.recentTrades);
+            
+            const longTrades = window.tradingPlatform.recentTrades.filter(t => t.side === 'BUY');
+            const shortTrades = window.tradingPlatform.recentTrades.filter(t => t.side === 'SELL');
+            
+            console.log('롱 거래 수:', longTrades.length);
+            console.log('숏 거래 수:', shortTrades.length);
+            
+            const longVolume = longTrades.reduce((sum, t) => sum + t.amount, 0);
+            const shortVolume = shortTrades.reduce((sum, t) => sum + t.amount, 0);
+            
+            console.log('롱 볼륨:', longVolume);
+            console.log('숏 볼륨:', shortVolume);
+            
+            const totalVolume = longVolume + shortVolume;
+            const ratio = totalVolume > 0 ? (longVolume / totalVolume) * 100 : 50;
+            console.log('롱 비율:', ratio.toFixed(1) + '%');
+        } else {
+            console.error('❌ TradingPlatform을 찾을 수 없습니다! 페이지를 새로고침해주세요.');
+        }
+    };
+
+    window.startWhaleSimulation = function() {
+        console.log('🐋 고래 거래 시뮬레이션 시작...');
+        if (window.tradingPlatform) {
+            window.tradingPlatform.startWhaleSimulation();
+            console.log('✅ 고래 거래 시뮬레이션이 시작되었습니다');
+        } else {
+            console.error('❌ TradingPlatform을 찾을 수 없습니다! 페이지를 새로고침해주세요.');
+        }
+    };
+
+    window.stopWhaleSimulation = function() {
+        console.log('⏹️ 고래 거래 시뮬레이션 중지...');
+        if (window.tradingPlatform && window.tradingPlatform.whaleSimulationInterval) {
+            clearInterval(window.tradingPlatform.whaleSimulationInterval);
+            window.tradingPlatform.whaleSimulationInterval = null;
+            console.log('✅ 고래 거래 시뮬레이션이 중지되었습니다');
+        } else {
+            console.error('❌ TradingPlatform을 찾을 수 없거나 시뮬레이션이 실행 중이 아닙니다.');
+        }
+    };
+
+    // 추가 디버깅 함수
+    window.checkGaugeElements = function() {
+        const gaugeFillMini = document.getElementById('whale-ls-fill-mini');
+        const ratioValueMini = document.getElementById('whale-ls-ratio-mini');
+        const longPercentageMini = document.getElementById('long-percentage-mini');
+        const shortPercentageMini = document.getElementById('short-percentage-mini');
+        const tradeContainer = document.getElementById('whale-transactions');
+        
+        console.log('🔍 Gauge elements check:');
+        console.log('  - whale-ls-fill-mini:', gaugeFillMini);
+        console.log('  - whale-ls-ratio-mini:', ratioValueMini);
+        console.log('  - long-percentage-mini:', longPercentageMini);
+        console.log('  - short-percentage-mini:', shortPercentageMini);
+        console.log('  - whale-transactions:', tradeContainer);
+        
+        if (tradeContainer) {
+            const tradeItems = tradeContainer.querySelectorAll('.trade-item');
+            console.log('  - Trade items count:', tradeItems.length);
+        }
+        
+        if (gaugeFillMini) {
+            console.log('  - Current width:', gaugeFillMini.style.width);
+            console.log('  - Current background:', gaugeFillMini.style.background);
+        }
+        
+        if (ratioValueMini) {
+            console.log('  - Current text:', ratioValueMini.textContent);
+            console.log('  - Current color:', ratioValueMini.style.color);
+        }
+        
+        if (window.tradingPlatform && window.tradingPlatform.whaleGaugeData) {
+            console.log('  - Recent trades:', window.tradingPlatform.whaleGaugeData.recentTrades.length);
+            console.log('  - Gauge data:', window.tradingPlatform.whaleGaugeData);
+        }
+        
+        return { gaugeFillMini, ratioValueMini, longPercentageMini, shortPercentageMini, tradeContainer };
+    };
+
+    // 글로벌 함수들 등록
+    window.generateDemoData = generateDemoData;
+    
+    setTimeout(() => {
+        try {
+            console.log('🚀 Starting Trading Analytics Platform initialization...');
+            window.tradingPlatform = new TradingAnalyticsPlatform();
+            
+            console.log('✅ Trading Analytics Platform ready!');
+            
+        } catch (error) {
+            console.error('Error initializing Trading Platform:', error);
+            
+            const errorDiv = document.createElement('div');
+            errorDiv.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: #f44336;
+                color: white;
+                padding: 1rem;
+                border-radius: 8px;
+                z-index: 1000;
+                max-width: 300px;
+            `;
+            errorDiv.innerHTML = `
+                <strong>초기화 오류</strong><br>
+                페이지를 새로고침해 주세요.
+            `;
+            document.body.appendChild(errorDiv);
+            
+            setTimeout(() => {
+                if (errorDiv.parentNode) {
+                    errorDiv.parentNode.removeChild(errorDiv);
+                }
+            }, 5000);
+        }
+    }, 100);
+
+    // 대시보드 로딩 완료 처리
+    setTimeout(() => {
+        const grid = document.getElementById('dashboard-grid');
+        if (grid) {
+            grid.classList.add('loaded');
+            console.log('✅ Dashboard layout faded in.');
+        }
+    }, 300); // 모든 컴포넌트 렌더링 후 fade-in
+});
