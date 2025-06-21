@@ -46,7 +46,6 @@
     
     <!-- Analysis Modules -->
     <script src="js/analysis/whale-tracker.js"></script>
-    <script src="js/analysis/liquidation-tracker.js"></script>
     <script src="js/analysis/longshort-tracker.js"></script>
     <script src="js/analysis/realtime-trades.js"></script>
     <script src="js/analysis/technical-indicators.js"></script>
@@ -171,42 +170,6 @@
                     </div>
                 </div>
 
-                <!-- 청산 정보 카드 (4x6) - 왼쪽 중간 -->
-                <div class="grid-stack-item" gs-x="4" gs-y="3" gs-w="2" gs-h="2" gs-min-w="2" gs-min-h="2">
-                    <div class="grid-stack-item-content">
-                        <div class="dashboard-card liquidation-card" data-card-id="liquidation" draggable="false">
-                            <div class="card-header">
-                                <div class="card-title">
-                                    <i class="fas fa-exclamation-triangle"></i>
-                                    <h3>청산 정보</h3>
-                                </div>
-                                <div class="card-controls">
-                                    <select id="liquidation-symbol" class="symbol-selector">
-                                        <option value="BTCUSDT">BTC/USDT</option>
-                                        <option value="ETHUSDT">ETH/USDT</option>
-                                        <option value="ADAUSDT">ADA/USDT</option>
-                                        <option value="SOLUSDT">SOL/USDT</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="card-content">
-                                <div class="liquidation-summary">
-                                    <div class="liquidation-item long">
-                                        <span class="liquidation-type">롱 청산</span>
-                                        <span class="liquidation-amount" id="long-liquidation">$0</span>
-                                    </div>
-                                    <div class="liquidation-item short">
-                                        <span class="liquidation-type">숏 청산</span>
-                                        <span class="liquidation-amount" id="short-liquidation">$0</span>
-                                    </div>
-                                </div>
-                                <div class="liquidation-chart">
-                                    <canvas id="liquidation-chart" width="300" height="150"></canvas>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
 
                 <!-- 롱/숏 비율 카드 (4x6) - 중앙 중간 -->
                 <div class="grid-stack-item" gs-x="4" gs-y="2" gs-w="2" gs-h="2" gs-min-w="2" gs-min-h="2">

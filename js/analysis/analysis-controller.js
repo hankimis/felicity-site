@@ -42,16 +42,16 @@ if (typeof window.AnalysisController === 'undefined') {
                 this.modules.whaleTracker = window.whaleTracker || new WhaleTracker(this.settings);
                 
                 // 청산 추적 모듈
-                this.modules.liquidationTracker = new LiquidationTracker();
+                // this.modules.liquidationTracker = new LiquidationTracker();
                 
                 // 롱숏 비율 모듈
                 this.modules.longShortTracker = new LongShortTracker();
                 
-                // 실시간 거래 모듈
-                this.modules.realtimeTrader = new RealtimeTrader();
-                
                 // 기술지표 모듈
                 this.modules.technicalIndicators = new TechnicalIndicators();
+                
+                // 실시간 거래 모듈
+                this.modules.realtimeTrader = new RealtimeTrader();
                 
                 // 감정 분석 모듈
                 this.modules.sentimentAnalysis = new SentimentAnalysis();
