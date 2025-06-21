@@ -5,17 +5,29 @@
 class TechnicalIndicators {
     constructor(settings) {
         this.currentSymbol = 'BTCUSDT';
+        this.currentTimeframe = '1h';
         this.indicators = {
-            rsi: { value: 50, status: '중립' },
+            rsi: { value: 0, status: '중립' },
+            stochRsi: { k: 0, d: 0, status: '중립' },
             macd: { value: 0, signal: 0, histogram: 0, status: '중립' },
             bb: { upper: 0, middle: 0, lower: 0, position: '중간', status: '중립' },
-            stoch: { k: 50, d: 50, status: '중립' },
+            ao: { value: 0, status: '중립'},
+            williamsR: { value: 0, status: '중립'},
+            cci: { value: 0, status: '중립' },
             sma: { short: 0, long: 0, status: '중립' },
             ichimoku: { tenkan: 0, kijun: 0, spanA: 0, spanB: 0, chikou: 0, status: '중립' },
-            atr: { value: 0 },
+            mom: { value: 0, status: '중립' },
             vo: { value: 0, status: '중립'},
-            ao: { value: 0, status: '중립'},
-            williamsR: { value: -50, status: '중립'}
+            psar: { value: 0, status: '중립' },
+            adx: { value: 0, status: '중립' },
+            obv: { value: 0, status: '중립' },
+            mfi: { value: 0, status: '중립' },
+            roc: { value: 0, status: '중립' },
+            keltner: { upper: 0, middle: 0, lower: 0, status: '중립' },
+            donchian: { upper: 0, middle: 0, lower: 0, status: '중립' },
+            aroon: { up: 0, down: 0, status: '중립' },
+            ultimate: { value: 0, status: '중립' },
+            cmf: { value: 0, status: '중립' }
         };
         this.priceData = [];
         this.isTracking = false;
@@ -38,6 +50,23 @@ class TechnicalIndicators {
                 this.loadData();
             });
         }
+        
+        // 시간봉 변경
+        const timeframeSelector = document.getElementById('indicator-timeframe-selector');
+        if (timeframeSelector) {
+            timeframeSelector.addEventListener('click', (e) => {
+                if (e.target.tagName === 'BUTTON') {
+                    // 모든 버튼에서 active 클래스 제거
+                    timeframeSelector.querySelectorAll('.timeframe-btn').forEach(btn => btn.classList.remove('active'));
+                    // 클릭된 버튼에 active 클래스 추가
+                    e.target.classList.add('active');
+                    
+                    this.currentTimeframe = e.target.dataset.timeframe;
+                    console.log(`Timeframe changed to: ${this.currentTimeframe}`);
+                    this.loadData();
+                }
+            });
+        }
     }
 
     async start() {
@@ -57,7 +86,7 @@ class TechnicalIndicators {
     async loadData() {
         const symbol = this.currentSymbol;
         // Binance API는 klines(캔들) 데이터를 사용하여 기술 지표를 계산합니다.
-        const url = `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=1h&limit=100`;
+        const url = `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${this.currentTimeframe}&limit=200`;
 
         try {
             const response = await fetch(url);
@@ -105,6 +134,19 @@ class TechnicalIndicators {
         this.calculateVO();
         this.calculateAO();
         this.calculateWilliamsR();
+        this.calculateStochRSI();
+        this.calculateCCI();
+        this.calculateMOM();
+        this.calculateParabolicSAR();
+        this.calculateADX();
+        this.calculateOBV();
+        this.calculateMFI();
+        this.calculateROC();
+        this.calculateKeltnerChannel();
+        this.calculateDonchianChannel();
+        this.calculateAroon();
+        this.calculateUltimateOscillator();
+        this.calculateChaikinMoneyFlow();
     }
 
     calculateRSI(period = 14) {
@@ -389,8 +431,109 @@ class TechnicalIndicators {
     }
     
     getWilliamsRStatus(wr) {
-        if (wr > -20) return '과매수';
-        if (wr < -80) return '과매도';
+        if (wr >= -20) return '과매수';
+        if (wr <= -80) return '과매도';
+        return '중립';
+    }
+
+    calculateStochRSI(rsiPeriod = 14, stochPeriod = 14) {
+        const prices = this.priceData.map(data => data.close);
+        const rsiValues = this.calculateRSIValues(prices, rsiPeriod);
+        if (rsiValues.length < stochPeriod) return;
+
+        const recentRsi = rsiValues.slice(-stochPeriod);
+        const highestRsi = Math.max(...recentRsi);
+        const lowestRsi = Math.min(...recentRsi);
+        const currentRsi = recentRsi[recentRsi.length - 1];
+
+        const k = ((currentRsi - lowestRsi) / (highestRsi - lowestRsi)) * 100;
+        this.indicators.stochRsi = {
+            k: isNaN(k) ? 0 : k,
+            d: 0, // D 값은 단순화를 위해 생략
+            status: this.getStochRSIStatus(isNaN(k) ? 50 : k)
+        };
+    }
+    
+    calculateRSIValues(prices, period = 14) {
+        let rsiValues = [];
+        let gains = [];
+        let losses = [];
+
+        for (let i = 1; i < prices.length; i++) {
+            const change = prices[i] - prices[i - 1];
+            if (change > 0) {
+                gains.push(change);
+                losses.push(0);
+            } else {
+                gains.push(0);
+                losses.push(Math.abs(change));
+            }
+
+            if (i >= period) {
+                let avgGain = 0;
+                let avgLoss = 0;
+
+                if (i === period) {
+                    avgGain = gains.slice(0, period).reduce((a, b) => a + b, 0) / period;
+                    avgLoss = losses.slice(0, period).reduce((a, b) => a + b, 0) / period;
+                } else {
+                    avgGain = (rsiValues[rsiValues.length-1].avgGain * (period - 1) + gains[gains.length - 1]) / period;
+                    avgLoss = (rsiValues[rsiValues.length-1].avgLoss * (period - 1) + losses[losses.length-1]) / period;
+                }
+
+                if (avgLoss === 0) {
+                    rsiValues.push({rsi: 100, avgGain, avgLoss});
+                } else {
+                    const rs = avgGain / avgLoss;
+                    const rsi = 100 - (100 / (1 + rs));
+                    rsiValues.push({rsi, avgGain, avgLoss});
+                }
+            }
+        }
+        return rsiValues.map(v => v.rsi);
+    }
+
+    getStochRSIStatus(k) {
+        if (k > 80) return '과매수';
+        if (k < 20) return '과매도';
+        return '중립';
+    }
+
+    calculateCCI(period = 20) {
+        const data = this.priceData.slice(-period);
+        if (data.length < period) return;
+
+        const typicalPrices = data.map(d => (d.high + d.low + d.close) / 3);
+        const sma = typicalPrices.reduce((a, b) => a + b, 0) / period;
+        const meanDeviation = typicalPrices.map(p => Math.abs(p - sma)).reduce((a, b) => a + b, 0) / period;
+        
+        const cci = (typicalPrices[typicalPrices.length - 1] - sma) / (0.015 * meanDeviation);
+        this.indicators.cci = {
+            value: cci,
+            status: this.getCCIStatus(cci)
+        };
+    }
+
+    getCCIStatus(cci) {
+        if (cci > 100) return '과매수';
+        if (cci < -100) return '과매도';
+        return '중립';
+    }
+    
+    calculateMOM(period = 10) {
+        const prices = this.priceData.map(d => d.close);
+        if (prices.length < period) return;
+
+        const mom = prices[prices.length - 1] - prices[prices.length - 1 - period];
+        this.indicators.mom = {
+            value: mom,
+            status: this.getMOMStatus(mom)
+        };
+    }
+
+    getMOMStatus(mom) {
+        if (mom > 0) return '상승';
+        if (mom < 0) return '하락';
         return '중립';
     }
 
@@ -405,12 +548,33 @@ class TechnicalIndicators {
             atr: { value: 150 + Math.random() * 50 },
             vo: { value: (Math.random() - 0.5) * 50, status: '중립' },
             ao: { value: (Math.random() - 0.5) * 100, status: '중립' },
-            williamsR: { value: -70 + Math.random() * 40, status: '중립' }
+            williamsR: { value: -70 + Math.random() * 40, status: '중립' },
+            stochRsi: { k: 30 + Math.random() * 40, d: 0, status: '중립' },
+            cci: { value: (Math.random() - 0.5) * 200, status: '중립' },
+            mom: { value: (Math.random() - 0.5) * 10, status: '중립' },
+            psar: { value: 45000 + (Math.random() - 0.5) * 1000, status: '중립' },
+            adx: { value: 20 + Math.random() * 30, status: '중립' },
+            obv: { value: (Math.random() - 0.5) * 1000000, status: '중립' },
+            mfi: { value: 30 + Math.random() * 40, status: '중립' },
+            roc: { value: (Math.random() - 0.5) * 10, status: '중립' },
+            keltner: { upper: 46000, middle: 45000, lower: 44000, status: '중립' },
+            donchian: { upper: 47000, middle: 45000, lower: 43000, status: '중립' },
+            aroon: { up: 40 + Math.random() * 40, down: 40 + Math.random() * 40, status: '중립' },
+            ultimate: { value: 40 + Math.random() * 30, status: '중립' },
+            cmf: { value: (Math.random() - 0.5) * 0.5, status: '중립' }
         };
         
         // 상태 업데이트
         this.indicators.rsi.status = this.getRSIStatus(this.indicators.rsi.value);
         this.indicators.stoch.status = this.getStochStatus(this.indicators.stoch.k);
+        this.indicators.stochRsi.status = this.getStochRSIStatus(this.indicators.stochRsi.k);
+        this.indicators.cci.status = this.getCCIStatus(this.indicators.cci.value);
+        this.indicators.mom.status = this.getMOMStatus(this.indicators.mom.value);
+        this.indicators.mfi.status = this.indicators.mfi.value > 80 ? '과매수' : this.indicators.mfi.value < 20 ? '과매도' : '중립';
+        this.indicators.adx.status = this.indicators.adx.value > 25 ? '강한추세' : '약한추세';
+        this.indicators.aroon.status = this.getAroonStatus(this.indicators.aroon.up, this.indicators.aroon.down);
+        this.indicators.ultimate.status = this.indicators.ultimate.value > 70 ? '과매수' : this.indicators.ultimate.value < 30 ? '과매도' : '중립';
+        this.indicators.cmf.status = this.indicators.cmf.value > 0.25 ? '강세' : this.indicators.cmf.value < -0.25 ? '약세' : '중립';
     }
 
     startRealTimeTracking() {
@@ -424,7 +588,7 @@ class TechnicalIndicators {
     updateDisplay() {
         if (!this.indicators) return;
 
-        const { rsi, macd, bb, stoch, sma, ichimoku, atr, vo, ao, williamsR } = this.indicators;
+        const { rsi, macd, bb, stoch, sma, ichimoku, atr, vo, ao, williamsR, stochRsi, cci, mom } = this.indicators;
 
         // RSI 업데이트
         const rsiValueEl = document.getElementById('rsi-value');
@@ -496,8 +660,99 @@ class TechnicalIndicators {
         // Williams %R 업데이트
         const williamsRValueEl = document.getElementById('williams-r-value');
         if (williamsRValueEl) {
-            williamsRValueEl.textContent = `${williamsR.value.toFixed(2)} (${williamsR.status})`;
+            williamsRValueEl.textContent = `${williamsR.value.toFixed(2)}`;
             this.updateIndicatorClass(williamsRValueEl, williamsR.status);
+        }
+
+        // StochRSI 업데이트
+        const stochRsiValueEl = document.getElementById('stoch-rsi-value');
+        if (stochRsiValueEl) {
+            stochRsiValueEl.textContent = `${stochRsi.k.toFixed(2)}`;
+            this.updateIndicatorClass(stochRsiValueEl, stochRsi.status);
+        }
+
+        // CCI 업데이트
+        const cciValueEl = document.getElementById('cci-value');
+        if (cciValueEl) {
+            cciValueEl.textContent = `${cci.value.toFixed(2)}`;
+            this.updateIndicatorClass(cciValueEl, cci.status);
+        }
+
+        // Momentum 업데이트
+        const momValueEl = document.getElementById('mom-value');
+        if (momValueEl) {
+            momValueEl.textContent = `${mom.value.toFixed(2)}`;
+            this.updateIndicatorClass(momValueEl, mom.status);
+        }
+
+        // Parabolic SAR 업데이트
+        const psarValueEl = document.getElementById('psar-value');
+        if (psarValueEl) {
+            psarValueEl.textContent = `${this.indicators.psar.value.toFixed(2)}`;
+            this.updateIndicatorClass(psarValueEl, this.indicators.psar.status);
+        }
+
+        // ADX 업데이트
+        const adxValueEl = document.getElementById('adx-value');
+        if (adxValueEl) {
+            adxValueEl.textContent = `${this.indicators.adx.value.toFixed(2)}`;
+            this.updateIndicatorClass(adxValueEl, this.indicators.adx.status);
+        }
+
+        // OBV 업데이트
+        const obvValueEl = document.getElementById('obv-value');
+        if (obvValueEl) {
+            obvValueEl.textContent = `${(this.indicators.obv.value / 1000000).toFixed(2)}M`;
+            this.updateIndicatorClass(obvValueEl, this.indicators.obv.status);
+        }
+
+        // MFI 업데이트
+        const mfiValueEl = document.getElementById('mfi-value');
+        if (mfiValueEl) {
+            mfiValueEl.textContent = `${this.indicators.mfi.value.toFixed(2)}`;
+            this.updateIndicatorClass(mfiValueEl, this.indicators.mfi.status);
+        }
+
+        // ROC 업데이트
+        const rocValueEl = document.getElementById('roc-value');
+        if (rocValueEl) {
+            rocValueEl.textContent = `${this.indicators.roc.value.toFixed(2)}%`;
+            this.updateIndicatorClass(rocValueEl, this.indicators.roc.status);
+        }
+
+        // Keltner Channel 업데이트
+        const keltnerValueEl = document.getElementById('keltner-value');
+        if (keltnerValueEl) {
+            keltnerValueEl.textContent = `${this.indicators.keltner.status}`;
+            this.updateIndicatorClass(keltnerValueEl, this.indicators.keltner.status);
+        }
+
+        // Donchian Channel 업데이트
+        const donchianValueEl = document.getElementById('donchian-value');
+        if (donchianValueEl) {
+            donchianValueEl.textContent = `${this.indicators.donchian.status}`;
+            this.updateIndicatorClass(donchianValueEl, this.indicators.donchian.status);
+        }
+
+        // Aroon 업데이트
+        const aroonValueEl = document.getElementById('aroon-value');
+        if (aroonValueEl) {
+            aroonValueEl.textContent = `${this.indicators.aroon.up.toFixed(0)}/${this.indicators.aroon.down.toFixed(0)}`;
+            this.updateIndicatorClass(aroonValueEl, this.indicators.aroon.status);
+        }
+
+        // Ultimate Oscillator 업데이트
+        const ultimateValueEl = document.getElementById('ultimate-value');
+        if (ultimateValueEl) {
+            ultimateValueEl.textContent = `${this.indicators.ultimate.value.toFixed(2)}`;
+            this.updateIndicatorClass(ultimateValueEl, this.indicators.ultimate.status);
+        }
+
+        // Chaikin Money Flow 업데이트
+        const cmfValueEl = document.getElementById('cmf-value');
+        if (cmfValueEl) {
+            cmfValueEl.textContent = `${this.indicators.cmf.value.toFixed(3)}`;
+            this.updateIndicatorClass(cmfValueEl, this.indicators.cmf.status);
         }
 
         this.updateSummary();
@@ -513,13 +768,26 @@ class TechnicalIndicators {
             this.indicators.ichimoku.status,
             this.indicators.vo.status,
             this.indicators.ao.status,
-            this.indicators.williamsR.status
+            this.indicators.williamsR.status,
+            this.indicators.stochRsi.status,
+            this.indicators.cci.status,
+            this.indicators.mom.status,
+            this.indicators.psar.status,
+            this.indicators.adx.status,
+            this.indicators.obv.status,
+            this.indicators.mfi.status,
+            this.indicators.roc.status,
+            this.indicators.keltner.status,
+            this.indicators.donchian.status,
+            this.indicators.aroon.status,
+            this.indicators.ultimate.status,
+            this.indicators.cmf.status
         ];
 
-        const longSignals = ['과매도', '강세', '상승추세', '구름대 상단 돌파', '거래량 증가', '강세 전환'];
-        const shortSignals = ['과매수', '약세', '하락추세', '구름대 하단 이탈', '거래량 감소', '약세 전환'];
-        
         let score = 0;
+        const longSignals = ['과매도', '강세', '상승추세', '구름대 상단 돌파', '거래량 증가', '강세 전환', '상승', '강한추세', '돌파'];
+        const shortSignals = ['과매수', '약세', '하락추세', '구름대 하단 이탈', '거래량 감소', '약세 전환', '하락', '약한추세', '이탈'];
+        
         statuses.forEach(status => {
             if (longSignals.includes(status)) {
                 score++;
@@ -557,8 +825,8 @@ class TechnicalIndicators {
 
     updateIndicatorClass(element, status) {
         element.classList.remove('long', 'short', 'neutral');
-        const longSignals = ['과매도', '강세', '상승추세', '구름대 상단 돌파', '거래량 증가', '강세 전환'];
-        const shortSignals = ['과매수', '약세', '하락추세', '구름대 하단 이탈', '거래량 감소', '약세 전환'];
+        const longSignals = ['과매도', '강세', '상승추세', '구름대 상단 돌파', '거래량 증가', '강세 전환', '상승', '강한추세', '돌파'];
+        const shortSignals = ['과매수', '약세', '하락추세', '구름대 하단 이탈', '거래량 감소', '약세 전환', '하락', '약한추세', '이탈'];
 
         if (longSignals.includes(status)) {
             element.classList.add('long');
@@ -609,5 +877,292 @@ class TechnicalIndicators {
 
     getATR() {
         return this.indicators.atr;
+    }
+
+    // 새로운 기술 지표들
+    calculateParabolicSAR(acceleration = 0.02, maximum = 0.2) {
+        if (this.priceData.length < 2) return;
+        
+        const data = this.priceData;
+        let isLong = data[1].close > data[0].close;
+        let sar = isLong ? data[0].low : data[0].high;
+        let af = acceleration;
+        let ep = isLong ? data[0].high : data[0].low;
+        
+        for (let i = 1; i < data.length; i++) {
+            const current = data[i];
+            
+            if (isLong) {
+                if (current.low < sar) {
+                    isLong = false;
+                    sar = ep;
+                    ep = current.low;
+                    af = acceleration;
+                } else {
+                    if (current.high > ep) {
+                        ep = current.high;
+                        af = Math.min(af + acceleration, maximum);
+                    }
+                    sar = sar + af * (ep - sar);
+                }
+            } else {
+                if (current.high > sar) {
+                    isLong = true;
+                    sar = ep;
+                    ep = current.high;
+                    af = acceleration;
+                } else {
+                    if (current.low < ep) {
+                        ep = current.low;
+                        af = Math.min(af + acceleration, maximum);
+                    }
+                    sar = sar + af * (ep - sar);
+                }
+            }
+        }
+        
+        this.indicators.psar.value = sar;
+        this.indicators.psar.status = isLong ? '상승' : '하락';
+    }
+
+    calculateADX(period = 14) {
+        if (this.priceData.length < period * 2) return;
+        
+        const data = this.priceData;
+        const tr = [];
+        const dmPlus = [];
+        const dmMinus = [];
+        
+        for (let i = 1; i < data.length; i++) {
+            const highDiff = data[i].high - data[i-1].high;
+            const lowDiff = data[i-1].low - data[i].low;
+            
+            tr.push(Math.max(
+                data[i].high - data[i].low,
+                Math.abs(data[i].high - data[i-1].close),
+                Math.abs(data[i].low - data[i-1].close)
+            ));
+            
+            if (highDiff > lowDiff && highDiff > 0) {
+                dmPlus.push(highDiff);
+                dmMinus.push(0);
+            } else if (lowDiff > highDiff && lowDiff > 0) {
+                dmPlus.push(0);
+                dmMinus.push(lowDiff);
+            } else {
+                dmPlus.push(0);
+                dmMinus.push(0);
+            }
+        }
+        
+        const atr = this.calculateEMA(tr, period);
+        const diPlus = this.calculateEMA(dmPlus, period).map((val, i) => (val / atr[i]) * 100);
+        const diMinus = this.calculateEMA(dmMinus, period).map((val, i) => (val / atr[i]) * 100);
+        
+        const dx = diPlus.map((plus, i) => {
+            const minus = diMinus[i];
+            return Math.abs(plus - minus) / (plus + minus) * 100;
+        });
+        
+        const adx = this.calculateEMA(dx, period);
+        const currentADX = adx[adx.length - 1];
+        
+        this.indicators.adx.value = currentADX;
+        this.indicators.adx.status = currentADX > 25 ? '강한추세' : '약한추세';
+    }
+
+    calculateOBV() {
+        if (this.priceData.length < 2) return;
+        
+        let obv = 0;
+        for (let i = 1; i < this.priceData.length; i++) {
+            if (this.priceData[i].close > this.priceData[i-1].close) {
+                obv += this.priceData[i].volume;
+            } else if (this.priceData[i].close < this.priceData[i-1].close) {
+                obv -= this.priceData[i].volume;
+            }
+        }
+        
+        this.indicators.obv.value = obv;
+        this.indicators.obv.status = obv > 0 ? '상승' : '하락';
+    }
+
+    calculateMFI(period = 14) {
+        if (this.priceData.length < period) return;
+        
+        const data = this.priceData.slice(-period);
+        let positiveFlow = 0;
+        let negativeFlow = 0;
+        
+        for (let i = 1; i < data.length; i++) {
+            const typicalPrice = (data[i].high + data[i].low + data[i].close) / 3;
+            const prevTypicalPrice = (data[i-1].high + data[i-1].low + data[i-1].close) / 3;
+            
+            if (typicalPrice > prevTypicalPrice) {
+                positiveFlow += typicalPrice * data[i].volume;
+            } else {
+                negativeFlow += typicalPrice * data[i].volume;
+            }
+        }
+        
+        const mfi = 100 - (100 / (1 + positiveFlow / negativeFlow));
+        
+        this.indicators.mfi.value = mfi;
+        this.indicators.mfi.status = mfi > 80 ? '과매수' : mfi < 20 ? '과매도' : '중립';
+    }
+
+    calculateROC(period = 10) {
+        if (this.priceData.length < period + 1) return;
+        
+        const currentPrice = this.priceData[this.priceData.length - 1].close;
+        const pastPrice = this.priceData[this.priceData.length - 1 - period].close;
+        const roc = ((currentPrice - pastPrice) / pastPrice) * 100;
+        
+        this.indicators.roc.value = roc;
+        this.indicators.roc.status = roc > 0 ? '상승' : '하락';
+    }
+
+    calculateKeltnerChannel(period = 20, multiplier = 2) {
+        if (this.priceData.length < period) return;
+        
+        const data = this.priceData.slice(-period);
+        const typicalPrices = data.map(d => (d.high + d.low + d.close) / 3);
+        const middle = typicalPrices.reduce((a, b) => a + b, 0) / period;
+        
+        const atr = this.calculateATR(period);
+        const upper = middle + (multiplier * atr);
+        const lower = middle - (multiplier * atr);
+        
+        this.indicators.keltner = {
+            upper: upper,
+            middle: middle,
+            lower: lower,
+            status: this.getKeltnerStatus(this.priceData[this.priceData.length - 1].close, upper, lower)
+        };
+    }
+
+    getKeltnerStatus(price, upper, lower) {
+        if (price > upper) return '과매수';
+        if (price < lower) return '과매도';
+        return '중립';
+    }
+
+    calculateDonchianChannel(period = 20) {
+        if (this.priceData.length < period) return;
+        
+        const data = this.priceData.slice(-period);
+        const upper = Math.max(...data.map(d => d.high));
+        const lower = Math.min(...data.map(d => d.low));
+        const middle = (upper + lower) / 2;
+        
+        this.indicators.donchian = {
+            upper: upper,
+            middle: middle,
+            lower: lower,
+            status: this.getDonchianStatus(this.priceData[this.priceData.length - 1].close, upper, lower)
+        };
+    }
+
+    getDonchianStatus(price, upper, lower) {
+        if (price > upper) return '돌파';
+        if (price < lower) return '이탈';
+        return '중립';
+    }
+
+    calculateAroon(period = 25) {
+        if (this.priceData.length < period) return;
+        
+        const data = this.priceData.slice(-period);
+        let highestIndex = 0;
+        let lowestIndex = 0;
+        
+        for (let i = 1; i < data.length; i++) {
+            if (data[i].high > data[highestIndex].high) {
+                highestIndex = i;
+            }
+            if (data[i].low < data[lowestIndex].low) {
+                lowestIndex = i;
+            }
+        }
+        
+        const aroonUp = ((period - (period - 1 - highestIndex)) / period) * 100;
+        const aroonDown = ((period - (period - 1 - lowestIndex)) / period) * 100;
+        
+        this.indicators.aroon = {
+            up: aroonUp,
+            down: aroonDown,
+            status: this.getAroonStatus(aroonUp, aroonDown)
+        };
+    }
+
+    getAroonStatus(up, down) {
+        if (up > 70 && down < 30) return '강세';
+        if (down > 70 && up < 30) return '약세';
+        return '중립';
+    }
+
+    calculateUltimateOscillator(period1 = 7, period2 = 14, period3 = 28) {
+        if (this.priceData.length < period3) return;
+        
+        const data = this.priceData;
+        let bp1 = 0, tr1 = 0, bp2 = 0, tr2 = 0, bp3 = 0, tr3 = 0;
+        
+        for (let i = 1; i < data.length; i++) {
+            const close = data[i].close;
+            const prevClose = data[i-1].close;
+            const high = data[i].high;
+            const low = data[i].low;
+            
+            const bp = close - Math.min(low, prevClose);
+            const tr = Math.max(high, prevClose) - Math.min(low, prevClose);
+            
+            if (i >= data.length - period1) {
+                bp1 += bp;
+                tr1 += tr;
+            }
+            if (i >= data.length - period2) {
+                bp2 += bp;
+                tr2 += tr;
+            }
+            if (i >= data.length - period3) {
+                bp3 += bp;
+                tr3 += tr;
+            }
+        }
+        
+        const avg7 = tr1 > 0 ? (bp1 / tr1) * 100 : 0;
+        const avg14 = tr2 > 0 ? (bp2 / tr2) * 100 : 0;
+        const avg28 = tr3 > 0 ? (bp3 / tr3) * 100 : 0;
+        
+        const ultimate = (4 * avg7 + 2 * avg14 + avg28) / 7;
+        
+        this.indicators.ultimate.value = ultimate;
+        this.indicators.ultimate.status = ultimate > 70 ? '과매수' : ultimate < 30 ? '과매도' : '중립';
+    }
+
+    calculateChaikinMoneyFlow(period = 20) {
+        if (this.priceData.length < period) return;
+        
+        const data = this.priceData.slice(-period);
+        let mfm = 0;
+        let mfv = 0;
+        
+        for (const candle of data) {
+            const high = candle.high;
+            const low = candle.low;
+            const close = candle.close;
+            const volume = candle.volume;
+            
+            if (high !== low) {
+                const mf = ((close - low) - (high - close)) / (high - low);
+                mfm += mf * volume;
+                mfv += volume;
+            }
+        }
+        
+        const cmf = mfv > 0 ? mfm / mfv : 0;
+        
+        this.indicators.cmf.value = cmf;
+        this.indicators.cmf.status = cmf > 0.25 ? '강세' : cmf < -0.25 ? '약세' : '중립';
     }
 } 

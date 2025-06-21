@@ -3,7 +3,8 @@
  * 실시간 청산 정보를 추적하고 표시하는 모듈
  */
 class LiquidationTracker {
-    constructor() {
+    constructor(settings = {}) {
+        this.settings = settings;
         this.liquidationData = {
             long: { amount: 0, count: 0 },
             short: { amount: 0, count: 0 },
@@ -351,7 +352,7 @@ class LiquidationTracker {
     }
 
     async loadData() {
-        const symbol = this.settings.symbol;
+        const symbol = this.settings?.symbol || 'BTCUSDT';
         const url = `https://fapi.binance.com/fapi/v1/allForceOrders?symbol=${symbol}&limit=100`;
 
         try {

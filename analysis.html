@@ -287,50 +287,163 @@
                                     <i class="fas fa-chart-bar"></i>
                                     <h3>기술지표</h3>
                                 </div>
-                                <div class="indicator-summary">
-                                    <div class="summary-gauge">
-                                        <div class="summary-bar" id="indicator-summary-bar"></div>
+                                <div class="card-controls">
+                                    <div id="indicator-timeframe-selector" class="timeframe-selector">
+                                        <button class="timeframe-btn" data-timeframe="5m">5분</button>
+                                        <button class="timeframe-btn" data-timeframe="15m">15분</button>
+                                        <button class="timeframe-btn active" data-timeframe="1h">1시간</button>
+                                        <button class="timeframe-btn" data-timeframe="4h">4시간</button>
+                                        <button class="timeframe-btn" data-timeframe="1d">1일</button>
                                     </div>
-                                    <span class="summary-text" id="indicator-summary-text">종합: 계산 중...</span>
                                 </div>
+                            </div>
+                            <div class="indicator-summary">
+                                <div class="summary-gauge">
+                                    <div class="summary-bar" id="indicator-summary-bar"></div>
+                                </div>
+                                <span class="summary-text" id="indicator-summary-text">종합: 계산 중...</span>
                             </div>
                             <div class="card-content">
                                 <div class="indicators-grid">
                                     <div class="indicator-item">
-                                        <span class="indicator-name">RSI (14)</span>
+                                        <div class="indicator-info">
+                                            <span class="indicator-name">RSI (14)</span>
+                                            <span class="indicator-desc">상대강도지수, 과매수/과매도</span>
+                                        </div>
                                         <span class="indicator-value" id="rsi-value">계산 중...</span>
                                     </div>
                                     <div class="indicator-item">
-                                        <span class="indicator-name">Stochastic</span>
-                                        <span class="indicator-value" id="stoch-value">계산 중...</span>
+                                        <div class="indicator-info">
+                                            <span class="indicator-name">Stoch RSI</span>
+                                            <span class="indicator-desc">RSI 기반 과매수/과매도</span>
+                                        </div>
+                                        <span class="indicator-value" id="stoch-rsi-value">계산 중...</span>
                                     </div>
                                     <div class="indicator-item">
-                                        <span class="indicator-name">MACD</span>
+                                        <div class="indicator-info">
+                                            <span class="indicator-name">MACD</span>
+                                            <span class="indicator-desc">두 이동평균선의 관계</span>
+                                        </div>
                                         <span class="indicator-value" id="macd-value">계산 중...</span>
                                     </div>
                                     <div class="indicator-item">
-                                        <span class="indicator-name">Williams %R</span>
+                                        <div class="indicator-info">
+                                            <span class="indicator-name">Awesome Osc.</span>
+                                            <span class="indicator-desc">시장 모멘텀 측정</span>
+                                        </div>
+                                        <span class="indicator-value" id="ao-value">계산 중...</span>
+                                    </div>
+                                    <div class="indicator-item">
+                                        <div class="indicator-info">
+                                            <span class="indicator-name">Williams %R</span>
+                                            <span class="indicator-desc">과매수/과매도 수준 판단</span>
+                                        </div>
                                         <span class="indicator-value" id="williams-r-value">계산 중...</span>
                                     </div>
                                     <div class="indicator-item">
-                                        <span class="indicator-name">Moving Average</span>
+                                        <div class="indicator-info">
+                                            <span class="indicator-name">CCI</span>
+                                            <span class="indicator-desc">추세 시작 및 강도 측정</span>
+                                        </div>
+                                        <span class="indicator-value" id="cci-value">계산 중...</span>
+                                    </div>
+                                    <div class="indicator-item">
+                                        <div class="indicator-info">
+                                            <span class="indicator-name">Moving Average</span>
+                                            <span class="indicator-desc">단기/장기 가격 추세</span>
+                                        </div>
                                         <span class="indicator-value" id="sma-value">계산 중...</span>
                                     </div>
                                     <div class="indicator-item">
-                                        <span class="indicator-name">Ichimoku Cloud</span>
+                                        <div class="indicator-info">
+                                            <span class="indicator-name">Ichimoku Cloud</span>
+                                            <span class="indicator-desc">추세, 지지/저항 수준</span>
+                                        </div>
                                         <span class="indicator-value" id="ichimoku-value">계산 중...</span>
                                     </div>
-                                     <div class="indicator-item">
-                                        <span class="indicator-name">Volume Oscillator</span>
+                                    <div class="indicator-item">
+                                        <div class="indicator-info">
+                                            <span class="indicator-name">Momentum</span>
+                                            <span class="indicator-desc">가격 변화 속도</span>
+                                        </div>
+                                        <span class="indicator-value" id="mom-value">계산 중...</span>
+                                    </div>
+                                    <div class="indicator-item">
+                                        <div class="indicator-info">
+                                            <span class="indicator-name">Volume Oscillator</span>
+                                            <span class="indicator-desc">거래량 추세 강도</span>
+                                        </div>
                                         <span class="indicator-value" id="vo-value">계산 중...</span>
                                     </div>
                                     <div class="indicator-item">
-                                        <span class="indicator-name">Awesome Osc.</span>
-                                        <span class="indicator-value" id="ao-value">계산 중...</span>
+                                        <div class="indicator-info">
+                                            <span class="indicator-name">Parabolic SAR</span>
+                                            <span class="indicator-desc">추세 전환 신호</span>
+                                        </div>
+                                        <span class="indicator-value" id="psar-value">계산 중...</span>
                                     </div>
-                                     <div class="indicator-item">
-                                        <span class="indicator-name">ATR (변동성)</span>
-                                        <span class="indicator-value" id="atr-value">계산 중...</span>
+                                    <div class="indicator-item">
+                                        <div class="indicator-info">
+                                            <span class="indicator-name">ADX</span>
+                                            <span class="indicator-desc">추세 강도 측정</span>
+                                        </div>
+                                        <span class="indicator-value" id="adx-value">계산 중...</span>
+                                    </div>
+                                    <div class="indicator-item">
+                                        <div class="indicator-info">
+                                            <span class="indicator-name">OBV</span>
+                                            <span class="indicator-desc">거래량 기반 추세</span>
+                                        </div>
+                                        <span class="indicator-value" id="obv-value">계산 중...</span>
+                                    </div>
+                                    <div class="indicator-item">
+                                        <div class="indicator-info">
+                                            <span class="indicator-name">MFI</span>
+                                            <span class="indicator-desc">자금 흐름 지수</span>
+                                        </div>
+                                        <span class="indicator-value" id="mfi-value">계산 중...</span>
+                                    </div>
+                                    <div class="indicator-item">
+                                        <div class="indicator-info">
+                                            <span class="indicator-name">ROC</span>
+                                            <span class="indicator-desc">변화율</span>
+                                        </div>
+                                        <span class="indicator-value" id="roc-value">계산 중...</span>
+                                    </div>
+                                    <div class="indicator-item">
+                                        <div class="indicator-info">
+                                            <span class="indicator-name">Keltner Channel</span>
+                                            <span class="indicator-desc">변동성 기반 밴드</span>
+                                        </div>
+                                        <span class="indicator-value" id="keltner-value">계산 중...</span>
+                                    </div>
+                                    <div class="indicator-item">
+                                        <div class="indicator-info">
+                                            <span class="indicator-name">Donchian Channel</span>
+                                            <span class="indicator-desc">고가/저가 기반 밴드</span>
+                                        </div>
+                                        <span class="indicator-value" id="donchian-value">계산 중...</span>
+                                    </div>
+                                    <div class="indicator-item">
+                                        <div class="indicator-info">
+                                            <span class="indicator-name">Aroon</span>
+                                            <span class="indicator-desc">추세 강도 및 전환</span>
+                                        </div>
+                                        <span class="indicator-value" id="aroon-value">계산 중...</span>
+                                    </div>
+                                    <div class="indicator-item">
+                                        <div class="indicator-info">
+                                            <span class="indicator-name">Ultimate Osc.</span>
+                                            <span class="indicator-desc">다중 시간대 오실레이터</span>
+                                        </div>
+                                        <span class="indicator-value" id="ultimate-value">계산 중...</span>
+                                    </div>
+                                    <div class="indicator-item">
+                                        <div class="indicator-info">
+                                            <span class="indicator-name">Chaikin MF</span>
+                                            <span class="indicator-desc">자금 흐름 측정</span>
+                                        </div>
+                                        <span class="indicator-value" id="cmf-value">계산 중...</span>
                                     </div>
                                 </div>
                             </div>
