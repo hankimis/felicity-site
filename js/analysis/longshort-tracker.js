@@ -5,6 +5,7 @@
 class LongShortTracker {
     constructor() {
         this.currentSymbol = 'BTCUSDT';
+        this.currentTimeframe = '1h';
         this.ratioData = {
             overall: { long: 50, short: 50 },
             exchanges: {
@@ -13,7 +14,6 @@ class LongShortTracker {
             },
             history: []
         };
-        this.chart = null;
         this.isTracking = false;
         this.interval = null;
         
@@ -23,15 +23,24 @@ class LongShortTracker {
     init() {
         console.log('⚖️ Long/Short Tracker initializing...');
         this.setupEventListeners();
-        this.initializeChart();
     }
 
     setupEventListeners() {
         // 심볼 변경
-        const symbolSelect = document.getElementById('ls-coin');
+        const symbolSelect = document.getElementById('longshort-symbol');
         if (symbolSelect) {
             symbolSelect.addEventListener('change', (e) => {
                 this.currentSymbol = e.target.value;
+                this.loadData();
+            });
+        }
+        
+        // 시간봉 변경 (드롭다운)
+        const timeframeSelect = document.getElementById('longshort-timeframe');
+        if (timeframeSelect) {
+            timeframeSelect.addEventListener('change', (e) => {
+                this.currentTimeframe = e.target.value;
+                console.log(`Long/Short timeframe changed to: ${this.currentTimeframe}`);
                 this.loadData();
             });
         }
@@ -53,7 +62,7 @@ class LongShortTracker {
 
     async loadData() {
         const symbol = this.currentSymbol;
-        const period = '5m';
+        const period = this.currentTimeframe;
         const url = `https://fapi.binance.com/futures/data/globalLongShortAccountRatio?symbol=${symbol}&period=${period}&limit=30`;
 
         try {
@@ -133,9 +142,10 @@ class LongShortTracker {
     generateHistoryData() {
         const historyData = [];
         const now = Date.now();
+        const interval = this.getTimeframeInterval();
         
         for (let i = 30; i >= 0; i--) {
-            const timestamp = now - (i * 5 * 60 * 1000); // 5분 간격
+            const timestamp = now - (i * interval);
             const longRatio = 45 + Math.sin(i * 0.1) * 5 + Math.random() * 5;
             
             historyData.push({
@@ -148,6 +158,17 @@ class LongShortTracker {
         this.ratioData.history = historyData;
     }
 
+    getTimeframeInterval() {
+        switch (this.currentTimeframe) {
+            case '5m': return 5 * 60 * 1000; // 5분 간격
+            case '15m': return 15 * 60 * 1000; // 15분 간격
+            case '1h': return 60 * 60 * 1000; // 1시간 간격
+            case '4h': return 4 * 60 * 60 * 1000; // 4시간 간격
+            case '1d': return 24 * 60 * 60 * 1000; // 1일 간격
+            default: return 60 * 60 * 1000; // 기본값 1시간
+        }
+    }
+
     startRealTimeTracking() {
         this.trackingInterval = setInterval(async () => {
             if (this.isTracking) {
@@ -156,93 +177,52 @@ class LongShortTracker {
         }, 60000); // 1분마다 업데이트
     }
 
-    initializeChart() {
-        const ctx = document.getElementById('longshort-chart')?.getContext('2d');
-        if (!ctx) {
-            console.error("Long/Short chart canvas not found");
-            return;
-        }
-
-        this.chart = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: [],
-                datasets: [
-                    {
-                        label: '롱 비율',
-                        data: [],
-                        borderColor: 'rgba(40, 167, 69, 0.8)',
-                        backgroundColor: 'rgba(40, 167, 69, 0.2)',
-                        fill: true,
-                        tension: 0.3
-                    },
-                    {
-                        label: '숏 비율',
-                        data: [],
-                        borderColor: 'rgba(220, 53, 69, 0.8)',
-                        backgroundColor: 'rgba(220, 53, 69, 0.2)',
-                        fill: true,
-                        tension: 0.3
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        max: 100,
-                        ticks: {
-                            callback: function(value) {
-                                return value + '%';
-                            }
-                        }
-                    }
-                },
-                plugins: {
-                    legend: {
-                        position: 'top',
-                    },
-                }
-            }
-        });
-        ctx.canvas.chart = this.chart;
-    }
-
     updateDisplay(data) {
         if (!data) return;
 
+        // 비율 값 업데이트
         const ratioEl = document.getElementById('longshort-ratio');
-        const fillEl = document.getElementById('ratio-fill');
-
         if (ratioEl) {
             ratioEl.textContent = data.longShortRatio.toFixed(2);
         }
-        if (fillEl) {
-            fillEl.style.width = `${data.longAccount}%`;
+
+        // 롱/숏 퍼센트 계산
+        const longPercent = data.longAccount;
+        const shortPercent = 100 - longPercent;
+
+        // 퍼센트 값 업데이트
+        const longPercentEl = document.getElementById('long-percentage');
+        const shortPercentEl = document.getElementById('short-percentage');
+        
+        if (longPercentEl) {
+            longPercentEl.textContent = `${longPercent.toFixed(1)}%`;
         }
+        if (shortPercentEl) {
+            shortPercentEl.textContent = `${shortPercent.toFixed(1)}%`;
+        }
+
+        // 상태 업데이트
+        const statusEl = document.getElementById('ratio-status');
+        if (statusEl) {
+            statusEl.className = 'ls-status'; // Reset classes
+            if (longPercent > 55) {
+                statusEl.textContent = '롱 우세';
+                statusEl.classList.add('long-dominant');
+            } else if (shortPercent > 55) {
+                statusEl.textContent = '숏 우세';
+                statusEl.classList.add('short-dominant');
+            } else {
+                statusEl.textContent = '균형';
+                statusEl.classList.add('neutral');
+            }
+        }
+
+        // 시각적 게이지 업데이트
+        const longFillEl = document.getElementById('long-fill');
         
-        // 차트 업데이트 로직은 여기에...
-        this.updateChart(data.history);
-    }
-
-    updateChart(history) {
-        if (!this.chart || !history || history.length === 0) return;
-
-        const labels = history.map(item => new Date(item.timestamp).toLocaleTimeString());
-        
-        // 롱/숏 비율로부터 각 파트의 백분율을 계산
-        const longData = history.map(item => {
-            const ratio = item.longShortRatio || 1;
-            return (1 / (1 + 1 / ratio)) * 100;
-        });
-        const shortData = longData.map(longPercentage => 100 - longPercentage);
-
-        this.chart.data.labels = labels;
-        this.chart.data.datasets[0].data = longData;
-        this.chart.data.datasets[1].data = shortData;
-        this.chart.update();
+        if (longFillEl) {
+            longFillEl.style.width = `${longPercent}%`;
+        }
     }
 
     async refresh() {

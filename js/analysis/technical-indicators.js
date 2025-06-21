@@ -8,6 +8,7 @@ class TechnicalIndicators {
         this.currentTimeframe = '1h';
         this.indicators = {
             rsi: { value: 0, status: '중립' },
+            stoch: { k: 0, d: 0, status: '중립' },
             stochRsi: { k: 0, d: 0, status: '중립' },
             macd: { value: 0, signal: 0, histogram: 0, status: '중립' },
             bb: { upper: 0, middle: 0, lower: 0, position: '중간', status: '중립' },

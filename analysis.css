@@ -2508,4 +2508,499 @@ html, body {
     font-weight: 600;
     padding: 4px 8px;
     border-radius: 4px;
-} 
+}
+
+/* 롱숏 비율 카드 스타일 */
+.longshort-summary {
+    padding: 16px;
+    border-bottom: 1px solid #333;
+}
+
+.ratio-display {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.ratio-main {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.ratio-value {
+    font-size: 28px;
+    font-weight: 700;
+    color: #e0e0e0;
+    line-height: 1;
+}
+
+.ratio-label {
+    font-size: 14px;
+    color: #888;
+    margin-top: 4px;
+}
+
+.ratio-status {
+    font-size: 16px;
+    font-weight: 600;
+    padding: 6px 12px;
+    border-radius: 20px;
+    background-color: #4a4a4a;
+    color: #e0e0e0;
+}
+
+.ratio-status.long-dominant {
+    background-color: rgba(34, 197, 94, 0.2);
+    color: #22c55e;
+    border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.ratio-status.short-dominant {
+    background-color: rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.ratio-status.neutral {
+    background-color: rgba(156, 163, 175, 0.2);
+    color: #9ca3af;
+    border: 1px solid rgba(156, 163, 175, 0.3);
+}
+
+.ratio-breakdown {
+    display: flex;
+    justify-content: space-between;
+    gap: 20px;
+}
+
+.long-percentage, .short-percentage {
+    flex: 1;
+    text-align: center;
+    padding: 12px;
+    border-radius: 8px;
+    background-color: #2a2a2a;
+}
+
+.long-percentage {
+    border-left: 4px solid #22c55e;
+}
+
+.short-percentage {
+    border-left: 4px solid #ef4444;
+}
+
+.percentage-label {
+    display: block;
+    font-size: 12px;
+    color: #888;
+    margin-bottom: 4px;
+}
+
+.percentage-value {
+    display: block;
+    font-size: 18px;
+    font-weight: 600;
+    color: #e0e0e0;
+}
+
+.ratio-visual {
+    padding: 16px;
+}
+
+.ratio-bar {
+    position: relative;
+    height: 20px;
+    background-color: #333;
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 8px;
+}
+
+.ratio-fill {
+    height: 100%;
+    transition: width 0.5s ease;
+}
+
+.long-fill {
+    background: linear-gradient(90deg, #22c55e, #16a34a);
+    float: left;
+}
+
+.short-fill {
+    background: linear-gradient(90deg, #ef4444, #dc2626);
+    float: right;
+}
+
+.ratio-center-line {
+    position: absolute;
+    left: 50%;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background-color: #666;
+    transform: translateX(-50%);
+}
+
+.ratio-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: #888;
+}
+
+.label-long {
+    color: #22c55e;
+    font-weight: 500;
+}
+
+.label-short {
+    color: #ef4444;
+    font-weight: 500;
+}
+
+.label-neutral {
+    color: #9ca3af;
+    font-weight: 500;
+}
+
+.longshort-chart {
+    padding: 0 16px 16px;
+    height: 120px;
+}
+
+/* 롱숏 비율 카드 스타일 - 컴팩트 버전 */
+.longshort-compact {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.ratio-main-display {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.ratio-number {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 80px;
+}
+
+.ratio-value {
+    font-size: 24px;
+    font-weight: 700;
+    color: #e0e0e0;
+    line-height: 1;
+}
+
+.ratio-status {
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 8px;
+    border-radius: 12px;
+    margin-top: 4px;
+    text-align: center;
+    min-width: 50px;
+}
+
+.ratio-status.long-dominant {
+    background-color: rgba(34, 197, 94, 0.2);
+    color: #22c55e;
+    border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.ratio-status.short-dominant {
+    background-color: rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.ratio-status.neutral {
+    background-color: rgba(156, 163, 175, 0.2);
+    color: #9ca3af;
+    border: 1px solid rgba(156, 163, 175, 0.3);
+}
+
+.ratio-gauge {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.gauge-bar {
+    position: relative;
+    height: 12px;
+    background-color: #e5e7eb;
+    border-radius: 6px;
+    overflow: hidden;
+    border: 1px solid #e5e7eb;
+    display: flex;
+    flex-direction: row;
+    padding: 0;
+}
+
+.gauge-fill {
+    height: 100%;
+    transition: width 0.3s ease;
+}
+
+.long-fill {
+    background: #10b981;
+    float: left;
+}
+
+.short-fill {
+    background: #ef4444;
+    float: right;
+}
+
+.gauge-center {
+    position: absolute;
+    left: 50%;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background-color: #666;
+    transform: translateX(-50%);
+}
+
+.gauge-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: #888;
+}
+
+.label-long {
+    color: #22c55e;
+    font-weight: 500;
+}
+
+.label-short {
+    color: #ef4444;
+    font-weight: 500;
+}
+
+.ratio-breakdown {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.long-percentage, .short-percentage {
+    flex: 1;
+    text-align: center;
+    padding: 8px;
+    border-radius: 6px;
+    background-color: #2a2a2a;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.long-percentage {
+    border-left: 3px solid #22c55e;
+}
+
+.short-percentage {
+    border-left: 3px solid #ef4444;
+}
+
+.percentage-value {
+    font-size: 16px;
+    font-weight: 600;
+    color: #e0e0e0;
+}
+
+.percentage-label {
+    font-size: 11px;
+    color: #888;
+    font-weight: 500;
+}
+
+.longshort-chart {
+    padding: 0 16px 16px;
+    height: 100px;
+}
+
+/* 롱숏 비율 카드 스타일 - 미니 버전 (라이트모드) */
+.timeframe-select {
+    background-color: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-size: 12px;
+    color: #374151;
+    margin-right: 8px;
+    cursor: pointer;
+}
+
+.timeframe-select:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+.longshort-mini {
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    height: 100%;
+    justify-content: center;
+}
+
+.longshort-mini .ratio-display {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.longshort-mini .ratio-value {
+    font-size: 20px;
+    font-weight: 700;
+    color: #111827;
+    line-height: 1;
+}
+
+.longshort-mini .ratio-status {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 10px;
+    text-align: center;
+    min-width: 45px;
+}
+
+.longshort-mini .ratio-status.long-dominant {
+    background-color: rgba(34, 197, 94, 0.1);
+    color: #059669;
+    border: 1px solid rgba(34, 197, 94, 0.2);
+}
+
+.longshort-mini .ratio-status.short-dominant {
+    background-color: rgba(239, 68, 68, 0.1);
+    color: #dc2626;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.longshort-mini .ratio-status.neutral {
+    background-color: rgba(156, 163, 175, 0.1);
+    color: #6b7280;
+    border: 1px solid rgba(156, 163, 175, 0.2);
+}
+
+.longshort-mini .ratio-gauge {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.longshort-mini .gauge-bar {
+    background-color: #374151; /* Dark Gray */
+    height: 10px;
+    border-radius: 5px;
+    overflow: hidden;
+    position: relative;
+}
+
+.longshort-mini .long-fill {
+    background-color: #26a69a; /* Teal */
+    height: 100%;
+    border-radius: 5px;
+    transition: width 0.4s ease-in-out;
+}
+
+/* Cleanup other potential conflicting styles */
+.longshort-mini .short-fill {
+    display: none;
+}
+.longshort-mini .gauge-fill {
+    float: none; /* Remove float if it exists */
+}
+/* ================== End Long/Short Ratio Card ================== */
+
+.longshort-card .card-content {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 16px;
+    height: 100%;
+}
+
+.longshort-content {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.ls-top, .ls-bottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.ls-ratio {
+    font-size: 22px;
+    font-weight: 600;
+    color: #1f2937;
+}
+
+.ls-status {
+    font-size: 12px;
+    font-weight: 500;
+    padding: 4px 10px;
+    border-radius: 12px;
+}
+
+.ls-status.long-dominant {
+    background-color: #e7f7f0;
+    color: #10b981;
+}
+
+.ls-status.short-dominant {
+    background-color: #fdecec;
+    color: #ef4444;
+}
+
+.ls-status.neutral {
+    background-color: #f3f4f6;
+    color: #6b7280;
+}
+
+.ls-gauge-track {
+    width: 100%;
+    height: 8px;
+    background-color: #e5e7eb;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.ls-gauge-fill {
+    height: 100%;
+    background-color: #26a69a; /* Teal */
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+
+.ls-long-percent, .ls-short-percent {
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.ls-long-percent {
+    color: #10b981;
+}
+
+.ls-short-percent {
+    color: #ef4444;
+}
