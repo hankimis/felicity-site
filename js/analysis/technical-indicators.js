@@ -39,8 +39,11 @@ export class TechnicalIndicators {
     }
 
     init() {
-        console.log('📊 Technical Indicators initializing...');
+        // console.log('📊 Technical Indicators initializing...');
         this.setupEventListeners();
+        
+        // 초기 종합 분석 표시
+        this.showDefaultSummary();
     }
 
     setupEventListeners() {
@@ -64,7 +67,7 @@ export class TechnicalIndicators {
                     e.target.classList.add('active');
                     
                     this.currentTimeframe = e.target.dataset.timeframe;
-                    console.log(`Timeframe changed to: ${this.currentTimeframe}`);
+                    // console.log(`Timeframe changed to: ${this.currentTimeframe}`);
                     this.loadData();
                 }
             });
@@ -72,21 +75,26 @@ export class TechnicalIndicators {
     }
 
     async start() {
-        console.log('📊 Starting technical indicators tracking...');
+        // console.log('📊 Starting technical indicators tracking...');
+        
+        // 실제 데이터 로드
         await this.loadData();
+        
         // 10초마다 데이터를 새로고침하여 실시간에 가깝게 업데이트합니다.
-        this.interval = setInterval(() => this.loadData(), 1000);
+        this.interval = setInterval(() => this.loadData(), 10000);
     }
 
     stop() {
         if (this.interval) {
             clearInterval(this.interval);
-            console.log('🛑 Stopped technical indicators tracking.');
+            // console.log('🛑 Stopped technical indicators tracking.');
         }
     }
 
     async loadData() {
         const symbol = this.currentSymbol;
+        // console.log(`[TechnicalIndicators] Loading data for ${symbol} with timeframe ${this.currentTimeframe}`);
+        
         // Binance API는 klines(캔들) 데이터를 사용하여 기술 지표를 계산합니다.
         const url = `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${this.currentTimeframe}&limit=200`;
 
@@ -95,11 +103,12 @@ export class TechnicalIndicators {
             const klines = await response.json();
             
             if (!klines || klines.length === 0) {
-                console.warn(`[TechnicalIndicators] No kline data for ${symbol}`);
-                this.generateSampleData(); // 데이터 없으면 샘플 데이터로 대체
+                // console.warn(`[TechnicalIndicators] No kline data for ${symbol}`);
                 this.updateDisplay();
                 return;
             }
+
+            // console.log(`[TechnicalIndicators] Loaded ${klines.length} klines for ${symbol}`);
 
             this.priceData = klines.map(k => ({
                 open: parseFloat(k[1]),
@@ -114,17 +123,17 @@ export class TechnicalIndicators {
 
         } catch (error) {
             console.error(`[TechnicalIndicators] Error loading data for ${symbol}:`, error);
-            // 에러 발생 시 샘플 데이터 사용
-            this.generateSampleData();
             this.updateDisplay();
         }
     }
 
     calculateIndicators() {
         if (this.priceData.length < 52) { // 일목균형표 기준(52)
-            this.generateSampleData();
+            // console.warn(`[TechnicalIndicators] Insufficient data (${this.priceData.length} < 52), skipping calculations`);
             return;
         }
+
+        // console.log(`[TechnicalIndicators] Calculating indicators with ${this.priceData.length} data points`);
 
         this.calculateRSI();
         this.calculateMACD();
@@ -149,6 +158,8 @@ export class TechnicalIndicators {
         this.calculateAroon();
         this.calculateUltimateOscillator();
         this.calculateChaikinMoneyFlow();
+        
+        // console.log('[TechnicalIndicators] All indicators calculated');
     }
 
     calculateRSI(period = 14) {
@@ -534,46 +545,6 @@ export class TechnicalIndicators {
         return '중립';
     }
 
-    generateSampleData() {
-        this.indicators = {
-            rsi: { value: 45 + Math.random() * 20, status: '중립' },
-            macd: { value: (Math.random() - 0.5) * 100, signal: 0, histogram: 0, status: '중립' },
-            bb: { upper: 0, middle: 0, lower: 0, position: '중간', status: '중립' },
-            stoch: { k: 30 + Math.random() * 40, d: 35 + Math.random() * 30, status: '중립' },
-            sma: { short: 45000, long: 46000, status: '중립' },
-            ichimoku: { tenkan: 0, kijun: 0, spanA: 0, spanB: 0, chikou: 0, status: '중립' },
-            atr: { value: 150 + Math.random() * 50 },
-            vo: { value: (Math.random() - 0.5) * 50, status: '중립' },
-            ao: { value: (Math.random() - 0.5) * 100, status: '중립' },
-            williamsR: { value: -70 + Math.random() * 40, status: '중립' },
-            stochRsi: { k: 30 + Math.random() * 40, d: 0, status: '중립' },
-            cci: { value: (Math.random() - 0.5) * 200, status: '중립' },
-            mom: { value: (Math.random() - 0.5) * 10, status: '중립' },
-            psar: { value: 45000 + (Math.random() - 0.5) * 1000, status: '중립' },
-            adx: { value: 20 + Math.random() * 30, status: '중립' },
-            obv: { value: (Math.random() - 0.5) * 1000000, status: '중립' },
-            mfi: { value: 30 + Math.random() * 40, status: '중립' },
-            roc: { value: (Math.random() - 0.5) * 10, status: '중립' },
-            keltner: { upper: 46000, middle: 45000, lower: 44000, status: '중립' },
-            donchian: { upper: 47000, middle: 45000, lower: 43000, status: '중립' },
-            aroon: { up: 40 + Math.random() * 40, down: 40 + Math.random() * 40, status: '중립' },
-            ultimate: { value: 40 + Math.random() * 30, status: '중립' },
-            cmf: { value: (Math.random() - 0.5) * 0.5, status: '중립' }
-        };
-        
-        // 상태 업데이트
-        this.indicators.rsi.status = this.getRSIStatus(this.indicators.rsi.value);
-        this.indicators.stoch.status = this.getStochStatus(this.indicators.stoch.k);
-        this.indicators.stochRsi.status = this.getStochRSIStatus(this.indicators.stochRsi.k);
-        this.indicators.cci.status = this.getCCIStatus(this.indicators.cci.value);
-        this.indicators.mom.status = this.getMOMStatus(this.indicators.mom.value);
-        this.indicators.mfi.status = this.indicators.mfi.value > 80 ? '과매수' : this.indicators.mfi.value < 20 ? '과매도' : '중립';
-        this.indicators.adx.status = this.indicators.adx.value > 25 ? '강한추세' : '약한추세';
-        this.indicators.aroon.status = this.getAroonStatus(this.indicators.aroon.up, this.indicators.aroon.down);
-        this.indicators.ultimate.status = this.indicators.ultimate.value > 70 ? '과매수' : this.indicators.ultimate.value < 30 ? '과매도' : '중립';
-        this.indicators.cmf.status = this.indicators.cmf.value > 0.25 ? '강세' : this.indicators.cmf.value < -0.25 ? '약세' : '중립';
-    }
-
     startRealTimeTracking() {
         this.trackingInterval = setInterval(async () => {
             if (this.isTracking) {
@@ -583,179 +554,143 @@ export class TechnicalIndicators {
     }
 
     updateDisplay() {
-        if (!this.indicators) return;
-
-        const { rsi, macd, bb, stoch, sma, ichimoku, atr, vo, ao, williamsR, stochRsi, cci, mom } = this.indicators;
-
-        // RSI 업데이트
-        const rsiValueEl = document.getElementById('rsi-value');
-        if (rsiValueEl) {
-            rsiValueEl.textContent = `${rsi.value.toFixed(2)} (${this.getRSIStatus(rsi.value)})`;
-            this.updateIndicatorClass(rsiValueEl, this.getRSIStatus(rsi.value));
+        // console.log('[TechnicalIndicators] updateDisplay called');
+        if (!this.indicators) {
+            // console.warn('[TechnicalIndicators] No indicators data available');
+            return;
         }
 
-        // MACD 업데이트
-        const macdValueEl = document.getElementById('macd-value');
-        if (macdValueEl) {
-            const macdStatus = this.getMACDStatus(macd.value, macd.signal);
-            macdValueEl.textContent = `${macd.histogram.toFixed(4)} (${macdStatus})`;
-            this.updateIndicatorClass(macdValueEl, macdStatus);
-        }
+        // console.log('[TechnicalIndicators] Current indicators:', this.indicators);
 
-        // 볼린저 밴드 업데이트
-        const bbValueEl = document.getElementById('bb-value');
-        if (bbValueEl) {
-            const bbStatus = this.getBBStatus(this.priceData[this.priceData.length - 1].close, bb.upper, bb.lower);
-            bbValueEl.textContent = `${bb.position} (${bbStatus})`;
-            this.updateIndicatorClass(bbValueEl, bbStatus);
-        }
+        // indicators-list 컨테이너에 HTML 생성
+        const container = document.getElementById('indicators-list');
+        // console.log('[TechnicalIndicators] Container element:', container);
         
-        // 스토캐스틱 업데이트
-        const stochValueEl = document.getElementById('stoch-value');
-        if (stochValueEl) {
-             const stochStatus = this.getStochStatus(stoch.k);
-             stochValueEl.textContent = `${stoch.k.toFixed(2)} (${stochStatus})`;
-             this.updateIndicatorClass(stochValueEl, stochStatus);
+        if (container) {
+            // AnalysisConfig가 없을 경우 fallback
+            const indicators = AnalysisConfig?.indicators || [
+                { key: 'rsi', name: 'RSI', description: '상대강도' },
+                { key: 'stochRsi', name: 'Stoch RSI', description: 'RSI 스토캐스틱' },
+                { key: 'macd', name: 'MACD', description: '이동평균수렴발산' },
+                { key: 'ao', name: 'AO', description: '어썸 오실레이터' },
+                { key: 'williamsR', name: 'Williams %R', description: '윌리엄스 %R' },
+                { key: 'cci', name: 'CCI', description: '상품채널지수' },
+                { key: 'sma', name: 'MA', description: '이동평균' },
+                { key: 'ichimoku', name: 'Ichimoku', description: '일목균형표' },
+                { key: 'bb', name: 'BB', description: '볼린저 밴드' },
+                { key: 'stoch', name: 'Stoch', description: '스토캐스틱' },
+                { key: 'mom', name: 'Momentum', description: '모멘텀' },
+                { key: 'vo', name: 'VO', description: '거래량 오실레이터' },
+                { key: 'psar', name: 'PSAR', description: '파라볼릭 SAR' },
+                { key: 'adx', name: 'ADX', description: '평균방향성지수' },
+                { key: 'obv', name: 'OBV', description: 'OBV' },
+                { key: 'mfi', name: 'MFI', description: '자금흐름지수' },
+                { key: 'roc', name: 'ROC', description: '가격변동률' },
+                { key: 'keltner', name: 'Keltner', description: '켈트너 채널' },
+                { key: 'donchian', name: 'Donchian', description: '돈치안 채널' },
+                { key: 'aroon', name: 'Aroon', description: '아룬 지표' },
+                { key: 'ultimate', name: 'Ultimate', description: '얼티미트 오실레이터' },
+                { key: 'cmf', name: 'CMF', description: '차이킨 자금 흐름' },
+                { key: 'atr', name: 'ATR', description: '평균 변동폭' }
+            ];
+            
+            // console.log('[TechnicalIndicators] Using indicators config:', indicators);
+            
+            const indicatorsHTML = indicators.map(indicator => {
+                const data = this.indicators[indicator.key];
+                // console.log(`[TechnicalIndicators] Processing ${indicator.key}:`, data);
+                
+                let value = '계산 중...';
+                let status = '계산 중...';
+                let signalClass = 'calculating';
+                
+                if (data) {
+                    if (typeof data.value === 'number') {
+                        value = data.value.toFixed(2);
+                        status = data.status || 'N/A';
+                        signalClass = this.getIndicatorClass(status);
+                    } else if (data.k !== undefined) {
+                        // Stochastic, StochRSI 등의 경우
+                        value = data.k.toFixed(2);
+                        status = data.status || 'N/A';
+                        signalClass = this.getIndicatorClass(status);
+                    } else if (data.histogram !== undefined) {
+                        // MACD의 경우
+                        value = data.histogram.toFixed(4);
+                        status = data.status || 'N/A';
+                        signalClass = this.getIndicatorClass(status);
+                    } else {
+                        status = data.status || 'N/A';
+                        signalClass = this.getIndicatorClass(status);
+                    }
         }
 
-        // SMA 업데이트
-        const smaValueEl = document.getElementById('sma-value');
-        if (smaValueEl) {
-            smaValueEl.textContent = `${this.indicators.sma.status}`;
-            this.updateIndicatorClass(smaValueEl, this.indicators.sma.status);
+                // console.log(`[TechnicalIndicators] ${indicator.key} - value: ${value}, status: ${status}, class: ${signalClass}`);
+                
+                const displayText = value !== '계산 중...' ? `${status} (${value})` : status;
+
+                return `
+                    <div class="indicator-item">
+                        <div class="indicator-info">
+                            <span class="indicator-name">${indicator.name}</span>
+                            <span class="indicator-desc">${indicator.description}</span>
+                        </div>
+                        <span class="indicator-value ${signalClass}">
+                            ${displayText}
+                        </span>
+                    </div>
+                `;
+            }).join('');
+            
+            // console.log('[TechnicalIndicators] Generated HTML length:', indicatorsHTML.length);
+            // console.log('[TechnicalIndicators] Generated HTML preview:', indicatorsHTML.substring(0, 200) + '...');
+            
+            container.innerHTML = indicatorsHTML;
+            // console.log('[TechnicalIndicators] HTML inserted into container');
+        } else {
+            console.error('[TechnicalIndicators] Container element not found!');
         }
 
-        // 일목균형표 업데이트
-        const ichimokuValueEl = document.getElementById('ichimoku-value');
-        if (ichimokuValueEl) {
-            ichimokuValueEl.textContent = `${this.indicators.ichimoku.status}`;
-            this.updateIndicatorClass(ichimokuValueEl, this.indicators.ichimoku.status);
-        }
-
-        // ATR 업데이트
-        const atrValueEl = document.getElementById('atr-value');
-        if (atrValueEl) {
-            atrValueEl.textContent = `${this.indicators.atr.value.toFixed(2)}`;
-            atrValueEl.classList.remove('long', 'short');
-            atrValueEl.classList.add('neutral');
-        }
-
-        // VO 업데이트
-        const voValueEl = document.getElementById('vo-value');
-        if (voValueEl) {
-            voValueEl.textContent = `${vo.value.toFixed(2)}% (${vo.status})`;
-            this.updateIndicatorClass(voValueEl, vo.status);
-        }
-        
-        // AO 업데이트
-        const aoValueEl = document.getElementById('ao-value');
-        if (aoValueEl) {
-            aoValueEl.textContent = `${ao.value.toFixed(2)} (${ao.status})`;
-            this.updateIndicatorClass(aoValueEl, ao.status);
-        }
-
-        // Williams %R 업데이트
-        const williamsRValueEl = document.getElementById('williams-r-value');
-        if (williamsRValueEl) {
-            williamsRValueEl.textContent = `${williamsR.value.toFixed(2)}`;
-            this.updateIndicatorClass(williamsRValueEl, williamsR.status);
-        }
-
-        // StochRSI 업데이트
-        const stochRsiValueEl = document.getElementById('stoch-rsi-value');
-        if (stochRsiValueEl) {
-            stochRsiValueEl.textContent = `${stochRsi.k.toFixed(2)}`;
-            this.updateIndicatorClass(stochRsiValueEl, stochRsi.status);
-        }
-
-        // CCI 업데이트
-        const cciValueEl = document.getElementById('cci-value');
-        if (cciValueEl) {
-            cciValueEl.textContent = `${cci.value.toFixed(2)}`;
-            this.updateIndicatorClass(cciValueEl, cci.status);
-        }
-
-        // Momentum 업데이트
-        const momValueEl = document.getElementById('mom-value');
-        if (momValueEl) {
-            momValueEl.textContent = `${mom.value.toFixed(2)}`;
-            this.updateIndicatorClass(momValueEl, mom.status);
-        }
-
-        // Parabolic SAR 업데이트
-        const psarValueEl = document.getElementById('psar-value');
-        if (psarValueEl) {
-            psarValueEl.textContent = `${this.indicators.psar.value.toFixed(2)}`;
-            this.updateIndicatorClass(psarValueEl, this.indicators.psar.status);
-        }
-
-        // ADX 업데이트
-        const adxValueEl = document.getElementById('adx-value');
-        if (adxValueEl) {
-            adxValueEl.textContent = `${this.indicators.adx.value.toFixed(2)}`;
-            this.updateIndicatorClass(adxValueEl, this.indicators.adx.status);
-        }
-
-        // OBV 업데이트
-        const obvValueEl = document.getElementById('obv-value');
-        if (obvValueEl) {
-            obvValueEl.textContent = `${(this.indicators.obv.value / 1000000).toFixed(2)}M`;
-            this.updateIndicatorClass(obvValueEl, this.indicators.obv.status);
-        }
-
-        // MFI 업데이트
-        const mfiValueEl = document.getElementById('mfi-value');
-        if (mfiValueEl) {
-            mfiValueEl.textContent = `${this.indicators.mfi.value.toFixed(2)}`;
-            this.updateIndicatorClass(mfiValueEl, this.indicators.mfi.status);
-        }
-
-        // ROC 업데이트
-        const rocValueEl = document.getElementById('roc-value');
-        if (rocValueEl) {
-            rocValueEl.textContent = `${this.indicators.roc.value.toFixed(2)}%`;
-            this.updateIndicatorClass(rocValueEl, this.indicators.roc.status);
-        }
-
-        // Keltner Channel 업데이트
-        const keltnerValueEl = document.getElementById('keltner-value');
-        if (keltnerValueEl) {
-            keltnerValueEl.textContent = `${this.indicators.keltner.status}`;
-            this.updateIndicatorClass(keltnerValueEl, this.indicators.keltner.status);
-        }
-
-        // Donchian Channel 업데이트
-        const donchianValueEl = document.getElementById('donchian-value');
-        if (donchianValueEl) {
-            donchianValueEl.textContent = `${this.indicators.donchian.status}`;
-            this.updateIndicatorClass(donchianValueEl, this.indicators.donchian.status);
-        }
-
-        // Aroon 업데이트
-        const aroonValueEl = document.getElementById('aroon-value');
-        if (aroonValueEl) {
-            aroonValueEl.textContent = `${this.indicators.aroon.up.toFixed(0)}/${this.indicators.aroon.down.toFixed(0)}`;
-            this.updateIndicatorClass(aroonValueEl, this.indicators.aroon.status);
-        }
-
-        // Ultimate Oscillator 업데이트
-        const ultimateValueEl = document.getElementById('ultimate-value');
-        if (ultimateValueEl) {
-            ultimateValueEl.textContent = `${this.indicators.ultimate.value.toFixed(2)}`;
-            this.updateIndicatorClass(ultimateValueEl, this.indicators.ultimate.status);
-        }
-
-        // Chaikin Money Flow 업데이트
-        const cmfValueEl = document.getElementById('cmf-value');
-        if (cmfValueEl) {
-            cmfValueEl.textContent = `${this.indicators.cmf.value.toFixed(3)}`;
-            this.updateIndicatorClass(cmfValueEl, this.indicators.cmf.status);
-        }
-
+        // console.log('[TechnicalIndicators] updateDisplay completed');
         this.updateSummary();
     }
 
+    getIndicatorClass(status) {
+        if (!status || status === '계산 중...' || status === 'N/A') {
+            return 'calculating';
+        }
+
+        // 과매수 신호 (빨간색)
+        if (status === '과매수') {
+            return 'overbought';
+        }
+        // 과매도 신호 (초록색)
+        else if (status === '과매도') {
+            return 'oversold';
+        }
+        // 매수 신호 (초록색)
+        else if (['강세', '상승추세', '구름대 상단 돌파', '거래량 증가', '강세 전환', '상승', '강한추세', '돌파'].includes(status)) {
+            return 'bullish';
+        }
+        // 매도 신호 (빨간색)
+        else if (['약세', '하락추세', '구름대 하단 이탈', '거래량 감소', '약세 전환', '하락', '약한추세', '이탈'].includes(status)) {
+            return 'bearish';
+        }
+        else {
+            return 'neutral';
+        }
+    }
+
     updateSummary() {
+        // console.log('[TechnicalIndicators] updateSummary called');
+        
+        // 현재 가격 데이터가 없으면 기본값 사용
+        if (!this.priceData || this.priceData.length === 0) {
+            // console.log('[TechnicalIndicators] No price data available, showing default summary');
+            this.showDefaultSummary();
+            return;
+        }
+        
         const statuses = [
             this.indicators.rsi.status,
             this.indicators.macd.status,
@@ -781,6 +716,8 @@ export class TechnicalIndicators {
             this.indicators.cmf.status
         ];
 
+        // console.log('[TechnicalIndicators] Statuses:', statuses);
+
         let score = 0;
         // 과매도는 매수 신호 (초록색)
         const longSignals = ['과매도', '강세', '상승추세', '구름대 상단 돌파', '거래량 증가', '강세 전환', '상승', '강한추세', '돌파'];
@@ -799,12 +736,14 @@ export class TechnicalIndicators {
         // Normalize score from [-totalIndicators, +totalIndicators] to [0, 100]
         const percentage = totalIndicators > 0 ? ((score + totalIndicators) / (2 * totalIndicators)) * 100 : 50;
 
-        const summaryBar = document.getElementById('indicator-summary-bar');
-        const summaryText = document.getElementById('indicator-summary-text');
+        // console.log('[TechnicalIndicators] Score:', score, 'Total:', totalIndicators, 'Percentage:', percentage);
+
         const summaryContainer = document.getElementById('indicator-summary-container');
 
-        if (summaryBar && summaryText) {
-            summaryBar.style.width = `${percentage.toFixed(1)}%`;
+        // console.log('[TechnicalIndicators] Summary container:', summaryContainer);
+
+        if (summaryContainer) {
+            // console.log('[TechnicalIndicators] Updating summary container');
             
             let summaryStatusText = '';
             let statusClass = '';
@@ -838,70 +777,57 @@ export class TechnicalIndicators {
                 statusColor = '#dc2626';
             }
 
-            // 종합신호 컨테이너 업데이트
-            if (summaryContainer) {
-                summaryContainer.innerHTML = `
-                    <div class="summary-header">
-                        <div class="summary-icon ${statusClass}">${statusIcon}</div>
-                        <div class="summary-info">
-                            <div class="summary-title">종합 매매 신호</div>
-                            <div class="summary-status ${statusClass}">${summaryStatusText}</div>
-                        </div>
-                        <div class="summary-percentage ${statusClass}">${percentage.toFixed(0)}%</div>
+            summaryContainer.innerHTML = `
+                <div class="summary-header">
+                    <div class="summary-title">종합 매매 신호</div>
+                    <div class="summary-percentage ${statusClass}">${percentage.toFixed(0)}%</div>
+                </div>
+                <div class="summary-gauge-container">
+                    <div class="summary-gauge">
+                        <div class="summary-bar ${statusClass}" style="width: ${percentage.toFixed(1)}%; background-color: ${statusColor};"></div>
                     </div>
-                    <div class="summary-gauge-container">
-                        <div class="summary-gauge">
-                            <div class="summary-bar ${statusClass}" style="width: ${percentage.toFixed(1)}%; background-color: ${statusColor};"></div>
-                        </div>
-                        <div class="summary-labels">
-                            <span class="label-bearish">매도</span>
-                            <span class="label-neutral">중립</span>
-                            <span class="label-bullish">매수</span>
-                        </div>
+                    <div class="summary-labels">
+                        <span class="label-bearish">매도</span>
+                        <span class="label-neutral">중립</span>
+                        <span class="label-bullish">매수</span>
                     </div>
-                    <div class="summary-details">
-                        <div class="detail-item">
-                            <span class="detail-label">매수 신호:</span>
-                            <span class="detail-value bullish">${statuses.filter(s => longSignals.includes(s)).length}개</span>
-                        </div>
-                        <div class="detail-item">
-                            <span class="detail-label">매도 신호:</span>
-                            <span class="detail-value bearish">${statuses.filter(s => shortSignals.includes(s)).length}개</span>
-                        </div>
-                        <div class="detail-item">
-                            <span class="detail-label">중립 신호:</span>
-                            <span class="detail-value neutral">${statuses.filter(s => !longSignals.includes(s) && !shortSignals.includes(s)).length}개</span>
-                        </div>
-                    </div>
-                `;
-            }
-
-            // 기존 텍스트 업데이트 (하위 호환성)
-            summaryText.textContent = `${statusIcon} ${summaryStatusText} (${percentage.toFixed(0)}%)`;
-            summaryText.className = `summary-text ${statusClass}`;
+                </div>
+            `;
+            // console.log('[TechnicalIndicators] Summary container updated successfully');
+        } else {
+            console.error('[TechnicalIndicators] Summary container not found!');
         }
+        
+        // console.log('[TechnicalIndicators] updateSummary completed');
     }
 
-    updateIndicatorClass(element, status) {
-        element.classList.remove('long', 'short', 'neutral', 'calculating', 'overbought', 'oversold', 'bullish', 'bearish');
-        
-        if (status === '계산 중...' || status === 'N/A') {
-            element.classList.add('calculating');
-        } else if (status === '과매수') {
-            element.classList.add('overbought'); // 과매수 - 빨간색
-        } else if (status === '과매도') {
-            element.classList.add('oversold'); // 과매도 - 초록색
-        } else if (['강세', '상승추세', '구름대 상단 돌파', '거래량 증가', '강세 전환', '상승', '강한추세', '돌파'].includes(status)) {
-            element.classList.add('bullish'); // 매수 신호 - 초록색
-        } else if (['약세', '하락추세', '구름대 하단 이탈', '거래량 감소', '약세 전환', '하락', '약한추세', '이탈'].includes(status)) {
-            element.classList.add('bearish'); // 매도 신호 - 빨간색
-        } else {
-            element.classList.add('neutral'); // 중립
+    showDefaultSummary() {
+        // console.log('[TechnicalIndicators] Showing default summary');
+        const summaryContainer = document.getElementById('indicator-summary-container');
+
+        if (summaryContainer) {
+            summaryContainer.innerHTML = `
+                <div class="summary-header">
+                    <div class="summary-title">종합 매매 신호</div>
+                    <div class="summary-percentage neutral">--</div>
+                </div>
+                <div class="summary-gauge-container">
+                    <div class="summary-gauge">
+                        <div class="summary-bar neutral" style="width: 50%; background-color: #6b7280;"></div>
+                    </div>
+                    <div class="summary-labels">
+                        <span class="label-bearish">매도</span>
+                        <span class="label-neutral">중립</span>
+                        <span class="label-bullish">매수</span>
+                    </div>
+                </div>
+            `;
+            // console.log('[TechnicalIndicators] Default summary displayed');
         }
     }
 
     async refresh() {
-        console.log('📊 Refreshing technical indicators...');
+        // console.log('📊 Refreshing technical indicators...');
         await this.loadData();
         
         if (window.analysisDashboard) {

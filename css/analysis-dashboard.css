@@ -207,178 +207,97 @@
 }
 
 /* Technical Indicators */
-.indicator-summary {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 12px 16px;
-    border-bottom: 1px solid var(--border-color);
+.indicators-card {
+    min-height: 400px;
 }
 
-.summary-gauge {
-    width: 100px;
-    height: 8px;
-    background-color: rgba(239, 68, 68, 0.4);
-    border-radius: 4px;
-    overflow: hidden;
-}
-
-.summary-bar {
-    width: 50%;
-    height: 100%;
-    background: linear-gradient(90deg, #10b981, #34d399);
-    border-radius: 4px;
-    transition: width 0.5s ease-in-out;
-}
-
-.summary-text {
-    font-size: 0.8rem;
-    font-weight: 500;
-    color: var(--text-secondary);
-}
-
-/* 새로운 종합신호 스타일 */
+/* 새로운 종합신호 스타일 - 심플 버전 */
 #indicator-summary-container {
-    padding: 16px;
+    padding: 12px;
     border-bottom: 1px solid var(--border-color);
-    background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05));
-    border-radius: 8px;
-    margin: 8px;
+    background: linear-gradient(135deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+    border-radius: 6px;
+    margin: 6px;
+    backdrop-filter: blur(3px);
+    border: 1px solid rgba(255,255,255,0.06);
 }
 
 .summary-header {
     display: flex;
     align-items: center;
-    gap: 12px;
-    margin-bottom: 16px;
-}
-
-.summary-icon {
-    font-size: 2rem;
-    width: 60px;
-    height: 60px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    background: rgba(255,255,255,0.1);
-    backdrop-filter: blur(10px);
-}
-
-.summary-icon.strong-buy {
-    background: linear-gradient(135deg, #059669, #10b981);
-    box-shadow: 0 4px 15px rgba(5, 150, 105, 0.3);
-}
-
-.summary-icon.buy {
-    background: linear-gradient(135deg, #10b981, #34d399);
-    box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
-}
-
-.summary-icon.neutral {
-    background: linear-gradient(135deg, #6b7280, #9ca3af);
-    box-shadow: 0 4px 15px rgba(107, 114, 128, 0.3);
-}
-
-.summary-icon.sell {
-    background: linear-gradient(135deg, #f59e0b, #fbbf24);
-    box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);
-}
-
-.summary-icon.strong-sell {
-    background: linear-gradient(135deg, #dc2626, #ef4444);
-    box-shadow: 0 4px 15px rgba(220, 38, 38, 0.3);
-}
-
-.summary-info {
-    flex: 1;
+    justify-content: space-between;
+    margin-bottom: 8px;
 }
 
 .summary-title {
-    font-size: 0.8rem;
+    font-size: 0.7rem;
     color: var(--text-secondary);
-    margin-bottom: 4px;
-}
-
-.summary-status {
-    font-size: 1.2rem;
-    font-weight: 700;
-    margin-bottom: 4px;
-}
-
-.summary-status.strong-buy {
-    color: #059669;
-}
-
-.summary-status.buy {
-    color: #10b981;
-}
-
-.summary-status.neutral {
-    color: #6b7280;
-}
-
-.summary-status.sell {
-    color: #f59e0b;
-}
-
-.summary-status.strong-sell {
-    color: #dc2626;
+    font-weight: 500;
+    opacity: 0.8;
 }
 
 .summary-percentage {
-    font-size: 1.5rem;
-    font-weight: 800;
-    padding: 8px 12px;
-    border-radius: 8px;
-    background: rgba(255,255,255,0.1);
-    backdrop-filter: blur(10px);
+    font-size: 1.1rem;
+    font-weight: 700;
+    padding: 4px 8px;
+    border-radius: 6px;
+    background: rgba(255,255,255,0.06);
+    backdrop-filter: blur(3px);
+    border: 1px solid rgba(255,255,255,0.1);
+    min-width: 50px;
+    text-align: center;
+    flex-shrink: 0;
 }
 
 .summary-percentage.strong-buy {
     color: #059669;
     background: rgba(5, 150, 105, 0.1);
+    border-color: rgba(5, 150, 105, 0.2);
 }
 
 .summary-percentage.buy {
     color: #10b981;
     background: rgba(16, 185, 129, 0.1);
+    border-color: rgba(16, 185, 129, 0.2);
 }
 
 .summary-percentage.neutral {
     color: #6b7280;
     background: rgba(107, 114, 128, 0.1);
+    border-color: rgba(107, 114, 128, 0.2);
 }
 
 .summary-percentage.sell {
     color: #f59e0b;
     background: rgba(245, 158, 11, 0.1);
+    border-color: rgba(245, 158, 11, 0.2);
 }
 
 .summary-percentage.strong-sell {
     color: #dc2626;
     background: rgba(220, 38, 38, 0.1);
+    border-color: rgba(220, 38, 38, 0.2);
 }
 
 .summary-gauge-container {
-    margin-bottom: 16px;
+    margin-bottom: 0;
 }
 
 .summary-gauge {
     width: 100%;
-    height: 12px;
+    height: 8px;
     background: linear-gradient(90deg, #dc2626 0%, #f59e0b 25%, #6b7280 50%, #10b981 75%, #059669 100%);
-    border-radius: 6px;
+    border-radius: 4px;
     overflow: hidden;
     position: relative;
-    margin-bottom: 8px;
+    border: 1px solid rgba(255,255,255,0.06);
 }
 
 .summary-bar {
     height: 100%;
-    border-radius: 6px;
-    transition: width 0.8s ease, background-color 0.8s ease;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    border-radius: 3px;
+    transition: width 0.6s ease, background-color 0.6s ease;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.15);
     position: relative;
 }
 
@@ -386,19 +305,21 @@
     content: '';
     position: absolute;
     top: 0;
-    right: -2px;
-    width: 4px;
+    right: -1px;
+    width: 3px;
     height: 100%;
-    background: rgba(255,255,255,0.8);
-    border-radius: 2px;
-    box-shadow: 0 0 4px rgba(255,255,255,0.5);
+    background: rgba(255,255,255,0.7);
+    border-radius: 1.5px;
+    box-shadow: 0 0 3px rgba(255,255,255,0.4);
 }
 
 .summary-labels {
     display: flex;
     justify-content: space-between;
-    font-size: 0.7rem;
-    font-weight: 500;
+    font-size: 0.6rem;
+    font-weight: 600;
+    padding: 0 1px;
+    margin-top: 4px;
 }
 
 .label-bearish {
@@ -413,148 +334,187 @@
     color: #059669;
 }
 
-.summary-details {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 12px;
-}
-
-.detail-item {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 8px;
-    border-radius: 6px;
-    background: rgba(255,255,255,0.05);
-    backdrop-filter: blur(5px);
-}
-
-.detail-label {
-    font-size: 0.7rem;
-    color: var(--text-secondary);
-    margin-bottom: 4px;
-}
-
-.detail-value {
-    font-size: 1rem;
-    font-weight: 700;
-}
-
-.detail-value.bullish {
-    color: #10b981;
-}
-
-.detail-value.bearish {
-    color: #ef4444;
-}
-
-.detail-value.neutral {
-    color: #6b7280;
-}
-
 .indicators-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 12px;
-    padding: 16px;
+    /* 기본적으로 2열로 설정 */
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    padding: 12px;
+    max-height: 400px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255,255,255,0.2) transparent;
+}
+
+/* 큰 화면(1201px 이상)에서는 3열로 표시 */
+@media (min-width: 1201px) {
+    .indicators-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+/* 중간 크기 화면(768px ~ 1200px)에서는 2열 유지 및 높이 조정 */
+@media (max-width: 1200px) {
+    .indicators-card {
+        min-height: 350px;
+    }
+    
+    .indicators-grid {
+        max-height: 350px;
+    }
+}
+
+/* 매우 작은 화면(768px 미만)에서도 2열을 유지하고 높이만 조정 */
+@media (max-width: 767px) { /* 768px -> 767px로 변경하여 중복 방지 */
+    .indicators-grid {
+        /* 1열로 변경하는 코드 제거 */
+    }
+
+    .indicators-card {
+        min-height: 400px;
+    }
+    
+    .indicators-grid {
+        max-height: 400px;
+    }
+}
+
+.indicators-grid::-webkit-scrollbar {
+    width: 4px;
+}
+
+.indicators-grid::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.indicators-grid::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.2);
+    border-radius: 2px;
+}
+
+.indicators-grid::-webkit-scrollbar-thumb:hover {
+    background: rgba(255,255,255,0.3);
 }
 
 .indicator-item {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 4px 0;
-    border-bottom: 1px solid var(--border-color);
-    font-size: 0.8rem;
+    padding: 8px 10px;
+    border-radius: 6px;
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,0.05);
+    transition: all 0.2s ease;
+    backdrop-filter: blur(3px);
+    min-height: 40px;
 }
 
-.indicator-item:last-child {
-    border-bottom: none;
+.indicator-item:hover {
+    background: rgba(255,255,255,0.04);
+    border-color: rgba(255,255,255,0.1);
+    transform: translateY(-1px);
 }
 
 .indicator-info {
     display: flex;
     flex-direction: column;
+    flex: 1;
+    min-width: 0;
 }
 
 .indicator-name {
-    font-size: 0.85rem;
+    font-size: 0.75rem;
     color: var(--text-primary);
-    font-weight: 500;
+    font-weight: 600;
+    margin-bottom: 2px;
+    line-height: 1.2;
 }
 
 .indicator-desc {
-    font-size: 0.7rem;
+    font-size: 0.6rem;
     color: var(--text-secondary);
+    opacity: 0.7;
+    line-height: 1.1;
 }
 
 .indicator-value {
-    font-size: 0.85rem;
-    font-weight: bold;
-    padding: 3px 8px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 4px 8px;
     border-radius: 4px;
     color: var(--text-muted);
-    transition: all 0.3s ease;
+    transition: all 0.2s ease;
+    border: 1px solid transparent;
+    min-width: 60px;
+    text-align: center;
+    white-space: nowrap;
 }
 
 /* 계산 중 상태 */
 .indicator-value.calculating {
-    background-color: rgba(156, 163, 175, 0.2);
+    background-color: rgba(156, 163, 175, 0.1);
     color: #9ca3af;
     animation: pulse 2s infinite;
+    border-color: rgba(156, 163, 175, 0.2);
 }
 
 @keyframes pulse {
     0%, 100% { opacity: 1; }
-    50% { opacity: 0.5; }
+    50% { opacity: 0.6; }
 }
 
 /* 과매수 상태 (빨간색) */
 .indicator-value.overbought {
-    background-color: rgba(239, 68, 68, 0.2);
+    background-color: rgba(239, 68, 68, 0.12);
     color: #ef4444;
-    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-color: rgba(239, 68, 68, 0.25);
+    box-shadow: 0 1px 3px rgba(239, 68, 68, 0.15);
 }
 
 /* 과매도 상태 (초록색) */
 .indicator-value.oversold {
-    background-color: rgba(16, 185, 129, 0.2);
+    background-color: rgba(16, 185, 129, 0.12);
     color: #10b981;
-    border: 1px solid rgba(16, 185, 129, 0.3);
+    border-color: rgba(16, 185, 129, 0.25);
+    box-shadow: 0 1px 3px rgba(16, 185, 129, 0.15);
 }
 
 /* 매수 신호 (초록색) */
 .indicator-value.bullish {
-    background-color: rgba(16, 185, 129, 0.2);
+    background-color: rgba(16, 185, 129, 0.12);
     color: #10b981;
-    border: 1px solid rgba(16, 185, 129, 0.3);
+    border-color: rgba(16, 185, 129, 0.25);
+    box-shadow: 0 1px 3px rgba(16, 185, 129, 0.15);
 }
 
 /* 매도 신호 (빨간색) */
 .indicator-value.bearish {
-    background-color: rgba(239, 68, 68, 0.2);
+    background-color: rgba(239, 68, 68, 0.12);
     color: #ef4444;
-    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-color: rgba(239, 68, 68, 0.25);
+    box-shadow: 0 1px 3px rgba(239, 68, 68, 0.15);
 }
 
 /* 중립 상태 */
 .indicator-value.neutral {
-    background-color: rgba(100, 116, 139, 0.2);
+    background-color: rgba(100, 116, 139, 0.1);
     color: var(--text-muted);
-    border: 1px solid rgba(100, 116, 139, 0.3);
+    border-color: rgba(100, 116, 139, 0.2);
 }
 
 /* 기존 스타일 유지 (하위 호환성) */
 .indicator-value.long {
-    background-color: rgba(16, 185, 129, 0.2);
+    background-color: rgba(16, 185, 129, 0.12);
     color: #10b981;
-    border: 1px solid rgba(16, 185, 129, 0.3);
+    border-color: rgba(16, 185, 129, 0.25);
+    box-shadow: 0 1px 3px rgba(16, 185, 129, 0.15);
 }
 
 .indicator-value.short {
-    background-color: rgba(239, 68, 68, 0.2);
+    background-color: rgba(239, 68, 68, 0.12);
     color: #ef4444;
-    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-color: rgba(239, 68, 68, 0.25);
+    box-shadow: 0 1px 3px rgba(239, 68, 68, 0.15);
 }
 
 /* Sentiment Card */
@@ -664,7 +624,7 @@
 .heatmap-tile:hover {
     transform: scale(1.05);
     z-index: 10;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 4px 20px var(--shadow);
 }
 
 .heatmap-symbol {
@@ -715,12 +675,9 @@
 }
 
 .whale-trades-container {
-    margin-top: 15px;
-    flex: 1;
-    min-height: 0;
+    flex-grow: 1;
     overflow-y: auto;
-    border-top: 1px solid var(--border-color);
-    padding-top: 10px;
+    padding: 0 0.5rem 0.5rem;
 }
 
 .whale-trades-container ul {
@@ -730,7 +687,7 @@
 }
 
 .whale-trades-container li {
-    padding: 8px 0;
+    padding: 6px 0;
     border-bottom: 1px solid var(--border-color);
     font-size: 0.85rem;
 }
@@ -900,99 +857,6 @@
 
 .order-row.bid::before {
     background-color: rgba(40, 167, 69, 0.2);
-}
-
-/* Indicators Card */
-.indicators-card {
-    min-height: 400px;
-}
-
-.indicator-summary {
-    padding: 12px 16px;
-    border-bottom: 1px solid var(--border-color);
-}
-
-.summary-gauge {
-    width: 100%;
-    height: 10px;
-    background-color: var(--bg-secondary);
-    border-radius: 5px;
-    overflow: hidden;
-    margin-bottom: 8px;
-}
-
-.summary-bar {
-    height: 100%;
-    border-radius: 5px;
-    transition: width 0.5s ease, background-color 0.5s ease;
-    width: 50%;
-    background: linear-gradient(90deg, #10b981, #34d399);
-}
-
-.summary-text {
-    font-size: 14px;
-    font-weight: 600;
-    text-align: center;
-    display: block;
-    color: var(--text-secondary);
-}
-
-.indicators-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 12px;
-    padding: 16px;
-}
-
-.indicator-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding-bottom: 8px;
-    border-bottom: 1px solid var(--border-color);
-}
-
-.indicator-item:last-child {
-    border-bottom: none;
-}
-
-.indicator-info {
-    display: flex;
-    flex-direction: column;
-}
-
-.indicator-name {
-    font-size: 15px;
-    font-weight: 500;
-    color: var(--text-primary);
-}
-
-.indicator-desc {
-    font-size: 12px;
-    color: var(--text-secondary);
-}
-
-.indicator-value {
-    font-size: 15px;
-    font-weight: 600;
-    padding: 4px 8px;
-    border-radius: 4px;
-    color: var(--text-muted);
-}
-
-.indicator-value.long {
-    background-color: rgba(16, 185, 129, 0.2);
-    color: #10b981;
-}
-
-.indicator-value.short {
-    background-color: rgba(239, 68, 68, 0.2);
-    color: #ef4444;
-}
-
-.indicator-value.neutral {
-    background-color: rgba(100, 116, 139, 0.2);
-    color: var(--text-muted);
 }
 
 /* Sentiment Card */

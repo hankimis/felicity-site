@@ -69,29 +69,18 @@
                         <div class="dashboard-card whale-card" data-card-id="whale">
                             <div class="card-header">
                                 <div class="card-title">
-                                    <i class="fas fa-whale"></i>
+                                    <i class="fas fa-water"></i>
                                     <h3>고래 탐지</h3>
                                 </div>
                                 <div class="card-controls">
-                                    <select id="whale-symbol" class="symbol-selector">
+                                    <button id="whale-settings-btn" class="control-btn" title="설정"><i class="fas fa-cog"></i></button>
+                                    <select id="whale-symbol-selector" class="symbol-selector">
                                         <option value="BTCUSDT">BTC/USDT</option>
                                         <option value="ETHUSDT">ETH/USDT</option>
-                                        <option value="ADAUSDT">ADA/USDT</option>
-                                        <option value="SOLUSDT">SOL/USDT</option>
                                     </select>
                                 </div>
                             </div>
                             <div class="card-content">
-                                <div class="whale-stats">
-                                    <div class="stat-item">
-                                        <span class="stat-label">대형 거래</span>
-                                        <span class="stat-value" id="large-trades">0</span>
-                                    </div>
-                                    <div class="stat-item">
-                                        <span class="stat-label">누적 거래량</span>
-                                        <span class="stat-value" id="total-volume">$0</span>
-                                    </div>
-                                </div>
                                 <div class="whale-trades-container" id="whale-trades-container">
                                     <!-- Dynamic whale trades -->
                                 </div>
@@ -287,8 +276,24 @@
     <!-- Toast Container -->
     <div id="toast-container"></div>
 
+    <!-- Whale Tracker Settings Modal -->
+    <div id="whale-settings-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>거래 탐지 설정</h2>
+                <button id="close-whale-settings" class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body" id="whale-settings-list">
+                <!-- Market settings will be dynamically inserted here -->
+            </div>
+            <div class="modal-footer">
+                <button id="save-whale-settings" class="btn-primary">저장</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Settings Modal -->
-    <div id="settings-modal" class="modal">
+    <div id="settings-modal" class="modal-overlay" style="display: none;">
         <div class="modal-content">
             <div class="modal-header">
                 <h3>대시보드 설정</h3>

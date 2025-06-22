@@ -270,11 +270,22 @@ export class LongShortTracker {
     }
 
     getLongShortRatio() {
+        const long = this.ratioData.overall.long || 50;
+        const short = this.ratioData.overall.short || 50;
+        
+        // 상태 결정
+        let status = 'neutral';
+        if (long > 55) {
+            status = 'long-dominant';
+        } else if (short > 55) {
+            status = 'short-dominant';
+        }
+        
         return {
-            long: this.ratioData.overall.long,
-            short: this.ratioData.overall.short,
-            ratio: this.ratioData.overall.longShortRatio,
-            status: document.getElementById('ratio-status').className
+            long: long,
+            short: short,
+            ratio: long / short || 1.0,
+            status: status
         };
     }
 } 

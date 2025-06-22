@@ -230,6 +230,12 @@ class WhaleTracker {
         this.updateWhaleHeaderGauge(longRatio);
     }
 
+    updateSymbol(newSymbol) {
+        console.log(`🐋 WhaleTracker: Updating symbol to ${newSymbol}`);
+        // 기존 웹소켓 연결들을 닫고 새로운 심볼로 재연결
+        this.connectWebSockets();
+    }
+
     playTradeSound(side) {
         const audio = new Audio();
         audio.src = side.toLowerCase() === 'buy' ? 
@@ -357,30 +363,45 @@ class WhaleTracker {
 
     connectMEXC() {
         const ws = new WebSocket('wss://wbs.mexc.com/ws');
-        
+
         ws.onopen = () => {
+            console.log('MEXC WebSocket connected');
             ws.send(JSON.stringify({
                 "method": "SUBSCRIPTION",
-                "params": ["spot@public.deals.v3.api@BTCUSDT"]
+                "params": [
+                    "spot@public.deals.v3.api@BTCUSDT"
+                ]
             }));
         };
-        
+
         ws.onmessage = (event) => {
-            const data = JSON.parse(event.data);
-            if (data.d) {
-                const trade = data.d;
-                // MEXC uses 'S' field as 1 for BUY, 2 for SELL
-                const side = trade.S === 1 ? 'BUY' : 'SELL';
-                this.addTrade('MEXC',
-                    parseFloat(trade.p),
-                    parseFloat(trade.v),
-                    side);
+            try {
+                const msg = JSON.parse(event.data);
+                if (msg.d && msg.d.deals) {
+                    msg.d.deals.forEach(deal => {
+                        // S: 1 for seller-is-taker (SELL), 2 for buyer-is-taker (BUY)
+                        const side = deal.S === 2 ? 'BUY' : 'SELL';
+                        const price = parseFloat(deal.p);
+                        const amount = parseFloat(deal.v);
+                        
+                        if (!isNaN(price) && !isNaN(amount)) {
+                            this.addTrade('MEXC', price, amount, side);
+                        }
+                    });
+                }
+            } catch (error) {
+                console.error('Error processing MEXC message:', error);
             }
         };
 
         ws.onclose = () => {
-            console.log('MEXC WebSocket closed. Reconnecting...');
-            setTimeout(() => this.connectMEXC(), 1000);
+            console.log('MEXC WebSocket closed, reconnecting...');
+            setTimeout(() => this.connectMEXC(), 3000); // 3초 후 재연결
+        };
+
+        ws.onerror = (error) => {
+            console.error('MEXC WebSocket error:', error);
+            ws.close(); // 에러 발생 시 재연결 로직이 close 핸들러에서 실행되도록 close() 호출
         };
     }
 }

@@ -5,15 +5,48 @@
 
 export class WhaleTracker {
     constructor(settings = {}) {
-        this.apiEndpoint = 'https://api.binance.com/api/v3/aggTrades';
+        this.defaultMarkets = [
+            // BINANCE_FUTURES btcusdt (btcusd_perp는 존재하지 않음)
+            { id: 'binance_futures_btcusdt', exchange: 'Binance', type: 'Futures', symbol: 'BTCUSDT', rawSymbol: 'btcusdt', enabled: true, threshold: 100000 },
+            // BITFINEX BTCUSD
+            { id: 'bitfinex_spot_btcusd', exchange: 'Bitfinex', type: 'Spot', symbol: 'BTCUSD', rawSymbol: 'tBTCUSD', enabled: true, threshold: 100000 },
+            // BITMEX XBTUSD
+            { id: 'bitmex_futures_xbtusd', exchange: 'BitMEX', type: 'Futures', symbol: 'XBTUSD', rawSymbol: 'XBTUSD', enabled: true, threshold: 100000 },
+            // BYBIT BTCUSD
+            { id: 'bybit_futures_btcusd', exchange: 'Bybit', type: 'Inverse', symbol: 'BTCUSD', rawSymbol: 'BTCUSD', enabled: true, threshold: 100000 },
+            // COINBASE BTC-USD
+            { id: 'coinbase_spot_btcusd', exchange: 'Coinbase', type: 'Spot', symbol: 'BTC-USD', rawSymbol: 'BTC-USD', enabled: true, threshold: 100000 },
+            // DERIBIT BTC-PERPETUAL
+            { id: 'deribit_futures_btc_perpetual', exchange: 'Deribit', type: 'Futures', symbol: 'BTC-PERPETUAL', rawSymbol: 'BTC-PERPETUAL', enabled: true, threshold: 100000 },
+            // BINANCE btcusdt
+            { id: 'binance_spot_btcusdt', exchange: 'Binance', type: 'Spot', symbol: 'BTCUSDT', rawSymbol: 'btcusdt', enabled: true, threshold: 100000 },
+            // BITFINEX BTCUST
+            { id: 'bitfinex_spot_btcust', exchange: 'Bitfinex', type: 'Spot', symbol: 'BTCUST', rawSymbol: 'tBTCUST', enabled: true, threshold: 100000 },
+            // BITFINEX BTCF0:USTF0 (올바른 형식으로 수정)
+            { id: 'bitfinex_futures_btcf0_ustf0', exchange: 'Bitfinex', type: 'Futures', symbol: 'BTCF0:USTF0', rawSymbol: 'tBTCF0:USTF0', enabled: false, threshold: 100000 },
+            // BITMEX XBTUSDT
+            { id: 'bitmex_futures_xbtusdt', exchange: 'BitMEX', type: 'Futures', symbol: 'XBTUSDT', rawSymbol: 'XBTUSDT', enabled: true, threshold: 100000 },
+            // BYBIT BTCUSDT
+            { id: 'bybit_futures_btcusdt', exchange: 'Bybit', type: 'Linear', symbol: 'BTCUSDT', rawSymbol: 'BTCUSDT', enabled: true, threshold: 100000 },
+            // COINBASE BTC-USDT
+            { id: 'coinbase_spot_btcusdt', exchange: 'Coinbase', type: 'Spot', symbol: 'BTC-USDT', rawSymbol: 'BTC-USDT', enabled: true, threshold: 100000 },
+            // BITSTAMP btcusd
+            { id: 'bitstamp_spot_btcusd', exchange: 'Bitstamp', type: 'Spot', symbol: 'btcusd', rawSymbol: 'btcusd', enabled: true, threshold: 100000 },
+            // OKEX BTC-USD-SWAP
+            { id: 'okx_futures_btcusd_swap', exchange: 'OKX', type: 'Futures', symbol: 'BTC-USD-SWAP', rawSymbol: 'BTC-USD-SWAP', enabled: true, threshold: 100000 },
+            // OKEX BTC-USDT-SWAP
+            { id: 'okx_futures_btcusdt_swap', exchange: 'OKX', type: 'Futures', symbol: 'BTC-USDT-SWAP', rawSymbol: 'BTC-USDT-SWAP', enabled: true, threshold: 100000 },
+        ];
+
         this.settings = {
-            symbol: 'BTCUSDT',
-            largeTradeThreshold: 500000,
+            largeTradeThreshold: 100000, // This can be a global fallback
             enableSound: false,
             ...settings
         };
+        
+        this.markets = JSON.parse(localStorage.getItem('whaleTrackerMarkets')) || this.defaultMarkets;
+
         this.whaleTrades = [];
-        this.chart = null;
         this.lastTradeId = null;
         this.trades = [];
         this.maxTrades = 100;
@@ -21,137 +54,39 @@ export class WhaleTracker {
         this.connections = {};
         this.audioContext = null;
         this.audioGain = null;
+        this.recentTradeIds = new Set();
+        this.tradeIdQueue = [];
+        this.maxRecentIds = 500;
         
-        // 거래 레벨 설정
+        // 거래소별 통계 추가
+        this.exchangeStats = {};
+        
         this.thresholds = [
-            { amount: 100000, level: 0, buyColor: '#e8f5e8', sellColor: '#fde8e9' },
-            { amount: 300000, level: 1, buyColor: '#d4edda', sellColor: '#f8d7da' },
-            { amount: 1000000, level: 2, buyColor: '#c3e6cb', sellColor: '#f5c6cb' },
-            { amount: 5000000, level: 3, buyColor: '#a8e6cf', sellColor: '#f0ad4e' }
+            { amount: 1000000, buyColor: '#81FFB0', sellColor: '#FE8E8E' },
+            { amount: 400000,  buyColor: '#ABFECA', sellColor: '#FFADAD' },
+            { amount: 200000,  buyColor: '#C3FFD9', sellColor: '#FDCBCB' },
+            { amount: 150000,  buyColor: '#E1FFEC', sellColor: '#FFE0E0' },
+            { amount: 100000,  buyColor: '#EFFAF3', sellColor: '#FEF1F1' }
         ];
         
-        // 오디오 설정 - 100k 이상 거래에만 알림
+        // 오디오 설정
         this.audioThreshold = 100000;
         this.muted = !this.settings.enableSound;
         this.audioVolume = 0.5;
-        this.audioPitch = 1.0;
         
-        // 표시 설정
-        this.showLogos = true;
-        this.showPrices = true;
-        this.showTimeAgo = true;
+        // DOM 요소
+        this.container = document.getElementById('whale-trades-container');
         
-        // 거래소 설정
-        this.exchanges = {
-            BINANCE: {
-                name: 'BINANCE',
-                icon: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="#f3ba2f"><path d="M4.9 6.72L8 3.62l3.1 3.1 1.8-1.8L8 0 3.1 4.92zM0 8l1.8-1.8L3.62 8 1.8 9.8zm4.9 1.28L8 12.4l3.1-3.1 1.8 1.8L8 16l-4.9-4.9zM12.38 8l1.8-1.8L16 8l-1.8 1.8zM9.84 8L8 6.16 6.17 8 8 9.83 9.84 8z"/></svg>',
-                wsEndpoint: 'wss://stream.binance.com:9443/ws/btcusdt@aggTrade',
-                formatter: (data) => ({
-                    exchange: 'BINANCE',
-                    price: parseFloat(data.p),
-                    amount: parseFloat(data.q),
-                    side: data.m ? 'sell' : 'buy',
-                    timestamp: data.T,
-                    size: parseFloat(data.q),
-                    avgPrice: parseFloat(data.p)
-                })
-            },
-            BINANCE_FUTURES: {
-                name: 'BINANCE_FUTURES',
-                icon: '<svg version="1.1" id="Calque_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 16 16" style="enable-background:new 0 0 16 16;" xml:space="preserve"><style type="text/css">.st0{fill:#ffffff;}</style><path class="st0" d="M4.9,6.7L8,3.6l3.1,3.1l1.8-1.8L8,0L3.1,4.9L4.9,6.7z M0,8l1.8-1.8L3.6,8L1.8,9.8L0,8z M4.9,9.3L8,12.4l3.1-3.1l1.8,1.8L8,16l-4.9-4.9L4.9,9.3z M12.4,8l1.8-1.8L16,8l-1.8,1.8L12.4,8z M9.8,8L8,6.2L6.2,8L8,9.8L9.8,8z"/></svg>',
-                wsEndpoint: 'wss://fstream.binance.com/ws/btcusdt@aggTrade',
-                formatter: (data) => ({
-                    exchange: 'BINANCE_FUTURES',
-                    price: parseFloat(data.p),
-                    amount: parseFloat(data.q),
-                    side: data.m ? 'sell' : 'buy',
-                    timestamp: data.T,
-                    size: parseFloat(data.q),
-                    avgPrice: parseFloat(data.p)
-                })
-            },
-            BYBIT: {
-                name: 'BYBIT',
-                icon: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><title>bybit</title><path d="M11.11,5.83a6.31,6.31,0,0,0-.86-.23L6.26.36s-.77.35-.82.39L8.81,4.93A3.78,3.78,0,0,1,7.92,5L4.37,1.47l-.61.7L6.7,5c-.06.07-.73.34-.79.42L3.08,3.26c0,.05-.35.77-.38.82L5,5.72c0,.07-.57.54-.62.62L2.65,5.43v.88l1,.63-.07.15-.92-.18.66.5C2,9.25,2.31,12.2,4,14.23l-.63-1.76H3.5l1.17,2.65a7.12,7.12,0,0,0,.84.24L3.64,11.25a5.1,5.1,0,0,1,.27-.6L6.8,15.93a7.79,7.79,0,0,0,1,.06L4.33,10.16a5.09,5.09,0,0,0,1,.41L9,15.93a6.74,6.74,0,0,0,.86-.3L6.35,10.9a7,7,0,0,0,1,.13L11,15s.67-.55.71-.6L8.59,11.21c.06-.07.82-.21.88-.28l3,2.49.53-.73-2.53-2c0-.08.66-.47.71-.55l2.11,1.29s.11-.84.13-.88L12,9.59a6.8,6.8,0,0,1,.5-.59l.93.19-.68-.5c1.29-1.7.92-5-.82-7L12.79,4a5,5,0,0,0-.55.1L10.66.72c-.05,0-.89-.36-.95-.33l2.35,4.74c-.05,0-.62-.07-.67,0L8.41,0a6.74,6.74,0,0,0-.9.14Z" fill="#f9b600"/></svg>',
-                wsEndpoint: 'wss://stream.bybit.com/v5/public/linear',
-                formatter: (msg) => {
-                    if (!msg.data || !msg.data[0]) return null;
-                    const trade = msg.data[0];
-                    return {
-                        id: trade.i,
-                        price: parseFloat(trade.p),
-                        quantity: parseFloat(trade.v),
-                        side: trade.S,
-                        timestamp: trade.T,
-                        exchange: 'BYBIT'
-                    };
-                }
-            },
-            OKX: {
-                name: 'OKX',
-                icon: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M8 0C3.6 0 0 3.6 0 8s3.6 8 8 8 8-3.6 8-8-3.6-8-8-8zm0 14c-3.3 0-6-2.7-6-6s2.7-6 6-6 6 2.7 6 6-2.7 6-6 6z" fill="#000000"/><path d="M6 6h4v4H6z" fill="#000000"/></svg>',
-                wsEndpoint: 'wss://ws.okx.com:8443/ws/v5/public',
-                formatter: (msg) => {
-                    if (!msg.data || !msg.data[0]) return null;
-                    const trade = msg.data[0];
-                    return {
-                        id: trade.tradeId,
-                        price: parseFloat(trade.px),
-                        quantity: parseFloat(trade.sz),
-                        side: trade.side.toUpperCase(),
-                        timestamp: parseInt(trade.ts),
-                        exchange: 'OKX'
-                    };
-                }
-            },
-            BITGET: {
-                name: 'BITGET',
-                icon: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M8 0C3.6 0 0 3.6 0 8s3.6 8 8 8 8-3.6 8-8-3.6-8-8-8zm0 14c-3.3 0-6-2.7-6-6s2.7-6 6-6 6 2.7 6 6-2.7 6-6 6z" fill="#00c2ff"/><path d="M5 5h6v6H5z" fill="#00c2ff"/></svg>',
-                wsEndpoint: 'wss://ws.bitget.com/spot/v1/stream',
-                formatter: (msg) => {
-                    if (!msg.data || !msg.data[0]) return null;
-                    const trade = msg.data[0];
-                    return {
-                        id: `${trade.ts}-${trade.p}`,
-                        price: parseFloat(trade.p),
-                        quantity: parseFloat(trade.v),
-                        side: trade.S,
-                        timestamp: parseInt(trade.ts),
-                        exchange: 'BITGET'
-                    };
-                }
-            },
-            MEXC: {
-                name: 'MEXC',
-                icon: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M8 0C3.6 0 0 3.6 0 8s3.6 8 8 8 8-3.6 8-8-3.6-8-8-8zm0 14c-3.3 0-6-2.7-6-6s2.7-6 6-6 6 2.7 6 6-2.7 6-6 6z" fill="#ff6b35"/><path d="M5 5h6v6H5z" fill="#ff6b35"/></svg>',
-                wsEndpoint: 'wss://wbs.mexc.com/ws',
-                formatter: (data) => ({
-                    exchange: 'MEXC',
-                    price: parseFloat(data.p),
-                    amount: parseFloat(data.v),
-                    side: data.T === 1 ? 'buy' : 'sell',
-                    timestamp: data.t,
-                    size: parseFloat(data.v),
-                    avgPrice: parseFloat(data.p)
-                })
-            }
-        };
-
-        // DOM이 로드된 후 초기화
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', () => this.init());
-        } else {
-            this.init();
-        }
+        // 초기화
+        this.init();
     }
 
     async init() {
-        console.log('Whale Tracker initializing...');
-        this.allExchanges = Object.keys(this.exchanges);
+        console.log('🐳 Whale Tracker initializing...');
         this.setupAudio();
-        await this.connectAllExchanges();
+        this.connectWebSockets();
         this.start();
+        console.log('🐳 Whale Tracker initialized and started.');
     }
 
     setupAudio() {
@@ -159,782 +94,784 @@ export class WhaleTracker {
             this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
             this.audioGain = this.audioContext.createGain();
             this.audioGain.connect(this.audioContext.destination);
-            this.audioGain.gain.value = this.audioVolume;
+            this.audioGain.gain.value = this.muted ? 0 : this.audioVolume;
         } catch (error) {
             console.warn('Audio not supported:', error);
+            this.audioContext = null;
         }
     }
 
-    async connectAllExchanges() {
-        for (const [exchangeName, exchange] of Object.entries(this.exchanges)) {
-            await this.connectExchange(exchangeName, exchange);
-        }
+    connectWebSockets() {
+        console.log(`Connecting to WebSockets...`);
+        this.closeAllConnections();
+        this.markets.forEach(market => {
+            if (!market.enabled) return;
+
+            const connector = this[`connect${market.exchange}${market.type}`];
+            if (typeof connector === 'function') {
+                console.log(`Connecting to ${market.exchange} ${market.type} for ${market.symbol}...`);
+                connector.call(this, market);
+            } else {
+                console.warn(`No connector found for ${market.exchange} ${market.type}`);
+            }
+        });
+    }
+    
+    addTrade(trade) {
+        this.addTrades([trade]);
     }
 
-    async connectExchange(exchangeName, exchange) {
-        try {
-            const ws = new WebSocket(exchange.wsEndpoint);
+    addTrades(trades) {
+        const newValidTrades = [];
+        for (const trade of trades) {
+            if (this.recentTradeIds.has(trade.id)) {
+                continue; // 중복 거래 건너뛰기
+            }
+
+            const market = this.markets.find(m => m.exchange === trade.exchange && (m.symbol === trade.symbol || m.rawSymbol === trade.symbol || m.id.includes(trade.symbol.toLowerCase())));
+            const threshold = market ? market.threshold : this.settings.largeTradeThreshold;
             
-            ws.onopen = () => {
-                console.log(`Connected to ${exchangeName}`);
-                this.connections[exchangeName] = ws;
-                
-                // 구독 메시지 전송
-                if (exchangeName === 'BYBIT') {
-                    ws.send(JSON.stringify({
-                        "op": "subscribe",
-                        "args": ["publicTrade.BTCUSDT"]
-                    }));
-                } else if (exchangeName === 'OKX') {
-                    ws.send(JSON.stringify({
-                        "op": "subscribe",
-                        "args": [{
-                            "channel": "trades",
-                            "instId": "BTC-USDT"
-                        }]
-                    }));
-                } else if (exchangeName === 'BITGET') {
-                    ws.send(JSON.stringify({
-                        "op": "subscribe",
-                        "args": ["spot@public.deals.v3.api@BTCUSDT"]
-                    }));
-                } else if (exchangeName === 'MEXC') {
-                    ws.send(JSON.stringify({
-                        "method": "SUBSCRIPTION",
-                        "params": ["spot@public.deals.v3.api@BTC_USDT"]
-                    }));
-                }
-            };
-
-            ws.onmessage = (event) => {
-                try {
-                    const data = JSON.parse(event.data);
-                    const trade = exchange.formatter(data);
-                    
-                    if (trade && trade.amount * trade.price >= this.audioThreshold) {
-                        this.processTrade(trade);
-                    }
-                } catch (error) {
-                    console.warn(`Error processing ${exchangeName} message:`, error);
-                }
-            };
-
-            ws.onerror = (error) => {
-                console.error(`${exchangeName} WebSocket error:`, error);
-                this.reconnectExchange(exchangeName, exchange);
-            };
-
-            ws.onclose = () => {
-                console.log(`${exchangeName} WebSocket closed`);
-                this.reconnectExchange(exchangeName, exchange);
-            };
-
-        } catch (error) {
-            console.error(`Failed to connect to ${exchangeName}:`, error);
-        }
-    }
-
-    reconnectExchange(exchangeName, exchange) {
-        setTimeout(() => {
-            console.log(`Attempting to reconnect ${exchangeName}...`);
-            this.connectExchange(exchangeName, exchange);
-        }, 5000);
-    }
-
-    processTrade(trade) {
-        if (!trade) return;
-
-        // USD 가치 계산
-        trade.usdValue = trade.price * trade.quantity;
-
-        // 대량 거래 필터링
-        if (trade.usdValue >= this.settings.largeTradeThreshold) {
-            this.whaleTrades.unshift(trade);
-            if (this.whaleTrades.length > this.maxTrades) {
-                this.whaleTrades.pop();
+            if (trade.value >= threshold) {
+                newValidTrades.push(trade);
+                this.recentTradeIds.add(trade.id);
+                this.tradeIdQueue.push(trade.id);
             }
         }
+
+        while (this.tradeIdQueue.length > this.maxRecentIds) {
+            const oldId = this.tradeIdQueue.shift();
+            this.recentTradeIds.delete(oldId);
+        }
+
+        if (newValidTrades.length === 0) return;
+
+        newValidTrades.forEach(trade => {
+            if (!this.exchangeStats[trade.exchange]) {
+                this.exchangeStats[trade.exchange] = { count: 0, totalValue: 0 };
+            }
+            this.exchangeStats[trade.exchange].count++;
+            this.exchangeStats[trade.exchange].totalValue += trade.value;
+            console.log(`%c[WhaleTracker] Large trade detected! Value: $${trade.value.toFixed(2)} from ${trade.exchange}`, 'color: #22c55e; font-weight: bold;');
+        });
+
+        this.whaleTrades.unshift(...newValidTrades.sort((a, b) => b.timestamp - a.timestamp));
+        if (this.whaleTrades.length > 50) {
+            this.whaleTrades.length = 50;
+        }
+
+        const largestTrade = newValidTrades.reduce((max, t) => t.value > max.value ? t : max, newValidTrades[0]);
+        this.playAudioAlert(largestTrade);
+        this.updateDisplay();
+    }
+
+    // --- Exchange-specific connectors for SPOT markets ---
+
+    connectBinanceSpot(market) {
+        const ws = new WebSocket(`wss://stream.binance.com:9443/ws/${market.rawSymbol.toLowerCase()}@aggTrade`);
+        ws.onmessage = (event) => {
+            const t = JSON.parse(event.data);
+            this.addTrade({
+                id: t.a.toString(),
+                price: parseFloat(t.p),
+                quantity: parseFloat(t.q),
+                value: parseFloat(t.p) * parseFloat(t.q),
+                side: t.m ? 'sell' : 'buy',
+                timestamp: t.T,
+                exchange: 'Binance',
+                symbol: market.symbol
+            });
+        };
+        ws.onerror = (e) => console.error('Binance Spot WS Error', e);
+        ws.onclose = () => { if (this.isTracking) setTimeout(() => this.connectBinanceSpot(market), 5000); };
+        this.connections[market.id] = ws;
+    }
+
+    // --- Exchange-specific connectors for FUTURES markets ---
+
+    connectBinanceFutures(market) {
+        const ws = new WebSocket(`wss://fstream.binance.com/ws/${market.rawSymbol.toLowerCase()}@aggTrade`);
+        ws.onmessage = (event) => {
+            const t = JSON.parse(event.data);
+            this.addTrade({
+                id: t.a.toString(),
+                price: parseFloat(t.p),
+                quantity: parseFloat(t.q),
+                value: parseFloat(t.p) * parseFloat(t.q),
+                side: t.m ? 'sell' : 'buy',
+                timestamp: t.T,
+                exchange: 'Binance',
+                symbol: market.symbol,
+                type: 'Futures'
+            });
+        };
+        ws.onerror = (e) => console.error('Binance Futures WS Error', e);
+        ws.onclose = () => { if (this.isTracking) setTimeout(() => this.connectBinanceFutures(market), 5000); };
+        this.connections[market.id] = ws;
+    }
+
+    connectBybitLinear(market) {
+        const ws = new WebSocket('wss://stream.bybit.com/v5/public/linear');
+        ws.onopen = () => ws.send(JSON.stringify({ "op": "subscribe", "args": [`publicTrade.${market.rawSymbol}`] }));
+        ws.onmessage = (event) => {
+            const msg = JSON.parse(event.data);
+            if (msg.topic && msg.topic.startsWith('publicTrade') && Array.isArray(msg.data)) {
+                const trades = msg.data.map(t => ({
+                    id: t.i,
+                    price: parseFloat(t.p),
+                    quantity: parseFloat(t.v),
+                    value: parseFloat(t.p) * parseFloat(t.v),
+                    side: t.S === 'Buy' ? 'buy' : 'sell',
+                    timestamp: parseInt(t.t),
+                    exchange: 'Bybit',
+                    symbol: market.symbol,
+                    type: 'Futures'
+                }));
+                this.addTrades(trades);
+            }
+        };
+        ws.onerror = (e) => console.error('Bybit Linear WS Error', e);
+        ws.onclose = () => { if (this.isTracking) setTimeout(() => this.connectBybitLinear(market), 5000); };
+        this.connections[market.id] = ws;
+    }
+
+    connectBybitInverse(market) {
+        const ws = new WebSocket('wss://stream.bybit.com/v5/public/inverse');
+        ws.onopen = () => ws.send(JSON.stringify({ "op": "subscribe", "args": [`publicTrade.${market.rawSymbol}`] }));
+        ws.onmessage = (event) => {
+            const msg = JSON.parse(event.data);
+            if (msg.topic && msg.topic.startsWith('publicTrade') && Array.isArray(msg.data)) {
+                const trades = msg.data.map(t => ({
+                    id: t.i,
+                    price: parseFloat(t.p),
+                    quantity: parseFloat(t.v),
+                    value: parseFloat(t.v), // For inverse, value is in contracts, not USD
+                    side: t.S === 'Buy' ? 'buy' : 'sell',
+                    timestamp: parseInt(t.t),
+                    exchange: 'Bybit',
+                    symbol: market.symbol,
+                    type: 'Futures'
+                }));
+                this.addTrades(trades);
+            }
+        };
+        ws.onerror = (e) => console.error('Bybit Inverse WS Error', e);
+        ws.onclose = () => { if (this.isTracking) setTimeout(() => this.connectBybitInverse(market), 5000); };
+        this.connections[market.id] = ws;
+    }
+
+    connectOKXFutures(market) {
+        const ws = new WebSocket('wss://ws.okx.com:8443/ws/v5/public');
+        ws.onopen = () => ws.send(JSON.stringify({ "op": "subscribe", "args": [{ "channel": "trades", "instId": market.rawSymbol }] }));
+        ws.onmessage = (event) => {
+            const msg = JSON.parse(event.data);
+            if (msg.data) {
+                const trades = msg.data.map(t => {
+                    const price = parseFloat(t.px);
+                    const quantity = parseFloat(t.sz);
+                    const contractValue = 100;
+                    const value = quantity * contractValue;
+                    return {
+                        id: t.tradeId,
+                        price: price,
+                        quantity: quantity,
+                        value: value,
+                        side: t.side,
+                        timestamp: parseInt(t.ts),
+                        exchange: 'OKX',
+                        symbol: market.symbol,
+                        type: 'Futures'
+                    };
+                });
+                this.addTrades(trades);
+            }
+        };
+        ws.onerror = (e) => console.error('OKX Futures WS Error', e);
+        ws.onclose = () => { if (this.isTracking) setTimeout(() => this.connectOKXFutures(market), 5000); };
+        this.connections[market.id] = ws;
+    }
+
+    connectBitfinexSpot(market) {
+        const ws = new WebSocket('wss://api-pub.bitfinex.com/ws/2');
+        ws.onopen = () => ws.send(JSON.stringify({ event: 'subscribe', channel: 'trades', symbol: market.rawSymbol }));
+        ws.onmessage = (event) => {
+            const msg = JSON.parse(event.data);
+            if (Array.isArray(msg) && (msg[1] === 'te' || msg[1] === 'tu')) {
+                const t = msg[2];
+                this.addTrade({
+                    id: `${market.id}-${t[0]}`,
+                    price: parseFloat(t[3]),
+                    quantity: Math.abs(parseFloat(t[2])),
+                    value: parseFloat(t[3]) * Math.abs(parseFloat(t[2])),
+                    side: parseFloat(t[2]) > 0 ? 'buy' : 'sell',
+                    timestamp: t[1],
+                    exchange: 'Bitfinex',
+                    symbol: market.symbol,
+                    type: 'Spot'
+                });
+            }
+        };
+        ws.onerror = (e) => console.error('Bitfinex Spot WS Error', e);
+        ws.onclose = () => { if (this.isTracking) setTimeout(() => this.connectBitfinexSpot(market), 5000); };
+        this.connections[market.id] = ws;
+    }
+
+    connectBitfinexFutures(market) {
+        const ws = new WebSocket('wss://api-pub.bitfinex.com/ws/2');
+        ws.onopen = () => ws.send(JSON.stringify({ event: 'subscribe', channel: 'trades', symbol: market.rawSymbol }));
+        ws.onmessage = (event) => {
+             const msg = JSON.parse(event.data);
+            if (Array.isArray(msg) && (msg[1] === 'te' || msg[1] === 'tu')) {
+                 const t = msg[2];
+                this.addTrade({
+                    id: `${market.id}-${t[0]}`,
+                    price: parseFloat(t[3]),
+                    quantity: Math.abs(parseFloat(t[2])),
+                    value: parseFloat(t[3]) * Math.abs(parseFloat(t[2])),
+                    side: parseFloat(t[2]) > 0 ? 'buy' : 'sell',
+                    timestamp: t[1],
+                    exchange: 'Bitfinex',
+                    symbol: market.symbol,
+                    type: 'Futures'
+                });
+            }
+        };
+        ws.onerror = (e) => console.error('Bitfinex Futures WS Error', e);
+        ws.onclose = () => { if (this.isTracking) setTimeout(() => this.connectBitfinexFutures(market), 5000); };
+        this.connections[market.id] = ws;
+    }
+
+    connectBitMEXFutures(market) {
+        const ws = new WebSocket('wss://ws.bitmex.com/realtime');
+        ws.onopen = () => ws.send(JSON.stringify({ op: 'subscribe', args: [`trade:${market.rawSymbol}`] }));
+        ws.onmessage = (event) => {
+            const msg = JSON.parse(event.data);
+            if (msg.table === 'trade' && msg.data) {
+                const trades = msg.data.map(t => ({
+                    id: t.trdMatchID,
+                    price: t.price,
+                    quantity: t.size,
+                    value: t.homeNotional,
+                    side: t.side.toLowerCase(),
+                    timestamp: new Date(t.timestamp).getTime(),
+                    exchange: 'BitMEX',
+                    symbol: market.symbol,
+                    type: 'Futures'
+                }));
+                this.addTrades(trades);
+            }
+        };
+        ws.onerror = (e) => console.error('BitMEX Futures WS Error', e);
+        ws.onclose = () => { if (this.isTracking) setTimeout(() => this.connectBitMEXFutures(market), 5000); };
+        this.connections[market.id] = ws;
+    }
+
+    connectCoinbaseSpot(market) {
+        const ws = new WebSocket('wss://advanced-trade-ws.coinbase.com');
+        ws.onopen = () => ws.send(JSON.stringify({
+            type: 'subscribe',
+            product_ids: [market.rawSymbol],
+            channel: 'matches'
+        }));
+        ws.onmessage = (event) => {
+            const msg = JSON.parse(event.data);
+            if (msg.channel === 'matches' && msg.events) {
+                const trades = msg.events.flatMap(e => e.trades ? e.trades.map(t => {
+                    const price = parseFloat(t.price);
+                    const size = parseFloat(t.size);
+                    return {
+                        id: t.trade_id.toString(),
+                        price: price,
+                        quantity: size,
+                        value: price * size,
+                        side: t.side.toLowerCase(),
+                        timestamp: new Date(t.time).getTime(),
+                        exchange: 'Coinbase',
+                        symbol: market.symbol,
+                        type: 'Spot'
+                    };
+                }) : []);
+                if(trades.length > 0) {
+                    this.addTrades(trades);
+                }
+            }
+        };
+        ws.onerror = (e) => console.error('Coinbase Spot WS Error', e);
+        ws.onclose = () => { if (this.isTracking) setTimeout(() => this.connectCoinbaseSpot(market), 5000); };
+        this.connections[market.id] = ws;
+    }
+
+    connectDeribitFutures(market) {
+        const ws = new WebSocket('wss://www.deribit.com/ws/api/v2');
+        ws.onopen = () => ws.send(JSON.stringify({ jsonrpc: '2.0', method: 'public/subscribe', params: { channels: [`trades.${market.rawSymbol}.raw`] } }));
+        ws.onmessage = (event) => {
+            const msg = JSON.parse(event.data);
+            if (msg.method === 'subscription' && msg.params.data) {
+                const trades = msg.params.data.map(t => ({
+                    id: t.trade_id,
+                    price: t.price,
+                    quantity: t.amount,
+                    value: t.price * t.amount,
+                    side: t.direction,
+                    timestamp: t.timestamp,
+                    exchange: 'Deribit',
+                    symbol: market.symbol,
+                    type: 'Futures'
+                }));
+                this.addTrades(trades);
+            }
+        };
+        ws.onerror = (e) => console.error('Deribit Futures WS Error', e);
+        ws.onclose = () => { if (this.isTracking) setTimeout(() => this.connectDeribitFutures(market), 5000); };
+        this.connections[market.id] = ws;
+    }
+
+    connectBitstampSpot(market) {
+        const ws = new WebSocket('wss://ws.bitstamp.net');
+        ws.onopen = () => ws.send(JSON.stringify({ event: 'bts:subscribe', data: { channel: `live_trades_${market.rawSymbol}` } }));
+        ws.onmessage = (event) => {
+            const msg = JSON.parse(event.data);
+            if (msg.event === 'trade') {
+                const t = msg.data;
+                this.addTrade({
+                    id: t.id.toString(),
+                    price: t.price,
+                    quantity: t.amount,
+                    value: t.price * t.amount,
+                    side: t.type === 0 ? 'buy' : 'sell',
+                    timestamp: parseInt(t.timestamp) * 1000,
+                    exchange: 'Bitstamp',
+                    symbol: market.symbol,
+                    type: 'Spot'
+                });
+            }
+        };
+        ws.onerror = (e) => console.error('Bitstamp Spot WS Error', e);
+        ws.onclose = () => { if (this.isTracking) setTimeout(() => this.connectBitstampSpot(market), 5000); };
+        this.connections[market.id] = ws;
     }
 
     playAudioAlert(trade) {
         if (!this.audioContext || this.muted) return;
 
-        try {
-            const oscillator = this.audioContext.createOscillator();
-            const gainNode = this.audioContext.createGain();
-            
-            oscillator.connect(gainNode);
-            gainNode.connect(this.audioGain);
-            
-            // 거래 방향과 크기에 따른 주파수 설정
-            const baseFreq = trade.side === 'buy' ? 440 : 330;
-            const sizeMultiplier = Math.min(trade.value / 1000000, 2);
-            oscillator.frequency.value = baseFreq * this.audioPitch * sizeMultiplier;
-            
-            // 거래 크기에 따른 볼륨 설정
-            const volume = Math.min(trade.value / 1000000, 1);
-            gainNode.gain.value = volume * this.audioVolume;
-            
-            // 페이드 인/아웃
-            gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
-            gainNode.gain.linearRampToValueAtTime(volume * this.audioVolume, this.audioContext.currentTime + 0.1);
-            gainNode.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + 0.5);
-            
-            oscillator.start(this.audioContext.currentTime);
-            oscillator.stop(this.audioContext.currentTime + 0.5);
-            
-        } catch (error) {
-            console.warn('Audio playback failed:', error);
+        const oscillator = this.audioContext.createOscillator();
+        oscillator.connect(this.audioGain);
+        
+        oscillator.type = trade.side === 'buy' ? 'sine' : 'sawtooth';
+        oscillator.frequency.setValueAtTime(trade.side === 'buy' ? 880 : 440, this.audioContext.currentTime);
+        
+        oscillator.start();
+        oscillator.stop(this.audioContext.currentTime + 0.1);
+    }
+    
+    updateDisplay() {
+        if (!this.container) return;
+
+        // whale-trades-container 내부의 ul 요소를 찾거나 생성합니다.
+        let tradeList = this.container.querySelector('ul');
+        if (!tradeList) {
+            tradeList = document.createElement('ul');
+            this.container.appendChild(tradeList);
         }
+
+        tradeList.innerHTML = this.whaleTrades.map(trade => this.createTradeHTML(trade)).join('');
+        this.updateStats();
     }
+    
+    createTradeHTML(trade) {
+        const { side, exchange, price, value, timestamp } = trade;
+        const colorConfig = this.thresholds.find(t => value >= t.amount);
+        const bgColor = colorConfig ? (side === 'buy' ? colorConfig.buyColor : colorConfig.sellColor) : (side === 'buy' ? '#EFFAF3' : '#FEF1F1');
 
-    triggerWhaleAlert(trade) {
-        // 알림 생성
-        const notification = document.createElement('div');
-        notification.className = `whale-alert whale-alert-${trade.side} whale-alert-level-${trade.level}`;
-        notification.innerHTML = `
-            <div class="whale-alert-content">
-                <div class="whale-alert-header">
-                    <span class="whale-alert-exchange">${trade.exchange}</span>
-                    <span class="whale-alert-side">${trade.side.toUpperCase()}</span>
-                </div>
-                <div class="whale-alert-details">
-                    <div class="whale-alert-price">$${trade.price.toLocaleString()}</div>
-                    <div class="whale-alert-amount">${this.formatAmount(trade.value)}</div>
-                </div>
-                <div class="whale-alert-time">${this.formatTime(trade.timestamp)}</div>
-            </div>
-        `;
-        
-        if (document.body) {
-            document.body.appendChild(notification);
-            
-            // 5초 후 제거
-            setTimeout(() => {
-                if (notification.parentNode) {
-                    notification.parentNode.removeChild(notification);
-                }
-            }, 5000);
-        }
-    }
+        const textColor = '#1F2937';
 
-    updateTradeDisplay() {
-        const container = document.getElementById('whale-trades-container');
-        if (!container) return;
+        const sideIcon = side === 'buy'
+            ? `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M7 14l5-5 5 5H7z"></path></svg>`
+            : `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M7 10l5 5 5-5H7z"></path></svg>`;
 
-        container.innerHTML = '';
-        
-        this.trades.forEach(trade => {
-            const tradeElement = this.createTradeElement(trade);
-            container.appendChild(tradeElement);
-        });
-    }
+        const timeAgo = this.formatTimeAgo(timestamp);
 
-    createTradeElement(trade) {
-        const li = document.createElement('li');
-        li.className = `trade trade-${trade.exchange.toLowerCase()} trade-${trade.side} trade-level-${trade.level}`;
-        li.style.cssText = this.getTradeStyles(trade);
-        
-        // 1M 이상 거래에 애니메이션 클래스 추가
-        if (trade.value >= 1000000) {
-            li.classList.add('mega-whale-animation');
-        }
-        
-        const exchangeIcon = this.showLogos ? 
-            `<div class="trade-exchange-icon">${this.exchanges[trade.exchange]?.icon || '📊'}</div>` : '';
-        
-        const priceDisplay = this.showPrices ? 
-            `<div class="trade-price">$${trade.price.toLocaleString()}</div>` : '';
-        
-        const timeDisplay = this.showTimeAgo ? 
-            `<div class="trade-time">${this.formatTimeAgo(trade.timestamp)}</div>` : '';
-        
-        li.innerHTML = `
-            ${exchangeIcon}
-            ${priceDisplay}
-            <div class="trade-amount">
-                <span class="trade-amount-quote">$${this.formatAmount(trade.value)}</span>
-            </div>
-            ${timeDisplay}
-        `;
-        
-        return li;
-    }
-
-    getTradeStyles(trade) {
-        const threshold = this.thresholds.find(t => t.level === trade.level);
-        const color = trade.side === 'buy' ? threshold.buyColor : threshold.sellColor;
-        
         return `
-            background-color: ${color};
-            color: ${trade.side === 'buy' ? '#2d5a2d' : '#8b0000'};
-            font-weight: ${trade.level >= 2 ? 'bold' : 'normal'};
-            font-size: ${1 + trade.level * 0.1}em;
-            box-shadow: ${trade.level >= 2 ? '0 0 10px rgba(0,0,0,0.3)' : 'none'};
+            <li class="whale-trade-item" style="background-color: ${bgColor}; color: ${textColor};">
+                <div class="trade-icon">${sideIcon}</div>
+                <div class="trade-exchange">
+                    <img src="img/exchanges/${exchange.toLowerCase()}.svg" alt="${exchange}" width="16" height="16" onerror="this.onerror=null; this.src='https://assets.coincall.io/v3/image/exchange/${exchange.toLowerCase()}.svg';">
+                </div>
+                <div class="trade-price">${price.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}</div>
+                <div class="trade-value">${this.formatValue(value)}</div>
+                <div class="trade-time">${timeAgo}</div>
+            </li>
         `;
     }
 
-    formatAmount(amount) {
-        if (amount >= 1000000) {
-            return (amount / 1000000).toFixed(1) + 'M';
-        } else if (amount >= 1000) {
-            return (amount / 1000).toFixed(1) + 'K';
+    formatValue(value) {
+        if (value >= 1000000) {
+            return `$${(value / 1000000).toFixed(1)} M`;
         }
-        return amount.toLocaleString();
-    }
-
-    formatTime(timestamp) {
-        const date = new Date(timestamp);
-        return date.toLocaleTimeString();
+        if (value >= 1000) {
+            return `$${(value / 1000).toFixed(1)} K`;
+        }
+        return `$${value.toFixed(0)}`;
     }
 
     formatTimeAgo(timestamp) {
         const now = Date.now();
-        const diff = now - timestamp;
-        
-        if (diff < 60000) {
-            return Math.floor(diff / 1000) + 's';
-        } else if (diff < 3600000) {
-            return Math.floor(diff / 60000) + 'm';
-        } else {
-            return Math.floor(diff / 3600000) + 'h';
+        const seconds = Math.floor((now - timestamp) / 1000);
+
+        if (seconds < 60) {
+            return `${seconds}s`;
         }
+        const minutes = Math.floor(seconds / 60);
+        return `${minutes}m`;
+    }
+
+    formatTime(timestamp) {
+        const date = new Date(timestamp);
+        return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}:${date.getSeconds().toString().padStart(2, '0')}`;
+    }
+
+    updateStats() {
+        // This function is no longer needed as the stats elements are removed.
     }
 
     start() {
         this.isTracking = true;
-        console.log('Whale tracker started');
+        this.connectWebSockets();
+        
+        // 10초마다 거래소별 통계 출력
+        this.statsInterval = setInterval(() => {
+            this.logExchangeStats();
+        }, 10000);
     }
 
     stop() {
         this.isTracking = false;
-        Object.values(this.connections).forEach(ws => ws.close());
-        this.connections = {};
-        console.log('Whale tracker stopped');
+        this.closeAllConnections();
+        if (this.statsInterval) {
+            clearInterval(this.statsInterval);
+            this.statsInterval = null;
+        }
     }
 
-    refresh() {
-        console.log('Refreshing whale tracker...');
-        this.trades = [];
-        this.updateTradeDisplay();
+    updateSymbol(newSymbol) {
+       // This function will be replaced by a more generic updateSettings function
+       console.warn("updateSymbol is deprecated. Use updateSettings instead.");
     }
 
-    updateSettings(newSettings) {
-        this.settings = { ...this.settings, ...newSettings };
-        this.audioThreshold = this.settings.whaleBtcThreshold ? this.settings.whaleBtcThreshold * 1000 : 100000;
-        this.muted = !this.settings.enableSound;
-    }
-
-    getStats() {
-        const totalTrades = this.trades.length;
-        const totalValue = this.trades.reduce((sum, trade) => sum + trade.value, 0);
-        const buyTrades = this.trades.filter(trade => trade.side === 'buy').length;
-        const sellTrades = this.trades.filter(trade => trade.side === 'sell').length;
-        
-        return {
-            totalTrades,
-            totalValue,
-            buyTrades,
-            sellTrades,
-            averageValue: totalTrades > 0 ? totalValue / totalTrades : 0
-        };
-    }
-
-    getWhaleTransactions() {
-        return this.whaleTrades;
-    }
-
-    waitForContainer() {
-        return new Promise((resolve, reject) => {
-            let retries = 0;
-            const interval = setInterval(() => {
-                const container = document.getElementById('whale-trades-container');
-                if (container) {
-                    clearInterval(interval);
-                    resolve(container);
-                } else {
-                    retries++;
-                    if (retries > 5) {
-                        clearInterval(interval);
-                        reject(new Error('Failed to find whale-trades-container after 5 retries'));
-                    }
-                }
-            }, 500);
+    closeAllConnections() {
+        Object.values(this.connections).forEach(ws => {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.close();
+            }
         });
+        this.connections = {};
+    }
+
+    updateSettings(newMarkets) {
+        this.markets = newMarkets;
+        localStorage.setItem('whaleTrackerMarkets', JSON.stringify(this.markets));
+        this.connectWebSockets();
+    }
+
+    // --- UI and Settings Panel Logic ---
+
+    openSettingsModal() {
+        const modal = document.getElementById('whale-settings-modal');
+        const listEl = document.getElementById('whale-settings-list');
+        if (!modal || !listEl) return;
+
+        listEl.innerHTML = this.markets.map(market => `
+            <div class="market-setting-item" data-market-id="${market.id}">
+                <div class="market-info">
+                    <span class="exchange-name">${market.exchange} <span class="market-type">${market.type}</span></span>
+                    <span class="market-symbol">${market.symbol}</span>
+                </div>
+                <div class="market-controls">
+                    <div class="threshold-slider">
+                        <label>최소금액: <span class="threshold-value">$${(market.threshold / 1000)}k</span></label>
+                        <input type="range" min="10000" max="1000000" step="10000" value="${market.threshold}" class="slider">
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" ${market.enabled ? 'checked' : ''}>
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+            </div>
+        `).join('');
+
+        modal.style.display = 'flex';
+        this.addSettingsEventListeners();
+    }
+
+    addSettingsEventListeners() {
+        document.getElementById('close-whale-settings')?.addEventListener('click', () => this.closeSettingsModal());
+        document.getElementById('save-whale-settings')?.addEventListener('click', () => this.saveSettings());
+        
+        document.querySelectorAll('.market-setting-item .slider').forEach(slider => {
+            slider.addEventListener('input', (e) => {
+                const valueEl = e.target.previousElementSibling.querySelector('.threshold-value');
+                valueEl.textContent = `$${(e.target.value / 1000)}k`;
+            });
+        });
+    }
+
+    closeSettingsModal() {
+        const modal = document.getElementById('whale-settings-modal');
+        if(modal) modal.style.display = 'none';
+    }
+
+    saveSettings() {
+        const newMarkets = [...this.markets];
+        document.querySelectorAll('.market-setting-item').forEach(item => {
+            const marketId = item.dataset.marketId;
+            const market = newMarkets.find(m => m.id === marketId);
+            if (market) {
+                market.enabled = item.querySelector('input[type="checkbox"]').checked;
+                market.threshold = parseInt(item.querySelector('input[type="range"]').value, 10);
+            }
+        });
+
+        this.updateSettings(newMarkets);
+        this.closeSettingsModal();
+    }
+
+    // 거래소별 통계 출력 함수 추가
+    logExchangeStats() {
+        console.log('=== Exchange Statistics (Last 10 seconds) ===');
+        Object.entries(this.exchangeStats).forEach(([exchange, stats]) => {
+            console.log(`${exchange}: ${stats.count} trades, Total: $${stats.totalValue.toLocaleString()}`);
+        });
+        console.log('==========================================');
+        
+        // 통계 초기화
+        this.exchangeStats = {};
     }
 }
 
 // CSS 스타일 추가
 const whaleTrackerStyles = `
 <style>
-/* Advanced Whale Tracker CSS - AGGR Style */
+/* Advanced Whale Tracker - New UI */
+:root {
+    --long-color: #16a34a;
+    --long-bg: rgba(22, 163, 74, 0.15);
+    --long-bg-highlight: rgba(22, 163, 74, 0.3);
+    --short-color: #dc2626;
+    --short-bg: rgba(220, 38, 38, 0.15);
+    --short-bg-highlight: rgba(220, 38, 38, 0.3);
+}
 
-/* Main Container */
 .whale-trades-container {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background:rgb(255, 255, 255);
-    color: #ffffff;
-    border-radius: 8px;
+    color: #e5e7eb; /* Light gray text */
     padding: 0;
     margin: 0;
     overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    position: relative;
+    background-color:rgb(255, 255, 255); /* Dark background */
 }
 
-/* Trade List */
 .whale-trades-container ul {
     list-style: none;
     margin: 0;
     padding: 0;
-    overflow-y: auto;
-    max-height: 400px;
-    scrollbar-width: thin;
-    scrollbar-color: #333 #1a1a1a;
-    flex: 1;
 }
 
-.whale-trades-container ul::-webkit-scrollbar {
-    width: 6px;
-}
-
-.whale-trades-container ul::-webkit-scrollbar-track {
-    background: #1a1a1a;
-}
-
-.whale-trades-container ul::-webkit-scrollbar-thumb {
-    background: #333;
-    border-radius: 3px;
-}
-
-.whale-trades-container ul::-webkit-scrollbar-thumb:hover {
-    background: #555;
-}
-
-/* Individual Trade Items */
-.trade {
+.whale-trade-item {
     display: flex;
     align-items: center;
     padding: 8px 12px;
-    margin: 2px 0;
-    border-radius: 4px;
-    transition: all 0.2s ease;
-    position: relative;
-    font-size: 0.875rem;
-    line-height: 1.4;
-    border-left: 3px solid transparent;
-    animation: tradeSlideIn 0.3s ease-out;
-    gap: 8px;
+    border-bottom: 1px solid #1f2937; /* Slightly lighter border */
+    font-size: 14px;
+    font-weight: 500;
 }
 
-.trade:hover {
-    transform: translateX(2px);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-}
+.trade-item.long { background-color: var(--long-bg); }
+.trade-item.short { background-color: var(--short-bg); }
 
-/* Trade Levels */
-.trade-level-0 {
-    font-size: 0.875rem;
-    opacity: 0.8;
-}
-
-.trade-level-1 {
-    font-size: 1rem;
-    opacity: 0.9;
-}
-
-.trade-level-2 {
-    font-size: 1.125rem;
-    font-weight: 600;
-    opacity: 1;
-    box-shadow: 0 0 10px rgba(0,0,0,0.3);
-}
-
-.trade-level-3 {
-    font-size: 1.25rem;
-    font-weight: 700;
-    opacity: 1;
-    box-shadow: 0 0 20px rgba(0,0,0,0.5);
-    animation: whalePulse 2s infinite;
-}
-
-/* Mega Whale Animation for 1M+ trades */
-.mega-whale-animation {
-    animation: megaWhaleGlow 3s ease-in-out infinite;
-    background: linear-gradient(90deg, rgba(255, 215, 0, 0.1) 0%, rgba(255, 215, 0, 0.05) 100%);
-    border-left-color: #ffd700 !important;
-}
-
-/* Trade Side Colors */
-.trade-buy {
-    background: linear-gradient(90deg, rgba(34, 197, 94, 0.1) 0%, rgba(34, 197, 94, 0.05) 100%);
-    border-left-color: #22c55e;
-    color: #22c55e;
-}
-
-.trade-sell {
-    background: linear-gradient(90deg, rgba(239, 68, 68, 0.1) 0%, rgba(239, 68, 68, 0.05) 100%);
-    border-left-color: #ef4444;
-    color: #ef4444;
-}
-
-/* Trade Content Layout */
-.trade-exchange-icon {
+.trade-icon {
     width: 20px;
-    height: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-}
-
-.trade-exchange-icon svg {
-    width: 16px;
-    height: 16px;
-    display: block;
+    font-size: 16px;
+    text-align: center;
 }
 
 .trade-exchange {
-    font-weight: 600;
-    min-width: 80px;
-    margin-right: 12px;
+    flex-grow: 1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.trade-exchange img {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
 }
 
 .trade-price {
-    font-weight: 700;
-    min-width: 80px;
+    width: 100px;
     text-align: right;
-    flex-shrink: 0;
+    font-weight: 700;
+    font-size: 15px;
 }
 
-.trade-amount {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-}
-
-.trade-amount-quote {
-    font-weight: 600;
-    font-size: 1.1em;
-}
-
-.trade-amount-base {
-    font-size: 0.8em;
-    opacity: 0.7;
+.trade-value {
+    width: 100px;
+    text-align: right;
+    font-weight: 700;
+    font-size: 15px;
 }
 
 .trade-time {
-    font-size: 0.75em;
-    opacity: 0.6;
-    min-width: 30px;
+    width: 40px;
     text-align: right;
-    flex-shrink: 0;
+    color: #9ca3af; /* Muted color for time */
+    font-size: 13px;
 }
 
-/* Whale Alerts */
-.whale-alert {
+/* Highlight styles */
+.trade-item.whale {
+    /* Optional: style for 500k+ trades */
+}
+
+.trade-item.super-whale {
+    font-weight: 700;
+}
+.trade-item.super-whale.long { background-color: var(--long-bg-highlight); }
+.trade-item.super-whale.short { background-color: var(--short-bg-highlight); }
+
+.trade-item.mega-whale {
+    font-weight: 700;
+    border-left: 4px solid;
+}
+.trade-item.mega-whale.long {
+    background: linear-gradient(90deg, rgba(34, 197, 94, 0.4) 0%, var(--long-bg-highlight) 100%);
+    border-left-color: #4ade80;
+}
+.trade-item.mega-whale.short {
+    background: linear-gradient(90deg, rgba(239, 68, 68, 0.4) 0%, var(--short-bg-highlight) 100%);
+    border-left-color: #f87171;
+}
+
+/* --- Light Mode Styles --- */
+body.light-mode .whale-trades-container {
+    background-color: #ffffff;
+    color: #1f2937;
+}
+
+body.light-mode .whale-trade-item {
+    border-bottom-color: #f3f4f6;
+}
+
+body.light-mode {
+    --long-color: #166534;
+    --long-bg: #f0fdf4;
+    --long-bg-highlight: #dcfce7;
+    --short-color: #991b1b;
+    --short-bg: #fef2f2;
+    --short-bg-highlight: #fee2e2;
+}
+
+body.light-mode .trade-item.long .trade-value,
+body.light-mode .trade-item.short .trade-value {
+    color: #111827;
+}
+
+body.light-mode .trade-price {
+    color: #374151;
+}
+
+body.light-mode .trade-time {
+    color: #6b7280;
+}
+
+/* --- Settings Modal Styles --- */
+.modal-overlay {
     position: fixed;
-    top: 20px;
-    right: 20px;
-    background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
-    border: 2px solid;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+.modal-content {
+    background-color: #1f2937;
+    padding: 20px;
     border-radius: 8px;
-    padding: 16px;
-    min-width: 300px;
-    max-width: 400px;
-    z-index: 10000;
-    animation: alertSlideIn 0.5s ease-out;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+    width: 90%;
+    max-width: 600px;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
 }
-
-.whale-alert-buy {
-    border-color: #22c55e;
-    box-shadow: 0 8px 32px rgba(34, 197, 94, 0.2);
-}
-
-.whale-alert-sell {
-    border-color: #ef4444;
-    box-shadow: 0 8px 32px rgba(239, 68, 68, 0.2);
-}
-
-.whale-alert-level-2 {
-    border-width: 3px;
-    transform: scale(1.05);
-}
-
-.whale-alert-level-3 {
-    border-width: 4px;
-    transform: scale(1.1);
-    animation: whaleAlertPulse 1s infinite;
-}
-
-.whale-alert-content {
-    color: #ffffff;
-}
-
-.whale-alert-header {
+.modal-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 8px;
-    font-weight: 700;
+    border-bottom: 1px solid #374151;
+    padding-bottom: 10px;
+    margin-bottom: 15px;
 }
-
-.whale-alert-exchange {
-    font-size: 1.1em;
+.modal-header h2 { margin: 0; }
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    color: #9ca3af;
+    cursor: pointer;
 }
-
-.whale-alert-side {
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 0.8em;
-    font-weight: 700;
-    text-transform: uppercase;
+.modal-body {
+    overflow-y: auto;
+    flex-grow: 1;
 }
-
-.whale-alert-buy .whale-alert-side {
-    background: #22c55e;
-    color: #000;
-}
-
-.whale-alert-sell .whale-alert-side {
-    background: #ef4444;
-    color: #fff;
-}
-
-.whale-alert-details {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 8px;
-}
-
-.whale-alert-price {
-    font-size: 1.5em;
-    font-weight: 700;
-}
-
-.whale-alert-amount {
-    font-size: 1.2em;
-    font-weight: 600;
-    opacity: 0.9;
-}
-
-.whale-alert-time {
-    font-size: 0.8em;
-    opacity: 0.6;
+.modal-footer {
+    padding-top: 15px;
+    border-top: 1px solid #374151;
     text-align: right;
 }
 
-/* Animations */
-@keyframes tradeSlideIn {
-    from {
-        opacity: 0;
-        transform: translateX(-20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateX(0);
-    }
-}
-
-@keyframes whalePulse {
-    0%, 100% {
-        box-shadow: 0 0 20px rgba(0,0,0,0.5);
-    }
-    50% {
-        box-shadow: 0 0 30px rgba(34, 197, 94, 0.3);
-    }
-}
-
-@keyframes megaWhaleGlow {
-    0%, 100% {
-        box-shadow: 0 0 15px rgba(255, 215, 0, 0.3);
-        transform: scale(1);
-    }
-    50% {
-        box-shadow: 0 0 25px rgba(255, 215, 0, 0.6);
-        transform: scale(1.02);
-    }
-}
-
-@keyframes alertSlideIn {
-    from {
-        opacity: 0;
-        transform: translateX(100px) scale(0.8);
-    }
-    to {
-        opacity: 1;
-        transform: translateX(0) scale(1);
-    }
-}
-
-@keyframes whaleAlertPulse {
-    0%, 100% {
-        box-shadow: 0 8px 32px rgba(0,0,0,0.3);
-    }
-    50% {
-        box-shadow: 0 8px 32px rgba(34, 197, 94, 0.4);
-    }
-}
-
-/* Exchange-specific styling */
-.trade-binance {
-    border-left-color: #f3ba2f;
-}
-
-.trade-binance_futures {
-    border-left-color: #f3ba2f;
-}
-
-.trade-bybit {
-    border-left-color: #00d4aa;
-}
-
-.trade-okx {
-    border-left-color: #000000;
-}
-
-.trade-bitget {
-    border-left-color: #00c2ff;
-}
-
-.trade-mexc {
-    border-left-color: #ff6b35;
-}
-
-/* Mega whale trades get special treatment */
-.mega-whale-animation.trade-binance,
-.mega-whale-animation.trade-binance_futures {
-    border-left-color: #ffd700 !important;
-}
-
-.mega-whale-animation.trade-bybit {
-    border-left-color: #ffd700 !important;
-}
-
-.mega-whale-animation.trade-okx {
-    border-left-color: #ffd700 !important;
-}
-
-.mega-whale-animation.trade-bitget {
-    border-left-color: #ffd700 !important;
-}
-
-.mega-whale-animation.trade-mexc {
-    border-left-color: #ffd700 !important;
-}
-
-/* Loading States */
-.whale-loading {
+.market-setting-item {
     display: flex;
+    justify-content: space-between;
     align-items: center;
-    justify-content: center;
-    padding: 40px;
-    color: #666;
+    padding: 12px 8px;
+    border-bottom: 1px solid #374151;
 }
+.market-info .exchange-name { font-weight: bold; font-size: 1.1em; }
+.market-info .market-type { font-size: 0.8em; color: #9ca3af; padding: 2px 5px; background-color: #374151; border-radius: 4px; margin-left: 5px;}
+.market-info .market-symbol { color: #d1d5db; }
+.market-controls { display: flex; align-items: center; gap: 20px; }
+.threshold-slider label { font-size: 0.9em; color: #9ca3af; }
+.threshold-slider .threshold-value { font-weight: bold; color: #e5e7eb;}
+.threshold-slider input[type="range"] { width: 120px; }
 
-.whale-loading::after {
-    content: '';
-    width: 20px;
-    height: 20px;
-    border: 2px solid #333;
-    border-top: 2px solid #22c55e;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-    margin-left: 10px;
-}
+/* Switch Toggle */
+.switch { position: relative; display: inline-block; width: 50px; height: 28px; }
+.switch input { opacity: 0; width: 0; height: 0; }
+.slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #374151; transition: .4s; }
+.slider.round { border-radius: 28px; }
+.slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
+input:checked + .slider { background-color: #22c55e; }
+input:focus + .slider { box-shadow: 0 0 1px #22c55e; }
+input:checked + .slider:before { transform: translateX(22px); }
 
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
+/* --- Light Mode for Modal --- */
+body.light-mode .modal-content { background-color: #f9fafb; color: #111827; }
+body.light-mode .modal-header, body.light-mode .modal-footer, body.light-mode .market-setting-item { border-color: #e5e7eb; }
+body.light-mode .modal-header h2 { color: #111827; }
+body.light-mode .market-info .market-symbol { color: #374151; }
+body.light-mode .market-info .market-type { background-color: #e5e7eb; color: #4b5563; }
+body.light-mode .threshold-slider label { color: #6b7280; }
+body.light-mode .threshold-slider .threshold-value { color: #111827; }
+body.light-mode .slider { background-color: #ccc; }
+body.light-mode .slider:before { background-color: white; }
 
-/* Responsive Design */
-@media (max-width: 768px) {
-    .whale-trades-container {
-        font-size: 0.8rem;
-        max-height: 300px;
-    }
-    
-    .whale-trades-container ul {
-        max-height: 300px;
-    }
-    
-    .trade {
-        padding: 6px 8px;
-        gap: 6px;
-    }
-    
-    .trade-price {
-        min-width: 70px;
-        font-size: 0.9em;
-    }
-    
-    .trade-exchange-icon {
-        width: 18px;
-        height: 18px;
-    }
-    
-    .trade-exchange-icon svg {
-        width: 14px;
-        height: 14px;
-    }
-    
-    .whale-alert {
-        top: 10px;
-        right: 10px;
-        left: 10px;
-        min-width: auto;
-        max-width: none;
-    }
-}
-
-@media (max-width: 480px) {
-    .whale-trades-container {
-        max-height: 250px;
-    }
-    
-    .whale-trades-container ul {
-        max-height: 250px;
-    }
-    
-    .trade {
-        flex-direction: row;
-        align-items: center;
-        gap: 4px;
-        padding: 4px 6px;
-    }
-    
-    .trade-amount {
-        flex-direction: row;
-        gap: 4px;
-    }
-    
-    .trade-amount-quote {
-        font-size: 1em;
-    }
-    
-    .whale-alert {
-        padding: 12px;
-    }
-    
-    .whale-alert-price {
-        font-size: 1.2em;
-    }
-    
-    .whale-alert-amount {
-        font-size: 1em;
-    }
-}
 </style>
 `;
 
-// CSS 스타일을 문서에 추가
-if (document.head) {
-    document.head.insertAdjacentHTML('beforeend', whaleTrackerStyles);
-}
+document.head.insertAdjacentHTML('beforeend', whaleTrackerStyles);
 
 // 전역 객체로 내보내기
 window.WhaleTracker = WhaleTracker;

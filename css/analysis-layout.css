@@ -39,6 +39,7 @@ html, body {
     align-items: center;
     padding: 0 1.2rem;
     height: 60px;
+    flex-shrink: 0;
 }
 
 .controls-title {

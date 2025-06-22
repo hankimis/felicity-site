@@ -93,42 +93,31 @@
             <!-- Dashboard Grid -->
             <div class="grid-stack" id="analysis-dashboard">
                 <!-- 고래 탐지 카드 -->
-                <div class="grid-stack-item" gs-x="0" gs-y="0" gs-w="2" gs-h="5" gs-min-w="2" gs-min-h="2">
+                <div class="grid-stack-item" gs-x="0" gs-y="0" gs-w="2" gs-h="3" gs-min-w="2" gs-min-h="3">
                     <div class="grid-stack-item-content analysis-card whale-card" id="whale-card">
                         <div class="card-header">
                             <div class="card-title">
-                                <i class="fas fa-whale"></i>
+                                <i class="fas fa-water"></i>
                                 <h3>고래 탐지</h3>
                             </div>
                             <div class="card-controls">
-                                <select id="whale-symbol" class="symbol-selector">
+                                <button id="whale-settings-btn" class="control-btn" title="설정"><i class="fas fa-cog"></i></button>
+                                <select id="whale-symbol-selector" class="symbol-selector">
                                     <option value="BTCUSDT">BTC/USDT</option>
                                     <option value="ETHUSDT">ETH/USDT</option>
-                                    <option value="ADAUSDT">ADA/USDT</option>
-                                    <option value="SOLUSDT">SOL/USDT</option>
                                 </select>
                             </div>
                         </div>
                         <div class="card-content">
-                            <div class="whale-stats">
-                                <div class="stat-item">
-                                    <span class="stat-label">대형 거래</span>
-                                    <span class="stat-value" id="large-trades">0</span>
-                                </div>
-                                <div class="stat-item">
-                                    <span class="stat-label">누적 거래량</span>
-                                    <span class="stat-value" id="total-volume">$0</span>
-                                </div>
-                            </div>
                             <div class="whale-trades-container" id="whale-trades-container">
-                                <!-- 고래 거래 목록이 여기에 동적으로 추가됩니다 -->
+                                <!-- Dynamic whale trades -->
                             </div>
                         </div>
                     </div>
                 </div>
 
                 <!-- 실시간 거래 카드 -->
-                <div class="grid-stack-item" gs-x="2" gs-y="0" gs-w="2" gs-h="5" gs-min-w="2" gs-min-h="2">
+                <div class="grid-stack-item" gs-x="2" gs-y="0" gs-w="2" gs-h="3" gs-min-w="2" gs-min-h="3">
                     <div class="grid-stack-item-content analysis-card realtime-card" id="realtime-card">
                         <div class="card-header">
                             <div class="card-title">
@@ -273,7 +262,7 @@
                 </div>
 
                 <!-- 시장 히트맵 카드 -->
-                <div class="grid-stack-item" gs-x="0" gs-y="12" gs-w="2" gs-h="12" gs-min-w="2" gs-min-h="2">
+                <div class="grid-stack-item" gs-x="0" gs-y="12" gs-w="3" gs-h="3" gs-min-w="3" gs-min-h="3">
                     <div class="grid-stack-item-content analysis-card heatmap-card" id="heatmap-card">
                         <div class="card-header">
                             <div class="card-title">
@@ -290,7 +279,7 @@
                 </div>
 
                 <!-- 청산 지도 카드 -->
-                <div class="grid-stack-item" gs-x="2" gs-y="12" gs-w="2" gs-h="12" gs-min-w="2" gs-min-h="2">
+                <div class="grid-stack-item" gs-x="2" gs-y="12" gs-w="2" gs-h="2" gs-min-w="2" gs-min-h="2">
                     <div class="grid-stack-item-content analysis-card liquidation-card" id="liquidation-card">
                         <div class="card-header">
                             <div class="card-title">

@@ -54,7 +54,7 @@ class AnalysisDashboard {
             // 각 모듈 초기화
             this.modules.whaleTracker = new WhaleTracker({
                 symbol: 'BTCUSDT',
-                largeTradeThreshold: 500000,
+                largeTradeThreshold: 100000,
                 enableSound: false
             });
 
@@ -83,9 +83,7 @@ class AnalysisDashboard {
                 symbol: 'BTCUSDT'
             });
 
-            this.modules.realtimeTrades = new RealtimeTrades({
-                symbol: 'BTCUSDT'
-            });
+            this.modules.realtimeTrades = new RealtimeTrades();
 
             console.log('✅ All analysis modules initialized');
         } catch (error) {
@@ -103,9 +101,17 @@ class AnalysisDashboard {
             this.openSettings();
         });
         
+        // Whale tracker settings button
+        document.getElementById('whale-settings-btn')?.addEventListener('click', () => {
+            this.modules.whaleTracker?.openSettingsModal();
+        });
+        
         // Symbol selectors
-        document.getElementById('whale-symbol')?.addEventListener('change', (e) => {
-            this.updateSymbol('whale', e.target.value);
+        document.getElementById('whale-symbol-selector')?.addEventListener('change', (e) => {
+            // This now acts as a filter, not a symbol changer for the tracker
+            // The actual connections are managed in the settings modal.
+            // We can implement a UI filter based on this value later if needed.
+            console.log(`UI Symbol filter changed to: ${e.target.value}`);
         });
         
         document.getElementById('realtime-symbol')?.addEventListener('change', (e) => {
@@ -243,10 +249,6 @@ class AnalysisDashboard {
 
     updateAllDisplays() {
         // 각 모듈의 데이터를 대시보드 데이터에 반영
-        if (this.modules.whaleTracker) {
-            this.data.whales = this.modules.whaleTracker.getWhaleTransactions() || [];
-        }
-        
         if (this.modules.technicalIndicators) {
             this.data.indicators = this.modules.technicalIndicators.getIndicators() || {};
         }
@@ -263,43 +265,25 @@ class AnalysisDashboard {
             this.data.orderbook = this.modules.orderbookTracker.getOrderbook() || { asks: [], bids: [] };
         }
         
-        if (this.modules.realtimeTrades) {
-            this.data.trades = this.modules.realtimeTrades.getTrades() || [];
-        }
-        
-        if (this.modules.marketHeatmap) {
-            this.data.heatmap = this.modules.marketHeatmap.getHeatmapData() || [];
-        }
-        
         if (this.modules.liquidationMap) {
             this.data.liquidations = this.modules.liquidationMap.getLiquidations() || [];
         }
         
-        // 모든 디스플레이 업데이트
-        this.updateWhaleDisplay();
-        this.updateRealtimeDisplay();
+        // 각 디스플레이 업데이트
         this.updateIndicatorsDisplay();
         this.updateSentimentDisplay();
         this.updateLongShortDisplay();
         this.updateOrderbookDisplay();
-        this.updateHeatmapDisplay();
         this.updateLiquidationDisplay();
+        this.updateRealtimeDisplay();
+        
+        // 실시간 통계 업데이트
+        this.updateStats();
     }
     
     // Update Display Methods
     updateWhaleDisplay() {
-        const container = document.getElementById('whale-trades-container');
-        if (!container) return;
-        
-        if (this.data.whales.length === 0) {
-            container.innerHTML = '<div class="no-data"><i class="fas fa-search"></i><p>고래 거래 데이터를 로딩 중...</p></div>';
-            return;
-        }
-        
-        container.innerHTML = this.data.whales.map(whale => this.createWhaleHTML(whale)).join('');
-        
-        // Update stats
-        this.updateWhaleStats();
+        // 이 함수는 더 이상 사용되지 않습니다. WhaleTracker가 자체적으로 업데이트합니다.
     }
     
     updateRealtimeDisplay() {
@@ -339,52 +323,10 @@ class AnalysisDashboard {
     }
     
     updateIndicatorsDisplay() {
-        const container = document.getElementById('indicators-list');
-        if (!container) return;
-        
-        const indicatorsHTML = AnalysisConfig.indicators.map(indicator => {
-            const data = this.data.indicators[indicator.key];
-            let value = '계산 중...';
-            let status = '계산 중...';
-            let signalClass = 'calculating';
-            
-            if (data) {
-                if (typeof data.value === 'number') {
-                    value = data.value.toFixed(2);
-                    status = data.status || 'N/A';
-                    signalClass = this.getSignalClass(status);
-                } else if (data.k !== undefined) {
-                    // Stochastic, StochRSI 등의 경우
-                    value = data.k.toFixed(2);
-                    status = data.status || 'N/A';
-                    signalClass = this.getSignalClass(status);
-                } else if (data.histogram !== undefined) {
-                    // MACD의 경우
-                    value = data.histogram.toFixed(4);
-                    status = data.status || 'N/A';
-                    signalClass = this.getSignalClass(status);
-                } else {
-                    status = data.status || 'N/A';
-                    signalClass = this.getSignalClass(status);
-                }
-            }
-            
-            return `
-                <div class="indicator-item">
-                    <div class="indicator-info">
-                        <span class="indicator-name">${indicator.name}</span>
-                        <span class="indicator-desc">${indicator.description}</span>
-                    </div>
-                    <span class="indicator-value ${signalClass}">
-                        ${status === '계산 중...' ? '⏳ ' : ''}${status} (${value})
-                    </span>
-                </div>
-            `;
-        }).join('');
-        
-        container.innerHTML = indicatorsHTML;
-        
-        this.updateIndicatorSummary();
+        // 기술지표 모듈의 updateDisplay 메서드 직접 호출
+        if (this.modules.technicalIndicators) {
+            this.modules.technicalIndicators.updateDisplay();
+        }
     }
     
     updateSentimentDisplay() {
@@ -440,36 +382,17 @@ class AnalysisDashboard {
         }
     }
     
-    updateHeatmapDisplay() {
-        const container = document.getElementById('heatmap-container');
-        if (!container) return;
-        
-        container.innerHTML = this.data.heatmap.map(coin => {
-            const changeClass = coin.change > 0 ? 'positive' : coin.change < 0 ? 'negative' : 'neutral';
-            const backgroundColor = coin.change > 0 ? 
-                `rgba(16, 185, 129, ${Math.abs(coin.change) / 10})` : 
-                `rgba(239, 68, 68, ${Math.abs(coin.change) / 10})`;
-            
-            return `
-                <div class="heatmap-tile" style="background-color: ${backgroundColor}; flex: 1 1 calc(25% - 4px); min-height: 60px;">
-                    <div class="heatmap-symbol">${coin.symbol}</div>
-                    <div class="heatmap-change">${coin.change > 0 ? '+' : ''}${coin.change.toFixed(2)}%</div>
-                </div>
-            `;
-        }).join('');
-    }
-    
     updateLiquidationDisplay() {
-        const container = document.getElementById('liquidation-container');
-        if (!container) return;
+        const mapContainer = document.getElementById('liquidation-map-container');
+        if (!mapContainer) return;
         
         if (this.data.liquidations.length === 0) {
-            container.innerHTML = '<div class="no-data"><i class="fas fa-chart-line"></i><p>청산 데이터를 로딩 중...</p></div>';
+            mapContainer.innerHTML = '<div class="no-data"><i class="fas fa-chart-line"></i><p>청산 데이터를 로딩 중...</p></div>';
             return;
         }
         
         // 청산 데이터 표시 로직
-        container.innerHTML = this.data.liquidations.map(liquidation => `
+        mapContainer.innerHTML = this.data.liquidations.map(liquidation => `
             <div class="liquidation-item">
                 <span class="liquidation-price">$${liquidation.price}</span>
                 <span class="liquidation-amount">${liquidation.amount}</span>
@@ -527,53 +450,6 @@ class AnalysisDashboard {
             const totalVolume = this.data.whales.reduce((sum, whale) => sum + whale.usdValue, 0);
             totalVolumeElement.textContent = AnalysisUtils.formatCurrency(totalVolume);
         }
-    }
-    
-    updateIndicatorSummary() {
-        const container = document.getElementById('indicator-summary-container');
-        if (!container) return;
-        
-        const signals = Object.values(this.data.indicators).map(ind => this.getSignalClass(ind.status));
-        const bullishCount = signals.filter(s => s === 'bullish').length;
-        const bearishCount = signals.filter(s => s === 'bearish').length;
-        const total = bullishCount + bearishCount; // 중립은 제외
-        
-        if (total === 0) {
-            container.innerHTML = '';
-            return;
-        }
-        
-        const bullishRatio = bullishCount / total;
-        const bearishRatio = bearishCount / total;
-        
-        let overallSignal = 'NEUTRAL';
-        let majorColor = 'neutral';
-        if (bullishRatio > 0.6) {
-            overallSignal = 'STRONG BUY';
-            majorColor = 'bullish';
-        } else if (bullishRatio > 0.5) {
-            overallSignal = 'BUY';
-            majorColor = 'bullish';
-        } else if (bearishRatio > 0.6) {
-            overallSignal = 'STRONG SELL';
-            majorColor = 'bearish';
-        } else if (bearishRatio > 0.5) {
-            overallSignal = 'SELL';
-            majorColor = 'bearish';
-        }
-
-        container.innerHTML = `
-            <div class="summary-bar-container">
-                <div class="summary-bar-label bullish">${(bullishRatio * 100).toFixed(0)}% Bullish</div>
-                <div class="summary-bar">
-                    <div class="summary-bar-fill bullish" style="width: ${(bullishRatio * 100).toFixed(1)}%"></div>
-                </div>
-                <div class="summary-bar-label bearish">${(bearishRatio * 100).toFixed(0)}% Bearish</div>
-            </div>
-            <div class="overall-summary">
-                종합 신호: <span class="${majorColor}">${overallSignal}</span> ( ${bullishCount} <i class="fas fa-arrow-up bullish"></i> / ${bearishCount} <i class="fas fa-arrow-down bearish"></i> )
-            </div>
-        `;
     }
     
     updateSentimentGauge(value) {
