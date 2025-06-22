@@ -14,10 +14,20 @@
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     
-    <!-- Custom CSS -->
-    <link rel="stylesheet" href="css/style.css">
+    <!-- CSS Modules -->
+    <link rel="stylesheet" href="css/base/_reset.css">
+    <link rel="stylesheet" href="css/base/_variables.css">
+    <link rel="stylesheet" href="css/base/_base.css">
     <link rel="stylesheet" href="css/auth.css">
-    <link rel="stylesheet" href="analysis.css">
+    <link rel="stylesheet" href="css/analysis-base.css">
+    <link rel="stylesheet" href="css/analysis-layout.css">
+    <link rel="stylesheet" href="css/analysis-components.css">
+    <link rel="stylesheet" href="css/analysis-dashboard.css">
+    <link rel="stylesheet" href="css/analysis-responsive.css">
+    <link rel="stylesheet" href="css/components/_navbar.css">
+    <link rel="stylesheet" href="css/components/_modal.css">
+    <link rel="stylesheet" href="css/components/_buttons.css">
+    <link rel="stylesheet" href="css/components/_level.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
     <link rel="icon" type="image/png" href="/onbit/favicon-96x96.png" sizes="96x96">
     <link rel="icon" type="image/svg+xml" href="/onbit/favicon.svg">
@@ -38,27 +48,20 @@
     <!-- Plotly.js for advanced charts -->
     <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
     
-    <!-- Common Scripts -->
-    <script src="js/auth.js"></script>
-    <script src="js/level-system.js"></script>
-    <!-- Unified Header Loader -->
-    <script src="js/header-loader.js" defer></script>
-    
-    <!-- Analysis Modules -->
-    <script src="js/analysis/whale-tracker.js"></script>
-    <script src="js/analysis/longshort-tracker.js"></script>
-    <script src="js/analysis/realtime-trades.js"></script>
-    <script src="js/analysis/technical-indicators.js"></script>
-    <script src="js/analysis/sentiment-analysis.js"></script>
-    <script src="js/analysis/orderbook-tracker.js"></script>
-    <script src="js/analysis/market-heatmap.js"></script>
-    
     <!-- GridStack.js -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gridstack@9.3.0/dist/gridstack.min.css" />
     <script src="https://cdn.jsdelivr.net/npm/gridstack@9.3.0/dist/gridstack-all.js"></script>
     
-    <!-- Main Analysis Controller -->
-    <script src="js/analysis/analysis-controller.js"></script>
+    <!-- Common Scripts -->
+    <script src="js/auth.js"></script>
+    <script src="js/level-system.js"></script>
+    <script src="js/header-loader.js" defer></script>
+    
+    <!-- Analysis Configuration (전역 변수로 로드) -->
+    <script src="js/analysis-config.js"></script>
+    
+    <!-- All analysis modules are loaded via analysis-main.js -->
+    <script type="module" src="js/analysis-main.js"></script>
 </head>
 <body>
 
@@ -75,18 +78,7 @@
                         <span class="status-dot active"></span>
                         <span class="status-text">실시간 연결됨</span>
                     </div>
-                    <button id="layout-toggle" class="control-btn secondary">
-                        <i class="fas fa-edit"></i>
-                        <span>레이아웃 편집</span>
-                    </button>
-                    <button id="layout-reset" class="control-btn warning">
-                        <i class="fas fa-undo"></i>
-                        <span>초기화</span>
-                    </button>
-                    <button id="layout-save" class="control-btn success" style="display: none;">
-                        <i class="fas fa-save"></i>
-                        <span>저장</span>
-                    </button>
+                    <div id="layout-controls-container"></div>
                     <button id="refresh-all" class="control-btn primary">
                         <i class="fas fa-sync-alt"></i>
                         <span>새로고침</span>
@@ -99,369 +91,228 @@
             </div>
 
             <!-- Dashboard Grid -->
-            <div class="grid-stack grid-background" id="dashboard-grid">
-
-                <!-- 고래 탐지 카드 (2x4) - 왼쪽 상단 -->
-                <div class="grid-stack-item" gs-x="0" gs-y="0" gs-w="2" gs-h="4" gs-min-w="2" gs-min-h="3">
-                    <div class="grid-stack-item-content">
-                        <div class="dashboard-card whale-card" data-card-id="whale">
-                            <div class="card-header">
-                                <div class="card-title">
-                                    <i class="fas fa-whale"></i>
-                                    <h3>고래 탐지</h3>
+            <div class="grid-stack" id="analysis-dashboard">
+                <!-- 고래 탐지 카드 -->
+                <div class="grid-stack-item" gs-x="0" gs-y="0" gs-w="2" gs-h="5" gs-min-w="2" gs-min-h="2">
+                    <div class="grid-stack-item-content analysis-card whale-card" id="whale-card">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <i class="fas fa-whale"></i>
+                                <h3>고래 탐지</h3>
+                            </div>
+                            <div class="card-controls">
+                                <select id="whale-symbol" class="symbol-selector">
+                                    <option value="BTCUSDT">BTC/USDT</option>
+                                    <option value="ETHUSDT">ETH/USDT</option>
+                                    <option value="ADAUSDT">ADA/USDT</option>
+                                    <option value="SOLUSDT">SOL/USDT</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="card-content">
+                            <div class="whale-stats">
+                                <div class="stat-item">
+                                    <span class="stat-label">대형 거래</span>
+                                    <span class="stat-value" id="large-trades">0</span>
                                 </div>
-                                <div class="card-controls">
-                                    <select id="whale-symbol" class="symbol-selector">
-                                        <option value="BTCUSDT">BTC/USDT</option>
-                                        <option value="ETHUSDT">ETH/USDT</option>
-                                        <option value="ADAUSDT">ADA/USDT</option>
-                                        <option value="SOLUSDT">SOL/USDT</option>
-                                    </select>
+                                <div class="stat-item">
+                                    <span class="stat-label">누적 거래량</span>
+                                    <span class="stat-value" id="total-volume">$0</span>
                                 </div>
                             </div>
-                            <div class="card-content">
-                                <div class="whale-stats">
-                                    <div class="stat-item">
-                                        <span class="stat-label">대형 거래</span>
-                                        <span class="stat-value" id="large-trades">0</span>
-                                    </div>
-                                    <div class="stat-item">
-                                        <span class="stat-label">누적 거래량</span>
-                                        <span class="stat-value" id="total-volume">$0</span>
-                                    </div>
-                                </div>
-                                <div class="whale-trades-container" id="whale-trades-container">
-                                    <!-- 고래 거래 목록이 여기에 동적으로 추가됩니다 -->
+                            <div class="whale-trades-container" id="whale-trades-container">
+                                <!-- 고래 거래 목록이 여기에 동적으로 추가됩니다 -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 실시간 거래 카드 -->
+                <div class="grid-stack-item" gs-x="2" gs-y="0" gs-w="2" gs-h="5" gs-min-w="2" gs-min-h="2">
+                    <div class="grid-stack-item-content analysis-card realtime-card" id="realtime-card">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <i class="fas fa-chart-line"></i>
+                                <h3>실시간 거래</h3>
+                            </div>
+                            <div class="card-controls">
+                                <select id="realtime-symbol" class="symbol-selector">
+                                    <option value="BTCUSDT">BTC/USDT</option>
+                                    <option value="ETHUSDT">ETH/USDT</option>
+                                    <option value="ADAUSDT">ADA/USDT</option>
+                                    <option value="SOLUSDT">SOL/USDT</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="card-content">
+                            <div class="realtime-price" id="realtime-price">$0.00</div>
+                            <div class="realtime-trades" id="realtime-trades">
+                                <div class="trade-item">
+                                    <span class="trade-time">--:--:--</span>
+                                    <span class="trade-price">$0.00</span>
+                                    <span class="trade-size">0.000</span>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- 실시간 거래 카드 (6x8) - 오른쪽 상단 -->
-                <div class="grid-stack-item" gs-x="2" gs-y="0" gs-w="2" gs-h="4" gs-min-w="2" gs-min-h="3">
-                    <div class="grid-stack-item-content">
-                        <div class="dashboard-card realtime-card" data-card-id="realtime" draggable="false">
-                            <div class="card-header">
-                                <div class="card-title">
-                                    <i class="fas fa-chart-line"></i>
-                                    <h3>실시간 거래</h3>
-                                </div>
-                                <div class="card-controls">
-                                    <select id="realtime-symbol" class="symbol-selector">
-                                        <option value="BTCUSDT">BTC/USDT</option>
-                                        <option value="ETHUSDT">ETH/USDT</option>
-                                        <option value="ADAUSDT">ADA/USDT</option>
-                                        <option value="SOLUSDT">SOL/USDT</option>
-                                    </select>
-                                </div>
+                <!-- 오더북 카드 -->
+                <div class="grid-stack-item" gs-x="4" gs-y="0" gs-w="2" gs-h="3" gs-min-w="2" gs-min-h="2">
+                    <div class="grid-stack-item-content analysis-card orderbook-card" id="orderbook-card">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <i class="fas fa-list"></i>
+                                <h3>오더북</h3>
                             </div>
-                            <div class="card-content">
-                                <div class="realtime-price" id="realtime-price">$0.00</div>
-                                <div class="realtime-trades" id="realtime-trades">
-                                    <div class="trade-item">
-                                        <span class="trade-time">--:--:--</span>
-                                        <span class="trade-price">$0.00</span>
-                                        <span class="trade-size">0.000</span>
-                                    </div>
+                            <div class="card-controls">
+                                <select id="orderbook-symbol" class="symbol-selector">
+                                    <option value="BTCUSDT">BTC/USDT</option>
+                                    <option value="ETHUSDT">ETH/USDT</option>
+                                    <option value="ADAUSDT">ADA/USDT</option>
+                                    <option value="SOLUSDT">SOL/USDT</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="card-content">
+                            <div class="orderbook-container">
+                                <div class="orderbook-side asks">
+                                    <h4>매도</h4>
+                                    <div class="orderbook-orders" id="asks-orders"></div>
+                                </div>
+                                <div class="orderbook-side bids">
+                                    <h4>매수</h4>
+                                    <div class="orderbook-orders" id="bids-orders"></div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
-
-
-                <!-- 롱/숏 비율 카드 (4x6) - 중앙 중간 -->
-                <div class="grid-stack-item" gs-x="4" gs-y="2" gs-w="2" gs-h="2" gs-min-w="2" gs-min-h="2">
-                    <div class="grid-stack-item-content">
-                        <div class="dashboard-card longshort-card" data-card-id="longshort" draggable="false">
-                            <div class="card-header">
-                                <div class="card-title">
-                                    <i class="fas fa-balance-scale"></i>
-                                    <h3>롱/숏 비율</h3>
-                                </div>
-                                <div class="card-controls">
-                                    <select id="longshort-timeframe" class="timeframe-select">
-                                        <option value="5m">5분</option>
-                                        <option value="15m">15분</option>
-                                        <option value="1h" selected>1시간</option>
-                                        <option value="4h">4시간</option>
-                                        <option value="1d">1일</option>
-                                    </select>
-                                    <select id="longshort-symbol" class="symbol-selector">
-                                        <option value="BTCUSDT">BTC/USDT</option>
-                                        <option value="ETHUSDT">ETH/USDT</option>
-                                        <option value="ADAUSDT">ADA/USDT</option>
-                                        <option value="SOLUSDT">SOL/USDT</option>
-                                    </select>
+                
+                <!-- 기술지표 카드 -->
+                <div class="grid-stack-item" gs-x="6" gs-y="0" gs-w="4" gs-h="3" gs-min-w="2" gs-min-h="2">
+                    <div class="grid-stack-item-content analysis-card indicators-card" id="indicators-card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-chart-bar"></i> 기술지표</h3>
+                            <div class="header-controls">
+                                <div id="indicator-timeframe-selector" class="timeframe-selector">
+                                    <!-- Timeframe buttons will be dynamically inserted here -->
                                 </div>
                             </div>
-                            <div class="card-content">
-                                <div class="longshort-content">
-                                    <div class="ls-top">
-                                        <div id="longshort-ratio" class="ls-ratio">1.00</div>
-                                        <div id="ratio-status" class="ls-status">중립</div>
-                                    </div>
-                                    <div class="ls-gauge-track">
-                                        <div id="long-fill" class="ls-gauge-fill"></div>
-                                    </div>
-                                    <div class="ls-bottom">
-                                        <span id="long-percentage" class="ls-long-percent">50%</span>
-                                        <span id="short-percentage" class="ls-short-percent">50%</span>
-                                    </div>
-                                </div>
+                        </div>
+                        <div class="card-content">
+                            <div id="indicator-summary-container">
+                                <!-- Summary will be injected here -->
+                            </div>
+                            <div id="indicators-list" class="styled-scrollbar">
+                                <!-- indicator items will go here -->
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- 오더북 카드 (4x6) - 오른쪽 중간 -->
-                <div class="grid-stack-item" gs-x="6" gs-y="0" gs-w="2" gs-h="3" gs-min-w="2" gs-min-h="2">
-                    <div class="grid-stack-item-content">
-                        <div class="dashboard-card orderbook-card" data-card-id="orderbook" draggable="false">
-                            <div class="card-header">
-                                <div class="card-title">
-                                    <i class="fas fa-list"></i>
-                                    <h3>오더북</h3>
-                                </div>
-                                <div class="card-controls">
-                                    <select id="orderbook-symbol" class="symbol-selector">
-                                        <option value="BTCUSDT">BTC/USDT</option>
-                                        <option value="ETHUSDT">ETH/USDT</option>
-                                        <option value="ADAUSDT">ADA/USDT</option>
-                                        <option value="SOLUSDT">SOL/USDT</option>
-                                    </select>
-                                </div>
+                <!-- 롱/숏 비율 카드 -->
+                <div class="grid-stack-item" gs-x="4" gs-y="3" gs-w="2" gs-h="2" gs-min-w="2" gs-min-h="2">
+                    <div class="grid-stack-item-content analysis-card longshort-card" id="longshort-card">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <i class="fas fa-balance-scale"></i>
+                                <h3>롱/숏 비율</h3>
                             </div>
-                            <div class="card-content">
-                                <div class="orderbook-container">
-                                    <div class="orderbook-side asks">
-                                        <h4>매도</h4>
-                                        <div class="orderbook-orders" id="asks-orders"></div>
-                                    </div>
-                                    <div class="orderbook-side bids">
-                                        <h4>매수</h4>
-                                        <div class="orderbook-orders" id="bids-orders"></div>
-                                    </div>
+                            <div class="card-controls">
+                                <select id="longshort-timeframe" class="timeframe-select">
+                                    <option value="5m">5분</option>
+                                    <option value="15m">15분</option>
+                                    <option value="1h" selected>1시간</option>
+                                    <option value="4h">4시간</option>
+                                    <option value="1d">1일</option>
+                                </select>
+                                <select id="longshort-symbol" class="symbol-selector">
+                                    <option value="BTCUSDT">BTC/USDT</option>
+                                    <option value="ETHUSDT">ETH/USDT</option>
+                                    <option value="ADAUSDT">ADA/USDT</option>
+                                    <option value="SOLUSDT">SOL/USDT</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="card-content">
+                            <div class="longshort-content">
+                                <div class="ls-top">
+                                    <div id="longshort-ratio" class="ls-ratio">1.00</div>
+                                    <div id="ratio-status" class="ls-status">중립</div>
+                                </div>
+                                <div class="ls-gauge-track">
+                                    <div id="long-fill" class="ls-gauge-fill"></div>
+                                </div>
+                                <div class="ls-bottom">
+                                    <span id="long-percentage" class="ls-long-percent">50%</span>
+                                    <span id="short-percentage" class="ls-short-percent">50%</span>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
+                
+                <!-- 심리지수 카드 -->
+                <div class="grid-stack-item" gs-x="10" gs-y="0" gs-w="2" gs-h="2" gs-min-w="2" gs-min-h="2">
+                    <div class="grid-stack-item-content analysis-card sentiment-card" id="sentiment-card">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <i class="fas fa-brain"></i>
+                                <h3>심리지수</h3>
+                            </div>
+                        </div>
+                        <div class="card-content">
+                            <div class="sentiment-gauge">
+                                <canvas id="sentiment-gauge" width="120" height="120"></canvas>
+                                <div class="sentiment-value" id="sentiment-value">50</div>
+                            </div>
+                            <div class="sentiment-label" id="sentiment-label">중립</div>
+                        </div>
+                    </div>
+                </div>
 
-                <!-- 기술지표 카드 (3x6) - 왼쪽 하단 -->
-                <div class="grid-stack-item" gs-x="8" gs-y="0" gs-w="4" gs-h="3" gs-min-w="2" gs-min-h="2">
-                    <div class="grid-stack-item-content">
-                        <div class="dashboard-card indicators-card" data-card-id="indicators" draggable="false">
-                            <div class="card-header">
-                                <div class="card-title">
-                                    <i class="fas fa-chart-bar"></i>
-                                    <h3>기술지표</h3>
-                                </div>
-                                <div class="card-controls">
-                                    <div id="indicator-timeframe-selector" class="timeframe-selector">
-                                        <button class="timeframe-btn" data-timeframe="5m">5분</button>
-                                        <button class="timeframe-btn" data-timeframe="15m">15분</button>
-                                        <button class="timeframe-btn active" data-timeframe="1h">1시간</button>
-                                        <button class="timeframe-btn" data-timeframe="4h">4시간</button>
-                                        <button class="timeframe-btn" data-timeframe="1d">1일</button>
-                                    </div>
-                                </div>
+                <!-- 시장 히트맵 카드 -->
+                <div class="grid-stack-item" gs-x="0" gs-y="12" gs-w="2" gs-h="12" gs-min-w="2" gs-min-h="2">
+                    <div class="grid-stack-item-content analysis-card heatmap-card" id="heatmap-card">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <i class="fas fa-fire"></i>
+                                <h3>시장 히트맵</h3>
                             </div>
-                            <div class="indicator-summary">
-                                <div class="summary-gauge">
-                                    <div class="summary-bar" id="indicator-summary-bar"></div>
-                                </div>
-                                <span class="summary-text" id="indicator-summary-text">종합: 계산 중...</span>
-                            </div>
-                            <div class="card-content">
-                                <div class="indicators-grid">
-                                    <div class="indicator-item">
-                                        <div class="indicator-info">
-                                            <span class="indicator-name">RSI (14)</span>
-                                            <span class="indicator-desc">상대강도지수, 과매수/과매도</span>
-                                        </div>
-                                        <span class="indicator-value" id="rsi-value">계산 중...</span>
-                                    </div>
-                                    <div class="indicator-item">
-                                        <div class="indicator-info">
-                                            <span class="indicator-name">Stoch RSI</span>
-                                            <span class="indicator-desc">RSI 기반 과매수/과매도</span>
-                                        </div>
-                                        <span class="indicator-value" id="stoch-rsi-value">계산 중...</span>
-                                    </div>
-                                    <div class="indicator-item">
-                                        <div class="indicator-info">
-                                            <span class="indicator-name">MACD</span>
-                                            <span class="indicator-desc">두 이동평균선의 관계</span>
-                                        </div>
-                                        <span class="indicator-value" id="macd-value">계산 중...</span>
-                                    </div>
-                                    <div class="indicator-item">
-                                        <div class="indicator-info">
-                                            <span class="indicator-name">Awesome Osc.</span>
-                                            <span class="indicator-desc">시장 모멘텀 측정</span>
-                                        </div>
-                                        <span class="indicator-value" id="ao-value">계산 중...</span>
-                                    </div>
-                                    <div class="indicator-item">
-                                        <div class="indicator-info">
-                                            <span class="indicator-name">Williams %R</span>
-                                            <span class="indicator-desc">과매수/과매도 수준 판단</span>
-                                        </div>
-                                        <span class="indicator-value" id="williams-r-value">계산 중...</span>
-                                    </div>
-                                    <div class="indicator-item">
-                                        <div class="indicator-info">
-                                            <span class="indicator-name">CCI</span>
-                                            <span class="indicator-desc">추세 시작 및 강도 측정</span>
-                                        </div>
-                                        <span class="indicator-value" id="cci-value">계산 중...</span>
-                                    </div>
-                                    <div class="indicator-item">
-                                        <div class="indicator-info">
-                                            <span class="indicator-name">Moving Average</span>
-                                            <span class="indicator-desc">단기/장기 가격 추세</span>
-                                        </div>
-                                        <span class="indicator-value" id="sma-value">계산 중...</span>
-                                    </div>
-                                    <div class="indicator-item">
-                                        <div class="indicator-info">
-                                            <span class="indicator-name">Ichimoku Cloud</span>
-                                            <span class="indicator-desc">추세, 지지/저항 수준</span>
-                                        </div>
-                                        <span class="indicator-value" id="ichimoku-value">계산 중...</span>
-                                    </div>
-                                    <div class="indicator-item">
-                                        <div class="indicator-info">
-                                            <span class="indicator-name">Momentum</span>
-                                            <span class="indicator-desc">가격 변화 속도</span>
-                                        </div>
-                                        <span class="indicator-value" id="mom-value">계산 중...</span>
-                                    </div>
-                                    <div class="indicator-item">
-                                        <div class="indicator-info">
-                                            <span class="indicator-name">Volume Oscillator</span>
-                                            <span class="indicator-desc">거래량 추세 강도</span>
-                                        </div>
-                                        <span class="indicator-value" id="vo-value">계산 중...</span>
-                                    </div>
-                                    <div class="indicator-item">
-                                        <div class="indicator-info">
-                                            <span class="indicator-name">Parabolic SAR</span>
-                                            <span class="indicator-desc">추세 전환 신호</span>
-                                        </div>
-                                        <span class="indicator-value" id="psar-value">계산 중...</span>
-                                    </div>
-                                    <div class="indicator-item">
-                                        <div class="indicator-info">
-                                            <span class="indicator-name">ADX</span>
-                                            <span class="indicator-desc">추세 강도 측정</span>
-                                        </div>
-                                        <span class="indicator-value" id="adx-value">계산 중...</span>
-                                    </div>
-                                    <div class="indicator-item">
-                                        <div class="indicator-info">
-                                            <span class="indicator-name">OBV</span>
-                                            <span class="indicator-desc">거래량 기반 추세</span>
-                                        </div>
-                                        <span class="indicator-value" id="obv-value">계산 중...</span>
-                                    </div>
-                                    <div class="indicator-item">
-                                        <div class="indicator-info">
-                                            <span class="indicator-name">MFI</span>
-                                            <span class="indicator-desc">자금 흐름 지수</span>
-                                        </div>
-                                        <span class="indicator-value" id="mfi-value">계산 중...</span>
-                                    </div>
-                                    <div class="indicator-item">
-                                        <div class="indicator-info">
-                                            <span class="indicator-name">ROC</span>
-                                            <span class="indicator-desc">변화율</span>
-                                        </div>
-                                        <span class="indicator-value" id="roc-value">계산 중...</span>
-                                    </div>
-                                    <div class="indicator-item">
-                                        <div class="indicator-info">
-                                            <span class="indicator-name">Keltner Channel</span>
-                                            <span class="indicator-desc">변동성 기반 밴드</span>
-                                        </div>
-                                        <span class="indicator-value" id="keltner-value">계산 중...</span>
-                                    </div>
-                                    <div class="indicator-item">
-                                        <div class="indicator-info">
-                                            <span class="indicator-name">Donchian Channel</span>
-                                            <span class="indicator-desc">고가/저가 기반 밴드</span>
-                                        </div>
-                                        <span class="indicator-value" id="donchian-value">계산 중...</span>
-                                    </div>
-                                    <div class="indicator-item">
-                                        <div class="indicator-info">
-                                            <span class="indicator-name">Aroon</span>
-                                            <span class="indicator-desc">추세 강도 및 전환</span>
-                                        </div>
-                                        <span class="indicator-value" id="aroon-value">계산 중...</span>
-                                    </div>
-                                    <div class="indicator-item">
-                                        <div class="indicator-info">
-                                            <span class="indicator-name">Ultimate Osc.</span>
-                                            <span class="indicator-desc">다중 시간대 오실레이터</span>
-                                        </div>
-                                        <span class="indicator-value" id="ultimate-value">계산 중...</span>
-                                    </div>
-                                    <div class="indicator-item">
-                                        <div class="indicator-info">
-                                            <span class="indicator-name">Chaikin MF</span>
-                                            <span class="indicator-desc">자금 흐름 측정</span>
-                                        </div>
-                                        <span class="indicator-value" id="cmf-value">계산 중...</span>
-                                    </div>
-                                </div>
+                        </div>
+                        <div class="card-content">
+                            <div class="heatmap-container" id="heatmap-container">
+                                <!-- 히트맵이 여기에 동적으로 생성됩니다 -->
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- 심리지수 카드 (3x6) - 중앙 하단 -->
-                <div class="grid-stack-item" gs-x="0" gs-y="8" gs-w="2" gs-h="2" gs-min-w="2" gs-min-h="2">
-                    <div class="grid-stack-item-content">
-                        <div class="dashboard-card sentiment-card" data-card-id="sentiment" draggable="false">
-                            <div class="card-header">
-                                <div class="card-title">
-                                    <i class="fas fa-brain"></i>
-                                    <h3>심리지수</h3>
-                                </div>
+                <!-- 청산 지도 카드 -->
+                <div class="grid-stack-item" gs-x="2" gs-y="12" gs-w="2" gs-h="12" gs-min-w="2" gs-min-h="2">
+                    <div class="grid-stack-item-content analysis-card liquidation-card" id="liquidation-card">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                <h3>청산 지도</h3>
                             </div>
-                            <div class="card-content">
-                                <div class="sentiment-gauge">
-                                    <canvas id="sentiment-gauge" width="120" height="120"></canvas>
-                                    <div class="sentiment-value" id="sentiment-value">50</div>
-                                </div>
-                                <div class="sentiment-label" id="sentiment-label">중립</div>
+                            <div class="card-controls">
+                                <select id="liquidation-symbol" class="symbol-selector">
+                                    <option value="BTCUSDT">BTC/USDT</option>
+                                    <option value="ETHUSDT">ETH/USDT</option>
+                                    <option value="ADAUSDT">ADA/USDT</option>
+                                    <option value="SOLUSDT">SOL/USDT</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="card-content">
+                            <div class="liquidation-container" id="liquidation-container">
+                                <!-- 청산 데이터가 여기에 동적으로 추가됩니다 -->
                             </div>
                         </div>
                     </div>
                 </div>
-
-                <!-- 시장 히트맵 카드 (6x6) - 오른쪽 하단 -->
-                <div class="grid-stack-item" gs-x="6" gs-y="14" gs-w="6" gs-h="6" gs-min-w="4" gs-min-h="4">
-                    <div class="grid-stack-item-content">
-                        <div class="dashboard-card heatmap-card" data-card-id="heatmap" draggable="false">
-                            <div class="card-header">
-                                <div class="card-title">
-                                    <i class="fas fa-fire"></i>
-                                    <h3>시장 히트맵</h3>
-                                </div>
-                            </div>
-                            <div class="card-content">
-                                <div class="heatmap-container" id="heatmap-container">
-                                    <!-- 히트맵이 여기에 동적으로 생성됩니다 -->
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
             </div>
         </div>
     </main>
@@ -504,53 +355,6 @@
             </div>
         </div>
     </div>
-
-    <!-- Mock Data Generator (개발용) -->
-    <script src="js/mock-data-generator.js"></script>
-    
-    <!-- Analysis.js - 게이지 시스템 -->
-    <script src="analysis.js"></script>
-    
-    <!-- Analysis Controller -->
-    <script src="js/analysis/analysis-controller.js"></script>
-    
-    <!-- Layout Manager Script -->
-    <script src="js/layout-manager.js"></script>
-
-    <!-- Initialize Dashboard -->
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('Initializing dashboard...');
-            
-            // WhaleTracker 인스턴스 생성
-            if (window.WhaleTracker) {
-                window.whaleTracker = new window.WhaleTracker();
-            }
-            
-            // TradingAnalyticsPlatform 초기화 (게이지 시스템용)
-            if (window.TradingAnalyticsPlatform) {
-                window.tradingPlatform = new window.TradingAnalyticsPlatform();
-                console.log('✅ TradingAnalyticsPlatform initialized');
-            }
-            
-            // AnalysisController 초기화
-            window.analysisDashboard = new AnalysisController();
-            
-            // 게이지 테스트 실행 (3초 후)
-            setTimeout(() => {
-                console.log('🧪 Starting gauge test...');
-                if (window.tradingPlatform && window.tradingPlatform.runWhaleGaugeTest) {
-                    window.tradingPlatform.runWhaleGaugeTest();
-                }
-            }, 3000);
-            
-            // Layout Manager 초기화 (GridStack)
-            setTimeout(() => {
-                console.log('Initializing layout manager...');
-                window.layoutManager = new LayoutManager();
-            }, 1000);
-        });
-    </script>
 
 </body>
 </html> 

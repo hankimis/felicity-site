@@ -1,0 +1,348 @@
+/* Analysis Dashboard - Responsive Styles */
+
+/* Tablet */
+@media (max-width: 1200px) {
+    .dashboard-controls {
+        flex-direction: column;
+        gap: 0.5rem;
+        text-align: center;
+        height: auto;
+        padding: 0.5rem 1.2rem;
+    }
+    
+    .controls-actions {
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 0.4rem;
+    }
+    
+    .control-btn {
+        padding: 0.3rem 0.6rem;
+        font-size: 0.7rem;
+        height: 24px;
+    }
+    
+    .dashboard-grid {
+        grid-template-columns: repeat(8, 1fr);
+    }
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+        padding: 10px;
+    }
+    
+    .dashboard-controls {
+        padding: 0.5rem 1rem;
+        flex-direction: column;
+        gap: 0.5rem;
+        height: auto;
+    }
+    
+    .controls-title h1 {
+        font-size: 0.9rem;
+    }
+    
+    .controls-title .subtitle {
+        font-size: 0.6rem;
+    }
+    
+    .controls-actions {
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 0.3rem;
+    }
+    
+    .control-btn {
+        padding: 0.2rem 0.4rem;
+        font-size: 0.65rem;
+        height: 22px;
+    }
+    
+    .control-btn span {
+        display: none;
+    }
+    
+    .control-btn i {
+        font-size: 0.8rem;
+    }
+    
+    .card-header {
+        padding: 0.4rem 0.5rem;
+    }
+    
+    .card-controls {
+        gap: 0.3rem;
+    }
+    
+    .crypto-selector,
+    .timeframe-selector,
+    .coin-selector,
+    .symbol-selector {
+        padding: 0.2rem 0.4rem;
+        font-size: 0.75rem;
+    }
+    
+    .whale-transactions {
+        height: calc(100vh - 300px);
+    }
+    
+    .whale-stats {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .whale-stats .stat-item {
+        flex-direction: row;
+        justify-content: space-between;
+        text-align: left;
+    }
+    
+    .realtime-price {
+        font-size: 1.2rem;
+    }
+    
+    .trade-item {
+        grid-template-columns: 1fr auto;
+        gap: 0.5rem;
+        padding: 0.4rem;
+    }
+    
+    .indicators-grid {
+        grid-template-columns: 1fr;
+        gap: 0.5rem;
+        padding: 0.8rem;
+    }
+    
+    .indicator-item {
+        padding: 0.5rem 0;
+        border-bottom: 1px solid var(--border-color);
+    }
+    
+    .orderbook-container {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    
+    .orderbook-side h4 {
+        font-size: 0.8rem;
+        text-align: center;
+        padding: 0.5rem;
+        background: var(--bg-secondary);
+        border-radius: 4px;
+        margin-bottom: 0.5rem;
+    }
+    
+    .heatmap-container {
+        padding: 4px;
+    }
+    
+    .heatmap-tile {
+        min-width: calc(50% - 2px);
+        min-height: 60px;
+        font-size: 0.8rem;
+    }
+    
+    .longshort-content {
+        padding: 12px;
+        gap: 6px;
+    }
+    
+    .ls-ratio {
+        font-size: 18px;
+    }
+    
+    .ls-status {
+        font-size: 11px;
+        padding: 3px 8px;
+    }
+    
+    .timeframe-btn {
+        padding: 4px 8px;
+        font-size: 11px;
+    }
+    
+    .sentiment-gauge {
+        padding: 0.5rem;
+    }
+    
+    .sentiment-value {
+        font-size: 1.5rem;
+    }
+    
+    .sentiment-label {
+        font-size: 0.8rem;
+    }
+    
+    .status-badge {
+        padding: 0.15rem 0.3rem;
+        font-size: 0.7rem;
+    }
+    
+    .modal-content {
+        width: 95%;
+        margin: 5% auto;
+    }
+    
+    .modal-header,
+    .modal-body,
+    .modal-footer {
+        padding: 1rem;
+    }
+}
+
+/* Small Mobile */
+@media (max-width: 480px) {
+    .dashboard-grid {
+        padding: 5px;
+        gap: 0.5rem;
+    }
+    
+    .dashboard-controls {
+        margin-bottom: 0.5rem;
+        padding: 0.5rem;
+    }
+    
+    .controls-title h1 {
+        font-size: 0.8rem;
+    }
+    
+    .controls-title .subtitle {
+        font-size: 0.55rem;
+    }
+    
+    .control-btn {
+        padding: 0.15rem 0.3rem;
+        font-size: 0.6rem;
+        height: 20px;
+    }
+    
+    .card-header {
+        padding: 0.3rem 0.4rem;
+    }
+    
+    .card-title h3 {
+        font-size: 0.8rem;
+    }
+    
+    .card-title i {
+        font-size: 0.7rem;
+    }
+    
+    .whale-transactions {
+        height: calc(100vh - 350px);
+    }
+    
+    .trade-item {
+        grid-template-columns: 1fr;
+        gap: 0.3rem;
+        padding: 0.3rem;
+        text-align: center;
+    }
+    
+    .indicators-grid {
+        grid-template-columns: 1fr;
+        gap: 0.3rem;
+        padding: 0.5rem;
+    }
+    
+    .indicator-item {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 0.3rem 0;
+        gap: 0.2rem;
+    }
+    
+    .indicator-value {
+        align-self: flex-end;
+    }
+    
+    .heatmap-tile {
+        min-width: calc(100% - 2px);
+        min-height: 50px;
+        font-size: 0.7rem;
+    }
+    
+    .longshort-content {
+        padding: 8px;
+        gap: 4px;
+    }
+    
+    .ls-top {
+        flex-direction: column;
+        gap: 0.5rem;
+        text-align: center;
+    }
+    
+    .ls-ratio {
+        font-size: 16px;
+    }
+    
+    .ls-status {
+        font-size: 10px;
+        padding: 2px 6px;
+    }
+    
+    .sentiment-value {
+        font-size: 1.2rem;
+    }
+    
+    .sentiment-label {
+        font-size: 0.7rem;
+    }
+}
+
+/* High DPI / Retina */
+@media (-webkit-min-device-pixel-ratio: 2) {
+    .heatmap-tile,
+    .trade-item,
+    .indicator-item {
+        border-width: 0.5px;
+    }
+}
+
+/* Landscape Mobile */
+@media (max-width: 768px) and (orientation: landscape) {
+    .whale-transactions {
+        height: calc(100vh - 150px);
+    }
+    
+    .dashboard-controls {
+        height: 35px;
+        padding: 0.3rem 1rem;
+    }
+    
+    .controls-title h1 {
+        font-size: 0.85rem;
+    }
+    
+    .controls-title .subtitle {
+        display: none;
+    }
+}
+
+/* Touch Optimizations */
+@media (pointer: coarse) {
+    .control-btn,
+    .timeframe-btn,
+    .crypto-selector,
+    .symbol-selector {
+        min-height: 44px;
+        min-width: 44px;
+    }
+    
+    .trade-item {
+        padding: 0.6rem;
+    }
+    
+    .indicator-item {
+        padding: 0.6rem 0;
+    }
+    
+    .modal-close {
+        width: 44px;
+        height: 44px;
+    }
+} 

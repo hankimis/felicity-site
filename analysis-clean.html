@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>실시간 거래 분석 대시보드 - Onbit</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="/onbit/favicon-96x96.png" sizes="96x96">
+    <link rel="shortcut icon" href="/onbit/favicon.ico">
+    
+    <!-- Fonts -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <!-- CSS Modules -->
+    <link rel="stylesheet" href="css/analysis-base.css">
+    <link rel="stylesheet" href="css/analysis-layout.css">
+    <link rel="stylesheet" href="css/analysis-components.css">
+    <link rel="stylesheet" href="css/analysis-dashboard.css">
+    <link rel="stylesheet" href="css/analysis-responsive.css">
+    
+    <!-- External Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gridstack@9.3.0/dist/gridstack.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/gridstack@9.3.0/dist/gridstack-all.js"></script>
+</head>
+<body>
+    <main class="analysis-main">
+        <div class="analysis-container">
+            <!-- Dashboard Controls -->
+            <div class="dashboard-controls">
+                <div class="controls-title">
+                    <h1>실시간 거래 분석 대시보드</h1>
+                    <span class="subtitle">Real-time Trading Analytics</span>
+                </div>
+                <div class="controls-actions">
+                    <div class="status-badge" id="global-status">
+                        <span class="status-dot active"></span>
+                        <span class="status-text">실시간 연결됨</span>
+                    </div>
+                    <button id="layout-toggle" class="control-btn secondary">
+                        <i class="fas fa-edit"></i>
+                        <span>레이아웃 편집</span>
+                    </button>
+                    <button id="layout-reset" class="control-btn warning" style="display: none;">
+                        <i class="fas fa-undo"></i>
+                        <span>초기화</span>
+                    </button>
+                    <button id="refresh-all" class="control-btn primary">
+                        <i class="fas fa-sync-alt"></i>
+                        <span>새로고침</span>
+                    </button>
+                    <button id="settings-btn" class="control-btn secondary">
+                        <i class="fas fa-cog"></i>
+                        <span>설정</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Dashboard Grid -->
+            <div class="grid-stack" id="dashboard-grid">
+                
+                <!-- Whale Tracker Card -->
+                <div class="grid-stack-item" gs-x="0" gs-y="0" gs-w="2" gs-h="4">
+                    <div class="grid-stack-item-content">
+                        <div class="dashboard-card whale-card" data-card-id="whale">
+                            <div class="card-header">
+                                <div class="card-title">
+                                    <i class="fas fa-whale"></i>
+                                    <h3>고래 탐지</h3>
+                                </div>
+                                <div class="card-controls">
+                                    <select id="whale-symbol" class="symbol-selector">
+                                        <option value="BTCUSDT">BTC/USDT</option>
+                                        <option value="ETHUSDT">ETH/USDT</option>
+                                        <option value="ADAUSDT">ADA/USDT</option>
+                                        <option value="SOLUSDT">SOL/USDT</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="card-content">
+                                <div class="whale-stats">
+                                    <div class="stat-item">
+                                        <span class="stat-label">대형 거래</span>
+                                        <span class="stat-value" id="large-trades">0</span>
+                                    </div>
+                                    <div class="stat-item">
+                                        <span class="stat-label">누적 거래량</span>
+                                        <span class="stat-value" id="total-volume">$0</span>
+                                    </div>
+                                </div>
+                                <div class="whale-trades-container" id="whale-trades-container">
+                                    <!-- Dynamic whale trades -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Realtime Trades Card -->
+                <div class="grid-stack-item" gs-x="2" gs-y="0" gs-w="2" gs-h="4">
+                    <div class="grid-stack-item-content">
+                        <div class="dashboard-card realtime-card" data-card-id="realtime">
+                            <div class="card-header">
+                                <div class="card-title">
+                                    <i class="fas fa-chart-line"></i>
+                                    <h3>실시간 거래</h3>
+                                </div>
+                                <div class="card-controls">
+                                    <select id="realtime-symbol" class="symbol-selector">
+                                        <option value="BTCUSDT">BTC/USDT</option>
+                                        <option value="ETHUSDT">ETH/USDT</option>
+                                        <option value="ADAUSDT">ADA/USDT</option>
+                                        <option value="SOLUSDT">SOL/USDT</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="card-content">
+                                <div class="realtime-price" id="realtime-price">$0.00</div>
+                                <div class="realtime-trades" id="realtime-trades">
+                                    <!-- Dynamic trade list -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Long/Short Ratio Card -->
+                <div class="grid-stack-item" gs-x="4" gs-y="2" gs-w="2" gs-h="2">
+                    <div class="grid-stack-item-content">
+                        <div class="dashboard-card longshort-card" data-card-id="longshort">
+                            <div class="card-header">
+                                <div class="card-title">
+                                    <i class="fas fa-balance-scale"></i>
+                                    <h3>롱/숏 비율</h3>
+                                </div>
+                                <div class="card-controls">
+                                    <select id="longshort-timeframe" class="timeframe-selector">
+                                        <option value="5m">5분</option>
+                                        <option value="15m">15분</option>
+                                        <option value="1h" selected>1시간</option>
+                                        <option value="4h">4시간</option>
+                                        <option value="1d">1일</option>
+                                    </select>
+                                    <select id="longshort-symbol" class="symbol-selector">
+                                        <option value="BTCUSDT">BTC/USDT</option>
+                                        <option value="ETHUSDT">ETH/USDT</option>
+                                        <option value="ADAUSDT">ADA/USDT</option>
+                                        <option value="SOLUSDT">SOL/USDT</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="card-content">
+                                <div class="longshort-content">
+                                    <div class="ls-top">
+                                        <div id="longshort-ratio" class="ls-ratio">1.00</div>
+                                        <div id="ratio-status" class="ls-status">중립</div>
+                                    </div>
+                                    <div class="ls-gauge-track">
+                                        <div id="long-fill" class="ls-gauge-fill"></div>
+                                    </div>
+                                    <div class="ls-bottom">
+                                        <span id="long-percentage" class="ls-long-percent">50%</span>
+                                        <span id="short-percentage" class="ls-short-percent">50%</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Orderbook Card -->
+                <div class="grid-stack-item" gs-x="6" gs-y="0" gs-w="2" gs-h="3">
+                    <div class="grid-stack-item-content">
+                        <div class="dashboard-card orderbook-card" data-card-id="orderbook">
+                            <div class="card-header">
+                                <div class="card-title">
+                                    <i class="fas fa-list"></i>
+                                    <h3>오더북</h3>
+                                </div>
+                                <div class="card-controls">
+                                    <select id="orderbook-symbol" class="symbol-selector">
+                                        <option value="BTCUSDT">BTC/USDT</option>
+                                        <option value="ETHUSDT">ETH/USDT</option>
+                                        <option value="ADAUSDT">ADA/USDT</option>
+                                        <option value="SOLUSDT">SOL/USDT</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="card-content">
+                                <div class="orderbook-container">
+                                    <div class="orderbook-side asks">
+                                        <h4>매도</h4>
+                                        <div class="orderbook-orders" id="asks-orders"></div>
+                                    </div>
+                                    <div class="orderbook-side bids">
+                                        <h4>매수</h4>
+                                        <div class="orderbook-orders" id="bids-orders"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Technical Indicators Card -->
+                <div class="grid-stack-item" gs-x="8" gs-y="0" gs-w="4" gs-h="3">
+                    <div class="grid-stack-item-content">
+                        <div class="dashboard-card indicators-card" data-card-id="indicators">
+                            <div class="card-header">
+                                <div class="card-title">
+                                    <i class="fas fa-chart-bar"></i>
+                                    <h3>기술지표</h3>
+                                </div>
+                                <div class="card-controls">
+                                    <div class="timeframe-selector">
+                                        <button class="timeframe-btn" data-timeframe="5m">5분</button>
+                                        <button class="timeframe-btn" data-timeframe="15m">15분</button>
+                                        <button class="timeframe-btn active" data-timeframe="1h">1시간</button>
+                                        <button class="timeframe-btn" data-timeframe="4h">4시간</button>
+                                        <button class="timeframe-btn" data-timeframe="1d">1일</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="indicator-summary">
+                                <div class="summary-gauge">
+                                    <div class="summary-bar" id="indicator-summary-bar"></div>
+                                </div>
+                                <span class="summary-text" id="indicator-summary-text">종합: 계산 중...</span>
+                            </div>
+                            <div class="card-content">
+                                <div class="indicators-grid" id="indicators-list">
+                                    <!-- Dynamic indicators -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sentiment Card -->
+                <div class="grid-stack-item" gs-x="0" gs-y="8" gs-w="2" gs-h="2">
+                    <div class="grid-stack-item-content">
+                        <div class="dashboard-card sentiment-card" data-card-id="sentiment">
+                            <div class="card-header">
+                                <div class="card-title">
+                                    <i class="fas fa-brain"></i>
+                                    <h3>심리지수</h3>
+                                </div>
+                            </div>
+                            <div class="card-content">
+                                <div class="sentiment-gauge">
+                                    <canvas id="sentiment-gauge" width="120" height="120"></canvas>
+                                    <div class="sentiment-value" id="sentiment-value">50</div>
+                                </div>
+                                <div class="sentiment-label" id="sentiment-label">중립</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Market Heatmap Card -->
+                <div class="grid-stack-item" gs-x="6" gs-y="14" gs-w="3" gs-h="3">
+                    <div class="grid-stack-item-content">
+                        <div class="dashboard-card heatmap-card" data-card-id="heatmap">
+                            <div class="card-header">
+                                <div class="card-title">
+                                    <i class="fas fa-fire"></i>
+                                    <h3>시장 히트맵</h3>
+                                </div>
+                            </div>
+                            <div class="card-content">
+                                <div class="heatmap-container" id="heatmap-container">
+                                    <!-- Dynamic heatmap -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <!-- Toast Container -->
+    <div id="toast-container"></div>
+
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>대시보드 설정</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="setting-group">
+                    <label for="whale-btc-threshold">BTC 고래 임계값</label>
+                    <input type="number" id="whale-btc-threshold" value="50" min="1" max="1000">
+                </div>
+                <div class="setting-group">
+                    <label for="whale-eth-threshold">ETH 고래 임계값</label>
+                    <input type="number" id="whale-eth-threshold" value="1000" min="100" max="10000">
+                </div>
+                <div class="setting-group">
+                    <label>
+                        <input type="checkbox" id="enable-notifications" checked>
+                        알림 활성화
+                    </label>
+                </div>
+                <div class="setting-group">
+                    <label>
+                        <input type="checkbox" id="enable-sound" checked>
+                        사운드 알림
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="control-btn secondary" id="cancel-settings">취소</button>
+                <button class="control-btn primary" id="save-settings">저장</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Core JavaScript Modules -->
+    <script src="js/analysis-config.js"></script>
+    <script src="js/analysis-utils.js"></script>
+    <script src="js/analysis-notifications.js"></script>
+    <script src="js/analysis-simulation.js"></script>
+    <script src="js/analysis-main.js"></script>
+    
+    <!-- Analysis Feature Modules -->
+    <script src="js/analysis/whale-tracker.js"></script>
+    <script src="js/analysis/longshort-tracker.js"></script>
+    <script src="js/analysis/realtime-trades.js"></script>
+    <script src="js/analysis/technical-indicators.js"></script>
+    <script src="js/analysis/sentiment-analysis.js"></script>
+    <script src="js/analysis/orderbook-tracker.js"></script>
+    <script src="js/analysis/market-heatmap.js"></script>
+    <script src="js/analysis/analysis-controller.js"></script>
+
+    <!-- Initialize -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('🚀 Initializing Analysis Dashboard...');
+            window.analysisDashboard = new AnalysisController();
+            console.log('✅ Analysis Dashboard Ready!');
+        });
+    </script>
+</body>
+</html> 

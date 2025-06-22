@@ -2,7 +2,7 @@
  * Sentiment Analysis Module
  * 공포탐욕지수 및 시장 감정을 분석하는 모듈
  */
-class SentimentAnalysis {
+export class SentimentAnalysis {
     constructor() {
         this.fearGreedIndex = {
             value: 50,
@@ -268,5 +268,12 @@ class SentimentAnalysis {
                 color: '#059669'
             };
         }
+    }
+
+    getSentiment() {
+        return {
+            value: this.fearGreedIndex.value,
+            label: this.fearGreedIndex.label
+        };
     }
 } 

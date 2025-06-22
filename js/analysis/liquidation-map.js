@@ -1,4 +1,8 @@
-class LiquidationMap {
+/**
+ * Liquidation Map Module
+ * 청산 지도 모듈
+ */
+export class LiquidationMap {
     constructor() {
         this.symbol = 'BTCUSDT';
         this.timeframe = '1d';
@@ -7,19 +11,30 @@ class LiquidationMap {
     }
 
     init() {
+        console.log('🌊 Liquidation Map initializing...');
         this.setupEventListeners();
+    }
+
+    start() {
         this.loadData();
     }
 
     setupEventListeners() {
-        document.getElementById('liquidation-map-symbol').addEventListener('change', (e) => {
-            this.symbol = e.target.value;
-            this.loadData();
-        });
-        document.getElementById('liquidation-map-timeframe').addEventListener('change', (e) => {
-            this.timeframe = e.target.value;
-            this.loadData();
-        });
+        const symbolSelect = document.getElementById('liquidation-symbol');
+        if (symbolSelect) {
+            symbolSelect.addEventListener('change', (e) => {
+                this.symbol = e.target.value;
+                this.loadData();
+            });
+        }
+        
+        const timeframeSelect = document.getElementById('liquidation-map-timeframe');
+        if (timeframeSelect) {
+            timeframeSelect.addEventListener('change', (e) => {
+                this.timeframe = e.target.value;
+                this.loadData();
+            });
+        }
     }
 
     async loadData() {
@@ -330,6 +345,10 @@ class LiquidationMap {
                 }
             }
         });
+    }
+
+    getLiquidations() {
+        return this.liquidations || [];
     }
 }
 

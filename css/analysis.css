@@ -1,0 +1,79 @@
+/* GridStack Resizing Handle Fix */
+.grid-stack > .grid-stack-item > .ui-resizable-handle {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    right: 5px;
+    bottom: 5px;
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 6 6" fill="%23888"><path d="M 6 4 L 4 6 L 6 6 Z M 3 4 L 4 3 L 4 4 Z M 6 1 L 1 6 L 1 5 L 5 1 Z" /></svg>');
+    background-repeat: no-repeat;
+    background-position: bottom right;
+    cursor: se-resize;
+    z-index: 10;
+    display: none; /* 평소에는 숨김 */
+}
+
+/* 편집 모드일 때 핸들 표시 */
+.grid-stack.grid-stack-editable > .grid-stack-item > .ui-resizable-handle {
+    display: block;
+}
+
+.indicator-item .indicator-value.bullish {
+    color: var(--color-success-dark);
+    font-weight: 600;
+}
+
+.indicator-item .indicator-value.bearish {
+    color: var(--color-danger-dark);
+    font-weight: 600;
+}
+
+.indicator-item .indicator-value.neutral {
+    color: var(--color-text-secondary);
+}
+
+/* Indicator Summary Styles */
+#indicator-summary-container {
+    padding: 10px 15px;
+    border-bottom: 1px solid var(--color-border);
+    margin-bottom: 10px;
+}
+
+.summary-bar-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+}
+
+.summary-bar {
+    flex-grow: 1;
+    height: 10px;
+    background-color: var(--color-danger-light);
+    border-radius: 5px;
+    overflow: hidden;
+    display: flex;
+}
+
+.summary-bar-fill.bullish {
+    background-color: var(--color-success-dark);
+    height: 100%;
+}
+
+.summary-bar-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+.summary-bar-label.bullish { color: var(--color-success-dark); }
+.summary-bar-label.bearish { color: var(--color-danger-dark); }
+
+.overall-summary {
+    text-align: center;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+.overall-summary .bullish { color: var(--color-success-dark); }
+.overall-summary .bearish { color: var(--color-danger-dark); }
+.overall-summary .neutral { color: var(--color-text-secondary); }
+.overall-summary i { font-size: 0.8em; } 

@@ -1,8 +1,8 @@
 /**
- * Orderbook Tracker Module
- * 실시간 오더북 데이터를 추적하고 표시하는 모듈
+ * Orderbook Tracker
+ * 오더북 추적 모듈
  */
-class OrderbookTracker {
+export class OrderbookTracker {
     constructor() {
         this.currentSymbol = 'BTCUSDT';
         this.orderbook = {
@@ -302,7 +302,10 @@ class OrderbookTracker {
 
     // 외부에서 접근 가능한 메서드들
     getOrderbook() {
-        return this.orderbook;
+        return {
+            asks: this.orderbook.asks || [],
+            bids: this.orderbook.bids || []
+        };
     }
 
     getBestPrices() {

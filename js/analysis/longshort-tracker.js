@@ -2,7 +2,7 @@
  * Long/Short Tracker Module
  * 롱숏 포지션 비율을 추적하고 표시하는 모듈
  */
-class LongShortTracker {
+export class LongShortTracker {
     constructor() {
         this.currentSymbol = 'BTCUSDT';
         this.currentTimeframe = '1h';
@@ -266,6 +266,15 @@ class LongShortTracker {
             longShortRatio: ratio,
             longAccount: (1 / (1 + 1/ratio)) * 100,
             history: history
+        };
+    }
+
+    getLongShortRatio() {
+        return {
+            long: this.ratioData.overall.long,
+            short: this.ratioData.overall.short,
+            ratio: this.ratioData.overall.longShortRatio,
+            status: document.getElementById('ratio-status').className
         };
     }
 } 

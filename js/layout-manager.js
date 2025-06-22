@@ -11,12 +11,13 @@ class LayoutManager {
     init() {
         console.log('Initializing 12-column GridStack layout manager...');
         this.grid = GridStack.init({
-            column: 12, // 12-column 그리드 시스템
-            cellHeight: 'auto', // 자동으로 정사각형 셀 생성
+            cellHeight: 'auto',
+            margin: 10,
+            column: 12, // 기본 12컬럼
+            disableResize: true,
+            disableDrag: true,
             float: false, // 카드가 아래로만 쌓이도록 하여 겹침 방지
             minRow: 1,
-            disableDrag: true, 
-            disableResize: true,
             handle: '.card-header', // 카드 헤더를 드래그 핸들로 사용
             resizable: {
                 handles: 'e,se,s,sw,w,nw,n,ne', // 모든 방향에서 리사이즈 가능
@@ -40,10 +41,13 @@ class LayoutManager {
             }
         });
         
-        this.setupEventListeners();
+        this.setupResponsive();
         this.loadLayout();
         this.hideGridBackground(); // 초기에는 그리드 숨김
         this.setupSquareGrid(); // 정사각형 그리드 설정
+        this.setupEventListeners();
+        this.grid.enableMove(false);
+        this.grid.enableResize(false);
     }
 
     setupEventListeners() {
@@ -150,6 +154,22 @@ class LayoutManager {
             updateGridSize();
             window.addEventListener('resize', updateGridSize);
         }
+    }
+
+    setupResponsive() {
+        const updateGridColumns = () => {
+            const width = window.innerWidth;
+            if (width <= 768 && this.grid.getColumn() !== 4) {
+                this.grid.column(4); // 모바일: 4컬럼
+            } else if (width > 768 && width <= 1200 && this.grid.getColumn() !== 8) {
+                this.grid.column(8); // 태블릿: 8컬럼
+            } else if (width > 1200 && this.grid.getColumn() !== 12) {
+                this.grid.column(12); // 데스크탑: 12컬럼
+            }
+        };
+        
+        window.addEventListener('resize', updateGridColumns);
+        updateGridColumns(); // 초기 로드 시 실행
     }
 }
 

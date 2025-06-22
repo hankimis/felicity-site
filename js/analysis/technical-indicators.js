@@ -2,7 +2,7 @@
  * Technical Indicators Module
  * 기술적 지표를 계산하고 표시하는 모듈
  */
-class TechnicalIndicators {
+export class TechnicalIndicators {
     constructor(settings) {
         this.currentSymbol = 'BTCUSDT';
         this.currentTimeframe = '1h';
@@ -28,7 +28,8 @@ class TechnicalIndicators {
             donchian: { upper: 0, middle: 0, lower: 0, status: '중립' },
             aroon: { up: 0, down: 0, status: '중립' },
             ultimate: { value: 0, status: '중립' },
-            cmf: { value: 0, status: '중립' }
+            cmf: { value: 0, status: '중립' },
+            atr: { value: 0, status: '중립' }
         };
         this.priceData = [];
         this.isTracking = false;
@@ -312,8 +313,6 @@ class TechnicalIndicators {
     getSMAStatus(price, shortSMA, longSMA) {
         if (price > shortSMA && shortSMA > longSMA) return '강세';
         if (price < shortSMA && shortSMA < longSMA) return '약세';
-        if (shortSMA > longSMA) return '상승추세';
-        if (shortSMA < longSMA) return '하락추세';
         return '중립';
     }
     
@@ -345,12 +344,9 @@ class TechnicalIndicators {
     }
 
     getIchimokuStatus(price, spanA, spanB) {
-        const cloudTop = Math.max(spanA, spanB);
-        const cloudBottom = Math.min(spanA, spanB);
-        
-        if (price > cloudTop) return '구름대 상단 돌파';
-        if (price < cloudBottom) return '구름대 하단 이탈';
-        return '구름대 내부';
+        if (price > spanA && spanA > spanB) return '강세';
+        if (price < spanA && spanA < spanB) return '약세';
+        return '중립';
     }
     
     calculateATR(period = 14) {
@@ -432,8 +428,8 @@ class TechnicalIndicators {
     }
     
     getWilliamsRStatus(wr) {
-        if (wr >= -20) return '과매수';
-        if (wr <= -80) return '과매도';
+        if (wr > -20) return '과매수';
+        if (wr < -80) return '과매도';
         return '중립';
     }
 
@@ -786,7 +782,9 @@ class TechnicalIndicators {
         ];
 
         let score = 0;
+        // 과매도는 매수 신호 (초록색)
         const longSignals = ['과매도', '강세', '상승추세', '구름대 상단 돌파', '거래량 증가', '강세 전환', '상승', '강한추세', '돌파'];
+        // 과매수는 매도 신호 (빨간색)
         const shortSignals = ['과매수', '약세', '하락추세', '구름대 하단 이탈', '거래량 감소', '약세 전환', '하락', '약한추세', '이탈'];
         
         statuses.forEach(status => {
@@ -803,38 +801,102 @@ class TechnicalIndicators {
 
         const summaryBar = document.getElementById('indicator-summary-bar');
         const summaryText = document.getElementById('indicator-summary-text');
+        const summaryContainer = document.getElementById('indicator-summary-container');
 
         if (summaryBar && summaryText) {
             summaryBar.style.width = `${percentage.toFixed(1)}%`;
             
             let summaryStatusText = '';
+            let statusClass = '';
+            let statusIcon = '';
+            let statusColor = '';
+            
             if (percentage > 75) {
                 summaryStatusText = '강한 매수';
+                statusClass = 'strong-buy';
+                statusIcon = '🚀';
+                statusColor = '#059669';
             } else if (percentage > 55) {
                 summaryStatusText = '매수';
+                statusClass = 'buy';
+                statusIcon = '📈';
+                statusColor = '#10b981';
             } else if (percentage > 45) {
                 summaryStatusText = '중립';
+                statusClass = 'neutral';
+                statusIcon = '➡️';
+                statusColor = '#6b7280';
             } else if (percentage > 25) {
                 summaryStatusText = '매도';
+                statusClass = 'sell';
+                statusIcon = '📉';
+                statusColor = '#f59e0b';
             } else {
                 summaryStatusText = '강한 매도';
+                statusClass = 'strong-sell';
+                statusIcon = '⚠️';
+                statusColor = '#dc2626';
             }
 
-            summaryText.textContent = `종합: ${summaryStatusText} (${percentage.toFixed(0)}%)`;
+            // 종합신호 컨테이너 업데이트
+            if (summaryContainer) {
+                summaryContainer.innerHTML = `
+                    <div class="summary-header">
+                        <div class="summary-icon ${statusClass}">${statusIcon}</div>
+                        <div class="summary-info">
+                            <div class="summary-title">종합 매매 신호</div>
+                            <div class="summary-status ${statusClass}">${summaryStatusText}</div>
+                        </div>
+                        <div class="summary-percentage ${statusClass}">${percentage.toFixed(0)}%</div>
+                    </div>
+                    <div class="summary-gauge-container">
+                        <div class="summary-gauge">
+                            <div class="summary-bar ${statusClass}" style="width: ${percentage.toFixed(1)}%; background-color: ${statusColor};"></div>
+                        </div>
+                        <div class="summary-labels">
+                            <span class="label-bearish">매도</span>
+                            <span class="label-neutral">중립</span>
+                            <span class="label-bullish">매수</span>
+                        </div>
+                    </div>
+                    <div class="summary-details">
+                        <div class="detail-item">
+                            <span class="detail-label">매수 신호:</span>
+                            <span class="detail-value bullish">${statuses.filter(s => longSignals.includes(s)).length}개</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">매도 신호:</span>
+                            <span class="detail-value bearish">${statuses.filter(s => shortSignals.includes(s)).length}개</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">중립 신호:</span>
+                            <span class="detail-value neutral">${statuses.filter(s => !longSignals.includes(s) && !shortSignals.includes(s)).length}개</span>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // 기존 텍스트 업데이트 (하위 호환성)
+            summaryText.textContent = `${statusIcon} ${summaryStatusText} (${percentage.toFixed(0)}%)`;
+            summaryText.className = `summary-text ${statusClass}`;
         }
     }
 
     updateIndicatorClass(element, status) {
-        element.classList.remove('long', 'short', 'neutral');
-        const longSignals = ['과매도', '강세', '상승추세', '구름대 상단 돌파', '거래량 증가', '강세 전환', '상승', '강한추세', '돌파'];
-        const shortSignals = ['과매수', '약세', '하락추세', '구름대 하단 이탈', '거래량 감소', '약세 전환', '하락', '약한추세', '이탈'];
-
-        if (longSignals.includes(status)) {
-            element.classList.add('long');
-        } else if (shortSignals.includes(status)) {
-            element.classList.add('short');
+        element.classList.remove('long', 'short', 'neutral', 'calculating', 'overbought', 'oversold', 'bullish', 'bearish');
+        
+        if (status === '계산 중...' || status === 'N/A') {
+            element.classList.add('calculating');
+        } else if (status === '과매수') {
+            element.classList.add('overbought'); // 과매수 - 빨간색
+        } else if (status === '과매도') {
+            element.classList.add('oversold'); // 과매도 - 초록색
+        } else if (['강세', '상승추세', '구름대 상단 돌파', '거래량 증가', '강세 전환', '상승', '강한추세', '돌파'].includes(status)) {
+            element.classList.add('bullish'); // 매수 신호 - 초록색
+        } else if (['약세', '하락추세', '구름대 하단 이탈', '거래량 감소', '약세 전환', '하락', '약한추세', '이탈'].includes(status)) {
+            element.classList.add('bearish'); // 매도 신호 - 빨간색
         } else {
-            element.classList.add('neutral');
+            element.classList.add('neutral'); // 중립
         }
     }
 
@@ -1165,5 +1227,12 @@ class TechnicalIndicators {
         
         this.indicators.cmf.value = cmf;
         this.indicators.cmf.status = cmf > 0.25 ? '강세' : cmf < -0.25 ? '약세' : '중립';
+    }
+
+    changeTimeframe(newTimeframe) {
+        if (this.currentTimeframe === newTimeframe) return;
+        console.log(`[TechnicalIndicators] Timeframe changed to: ${newTimeframe}`);
+        this.currentTimeframe = newTimeframe;
+        this.loadData();
     }
 } 

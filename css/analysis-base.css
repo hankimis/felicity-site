@@ -1,0 +1,70 @@
+/* Analysis Dashboard - Base Styles */
+
+/* CSS Variables for Theming */
+:root {
+    /* Light Mode */
+    --bg-primary: #ffffff;
+    --bg-secondary: #f8f9fa;
+    --bg-card: #ffffff;
+    --bg-hover: rgba(0, 0, 0, 0.04);
+    --text-primary: #212529;
+    --text-secondary: #868e96;
+    --text-muted: #64748b;
+    --accent-primary: #f59e0b;
+    --accent-secondary: #10b981;
+    --border-color: #f1f3f5;
+    --shadow: rgba(0, 0, 0, 0.05);
+}
+
+:root.dark-mode {
+    /* Dark Mode */
+    --bg-primary: #181c23;
+    --bg-secondary: #232733;
+    --bg-card: #232733;
+    --bg-hover: rgba(255, 255, 255, 0.05);
+    --text-primary: #f0f0f0;
+    --text-secondary: #bfc9da;
+    --text-muted: #9ca3af;
+    --accent-primary: #f59e0b;
+    --accent-secondary: #10b981;
+    --border-color: #2e3646;
+    --shadow: rgba(49, 130, 246, 0.08);
+}
+
+/* Base Styles */
+html, body {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+    margin: 0;
+    padding: 0;
+    transition: background-color 0.1s ease, color 0.1s ease;
+}
+
+* {
+    box-sizing: border-box;
+    transition: 
+        background-color 0.1s ease,
+        color 0.1s ease,
+        border-color 0.1s ease,
+        box-shadow 0.1s ease;
+}
+
+/* Scrollbar Styles */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--bg-secondary);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--text-muted);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #9ca3af;
+} 

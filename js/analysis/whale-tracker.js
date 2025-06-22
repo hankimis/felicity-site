@@ -3,7 +3,7 @@
  * 실시간 암호화폐 고래 거래 추적 시스템
  */
 
-class WhaleTracker {
+export class WhaleTracker {
     constructor(settings = {}) {
         this.apiEndpoint = 'https://api.binance.com/api/v3/aggTrades';
         this.settings = {
@@ -150,14 +150,8 @@ class WhaleTracker {
         console.log('Whale Tracker initializing...');
         this.allExchanges = Object.keys(this.exchanges);
         this.setupAudio();
-        this.setupEventListeners();
-        this.createTradeContainer();
         await this.connectAllExchanges();
         this.start();
-        this.tradeListContainer = document.getElementById('whale-trades-container'); 
-        if (!this.tradeListContainer) {
-            console.error('Whale trades container not found!');
-        }
     }
 
     setupAudio() {
@@ -168,67 +162,6 @@ class WhaleTracker {
             this.audioGain.gain.value = this.audioVolume;
         } catch (error) {
             console.warn('Audio not supported:', error);
-        }
-    }
-
-    setupEventListeners() {
-        // 컨트롤 이벤트 리스너
-        const controls = document.getElementById('whale-controls');
-        if (controls) {
-            controls.addEventListener('change', (e) => {
-                if (e.target.id === 'audio-volume') {
-                    this.audioVolume = parseFloat(e.target.value);
-                    if (this.audioGain) this.audioGain.gain.value = this.audioVolume;
-                } else if (e.target.id === 'audio-pitch') {
-                    this.audioPitch = parseFloat(e.target.value);
-                } else if (e.target.id === 'audio-threshold') {
-                    this.audioThreshold = parseFloat(e.target.value);
-                } else if (e.target.id === 'show-logos') {
-                    this.showLogos = e.target.checked;
-                    this.updateTradeDisplay();
-                } else if (e.target.id === 'show-prices') {
-                    this.showPrices = e.target.checked;
-                    this.updateTradeDisplay();
-                } else if (e.target.id === 'show-timeago') {
-                    this.showTimeAgo = e.target.checked;
-                    this.updateTradeDisplay();
-                }
-            });
-        }
-    }
-
-    createTradeContainer() {
-        // 기존 컨테이너가 있는지 확인
-        let container = document.getElementById('whale-trades-container');
-        
-        if (!container) {
-            // whale-transactions 컨테이너를 찾아서 사용하거나 새로 생성
-            container = document.getElementById('whale-transactions');
-            
-            if (!container) {
-                // 새 컨테이너 생성
-                container = document.createElement('div');
-                container.id = 'whale-trades-container';
-                container.className = 'whale-trades-container';
-                
-                // body가 존재하는 경우에만 추가
-                if (document.body) {
-                    document.body.appendChild(container);
-                } else {
-                    // body가 없으면 나중에 추가하도록 저장
-                    this.pendingContainer = container;
-                }
-            } else {
-                // 기존 whale-transactions 컨테이너를 whale-trades-container로 변경
-                container.id = 'whale-trades-container';
-                container.className = 'whale-trades-container';
-            }
-        }
-        
-        // pendingContainer가 있으면 body에 추가
-        if (this.pendingContainer && document.body) {
-            document.body.appendChild(this.pendingContainer);
-            this.pendingContainer = null;
         }
     }
 
@@ -309,47 +242,17 @@ class WhaleTracker {
     }
 
     processTrade(trade) {
-        // 거래 가치 계산
-        const tradeValue = trade.amount * trade.price;
-        
-        // 100k 이상만 처리
-        if (tradeValue < 100000) return;
-        
-        // 거래 레벨 결정
-        let level = 0;
-        for (let i = this.thresholds.length - 1; i >= 0; i--) {
-            if (tradeValue >= this.thresholds[i].amount) {
-                level = this.thresholds[i].level;
-                break;
+        if (!trade) return;
+
+        // USD 가치 계산
+        trade.usdValue = trade.price * trade.quantity;
+
+        // 대량 거래 필터링
+        if (trade.usdValue >= this.settings.largeTradeThreshold) {
+            this.whaleTrades.unshift(trade);
+            if (this.whaleTrades.length > this.maxTrades) {
+                this.whaleTrades.pop();
             }
-        }
-
-        // 거래 데이터 추가
-        const tradeData = {
-            ...trade,
-            value: tradeValue,
-            level: level,
-            id: Date.now() + Math.random()
-        };
-
-        this.trades.unshift(tradeData);
-        
-        // 최대 거래 수 제한
-        if (this.trades.length > this.maxTrades) {
-            this.trades.pop();
-        }
-
-        // 오디오 알림 재생
-        if (!this.muted && tradeValue >= this.audioThreshold) {
-            this.playAudioAlert(trade);
-        }
-
-        // 디스플레이 업데이트
-        this.updateTradeDisplay();
-        
-        // 대형 거래 알림
-        if (level >= 2) {
-            this.triggerWhaleAlert(tradeData);
         }
     }
 
@@ -538,7 +441,7 @@ class WhaleTracker {
     }
 
     getWhaleTransactions() {
-        return this.trades;
+        return this.whaleTrades;
     }
 
     waitForContainer() {

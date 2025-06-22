@@ -2,7 +2,7 @@
  * Market Heatmap Module
  * 암호화폐 시장 히트맵을 생성하고 표시하는 모듈
  */
-class MarketHeatmap {
+export class MarketHeatmap {
     constructor() {
         this.currentTimeframe = '24h';
         this.marketData = [];
@@ -187,59 +187,65 @@ class MarketHeatmap {
         const container = this.heatmapContainer;
         container.innerHTML = '';
         
-        // 컨테이너 크기
-        const containerWidth = container.clientWidth || 800;
-        const containerHeight = 400;
-        
-        // 각 코인의 크기 계산 (시가총액 기준)
+        const containerWidth = container.clientWidth;
+        const containerHeight = container.clientHeight;
+
+        if (containerWidth === 0 || containerHeight === 0) {
+            console.warn("Heatmap container has zero dimensions.");
+            return;
+        }
+
         const totalMarketCap = data.reduce((sum, coin) => sum + coin.market_cap, 0);
-        const totalArea = containerWidth * containerHeight;
         
-        let currentX = 0;
-        let currentY = 0;
-        let rowHeight = 0;
+        const squarify = (items, x, y, width, height) => {
+            if (!items.length) return;
+
+            const totalValue = items.reduce((sum, item) => sum + item.value, 0);
+            
+            let i = 1;
+            for (; i < items.length; i++) {
+                const row = items.slice(0, i + 1);
+                if (this.worstAspectRatio(row, width, totalValue) > this.worstAspectRatio(items.slice(0, i), width, totalValue)) {
+                    break;
+                }
+            }
+            const currentRow = items.slice(0, i);
+            const remaining = items.slice(i);
+            
+            const rowTotalValue = currentRow.reduce((sum, item) => sum + item.value, 0);
+            const rowHeight = rowTotalValue / totalValue * height;
+            
+            let currentX = x;
+            currentRow.forEach(item => {
+                const itemWidth = item.value / rowTotalValue * width;
+                this.createHeatmapTile(item.data, currentX, y, itemWidth, rowHeight);
+                currentX += itemWidth;
+            });
+
+            squarify(remaining, x, y + rowHeight, width, height - rowHeight);
+        };
         
-        data.forEach((coin, index) => {
-            const percentage = coin.market_cap / totalMarketCap;
-            const area = totalArea * percentage;
-            
-            // 최소 크기 보장
-            const minWidth = 80;
-            const minHeight = 60;
-            
-            let width = Math.sqrt(area * 1.5); // 가로가 더 긴 비율
-            let height = area / width;
-            
-            // 최소 크기 적용
-            width = Math.max(width, minWidth);
-            height = Math.max(height, minHeight);
-            
-            // 줄바꿈 처리
-            if (currentX + width > containerWidth) {
-                currentX = 0;
-                currentY += rowHeight;
-                rowHeight = 0;
-            }
-            
-            // 행 높이 업데이트
-            rowHeight = Math.max(rowHeight, height);
-            
-            // 컨테이너 높이 초과 시 줄이기
-            if (currentY + height > containerHeight) {
-                height = containerHeight - currentY;
-            }
-            
-            this.createHeatmapTile(coin, currentX, currentY, width, height);
-            
-            currentX += width;
+        const items = data.map(coin => ({ value: coin.market_cap, data: coin }));
+        squarify(items, 0, 0, containerWidth, containerHeight);
+    }
+    
+    worstAspectRatio(row, length, totalValue) {
+        const rowTotalValue = row.reduce((sum, item) => sum + item.value, 0);
+        const rowArea = (rowTotalValue / totalValue) * length * length; // 가정: 정사각형 영역
+        const rowLength = rowArea / length;
+        let maxRatio = 0;
+        row.forEach(item => {
+            const itemArea = item.value / rowTotalValue * rowArea;
+            const itemHeight = itemArea / rowLength;
+            maxRatio = Math.max(maxRatio, rowLength / itemHeight, itemHeight / rowLength);
         });
+        return maxRatio;
     }
 
     createHeatmapTile(coin, x, y, width, height) {
         const tile = document.createElement('div');
         tile.className = 'heatmap-tile';
         
-        // 색상 결정
         const change = coin.change_24h;
         const color = this.getColorForChange(change);
         
@@ -247,53 +253,46 @@ class MarketHeatmap {
             position: absolute;
             left: ${x}px;
             top: ${y}px;
-            width: ${width}px;
-            height: ${height}px;
+            width: ${width - 2}px; /* border 고려 */
+            height: ${height - 2}px; /* border 고려 */
             background-color: ${color};
-            border: 1px solid rgba(255,255,255,0.1);
+            border: 1px solid rgba(0,0,0,0.3);
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
             cursor: pointer;
             transition: all 0.2s ease;
+            box-sizing: border-box;
+            overflow: hidden;
         `;
         
-        // 내용 추가
-        const isSmall = width < 100 || height < 70;
+        const smallerDim = Math.min(width, height);
+        const symbolSize = Math.max(8, smallerDim * 0.18);
+        const changeSize = Math.max(7, smallerDim * 0.12);
+        
         tile.innerHTML = `
             <div class="tile-symbol" style="
                 font-weight: bold;
-                font-size: ${isSmall ? '12px' : '14px'};
+                font-size: ${symbolSize}px;
                 color: ${this.getTextColor(color)};
-                margin-bottom: ${isSmall ? '2px' : '4px'};
-            ">${coin.symbol}</div>
+                margin-bottom: ${smallerDim * 0.05}px;
+                white-space: nowrap;
+            ">${coin.symbol.replace(/USDT$/, '')}</div>
             <div class="tile-change" style="
-                font-size: ${isSmall ? '10px' : '12px'};
+                font-size: ${changeSize}px;
                 color: ${this.getTextColor(color)};
                 opacity: 0.9;
+                white-space: nowrap;
             ">${change > 0 ? '+' : ''}${change.toFixed(2)}%</div>
-            ${!isSmall ? `
-                <div class="tile-price" style="
-                    font-size: 10px;
-                    color: ${this.getTextColor(color)};
-                    opacity: 0.7;
-                    margin-top: 2px;
-                ">${window.formatPrice(coin.price)}</div>
-            ` : ''}
         `;
         
-        // 호버 효과
         tile.addEventListener('mouseenter', () => {
-            tile.style.transform = 'scale(1.05)';
             tile.style.zIndex = '10';
-            this.showTooltip(coin, tile);
         });
         
         tile.addEventListener('mouseleave', () => {
-            tile.style.transform = 'scale(1)';
             tile.style.zIndex = '1';
-            this.hideTooltip();
         });
         
         this.heatmapContainer.appendChild(tile);
@@ -436,5 +435,9 @@ class MarketHeatmap {
             this.showLoadingState();
             this.loadMarketData();
         });
+    }
+
+    getHeatmapData() {
+        return this.heatmapData || [];
     }
 } 
