@@ -620,120 +620,62 @@ class AnalysisDashboard {
         this.closeSettings();
         
         if (window.notifications) {
-            window.notifications.success('설정이 저장되었습니다.');
+            window.notifications.success('설정이 성공적으로 저장되었습니다.');
         }
     }
 
     // Layout Management
     initializeGridStack() {
-        const options = {
-            column: 12,
-            cellHeight: 'auto', // We will set this dynamically to be square.
+        this.grid = GridStack.init({
+            float: false, // float를 false로 변경하여 겹치지 않도록 함
+            // Responsive columns
+            columnOpts: {
+                1200: 12,
+                992: 10,
+                768: 8,
+                576: 6,
+                0: 4
+            },
             minRow: 1,
-            float: false,
+            cellHeight: 30, // 고정 높이로 설정하여 정확한 그리드 계산
+            margin: 10,
+            resizable: {
+                handles: 'all'
+            },
+            alwaysShowResizeHandle: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent),
+            // 그리드 아이템이 겹치지 않도록 설정
             disableOneColumnMode: true,
-            removable: '.trash',
-        };
-
-        this.grid = GridStack.init(options);
-        
-        this.initializeGridBackground();
-        this.updateGridBackground(); // Initial draw
-
-        // Update grid on any change (drag, resize, etc.)
-        this.grid.on('change', () => {
-            setTimeout(() => this.updateGridBackground(), 0);
+            // 그리드 라인 표시
+            showGrid: true,
+            // 그리드 아이템이 겹치지 않도록 추가 설정
+            acceptWidgets: false,
+            // 그리드 아이템 이동 시 겹침 방지
+            preventCollision: true
         });
 
-        // Update on window resize, with debouncing to improve performance
-        const debouncedUpdate = this.debounce(() => this.updateGridBackground(), 100);
-        window.addEventListener('resize', debouncedUpdate);
-        
-        // Load layout from localStorage if it exists
+        this.grid.on('resizestop', (event, el) => {
+            // Trigger a resize event for any charts in the card
+            const chartCanvas = el.querySelector('canvas');
+            if (chartCanvas && chartCanvas.chart) {
+                chartCanvas.chart.resize();
+            }
+        });
+
+        this.grid.on('change', (event, items) => {
+            // 그리드 변경 시 레이아웃 저장
+            this.saveLayout();
+        });
+
         this.loadLayout();
-
-        // Setup layout controls
         this.createLayoutControls();
-        
-        // Initially disable editing
-        this.grid.disable();
+        this.setupSquareGrid(); // 정사각형 그리드 설정 추가
     }
 
-    initializeGridBackground() {
-        const canvas = document.createElement('canvas');
-        canvas.id = 'grid-background-canvas';
-        canvas.style.position = 'absolute';
-        canvas.style.top = '0';
-        canvas.style.left = '0';
-        canvas.style.zIndex = '0';
-        canvas.style.pointerEvents = 'none';
-        this.grid.el.insertBefore(canvas, this.grid.el.firstChild);
-        this.gridCanvas = canvas;
-        this.gridCanvasCtx = canvas.getContext('2d');
-    }
-
-    updateGridBackground() {
-        if (!this.grid || !this.gridCanvasCtx) return;
-
-        const columnWidth = this.grid.el.offsetWidth / this.grid.getColumn();
-        this.grid.cellHeight(columnWidth);
-
-        const canvas = this.gridCanvas;
-        const ctx = this.gridCanvasCtx;
-
-        // Use the container's full scrollable height for the canvas height
-        const canvasWidth = this.grid.el.offsetWidth;
-        const canvasHeight = this.grid.el.scrollHeight;
-
-        const dpr = window.devicePixelRatio || 1;
-        canvas.width = canvasWidth * dpr;
-        canvas.height = canvasHeight * dpr;
-        canvas.style.width = `${canvasWidth}px`;
-        canvas.style.height = `${canvasHeight}px`;
-        ctx.scale(dpr, dpr);
-
-        ctx.clearRect(0, 0, canvasWidth, canvasHeight);
-        ctx.strokeStyle = 'rgba(0, 0, 0, 0.07)';
-        ctx.lineWidth = 1;
-
-        // Draw vertical lines
-        for (let i = 1; i < 12; i++) {
-            const x = i * columnWidth;
-            ctx.beginPath();
-            ctx.moveTo(x, 0);
-            ctx.lineTo(x, canvasHeight);
-            ctx.stroke();
-        }
-
-        // Draw horizontal lines
-        const numRows = Math.floor(canvasHeight / columnWidth);
-        for (let i = 1; i < numRows; i++) {
-            const y = i * columnWidth;
-            ctx.beginPath();
-            ctx.moveTo(0, y);
-            ctx.lineTo(canvasWidth, y);
-            ctx.stroke();
-        }
-    }
-
-    // Utility for debouncing events to improve performance
-    debounce(func, wait) {
-        let timeout;
-        return function executedFunction(...args) {
-            const later = () => {
-                clearTimeout(timeout);
-                func(...args);
-            };
-            clearTimeout(timeout);
-            timeout = setTimeout(later, wait);
-        };
-    }
-    
     createLayoutControls() {
-        const controlsContainer = document.getElementById('layout-controls-container');
-        if (!controlsContainer) return;
+        const container = document.getElementById('layout-controls-container');
+        if (!container) return;
 
-        controlsContainer.innerHTML = `
+        container.innerHTML = `
             <button class="layout-btn" id="edit-layout-btn" title="레이아웃 편집">
                 <i class="fas fa-edit"></i>
             </button>
@@ -753,6 +695,7 @@ class AnalysisDashboard {
     toggleEditMode() {
         this.isEditMode = !this.isEditMode;
         const editBtn = document.getElementById('edit-layout-btn');
+        const gridElement = document.getElementById('dashboard-grid');
         
         if (this.isEditMode) {
             // 편집 모드 활성화 - 이동과 크기 조절 모두 허용
@@ -760,12 +703,24 @@ class AnalysisDashboard {
             this.grid.enableMove(true);
             this.grid.enableResize(true);
             editBtn.classList.add('active');
+            editBtn.innerHTML = '<i class="fas fa-save"></i>';
+            editBtn.title = '편집 완료';
+            // 그리드 배경 표시
+            if (gridElement) {
+                gridElement.classList.add('grid-background');
+            }
         } else {
             // 편집 모드 비활성화
             this.grid.disable();
             this.grid.enableMove(false);
             this.grid.enableResize(false);
             editBtn.classList.remove('active');
+            editBtn.innerHTML = '<i class="fas fa-edit"></i>';
+            editBtn.title = '레이아웃 편집';
+            // 그리드 배경 숨김
+            if (gridElement) {
+                gridElement.classList.remove('grid-background');
+            }
         }
     }
 
@@ -801,6 +756,36 @@ class AnalysisDashboard {
         if (confirm('레이아웃을 초기 설정으로 되돌리시겠습니까?')) {
             localStorage.removeItem('grid-layout');
             window.location.reload();
+        }
+    }
+
+    setupSquareGrid() {
+        // 그리드 컨테이너의 너비를 기준으로 셀 크기 계산
+        const gridElement = document.getElementById('dashboard-grid');
+        if (gridElement) {
+            const updateGridSize = () => {
+                const containerWidth = gridElement.clientWidth;
+                const margin = this.grid.opts.margin;
+                const columns = this.grid.getColumn();
+                const cellWidth = (containerWidth - (margin * (columns - 1))) / columns;
+                
+                // GridStack의 cellHeight를 동적으로 설정 (정사각형 유지)
+                this.grid.cellHeight(cellWidth);
+                
+                // JS에서 직접 background-size를 설정
+                const bgSize = cellWidth + margin;
+                gridElement.style.backgroundSize = `${bgSize}px ${bgSize}px`;
+            };
+            
+            // 초기 설정 및 리사이즈 이벤트 리스너
+            updateGridSize();
+            window.addEventListener('resize', updateGridSize);
+            
+            // GridStack column 변경 시에도 업데이트
+            this.grid.on('change', updateGridSize);
+            
+            // 그리드 아이템이 로드된 후에도 업데이트
+            setTimeout(updateGridSize, 100);
         }
     }
 }

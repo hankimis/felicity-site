@@ -233,44 +233,45 @@ html, body {
 }
 
 /* Responsive Layout */
-@media (min-width: 1400px) {
-    .whale-card { grid-column: span 4; grid-row-end: span 45; }
-    .liquidation-card { grid-column: span 4; grid-row-end: span 22; }
-    .longshort-card { grid-column: span 4; grid-row-end: span 23; }
-    .realtime-card { grid-column: span 4; grid-row-end: span 23; }
-    .orderbook-card { grid-column: span 4; grid-row-end: span 23; }
-    .indicators-card { grid-column: span 4; grid-row-end: span 10; }
-    .sentiment-card { grid-column: span 2; grid-row-end: span 15; }
-    .heatmap-card { grid-column: span 4; grid-row-end: span 30; }
+@media (min-width: 1400px) {}
+@media (max-width: 1399px) and (min-width: 992px) {}
+@media (max-width: 991px) {}
+
+@media (max-width: 768px) {
+    .analysis-dashboard {
+        grid-template-columns: repeat(4, 1fr);
+        padding: 0.5rem;
+    }
+
+    .whale-card, .realtime-card, .orderbook-card, .indicators-card, .heatmap-card, .liquidation-card {
+        grid-column: span 4;
+    }
+    .sentiment-card, .longshort-card {
+        grid-column: span 2;
+    }
 }
 
-@media (max-width: 1399px) and (min-width: 992px) {
-    .whale-card { grid-column: span 12; grid-row-end: span 24; }
-    .heatmap-card { grid-column: span 6; grid-row-end: span 24; }
-    .liquidation-card { grid-column: span 6; grid-row-end: span 25; }
-    .longshort-card { grid-column: span 6; grid-row-end: span 25; }
-    .realtime-card { grid-column: span 6; grid-row-end: span 28; }
-    .orderbook-card { grid-column: span 6; grid-row-end: span 28; }
-    .indicators-card { grid-column: span 6; grid-row-end: span 16; }
-    .sentiment-card { grid-column: span 6; grid-row-end: span 16; }
-}
-
-@media (max-width: 991px) {
-    .dashboard-grid {
-        grid-template-columns: 1fr;
-        grid-auto-rows: auto;
+@media (max-width: 767px) {
+    .analysis-dashboard {
+        grid-template-columns: repeat(4, 1fr);
+        grid-template-rows: repeat(50, 30px);
     }
     
     .dashboard-card, [class*="-card"] {
-        grid-column: span 1;
+        grid-column: span 4;
         grid-row-end: auto;
         min-height: 300px;
     }
     
-    .heatmap-card {
-        grid-column: span 12;
-        grid-row-end: span 35;
-    }
+    .whale-card { grid-column: span 4; grid-row-end: span 3; }
+    .heatmap-card { grid-column: span 4; grid-row-end: span 3; }
+    .liquidation-card { grid-column: span 4; grid-row-end: span 2; }
+    .longshort-card { grid-column: span 4; grid-row-end: span 2; }
+    .realtime-card { grid-column: span 4; grid-row-end: span 3; }
+    .orderbook-card { grid-column: span 4; grid-row-end: span 3; }
+    .indicators-card { grid-column: span 4; grid-row-end: span 3; }
+    .sentiment-card { grid-column: span 4; grid-row-end: span 2; }
+    .chat-card { grid-column: span 4; grid-row-end: span 4; }
 }
 
 /* Dashboard Cards */
@@ -328,67 +329,86 @@ html, body {
 
 /* Analysis Dashboard Layout */
 .analysis-dashboard {
-    display: grid;
-    grid-template-columns: repeat(12, 1fr);
-    grid-template-rows: repeat(50, 30px);
-    gap: 10px;
     padding: 20px;
     min-height: 100vh;
-    background: 
-        linear-gradient(rgba(0,0,0,0.1) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(0,0,0,0.1) 1px, transparent 1px);
-    background-size: 30px 30px;
     position: relative;
 }
 
-/* Grid background for better visibility */
-.analysis-dashboard::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
+/* GridStack 컨테이너 스타일 */
+.grid-stack {
+    flex-grow: 1;
+    overflow-y: auto;
+    position: relative;
+    border-radius: 4px;
+    background: transparent; /* 배경을 완전히 투명하게 설정 */
+}
+
+.grid-stack-item {
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 16px var(--shadow);
+    transition: all 0.3s ease;
+    background: var(--bg-card);
+}
+
+.grid-stack-item:hover {
+    box-shadow: 0 8px 24px var(--shadow);
+    transform: translateY(-2px);
+}
+
+.grid-stack-item-content {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-card);
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+/* 그리드 배경 표시 모드 */
+.grid-stack.grid-background {
     background: 
-        linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px);
-    background-size: 30px 30px;
-    pointer-events: none;
-    z-index: 0;
+        linear-gradient(rgba(0,0,0,0.1) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,0,0,0.1) 1px, transparent 1px);
+}
+
+.grid-stack.grid-background::after {
+    content: none;
+}
+
+/* Grid lines for better visibility */
+.grid-stack::before {
+    content: none;
 }
 
 /* Card positioning */
 .analysis-card {
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 8px;
-    backdrop-filter: blur(10px);
-    position: relative;
-    z-index: 1;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
     transition: all 0.3s ease;
-    cursor: move;
-    user-select: none;
-}
-
-.analysis-card:hover {
-    border-color: rgba(255, 255, 255, 0.4);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
 }
 
 .analysis-card.resizing {
-    cursor: nw-resize;
-    z-index: 10;
+    z-index: 1000;
+    box-shadow: 0 12px 32px rgba(0,0,0,0.3);
 }
 
-/* Card sizes */
-.whale-card { grid-column: span 2; grid-row-end: span 22; }
-.realtime-card { grid-column: span 2; grid-row-end: span 22; }
-.orderbook-card { grid-column: span 2; grid-row-end: span 22; }
-.indicators-card { grid-column: span 2; grid-row-end: span 30; }
-.sentiment-card { grid-column: span 2; grid-row-end: span 15; }
-.heatmap-card { grid-column: span 2; grid-row-end: span 22; }
-.longshort-card { grid-column: span 2; grid-row-end: span 15; }
-.liquidation-card { grid-column: span 2; grid-row-end: span 22; }
+/* Card sizes - These are for reference, GridStack controls the actual size */
+.whale-card,
+.realtime-card,
+.orderbook-card,
+.indicators-card,
+.sentiment-card,
+.heatmap-card,
+.longshort-card,
+.liquidation-card,
+.chat-card {
+    /* CSS Grid properties are removed as they are controlled by GridStack */
+}
 
 /* Layout edit mode */
 .analysis-dashboard.edit-mode {
@@ -529,38 +549,35 @@ html, body {
 @media (max-width: 768px) {
     .analysis-dashboard {
         grid-template-columns: repeat(4, 1fr);
-        gap: 5px;
-        padding: 10px;
+        padding: 0.5rem;
     }
-    
-    .whale-card { grid-column: span 4; }
-    .realtime-card { grid-column: span 4; }
-    .orderbook-card { grid-column: span 4; }
-    .indicators-card { grid-column: span 4; }
-    .sentiment-card { grid-column: span 2; }
-    .heatmap-card { grid-column: span 4; }
-    .longshort-card { grid-column: span 2; }
-    .liquidation-card { grid-column: span 4; }
+
+    .whale-card, .realtime-card, .orderbook-card, .indicators-card, .heatmap-card, .liquidation-card {
+        grid-column: span 4;
+    }
+    .sentiment-card, .longshort-card {
+        grid-column: span 2;
+    }
 }
 
 /* GridStack Customizations */
 .grid-stack {
-    /* Grid background is now a canvas, properties removed */
-    background-color: #f4f7fc; /* Light mode background */
     flex-grow: 1;
     overflow-y: auto;
-    position: relative; /* Ensure canvas is positioned correctly */
+    position: relative;
+    border-radius: 4px;
+    background: transparent; /* 배경을 완전히 투명하게 설정 */
 }
 
 .grid-stack-item-content {
-    background-color: #ffffff;
-    border: 1px solid #e2e8f0;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-    color: #2d3748;
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    box-shadow: 0 4px 12px var(--shadow);
+    color: var(--text-primary);
+    overflow: hidden;
     display: flex;
     flex-direction: column;
-    overflow: hidden;
 }
 
 .analysis-card {
@@ -637,4 +654,71 @@ html, body {
     background: #007bff;
     border-color: #007bff;
     color: white;
+}
+
+/* Grid Background for editing mode */
+.grid-stack.grid-background {
+    background: 
+        linear-gradient(rgba(0,0,0,0.1) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,0,0,0.1) 1px, transparent 1px);
+}
+
+.grid-stack.grid-background::after {
+    content: none;
+}
+
+.grid-stack.grid-background .grid-stack-item {
+    border: 2px dashed rgba(0,0,0,0.2);
+    background: rgba(255,255,255,0.9);
+}
+
+/* Grid lines for better visibility */
+.grid-stack::before {
+    content: none;
+}
+
+/* 편집 모드 스타일 */
+.grid-stack.edit-mode .grid-stack-item {
+    outline: 2px dashed var(--accent-primary-faded);
+    outline-offset: -2px;
+}
+
+.grid-stack.edit-mode .grid-stack-item-content {
+    cursor: move;
+}
+
+/* 리사이즈 핸들 기본 스타일 (평상시에는 숨김) */
+.grid-stack-item > .ui-resizable-handle {
+    display: none;
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    background: rgba(245, 158, 11, 0.7);
+    border: 2px solid white;
+    border-radius: 50%;
+    z-index: 20;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+}
+
+/* 편집 모드에서만 리사이즈 핸들 표시 */
+.grid-stack.edit-mode .grid-stack-item > .ui-resizable-handle {
+    display: block;
+}
+
+/* 각 핸들 위치 및 커서 모양 설정 */
+.ui-resizable-se { right: -5px; bottom: -5px; cursor: se-resize; }
+.ui-resizable-sw { left: -5px; bottom: -5px; cursor: sw-resize; }
+.ui-resizable-ne { right: -5px; top: -5px; cursor: ne-resize; }
+.ui-resizable-nw { left: -5px; top: -5px; cursor: nw-resize; }
+.ui-resizable-e { right: -5px; top: 50%; margin-top: -10px; cursor: e-resize; }
+.ui-resizable-s { left: 50%; bottom: -5px; margin-left: -10px; cursor: s-resize; }
+.ui-resizable-w { left: -5px; top: 50%; margin-top: -10px; cursor: w-resize; }
+.ui-resizable-n { left: 50%; top: -5px; margin-left: -10px; cursor: n-resize; }
+
+/* 기존 배경 그리드 관련 코드 모두 제거 */
+.grid-stack.grid-background,
+.grid-stack.grid-background::after,
+.grid-stack::before {
+    background: none;
+    content: none;
 } 

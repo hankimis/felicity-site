@@ -5,47 +5,45 @@
 class LayoutManager {
     constructor() {
         this.grid = null;
+        this.isEditMode = false; // 편집 모드 상태를 관리할 변수 추가
         this.init();
     }
 
     init() {
-        console.log('Initializing 12-column GridStack layout manager...');
+        console.log('Initializing stable GridStack layout manager...');
         this.grid = GridStack.init({
-            cellHeight: 'auto',
-            margin: 10,
-            column: 12, // 기본 12컬럼
-            disableResize: true,
-            disableDrag: true,
-            float: false, // 카드가 아래로만 쌓이도록 하여 겹침 방지
+            // 안정적인 레이아웃을 위한 핵심 설정
+            float: true, // true로 설정하여 카드를 자유롭게 배치하고 겹침을 방지
+            column: 12,
             minRow: 1,
-            handle: '.card-header', // 카드 헤더를 드래그 핸들로 사용
+            cellHeight: 20, // 정사각형 강제 대신 고정된 최소 단위 높이 사용
+            margin: 10,
+            
+            // 핸들은 CSS로 제어하므로 alwaysShow를 사용하지 않음
+            alwaysShowResizeHandle: false, 
+            
+            // 리사이즈 핸들 기본 설정
             resizable: {
-                handles: 'e,se,s,sw,w,nw,n,ne', // 모든 방향에서 리사이즈 가능
-                autoHide: true, // 편집 모드가 아닐 때는 핸들 숨김
-                start: function(event, ui) {
-                    // 리사이즈 시작 시 그리드에 맞춰 스냅
-                    ui.element.addClass('resizing');
-                },
-                stop: function(event, ui) {
-                    // 리사이즈 종료 시 그리드에 맞춰 정렬
-                    ui.element.removeClass('resizing');
-                    this.grid.compact();
-                }.bind(this)
+                handles: 'all'
             }
         });
         
+        // 차트 리사이즈 이벤트 리스너
         this.grid.on('resizestop', (event, el) => {
-            const canvas = el.querySelector('canvas');
-            if (canvas && canvas.chart) {
-                canvas.chart.resize();
+            // 모든 차트 라이브러리에 대응하기 위한 일반적인 리사이즈
+            const eventResize = new Event('resize');
+            window.dispatchEvent(eventResize);
+
+            // 기술 지표 카드의 경우, 안정적인 재렌더링을 위해 render 함수 직접 호출
+            if (el.id === 'indicators-card-item' && window.analysisDashboard && window.analysisDashboard.modules.technicalIndicators) {
+                window.analysisDashboard.modules.technicalIndicators.render();
             }
         });
-        
-        this.setupResponsive();
+
         this.loadLayout();
-        this.hideGridBackground(); // 초기에는 그리드 숨김
-        this.setupSquareGrid(); // 정사각형 그리드 설정
         this.setupEventListeners();
+
+        // 초기에는 편집 비활성화 상태로 시작
         this.grid.enableMove(false);
         this.grid.enableResize(false);
     }
@@ -65,37 +63,25 @@ class LayoutManager {
     toggleEditMode() {
         const layoutToggle = document.getElementById('layout-toggle');
         const layoutReset = document.getElementById('layout-reset');
-        const isEnabled = !this.grid.opts.disableDrag;
+        const gridContainer = document.querySelector('.grid-stack');
+        
+        this.isEditMode = !this.isEditMode; // 내부 상태를 기준으로 토글
 
-        if (isEnabled) { // 편집 모드 종료
+        if (this.isEditMode) { // 편집 모드 시작
+            this.grid.enableMove(true);
+            this.grid.enableResize(true);
+            gridContainer.classList.add('edit-mode');
+            layoutToggle.classList.add('active');
+            layoutToggle.innerHTML = '<i class="fas fa-save"></i><span>편집 완료</span>';
+            if (layoutReset) layoutReset.style.display = 'flex';
+        } else { // 편집 모드 종료
             this.grid.enableMove(false);
             this.grid.enableResize(false);
+            gridContainer.classList.remove('edit-mode');
             layoutToggle.classList.remove('active');
             layoutToggle.innerHTML = '<i class="fas fa-edit"></i><span>레이아웃 편집</span>';
             if (layoutReset) layoutReset.style.display = 'none';
-            this.hideGridBackground();
-            this.saveLayout();
-        } else { // 편집 모드 시작
-            this.grid.enableMove(true);
-            this.grid.enableResize(true);
-            layoutToggle.classList.add('active');
-            layoutToggle.innerHTML = '<i class="fas fa-save"></i><span>레이아웃 저장</span>';
-            if (layoutReset) layoutReset.style.display = 'flex';
-            this.showGridBackground();
-        }
-    }
-
-    showGridBackground() {
-        const gridElement = document.getElementById('dashboard-grid');
-        if (gridElement) {
-            gridElement.classList.add('grid-background');
-        }
-    }
-
-    hideGridBackground() {
-        const gridElement = document.getElementById('dashboard-grid');
-        if (gridElement) {
-            gridElement.classList.remove('grid-background');
+            this.saveLayout(); // 편집 완료 시에만 저장
         }
     }
 
@@ -103,6 +89,7 @@ class LayoutManager {
         const serializedData = this.grid.save();
         localStorage.setItem('dashboard-layout', JSON.stringify(serializedData));
         this.showToast('레이아웃이 저장되었습니다.', 'success');
+        console.log('Layout saved.');
     }
 
     loadLayout() {
@@ -113,7 +100,7 @@ class LayoutManager {
     }
 
     resetLayout() {
-        if (confirm('현재 레이아웃을 초기 상태로 되돌리시겠습니까?')) {
+        if (confirm('현재 레이아웃을 초기 상태로 되돌리시겠습니까? 모든 변경사항이 사라집니다.')) {
             localStorage.removeItem('dashboard-layout');
             window.location.reload();
         }
@@ -133,43 +120,6 @@ class LayoutManager {
             toast.classList.remove('show');
             setTimeout(() => toast.remove(), 300);
         }, 3000);
-    }
-
-    setupSquareGrid() {
-        // 그리드 컨테이너의 너비를 기준으로 정사각형 셀 크기 계산
-        const gridElement = document.getElementById('dashboard-grid');
-        if (gridElement) {
-            const updateGridSize = () => {
-                const containerWidth = gridElement.offsetWidth;
-                const cellSize = containerWidth / 12; // 12-column 기준
-                
-                // GridStack의 cellHeight를 동적으로 설정
-                this.grid.cellHeight(cellSize);
-                
-                // CSS 변수로 셀 크기 전달
-                document.documentElement.style.setProperty('--grid-cell-size', `${cellSize}px`);
-            };
-            
-            // 초기 설정 및 리사이즈 이벤트 리스너
-            updateGridSize();
-            window.addEventListener('resize', updateGridSize);
-        }
-    }
-
-    setupResponsive() {
-        const updateGridColumns = () => {
-            const width = window.innerWidth;
-            if (width <= 768 && this.grid.getColumn() !== 4) {
-                this.grid.column(4); // 모바일: 4컬럼
-            } else if (width > 768 && width <= 1200 && this.grid.getColumn() !== 8) {
-                this.grid.column(8); // 태블릿: 8컬럼
-            } else if (width > 1200 && this.grid.getColumn() !== 12) {
-                this.grid.column(12); // 데스크탑: 12컬럼
-            }
-        };
-        
-        window.addEventListener('resize', updateGridColumns);
-        updateGridColumns(); // 초기 로드 시 실행
     }
 }
 

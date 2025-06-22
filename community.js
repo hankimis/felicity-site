@@ -44,6 +44,92 @@ let coinData = [];
 
 const binanceStreams = {};
 
+// Firestore와 연동되는 TradingView Save/Load 어댑터
+function createFirebaseSaveLoadAdapter(userId) {
+    if (!window.db) {
+        console.error("Firestore is not initialized (window.db is null).");
+        // Firestore가 준비되지 않았을 때 기능을 비활성화하는 mock adapter 반환
+        return {
+            getAllCharts: () => Promise.resolve([]),
+            removeChart: () => Promise.resolve(),
+            saveChart: () => Promise.reject("Firestore not available"),
+            getChart: () => Promise.reject("Firestore not available")
+        };
+    }
+    
+    console.log(`Creating Firebase Save/Load adapter for user: ${userId}`);
+    const firestoreRef = window.db.collection('userChartLayouts').doc(userId);
+
+    return {
+        // 모든 차트 레이아웃 가져오기 (현재는 단일 레이아웃만 지원)
+        getAllCharts: function() {
+            console.log(`Getting all charts for user: ${userId}`);
+            return firestoreRef.get().then(doc => {
+                if (doc.exists && doc.data().name) {
+                    console.log(`Found saved chart layout: ${doc.data().name}`);
+                    return Promise.resolve([{
+                        id: doc.id,
+                        name: doc.data().name,
+                        timestamp: doc.data().timestamp,
+                        content: doc.data().content,
+                    }]);
+                }
+                console.log(`No saved chart layout found for user: ${userId}`);
+                return Promise.resolve([]);
+            }).catch(error => {
+                console.error("Error getting all charts:", error);
+                return Promise.resolve([]);
+            });
+        },
+
+        // 차트 레이아웃 제거
+        removeChart: function(chartId) {
+            console.log(`Removing chart layout for user: ${userId}`);
+            return firestoreRef.delete().then(() => {
+                console.log(`Chart layout for user ${userId} removed.`);
+            }).catch(error => {
+                console.error("Error removing chart:", error);
+            });
+        },
+
+        // 차트 레이아웃 저장
+        saveChart: function(chartData) {
+            console.log(`Saving chart layout for user: ${userId}`, chartData);
+            const chartToSave = {
+                name: chartData.name || `Chart ${new Date().toLocaleDateString()}`,
+                content: chartData.content,
+                timestamp: Math.floor(Date.now() / 1000),
+                symbol: chartData.symbol,
+                resolution: chartData.resolution,
+                lastModified: new Date().toISOString(),
+            };
+            return firestoreRef.set(chartToSave).then(() => {
+                console.log(`Chart layout for user ${userId} saved successfully.`);
+                return Promise.resolve(firestoreRef.id);
+            }).catch(error => {
+                console.error("Error saving chart:", error);
+                return Promise.reject(error);
+            });
+        },
+
+        // 특정 차트 레이아웃 가져오기
+        getChart: function(chartId) {
+            console.log(`Getting chart layout for user: ${userId}`);
+            return firestoreRef.get().then(doc => {
+                if (doc.exists && doc.data().content) {
+                    console.log(`Successfully loaded chart layout for user: ${userId}`);
+                    return Promise.resolve(doc.data().content);
+                }
+                console.log(`No chart content found for user: ${userId}`);
+                return Promise.reject("Chart not found");
+            }).catch(error => {
+                console.error("Error getting chart:", error);
+                return Promise.reject(error);
+            });
+        }
+    };
+}
+
 async function loadBinanceCoinData() {
   try {
     const resp = await fetch('https://api.binance.com/api/v3/ticker/24hr');
@@ -231,9 +317,11 @@ async function initChart() {
     
     // --- TradingView Advanced Charts integration ---
     if (window.TradingView && window.TradingView.widget) {
-        if (isChartInitialized) {
-            console.log('TradingView chart already initialized');
-            return;
+        if (isChartInitialized && tvWidget) {
+            console.log('Removing existing TradingView widget before re-initialization.');
+            tvWidget.remove();
+            tvWidget = null;
+            isChartInitialized = false;
         }
         if (!chartContainer) {
             console.error('Chart container not found for TradingView');
@@ -242,208 +330,90 @@ async function initChart() {
         const isDarkMode = document.documentElement.classList.contains('dark-mode');
         const tvTheme = isDarkMode ? 'dark' : 'light';
         const tvResolution = intervalToTVRes(currentInterval);
+
+        let widgetOptions = {
+            container: chartContainer,
+            symbol: currentSymbol,
+            interval: tvResolution,
+            library_path: 'charting_library-master/charting_library/',
+            datafeed: createBinanceDatafeed(),
+            locale: 'ko',
+            theme: tvTheme,
+            fullscreen: false,
+            autosize: true,
+            
+            // 기능 활성화/비활성화
+            disabled_features: [
+                "use_localstorage_for_settings",
+                "header_symbol_search", // 심볼 검색은 커스텀 UI 사용
+                "header_resolutions",   // 해상도 변경은 커스텀 UI 사용
+                "timeframes_toolbar",
+                "show_chart_property_page",
+                "header_compare"
+            ],
+            enabled_features: [
+                "study_templates", // 지표 템플릿
+                "header_indicators", // 지표 추가 버튼 활성화
+                "header_chart_type", // 차트 타입 변경
+                "header_screenshot", // 스크린샷
+                "header_settings", // 설정
+                "header_undo_redo",
+                "header_drawings_toolbar"
+            ],
+            
+            // 사용자별 차트 저장/불러오기 설정
+            client_id: 'onbit.co.kr',
+            user_id: 'public_user_id', // 기본값
+            charts_storage_url: 'https://onbit.co.kr',
+            charts_storage_api_version: '1.1'
+        };
+
+        // 로그인 상태일 때만 Save/Load 어댑터 적용
+        if (window.currentUser && window.currentUser.uid) {
+            console.log(`Initializing chart for logged-in user: ${window.currentUser.uid}`);
+            widgetOptions.user_id = window.currentUser.uid;
+            widgetOptions.save_load_adapter = createFirebaseSaveLoadAdapter(window.currentUser.uid);
+            widgetOptions.load_last_chart = true; // 마지막으로 작업한 차트 불러오기
+            widgetOptions.auto_save_chart = true; // 자동 저장 활성화
+            widgetOptions.auto_save_delay = 5; // 5초 후 자동 저장
+        } else {
+             console.log("Initializing chart for guest user.");
+        }
+
         try {
             // ensure coin list ready for searchSymbols
             if (coinData.length === 0) await loadBinanceCoinData();
-            tvWidget = new TradingView.widget({
-                container: chartContainer,
-                symbol: currentSymbol,
-                interval: tvResolution,
-                autosize: true,
-                library_path: 'charting_library-master/charting_library/',
-                datafeed: createBinanceDatafeed(),
-                locale: 'ko',
-                theme: tvTheme,
-                disabled_features: ['use_localstorage_for_settings'],
-            });
-            isChartInitialized = true;
-            console.log('TradingView widget created');
-            connectWebSocket();
-        } catch (err) {
-            console.error('Failed to create TradingView widget:', err);
-        }
-        return; // skip LightweightCharts init below
-    }
-    // --- End TradingView integration ---
-
-    if (isChartInitialized) {
-        console.log('Chart already initialized');
-        return;
-    }
-    
-    if (!chartContainer) {
-        console.error('Chart container not found');
-        return;
-    }
-
-    if (!window.LightweightCharts) {
-        console.error('LightweightCharts library not loaded');
-        return;
-    }
-
-    try {
-        // 차트 컨테이너 크기 확인
-        const containerWidth = chartContainer.clientWidth;
-        const containerHeight = chartContainer.clientHeight;
-        console.log('Chart container dimensions:', { width: containerWidth, height: containerHeight });
-
-        if (containerWidth <= 0 || containerHeight <= 0) {
-            console.error('Invalid chart container dimensions');
-            return;
-        }
-
-        // 다크모드 확인
-        const isDarkMode = document.documentElement.classList.contains('dark-mode');
-        console.log('Dark mode detected:', isDarkMode);
-        
-        // 차트 생성
-        console.log('Creating chart...');
-        chart = LightweightCharts.createChart(chartContainer, {
-            width: containerWidth,
-            height: containerHeight,
-            layout: {
-                backgroundColor: isDarkMode ? '#2d2d2d' : '#ffffff',
-                textColor: isDarkMode ? '#e9ecef' : '#333',
-            },
-            grid: {
-                vertLines: {
-                    color: isDarkMode ? '#404040' : '#e1e1e1',
-                },
-                horzLines: {
-                    color: isDarkMode ? '#404040' : '#e1e1e1',
-                },
-            },
-            crosshair: {
-                mode: LightweightCharts.CrosshairMode.Normal,
-            },
-            rightPriceScale: {
-                borderColor: isDarkMode ? '#404040' : '#cccccc',
-                scaleMargins: {
-                    top: 0.1,
-                    bottom: 0.1,
-                },
-            },
-            timeScale: {
-                borderColor: isDarkMode ? '#404040' : '#cccccc',
-                timeVisible: true,
-                secondsVisible: false,
-                rightOffset: 12,
-                barSpacing: 3,
-                minBarSpacing: 1,
-                fixLeftEdge: true,
-                lockVisibleTimeRangeOnResize: true,
-                rightBarStaysOnScroll: true,
-                borderVisible: false,
-                visible: true,
-                tickMarkFormatter: (time) => {
-                    const date = new Date(time * 1000);
-                    const hours = String(date.getHours()).padStart(2, '0');
-                    const minutes = String(date.getMinutes()).padStart(2, '0');
-                    return `${hours}:${minutes}`;
-                },
-            },
-            handleScroll: {
-                mouseWheel: true,
-                pressedMouseMove: true,
-                horzTouchDrag: true,
-                vertTouchDrag: true,
-            },
-            handleScale: {
-                axisPressedMouseMove: true,
-                mouseWheel: true,
-                pinch: true,
-            },
-            localization: {
-                // 한국어 로케일 설정
-                locale: 'ko-KR',
-                // 커서 시간 포맷터 - 이미 KST로 저장된 데이터이므로 변환하지 않음
-                timeFormatter: (time) => {
-                    // time은 이미 KST로 변환되어 저장된 timestamp
-                    const date = new Date(time * 1000);
-                    
-                    const year = date.getFullYear();
-                    const month = String(date.getMonth() + 1).padStart(2, '0');
-                    const day = String(date.getDate()).padStart(2, '0');
-                    const hours = String(date.getHours()).padStart(2, '0');
-                    const minutes = String(date.getMinutes()).padStart(2, '0');
-                    return `${year}-${month}-${day} ${hours}:${minutes}`;
-                },
-                // 날짜 포맷 설정
-                dateFormat: 'yyyy-MM-dd',
-            },
-        });
-
-        console.log('Chart created successfully:', chart);
-
-        // 캔들스틱 시리즈 생성
-        console.log('Adding candlestick series...');
-        if (typeof chart.addCandlestickSeries === 'function') {
-            candleSeries = chart.addCandlestickSeries({
-                upColor: '#26a69a',
-                downColor: '#ef5350',
-                borderVisible: false,
-                wickUpColor: '#26a69a',
-                wickDownColor: '#ef5350',
-            });
-        } else if (typeof chart.addBarSeries === 'function') {
-            // Fallback for older/light versions without candlesticks
-            console.warn('addCandlestickSeries not found. Falling back to addBarSeries.');
-            candleSeries = chart.addBarSeries({
-                upColor: '#26a69a',
-                downColor: '#ef5350',
-                thinBars: false,
-            });
-        } else {
-            throw new Error('Neither addCandlestickSeries nor addBarSeries is available on chart object.');
-        }
-        
-        // 좌표 변환용 시리즈 참조 설정
-        chartSeries = candleSeries;
-
-        console.log('Candlestick series created successfully:', candleSeries);
-
-        // 리사이즈 처리
-        const resizeObserver = new ResizeObserver(entries => {
-            if (entries[0] && chart) {
-                const { width, height } = entries[0].contentRect;
-                chart.applyOptions({ width, height });
-            }
-        });
-        resizeObserver.observe(chartContainer);
-
-        // 차트 스크롤 이벤트 처리 (더 많은 과거 데이터 로드)
-        chart.timeScale().subscribeVisibleTimeRangeChange(() => {
-            const visibleRange = chart.timeScale().getVisibleRange();
-            if (visibleRange && !isLoadingMoreData) {
-                // 왼쪽 끝에 가까워지면 더 많은 과거 데이터 로드
-                const timeFrom = visibleRange.from;
-                const oldestVisible = oldestTimestamp;
+            
+            tvWidget = new TradingView.widget(widgetOptions);
+            
+            tvWidget.onChartReady(() => {
+                console.log('TradingView Chart is ready');
+                isChartInitialized = true;
+                hideChartLoading();
                 
-                if (oldestVisible && timeFrom && timeFrom < oldestVisible + 100) {
-                    console.log('Loading more historical data...');
-                    loadMoreHistoricalData();
+                // 차트가 준비되면 웹소켓 연결
+                connectWebSocket();
+                
+                // 차트 준비 후 자동 저장 설정 확인 및 추가 설정
+                if (window.currentUser && window.currentUser.uid) {
+                    console.log('Chart ready for logged-in user, auto-save enabled');
+                    
+                    // 차트에 자동 저장 이벤트 리스너 추가
+                    if (tvWidget.chart) {
+                        tvWidget.chart().onAutoSaveNeeded = () => {
+                            console.log('Auto save needed - TradingView will handle this automatically');
+                        };
+                    }
                 }
-            }
-        });
+            });
 
-        // 초기 데이터 로드
-        await loadChartData();
-        
-        // WebSocket 연결
-        connectWebSocket();
-
-        isChartInitialized = true;
-        console.log('Chart initialization completed successfully');
-        
-        // 차트 초기화 완료 후 현재 테마 강제 적용
-        const currentIsDark = document.documentElement.classList.contains('dark-mode');
-        if (currentIsDark) {
-            console.log('Force applying dark theme after chart initialization');
-            setTimeout(() => updateChartTheme(true), 100);
+        } catch (error) {
+            console.error('Failed to initialize TradingView widget:', error);
+            hideChartLoading();
         }
-    } catch (error) {
-        console.error('Failed to initialize chart:', error);
-        isChartInitialized = false;
+    } else {
+        console.error('TradingView library not loaded');
+        // 이전 LightweightCharts 코드는 모두 제거되었으므로 여기서 종료
     }
 }
 
@@ -674,68 +644,52 @@ function waitForFirebaseAuth(maxAttempts = 50, intervalMs = 100) {
 
 // 이벤트 리스너 설정
 document.addEventListener('DOMContentLoaded', async () => {
-    console.log('DOM loaded, initializing...');
+    console.log('Community page loaded');
     
-    // Ensure Firebase auth is ready before proceeding
-    try {
-        await waitForFirebaseAuth();
-        console.log('Firebase auth available in community.js');
-        // Expose alias so legacy code using global "auth" works.
-        if (!('auth' in window) && window.auth) {
-            window.auth = window.auth; // already set, ensure property exists
-        }
-        // Best-effort global alias (may fail if read-only)
-        try {
-            if (typeof auth === 'undefined') {
-                // eslint-disable-next-line no-global-assign
-                auth = window.auth;
-            }
-        } catch (e) { console.warn('Skipping auth alias (read-only)', e.message); }
-        // Best-effort global alias (may fail if read-only)
-        try {
-            if (typeof db === 'undefined' && window.db) {
-                // eslint-disable-next-line no-global-assign
-                db = window.db;
-            }
-        } catch (e) { console.warn('Skipping db alias (read-only)', e.message); }
-    } catch (err) {
-        console.error('Community page: Firebase auth not ready:', err);
-    }
-    
-    // 모달 기능 초기화
+    // 모달 초기화
     initModals();
     
-    // 테마 토글 기능 초기화
+    // 테마 토글 초기화
     initThemeToggle();
     
-    // 인증 세션 지속성 설정 (페이지 로드 초기에 실행)
-    if (window.auth) {
-      window.auth.setPersistence(firebase.auth.Auth.Persistence.SESSION)
+    // Firebase 인증 대기 및 설정
+    await waitForFirebaseAuth()
         .then(() => {
-          console.log('Firebase auth persistence set to session.');
-          // 인증 상태 변경 리스너 연결
-          window.auth.onAuthStateChanged((user) => {
-              currentUser = user;
-              if (user) {
-                  console.log('User is signed in:', user.displayName);
-                  updateUserInterface(user);
-              } else {
-                  console.log('User is signed out');
-                  updateUserInterface(null);
-              }
-              updateUserMessageStyles();
-          });
+            console.log('Firebase auth is ready');
+            
+            // 인증 상태 변경 리스너 설정
+            window.auth.onAuthStateChanged(async (user) => {
+                console.log('Auth state changed:', user ? 'User logged in' : 'User logged out');
+                isLoggedIn = !!user;
+                window.currentUser = user;
+                
+                if (user) {
+                    console.log('User is signed in:', user.uid);
+                    updateUserInterface(user);
+                    
+                    // 로그인 시 차트 재초기화 (사용자별 레이아웃 불러오기)
+                    if (isChartInitialized) {
+                        await reinitializeChartForUser();
+                    }
+                } else {
+                    console.log('User is signed out');
+                    updateUserInterface(null);
+                    
+                    // 로그아웃 시 차트 재초기화 (게스트 모드)
+                    if (isChartInitialized) {
+                        await reinitializeChartForUser();
+                    }
+                }
+                updateUserMessageStyles();
+            });
         })
         .catch((error) => {
           console.error('Error setting auth persistence', error);
         });
-    } else {
-        console.warn('window.auth is still undefined; skipping persistence setup.');
-    }
 
     // 차트 초기화 (테마 초기화 후에 실행)
     setTimeout(() => {
-        console.log('Starting chart initialization...');
+        console.log('Starting initial chart initialization...');
         initChart().then(() => {
             // 차트 초기화 완료 후 현재 테마 적용
             const isDarkMode = document.documentElement.classList.contains('dark-mode');
@@ -1005,18 +959,23 @@ function updateUserInterface(user) {
 // 로그인 처리
 async function handleLogin(e) {
     e.preventDefault();
-    const email = e.target.querySelector('[name="login-email"]').value;
-    const password = e.target.querySelector('[name="login-password"]').value;
-    const errorMessage = document.getElementById('login-error-message');
-
+    const formData = new FormData(e.target);
+    const email = formData.get('login-email');
+    const password = formData.get('login-password');
+    
     try {
-        await window.auth.signInWithEmailAndPassword(email, password);
+        const userCredential = await window.auth.signInWithEmailAndPassword(email, password);
+        console.log('Login successful:', userCredential.user.uid);
         closeAllModals();
-        if (errorMessage) errorMessage.textContent = '';
+        
+        // 로그인 성공 후 차트 재초기화 (사용자별 레이아웃 불러오기)
+        await reinitializeChartForUser();
+        
     } catch (error) {
-        console.error('로그인 실패:', error);
+        console.error('Login error:', error);
+        const errorMessage = document.getElementById('login-error-message');
         if (errorMessage) {
-            errorMessage.textContent = '로그인에 실패했습니다. 이메일과 비밀번호를 확인해주세요.';
+            errorMessage.textContent = error.message;
         }
     }
 }
@@ -1053,9 +1012,20 @@ async function handleSignup(e) {
 // 로그아웃 처리
 async function handleLogout() {
     try {
+        // 로그아웃 전에 현재 차트 상태 저장
+        if (tvWidget && window.currentUser) {
+            console.log('Saving chart state before logout...');
+            // TradingView는 자동으로 저장하므로 별도 작업 불필요
+        }
+        
         await window.auth.signOut();
+        console.log('Logout successful');
+        
+        // 로그아웃 후 차트 재초기화 (게스트 모드)
+        await reinitializeChartForUser();
+        
     } catch (error) {
-        console.error('로그아웃 실패:', error);
+        console.error('Logout error:', error);
     }
 }
 
@@ -1164,41 +1134,38 @@ function renderCoinList(searchTerm = '', activeTab = 'all') {
     });
 }
 
-function selectCoin(coin) {
-    currentSymbol = coin.symbol;
-    
-    // 차트 데이터 초기화
-    chartData = [];
-    oldestTimestamp = null;
-    newestTimestamp = null;
-    isLoadingMoreData = false;
-    
+async function selectCoin(coin) {
+    if (!coin || !coin.symbol) {
+        console.error("Invalid coin selected:", coin);
+        return;
+    }
+    currentSymbol = coin.symbol.includes(':') ? coin.symbol : `BINANCE:${coin.symbol}`;
+    console.log(`Symbol changed to: ${currentSymbol}`);
+
     // UI 업데이트
     const selectedCoinText = document.getElementById('selected-coin-text');
-    const coinIcon = document.querySelector('.coin-selector .coin-icon');
-    
-    selectedCoinText.textContent = coin.symbol;
-    coinIcon.textContent = coin.symbol;
-    coinIcon.style.backgroundColor = coin.color;
-    
-    // 가격 정보 업데이트 (coinData에서 가져온 초기값 사용)
-    const priceChange = coin.price * (coin.change / 100);
-    updateCoinPriceDisplay(coin.price, priceChange, coin.change);
-    
-    // 모달 닫기
-    document.getElementById('coin-search-modal').classList.remove('show');
-    
-    // 차트 업데이트 (차트가 초기화되어 있다면)
-    if (isChartInitialized) {
-        if (tvWidget && typeof tvWidget.activeChart === 'function') {
-            tvWidget.activeChart().setSymbol(currentSymbol, intervalToTVRes(currentInterval));
-        } else if (chart && candleSeries) {
-            loadChartData();
-        }
-        connectWebSocket();
+    if (selectedCoinText) {
+        selectedCoinText.textContent = coin.symbol.replace('BINANCE:', '');
     }
     
-    console.log(`선택된 코인: ${coin.symbol}`);
+    // 모달 닫기
+    closeAllModals();
+
+    // 웹소켓 재연결
+    if (binanceSocket) {
+        binanceSocket.close();
+    }
+    
+    if (isChartInitialized && tvWidget) {
+        // TradingView 위젯의 심볼 변경
+        tvWidget.chart().setSymbol(currentSymbol, () => {
+             console.log(`TradingView symbol successfully changed to ${currentSymbol}`);
+        });
+    } else {
+        // 차트가 초기화되지 않은 경우, 차트를 새로고침
+        showChartLoading();
+        await initChart();
+    }
 }
 
 // 채팅 폼 설정
@@ -1236,114 +1203,139 @@ function setupChatForm() {
 }
 
 function createBinanceDatafeed() {
-    const cfg = {
-        supported_resolutions: TV_SUPPORTED_RESOLUTIONS,
-        exchanges: [{ value: 'BINANCE', name: 'Binance', desc: 'Binance' }],
-    };
-    const intervalMap = { '1': '1m', '5': '5m', '15': '15m', '60': '1h', '240': '4h', 'D': '1d' };
+    const binanceApiBase = 'https://api.binance.com/api/v3';
 
-    return {
-        onReady: (cb) => setTimeout(() => cb(cfg), 0),
-        searchSymbols: (userInput, exchange, symbolType, onResult) => {
-            const term = userInput.toLowerCase();
-            const results = coinData
-                .filter(c => c.symbol.toLowerCase().includes(term) || c.name.toLowerCase().includes(term))
-                .slice(0, 50)
+    const datafeed = {
+        onReady: (callback) => {
+            console.log('[Datafeed] onReady called');
+            setTimeout(() => callback({
+                supported_resolutions: TV_SUPPORTED_RESOLUTIONS,
+                supports_group_request: false,
+                supports_marks: false,
+                supports_search: true,
+                supports_timescale_marks: false,
+            }), 0);
+        },
+
+        searchSymbols: (userInput, exchange, symbolType, onResultReadyCallback) => {
+            console.log('[Datafeed] searchSymbols called');
+            const symbols = coinData
+                .filter(c => c.type === 'SPOT' || c.type === 'FUTURES')
+                .filter(c => c.symbol.toLowerCase().includes(userInput.toLowerCase()) || c.name.toLowerCase().includes(userInput.toLowerCase()))
                 .map(c => ({
                     symbol: c.symbol,
-                    full_name: c.symbol,
-                    description: c.name,
-                    exchange: 'BINANCE',
-                    ticker: c.symbol,
-                    type: 'crypto',
+                    full_name: `Binance:${c.symbol}`,
+                    description: `${c.name}/USDT`,
+                    exchange: 'Binance',
+                    ticker: `BINANCE:${c.symbol}`,
+                    type: 'spot'
                 }));
-            onResult(results);
+            onResultReadyCallback(symbols.slice(0, 50)); // 최대 50개 결과
         },
-        resolveSymbol: (symbolName, onResolve, onError) => {
-            const base = stripPrefix(symbolName.toUpperCase());
-            const symbol = base;
-            const priceScale = symbol.endsWith('USDT') ? 100 : 100000000; // rough guess
-            setTimeout(() => {
-                onResolve({
-                    name: symbol,
-                    full_name: symbol,
-                    ticker: symbol,
-                    description: symbol,
-                    type: 'crypto',
-                    session: '24x7',
-                    exchange: 'BINANCE',
-                    listed_exchange: 'BINANCE',
-                    timezone: 'Etc/UTC',
-                    minmov: 1,
-                    pricescale: priceScale,
-                    has_intraday: true,
-                    has_daily: true,
-                    has_weekly_and_monthly: true,
-                    supported_resolutions: cfg.supported_resolutions,
-                    volume_precision: 8,
-                    data_status: 'streaming',
-                });
-            }, 0);
-        },
-        getBars: async (symbolInfo, resolution, periodParams, onResult, onError) => {
-            try {
-                const interval = intervalMap[resolution] || '1m';
-                const symbol = stripPrefix(symbolInfo.name);
-                const params = new URLSearchParams({
-                    symbol,
-                    interval,
-                    limit: periodParams.firstDataRequest ? '500' : '1000',
-                });
-                // For back pagination, use periodParams.to as endTime (TradingView sends seconds)
-                if (!periodParams.firstDataRequest) {
-                    params.append('endTime', String(periodParams.to * 1000));
-                }
-                const url = `https://api.binance.com/api/v3/klines?${params.toString()}`;
-                const resp = await fetch(url);
-                const data = await resp.json();
-                const bars = data.map(c => ({
-                    time: c[0],
-                    open: parseFloat(c[1]),
-                    high: parseFloat(c[2]),
-                    low: parseFloat(c[3]),
-                    close: parseFloat(c[4]),
-                    volume: parseFloat(c[5]),
-                }));
-                const meta = { noData: bars.length === 0 };
-                onResult(bars, meta);
-            } catch(err) {
-                console.error('getBars error', err);
-                onError(err);
-            }
-        },
-        subscribeBars: (symbolInfo, resolution, updateCb, uid) => {
-            const interval = intervalMap[resolution] || '1m';
-            const symbol = stripPrefix(symbolInfo.name).toLowerCase();
-            const wsUrl = `wss://stream.binance.com:9443/ws/${symbol}@kline_${interval}`;
-            const socket = new WebSocket(wsUrl);
-            socket.onmessage = (e) => {
-                const data = JSON.parse(e.data);
-                if (data.e !== 'kline') return;
-                const k = data.k;
-                const bar = {
-                    time: k.t,
-                    open: parseFloat(k.o),
-                    high: parseFloat(k.h),
-                    low: parseFloat(k.l),
-                    close: parseFloat(k.c),
-                    volume: parseFloat(k.v)
-                };
-                updateCb(bar);
+
+        resolveSymbol: (symbolName, onSymbolResolvedCallback, onResolveErrorCallback) => {
+            console.log('[Datafeed] resolveSymbol called for:', symbolName);
+            const symbol = stripPrefix(symbolName);
+            const symbolInfo = {
+                name: symbol,
+                ticker: `BINANCE:${symbol}`,
+                description: `${symbol.replace('USDT', '')}/USDT`,
+                session: '24x7',
+                timezone: 'Etc/UTC',
+                minmov: 1,
+                pricescale: 100, // 대부분의 USDT 페어는 소수점 2자리
+                has_intraday: true,
+                has_no_volume: false,
+                supported_resolutions: TV_SUPPORTED_RESOLUTIONS,
+                volume_precision: 8,
+                data_status: 'streaming',
             };
-            binanceStreams[uid] = socket;
-        },
-        unsubscribeBars: (uid) => {
-            if (binanceStreams[uid]) {
-                try { binanceStreams[uid].close(); } catch(e){}
-                delete binanceStreams[uid];
+            
+            if (/\.P$/.test(symbol)) { // 선물 계약
+                 symbolInfo.pricescale = 1000;
+            } else { // 현물
+                 // BTC, ETH 등 가격이 높은 코인들은 소수점 2자리, 낮은 코인들은 더 많이
+                const coin = coinData.find(c => c.symbol === symbol);
+                if (coin && coin.price < 1) {
+                    symbolInfo.pricescale = 1000000;
+                } else if (coin && coin.price < 50) {
+                     symbolInfo.pricescale = 10000;
+                }
             }
+
+
+            setTimeout(() => onSymbolResolvedCallback(symbolInfo), 0);
+        },
+
+        getBars: async (symbolInfo, resolution, periodParams, onHistoryCallback, onErrorCallback) => {
+            const { from, to, firstDataRequest } = periodParams;
+            console.log(`[Datafeed] getBars for ${symbolInfo.name}, Resolution: ${resolution}, From: ${from}, To: ${to}`);
+            
+            const interval = Object.keys(TV_RESOLUTION_MAP).find(key => TV_RESOLUTION_MAP[key] === resolution);
+            if (!interval) {
+                onErrorCallback('Invalid resolution');
+                return;
+            }
+            
+            const symbol = stripPrefix(symbolInfo.name);
+            const limit = 1000; // 바이낸스 API 최대 요청 개수
+            const url = `${binanceApiBase}/klines?symbol=${symbol}&interval=${interval}&startTime=${from * 1000}&endTime=${to * 1000}&limit=${limit}`;
+
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+
+                if (data.length > 0) {
+                    const bars = data.map(el => ({
+                        time: el[0], // KST가 아닌 UTC 타임스탬프 (ms)
+                        open: parseFloat(el[1]),
+                        high: parseFloat(el[2]),
+                        low: parseFloat(el[3]),
+                        close: parseFloat(el[4]),
+                        volume: parseFloat(el[5]),
+                    }));
+                    onHistoryCallback(bars, { noData: false });
+                } else {
+                    onHistoryCallback([], { noData: true });
+                }
+            } catch (error) {
+                console.error('[Datafeed] getBars error:', error);
+                onErrorCallback(error);
+            }
+        },
+        
+        subscribeBars: (symbolInfo, resolution, onRealtimeCallback, subscriberUID, onResetCacheNeededCallback) => {
+             console.log(`[Datafeed] subscribeBars: ${symbolInfo.name} ${resolution}`);
+            // WebSocket 연결은 connectWebSocket()에서 중앙 관리하므로 여기서는 아무것도 하지 않음
+            // 대신, onRealtimeCallback을 전역으로 저장하여 웹소켓 핸들러에서 사용
+            window.tvRealtimeCallback = onRealtimeCallback;
+        },
+
+        unsubscribeBars: (subscriberUID) => {
+            console.log(`[Datafeed] unsubscribeBars: ${subscriberUID}`);
+            window.tvRealtimeCallback = null;
+            // 웹소켓 연결 해제는 페이지 전환 또는 심볼 변경 시 중앙 관리
         },
     };
+
+    return datafeed;
+}
+
+// Firebase 인증 상태 변경 시 차트 재초기화 함수
+async function reinitializeChartForUser() {
+    console.log('Reinitializing chart for user state change...');
+    
+    // 기존 위젯 제거
+    if (tvWidget) {
+        tvWidget.remove();
+        tvWidget = null;
+    }
+    isChartInitialized = false;
+    
+    // 잠시 대기 후 새로 초기화
+    setTimeout(async () => {
+        await initChart();
+    }, 500);
 }
 
 console.log('Community.js loaded successfully'); 

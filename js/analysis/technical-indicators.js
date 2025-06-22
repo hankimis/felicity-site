@@ -1161,4 +1161,93 @@ export class TechnicalIndicators {
         this.currentTimeframe = newTimeframe;
         this.loadData();
     }
+
+    render() {
+        if (!this.container) return;
+
+        // 1. 렌더링 전, 컨테이너를 완전히 비워서 겹침 현상 방지
+        this.container.innerHTML = '';
+
+        const containerWidth = this.container.clientWidth;
+        
+        // 2. 너비에 따라 적절한 레이아웃을 동적으로 생성
+        if (containerWidth < 350) {
+            // 폭이 좁을 때 (세로형 컴팩트 레이아웃)
+            this.container.innerHTML = this.getCompactLayoutHTML();
+        } else {
+            // 폭이 넓을 때 (가로형 전체 레이아웃)
+            this.container.innerHTML = this.getFullLayoutHTML();
+        }
+
+        // 3. 레이아웃이 그려진 후 필요한 스크립트 실행
+        this.updateSummaryGauge();
+        this.updateTimeframeButtons();
+    }
+
+    getFullLayoutHTML() {
+        const summary = this.calculateSummary();
+        const signalClass = this.getSignalClass(summary.recommendation);
+        const percentage = (summary.buy + summary.sell + summary.neutral) > 0 ? (summary.buy * 100) / (summary.buy + summary.sell + summary.neutral) : 50;
+        
+        return `
+            <div id="indicator-summary-container">
+                <div class="summary-header">
+                    <div class="summary-title">종합 매매 신호</div>
+                    <div class="summary-percentage ${signalClass}">${summary.recommendation}</div>
+                </div>
+                <div class="summary-gauge-container">
+                    <div class="summary-gauge">
+                        <div class="summary-bar" style="width: ${percentage}%"></div>
+                    </div>
+                </div>
+                <div class="summary-labels">
+                    <span class="label-bearish">매도 (${summary.sell})</span>
+                    <span class="label-neutral">중립 (${summary.neutral})</span>
+                    <span class="label-bullish">매수 (${summary.buy})</span>
+                </div>
+            </div>
+            <div id="indicators-list" class="styled-scrollbar">
+                ${this.getListHTML()}
+            </div>
+        `;
+    }
+
+    getCompactLayoutHTML() {
+        const summary = this.calculateSummary();
+        const signalClass = this.getSignalClass(summary.recommendation);
+        const percentage = (summary.buy + summary.sell + summary.neutral) > 0 ? (summary.buy * 100) / (summary.buy + summary.sell + summary.neutral) : 50;
+
+        // 컴팩트 뷰에서는 종합 신호와 전체 목록을 합쳐서 보여줌
+        return `
+            <div class="compact-summary">
+                <span>종합 신호: <b class="${signalClass}">${summary.recommendation}</b></span>
+                <div class="summary-gauge-container compact">
+                    <div class="summary-gauge">
+                        <div class="summary-bar" style="width: ${percentage}%"></div>
+                    </div>
+                </div>
+            </div>
+            <div id="indicators-list" class="styled-scrollbar compact-list">
+                ${this.getListHTML(true)}
+            </div>
+        `;
+    }
+
+    getListHTML(isCompact = false) {
+        // 컴팩트 모드일 때는 값만, 아닐 때는 설명과 함께 표시
+        return this.indicators.map(indicator => `
+            <div class="indicator-item">
+                <div class="indicator-info">
+                    <span class="indicator-name">${indicator.name}</span>
+                    ${!isCompact ? `<span class="indicator-desc">${indicator.description}</span>` : ''}
+                </div>
+                <div class="indicator-value ${this.getSignalClass(indicator.signal)}">
+                    ${isCompact ? '' : `${indicator.signal} `}(${indicator.value.toFixed(2)})
+                </div>
+            </div>
+        `).join('');
+    }
+
+    // 기존의 getSummaryHTML, getListHTML(isCompact) 통합 및 수정
+    // renderCompact, renderFull, checkLayout 함수는 모두 제거
 } 

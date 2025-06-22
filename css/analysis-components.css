@@ -307,4 +307,221 @@
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(20px); }
     to { opacity: 1; transform: translateY(0); }
+}
+
+/* 채팅 카드 스타일 */
+.chat-card {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.chat-card .card-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    padding: 0;
+}
+
+.chat-wrapper {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background-color: var(--card-bg);
+    border-radius: 0 0 12px 12px;
+    overflow: hidden;
+}
+
+.chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    background-color: var(--card-bg);
+    min-height: 0;
+}
+
+.chat-input-form {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    border-top: 1px solid var(--border-color);
+    background-color: var(--card-bg);
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+#message-input {
+    flex: 1;
+    min-width: 0;
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 6px 12px;
+    font-size: 13px;
+    background-color: var(--bg-secondary-color);
+    color: var(--text-color);
+    height: 32px;
+    outline: none;
+}
+
+#message-input:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(49, 130, 246, 0.2);
+}
+
+.chat-input-form button {
+    height: 32px;
+    padding: 6px 12px;
+    border: none;
+    background-color: var(--primary-color);
+    color: white;
+    border-radius: 16px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 12px;
+    transition: background-color 0.2s;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.chat-input-form button:hover {
+    background-color: #2563eb;
+}
+
+/* 메시지 아이템 스타일 */
+.message-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    margin-bottom: 4px;
+    width: fit-content;
+    max-width: 100%;
+    padding: 4px 6px;
+}
+
+.message-item.my-message {
+    margin-left: auto;
+    flex-direction: row-reverse;
+}
+
+.chat-profile-pic-wrap {
+    flex-shrink: 0;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 2px;
+}
+
+.chat-profile-pic {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1px solid var(--border-color);
+    background: #e9ecef;
+}
+
+.message-content {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+    max-width: 85%;
+}
+
+.message-sender {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-bottom: 2px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+.message-text {
+    background-color: var(--bg-secondary-color);
+    padding: 6px 10px;
+    border-radius: 8px;
+    color: var(--text-color-secondary);
+    line-height: 1.4;
+    word-wrap: break-word;
+    font-size: 12px;
+    max-width: 100%;
+}
+
+.message-item.my-message .message-text {
+    background-color: var(--primary-color);
+    color: #fff;
+}
+
+.message-item.my-message .message-content {
+    align-items: flex-end;
+}
+
+/* 채팅 사용자 수 표시 */
+.chat-users-count {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    color: var(--text-color-secondary);
+}
+
+.chat-users-count i {
+    font-size: 10px;
+}
+
+/* 스크롤바 스타일링 */
+.chat-messages::-webkit-scrollbar {
+    width: 4px;
+}
+
+.chat-messages::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.chat-messages::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 2px;
+}
+
+.chat-messages::-webkit-scrollbar-thumb:hover {
+    background: var(--text-color-secondary);
+}
+
+/* 로딩 및 에러 메시지 */
+.chat-notice {
+    text-align: center;
+    padding: 16px;
+    color: var(--text-color-secondary);
+    font-size: 12px;
+}
+
+/* 다크모드 대응 */
+:root.dark-mode .chat-wrapper,
+:root.dark-mode .chat-messages,
+:root.dark-mode .chat-input-form {
+    background-color: var(--card-bg);
+}
+
+:root.dark-mode #message-input {
+    background-color: var(--bg-secondary-color);
+    color: var(--text-color);
+    border-color: var(--border-color);
+}
+
+:root.dark-mode .message-text {
+    background-color: var(--bg-secondary-color);
+    color: var(--text-color);
+}
+
+:root.dark-mode .message-item.my-message .message-text {
+    background-color: var(--primary-color);
+    color: #fff;
 } 

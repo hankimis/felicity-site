@@ -1,4 +1,10 @@
 const {onObjectFinalized} = require("firebase-functions/v2/storage");
+const {
+  onDocumentCreated,
+  onDocumentUpdated,
+  onDocumentDeleted,
+} = require("firebase-functions/v2/firestore");
+const {https} = require("firebase-functions/v2");
 const admin = require("firebase-admin");
 const sharp = require("sharp");
 const {Storage} = require("@google-cloud/storage");
@@ -8,7 +14,9 @@ const fs = require("fs");
 
 admin.initializeApp();
 const storage = new Storage();
+const db = admin.firestore();
 
+// 기존 프로필 썸네일 생성 함수
 exports.generateProfileThumbnail = onObjectFinalized(async (event) => {
   const object = event.data;
   const filePath = object.name;
@@ -55,4 +63,267 @@ exports.generateProfileThumbnail = onObjectFinalized(async (event) => {
   fs.unlinkSync(thumbFilePath);
 
   return null;
+});
+
+// 차트 레이아웃 생성 시 검증 및 초기화
+exports.validateChartLayout = onDocumentCreated({
+  document: "userChartLayouts/{userId}",
+  region: "asia-northeast3",
+}, async (event) => {
+  const snapshot = event.data;
+  if (!snapshot) {
+    console.log("No data associated with the event");
+    return;
+  }
+
+  const chartData = snapshot.data();
+  const userId = event.params.userId;
+
+  console.log(`Validating chart layout for user: ${userId}`);
+
+  try {
+    // 차트 데이터 검증
+    if (!chartData.content) {
+      console.error(
+          `Invalid chart layout: missing content for user ${userId}`);
+      await snapshot.ref.delete();
+      return;
+    }
+
+    // 차트 크기 제한 (5MB)
+    const contentSize = JSON.stringify(chartData.content).length;
+    if (contentSize > 5 * 1024 * 1024) {
+      console.error(
+          `Chart layout too large: ${contentSize} bytes for user ${userId}`);
+      await snapshot.ref.delete();
+      return;
+    }
+
+    // 메타데이터 업데이트
+    await snapshot.ref.update({
+      validated: true,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      contentSize: contentSize,
+    });
+
+    console.log(`Chart layout validated for user: ${userId}`);
+  } catch (error) {
+    console.error(`Error validating chart layout for user ${userId}:`, error);
+  }
+});
+
+// 차트 레이아웃 업데이트 시 검증
+exports.updateChartLayout = onDocumentUpdated({
+  document: "userChartLayouts/{userId}",
+  region: "asia-northeast3",
+}, async (event) => {
+  const before = event.data.before.data();
+  const after = event.data.after.data();
+  const userId = event.params.userId;
+
+  console.log(`Chart layout updated for user: ${userId}`);
+
+  try {
+    // 변경사항 검증
+    if (!after.content) {
+      console.error(
+          `Invalid chart layout update: missing content for user ${userId}`);
+      await event.data.after.ref.update({
+        content: before.content,
+        lastModified: admin.firestore.FieldValue.serverTimestamp(),
+      });
+      return;
+    }
+
+    // 차트 크기 제한 (5MB)
+    const contentSize = JSON.stringify(after.content).length;
+    if (contentSize > 5 * 1024 * 1024) {
+      console.error(
+          `Chart layout update too large: ${contentSize} bytes for user ${userId}`);
+      await event.data.after.ref.update({
+        content: before.content,
+        lastModified: admin.firestore.FieldValue.serverTimestamp(),
+      });
+      return;
+    }
+
+    // 메타데이터 업데이트
+    await event.data.after.ref.update({
+      lastModified: admin.firestore.FieldValue.serverTimestamp(),
+      contentSize: contentSize,
+      version: (after.version || 0) + 1,
+    });
+
+    console.log(`Chart layout update validated for user: ${userId}`);
+  } catch (error) {
+    console.error(`Error updating chart layout for user ${userId}:`, error);
+  }
+});
+
+// 차트 레이아웃 삭제 시 정리
+exports.cleanupChartLayout = onDocumentDeleted({
+  document: "userChartLayouts/{userId}",
+  region: "asia-northeast3",
+}, async (event) => {
+  const userId = event.params.userId;
+  console.log(`Chart layout deleted for user: ${userId}`);
+
+  try {
+    // 삭제 로그 기록 (선택사항)
+    await db.collection("chartLayoutLogs").add({
+      userId: userId,
+      action: "deleted",
+      timestamp: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    console.log(
+        `Chart layout cleanup completed for user: ${userId}`);
+  } catch (error) {
+    console.error(
+        `Error during chart layout cleanup for user ${userId}:`, error);
+  }
+});
+
+// 차트 레이아웃 백업 HTTP 함수
+exports.backupChartLayout = https.onCall({
+  region: "asia-northeast3",
+  maxInstances: 10,
+}, async (request) => {
+  // 인증 확인
+  if (!request.auth) {
+    throw new https.HttpsError("unauthenticated", "User must be authenticated");
+  }
+
+  const userId = request.auth.uid;
+
+  try {
+    // 사용자별 차트 레이아웃 조회
+    const chartDoc = await db.collection("userChartLayouts")
+        .doc(userId).get();
+
+    if (!chartDoc.exists) {
+      throw new https.HttpsError("not-found", "Chart layout not found");
+    }
+
+    const chartData = chartDoc.data();
+
+    // 백업 생성
+    const backupData = {
+      ...chartData,
+      backupTimestamp: admin.firestore.FieldValue.serverTimestamp(),
+      originalId: chartDoc.id,
+    };
+
+    await db.collection("chartLayoutBackups").add(backupData);
+
+    return {
+      success: true,
+      backupId: chartDoc.id,
+      message: "Chart layout backed up successfully",
+    };
+  } catch (error) {
+    console.error(
+        `Error backing up chart layout for user ${userId}:`, error);
+    throw new https.HttpsError("internal", "Failed to backup chart layout");
+  }
+});
+
+// 차트 레이아웃 복원 HTTP 함수
+exports.restoreChartLayout = https.onCall({
+  region: "asia-northeast3",
+  maxInstances: 10,
+}, async (request) => {
+  // 인증 확인
+  if (!request.auth) {
+    throw new https.HttpsError("unauthenticated", "User must be authenticated");
+  }
+
+  const userId = request.auth.uid;
+  const {backupId} = request.data;
+
+  try {
+    // 백업 데이터 조회
+    const backupDoc = await db.collection("chartLayoutBackups")
+        .doc(backupId).get();
+
+    if (!backupDoc.exists) {
+      throw new https.HttpsError("not-found", "Backup not found");
+    }
+
+    const backupData = backupDoc.data();
+
+    // 원본 사용자 확인
+    if (backupData.userId !== userId) {
+      throw new https.HttpsError(
+          "permission-denied", "Access denied to this backup");
+    }
+
+    // 차트 레이아웃 복원
+    const restoreData = {
+      name: backupData.name,
+      content: backupData.content,
+      symbol: backupData.symbol,
+      resolution: backupData.resolution,
+      timestamp: backupData.timestamp,
+      lastModified: admin.firestore.FieldValue.serverTimestamp(),
+      restoredFrom: backupId,
+    };
+
+    await db.collection("userChartLayouts").doc(userId).set(restoreData);
+
+    return {
+      success: true,
+      message: "Chart layout restored successfully",
+    };
+  } catch (error) {
+    console.error(
+        `Error restoring chart layout for user ${userId}:`, error);
+    throw new https.HttpsError("internal", "Failed to restore chart layout");
+  }
+});
+
+// 차트 레이아웃 통계 HTTP 함수
+exports.getChartLayoutStats = https.onCall({
+  region: "asia-northeast3",
+  maxInstances: 10,
+}, async (request) => {
+  // 인증 확인
+  if (!request.auth) {
+    throw new https.HttpsError("unauthenticated", "User must be authenticated");
+  }
+
+  const userId = request.auth.uid;
+
+  try {
+    // 사용자별 차트 레이아웃 통계
+    const chartDoc = await db.collection("userChartLayouts")
+        .doc(userId).get();
+
+    if (!chartDoc.exists) {
+      return {
+        hasLayout: false,
+        stats: null,
+      };
+    }
+
+    const chartData = chartDoc.data();
+    const contentSize = JSON.stringify(chartData.content).length;
+
+    return {
+      hasLayout: true,
+      stats: {
+        name: chartData.name,
+        symbol: chartData.symbol,
+        resolution: chartData.resolution,
+        contentSize: contentSize,
+        createdAt: chartData.createdAt,
+        lastModified: chartData.lastModified,
+        version: chartData.version || 1,
+      },
+    };
+  } catch (error) {
+    console.error(
+        `Error getting chart layout stats for user ${userId}:`, error);
+    throw new https.HttpsError("internal", "Failed to get chart layout stats");
+  }
 });

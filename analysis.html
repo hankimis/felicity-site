@@ -60,6 +60,9 @@
     <!-- Analysis Configuration (전역 변수로 로드) -->
     <script src="js/analysis-config.js"></script>
     
+    <!-- Analysis Chat Module -->
+    <script src="js/analysis-chat.js"></script>
+    
     <!-- All analysis modules are loaded via analysis-main.js -->
     <script type="module" src="js/analysis-main.js"></script>
 </head>
@@ -91,8 +94,8 @@
             </div>
 
             <!-- Dashboard Grid -->
-            <div class="grid-stack" id="analysis-dashboard">
-                <!-- 고래 탐지 카드 -->
+            <div class="grid-stack" id="dashboard-grid">
+                <!-- 고래 탐지 카드 (2x3) -->
                 <div class="grid-stack-item" gs-x="0" gs-y="0" gs-w="2" gs-h="3" gs-min-w="2" gs-min-h="3">
                     <div class="grid-stack-item-content analysis-card whale-card" id="whale-card">
                         <div class="card-header">
@@ -116,7 +119,7 @@
                     </div>
                 </div>
 
-                <!-- 실시간 거래 카드 -->
+                <!-- 실시간 거래 카드 (2x3) -->
                 <div class="grid-stack-item" gs-x="2" gs-y="0" gs-w="2" gs-h="3" gs-min-w="2" gs-min-h="3">
                     <div class="grid-stack-item-content analysis-card realtime-card" id="realtime-card">
                         <div class="card-header">
@@ -146,7 +149,7 @@
                     </div>
                 </div>
 
-                <!-- 오더북 카드 -->
+                <!-- 오더북 카드 (2x3) -->
                 <div class="grid-stack-item" gs-x="4" gs-y="0" gs-w="2" gs-h="3" gs-min-w="2" gs-min-h="2">
                     <div class="grid-stack-item-content analysis-card orderbook-card" id="orderbook-card">
                         <div class="card-header">
@@ -178,8 +181,8 @@
                     </div>
                 </div>
                 
-                <!-- 기술지표 카드 -->
-                <div class="grid-stack-item" gs-x="6" gs-y="0" gs-w="4" gs-h="3" gs-min-w="2" gs-min-h="2">
+                <!-- 기술지표 카드 (4x3) -->
+                <div class="grid-stack-item" id="indicators-card-item" gs-x="6" gs-y="0" gs-w="4" gs-h="3" gs-min-w="2" gs-min-h="2">
                     <div class="grid-stack-item-content analysis-card indicators-card" id="indicators-card">
                         <div class="card-header">
                             <h3><i class="fas fa-chart-bar"></i> 기술지표</h3>
@@ -200,8 +203,8 @@
                     </div>
                 </div>
 
-                <!-- 롱/숏 비율 카드 -->
-                <div class="grid-stack-item" gs-x="4" gs-y="3" gs-w="2" gs-h="2" gs-min-w="2" gs-min-h="2">
+                <!-- 롱/숏 비율 카드 (2x2) -->
+                <div class="grid-stack-item" gs-x="10" gs-y="0" gs-w="2" gs-h="2" gs-min-w="2" gs-min-h="2">
                     <div class="grid-stack-item-content analysis-card longshort-card" id="longshort-card">
                         <div class="card-header">
                             <div class="card-title">
@@ -242,8 +245,8 @@
                     </div>
                 </div>
                 
-                <!-- 심리지수 카드 -->
-                <div class="grid-stack-item" gs-x="10" gs-y="0" gs-w="2" gs-h="2" gs-min-w="2" gs-min-h="2">
+                <!-- 심리지수 카드 (2x2) -->
+                <div class="grid-stack-item" gs-x="10" gs-y="2" gs-w="2" gs-h="2" gs-min-w="2" gs-min-h="2">
                     <div class="grid-stack-item-content analysis-card sentiment-card" id="sentiment-card">
                         <div class="card-header">
                             <div class="card-title">
@@ -261,8 +264,35 @@
                     </div>
                 </div>
 
-                <!-- 시장 히트맵 카드 -->
-                <div class="grid-stack-item" gs-x="0" gs-y="12" gs-w="3" gs-h="3" gs-min-w="3" gs-min-h="3">
+                <!-- 실시간 채팅 카드 (2x4) -->
+                <div class="grid-stack-item" gs-x="0" gs-y="3" gs-w="2" gs-h="4" gs-min-w="2" gs-min-h="4">
+                    <div class="grid-stack-item-content analysis-card chat-card" id="chat-card">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <i class="fas fa-comments"></i>
+                                <h3>실시간 채팅</h3>
+                            </div>
+                            <div class="card-controls">
+                                <div class="chat-users-count">
+                                    <i class="fas fa-user"></i>
+                                    <span id="chat-users-count">0</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-content">
+                            <div class="chat-wrapper">
+                                <div id="chat-messages" class="chat-messages"></div>
+                                <form id="chat-form" class="chat-input-form">
+                                    <input type="text" id="message-input" placeholder="메시지를 입력하세요..." autocomplete="off">
+                                    <button type="submit">전송</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 시장 히트맵 카드 (4x3) -->
+                <div class="grid-stack-item" gs-x="2" gs-y="3" gs-w="4" gs-h="3" gs-min-w="3" gs-min-h="3">
                     <div class="grid-stack-item-content analysis-card heatmap-card" id="heatmap-card">
                         <div class="card-header">
                             <div class="card-title">
@@ -278,8 +308,8 @@
                     </div>
                 </div>
 
-                <!-- 청산 지도 카드 -->
-                <div class="grid-stack-item" gs-x="2" gs-y="12" gs-w="2" gs-h="2" gs-min-w="2" gs-min-h="2">
+                <!-- 청산 지도 카드 (4x2) -->
+                <div class="grid-stack-item" gs-x="6" gs-y="3" gs-w="4" gs-h="2" gs-min-w="2" gs-min-h="2">
                     <div class="grid-stack-item-content analysis-card liquidation-card" id="liquidation-card">
                         <div class="card-header">
                             <div class="card-title">
