@@ -30,6 +30,8 @@ window.currentUser = null;
 
 // 3. 핵심 헬퍼 함수
 const getElement = (id) => document.getElementById(id);
+// 전역으로도 접근 가능하도록 설정
+window.getElement = getElement;
 
 function controlModal(modalId, show) {
     const modal = getElement(modalId);
@@ -160,7 +162,8 @@ function updateUserLevelDisplay() {
     console.log('헤더 레벨 업데이트:', currentUser.points, '->', levelInfo.name);
     
     // 헤더 레벨 업데이트 (여러 방법으로 시도)
-    const userLevelElement = getElement('user-level');
+    // getElement 함수가 정의되지 않은 경우를 대비한 안전한 호출
+    const userLevelElement = (typeof getElement === 'function' ? getElement('user-level') : document.getElementById('user-level'));
     const userLevelElements = document.querySelectorAll('#user-level, .user-level');
     
     if (userLevelElement) {

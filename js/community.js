@@ -1,4 +1,5 @@
 // TradingView Advanced Charts 초기화
+// 전역 변수
 let widget = null;
 
 // Firebase 초기화 대기 함수
@@ -20,22 +21,89 @@ function createDatafeed() {
     return {
         onReady: (callback) => {
             setTimeout(() => callback({
-                supported_resolutions: ['1', '5', '15', '60', '240', 'D'],
+                supported_resolutions: [
+                    // 분 단위
+                    '1', '3', '5', '15', '30', 
+                    // 시간 단위 (분으로 표현)
+                    '60', '120', '240', '360', '480', '720', 
+                    // 일/주/월 단위
+                    'D', 'W', 'M'
+                ],
                 supports_group_request: false,
-                supports_marks: false,
+                supports_marks: true,
                 supports_search: true,
-                supports_timescale_marks: false,
+                supports_timescale_marks: true,
+                currency_codes: ['USD', 'USDT', 'BTC', 'ETH'],
+                intraday_multipliers: ['1', '3', '5', '15', '30', '60', '120', '240', '360', '480', '720']
             }), 0);
         },
 
         searchSymbols: (userInput, exchange, symbolType, onResultReadyCallback) => {
-            // 기본 심볼 목록
+            // 확장된 심볼 목록 (주요 암호화폐들)
             const symbols = [
+                // 메이저 코인
                 { symbol: 'BTCUSDT', full_name: 'BINANCE:BTCUSDT', description: 'Bitcoin/USDT', exchange: 'BINANCE', ticker: 'BINANCE:BTCUSDT', type: 'spot' },
                 { symbol: 'ETHUSDT', full_name: 'BINANCE:ETHUSDT', description: 'Ethereum/USDT', exchange: 'BINANCE', ticker: 'BINANCE:ETHUSDT', type: 'spot' },
                 { symbol: 'BNBUSDT', full_name: 'BINANCE:BNBUSDT', description: 'BNB/USDT', exchange: 'BINANCE', ticker: 'BINANCE:BNBUSDT', type: 'spot' },
+                { symbol: 'XRPUSDT', full_name: 'BINANCE:XRPUSDT', description: 'Ripple/USDT', exchange: 'BINANCE', ticker: 'BINANCE:XRPUSDT', type: 'spot' },
                 { symbol: 'ADAUSDT', full_name: 'BINANCE:ADAUSDT', description: 'Cardano/USDT', exchange: 'BINANCE', ticker: 'BINANCE:ADAUSDT', type: 'spot' },
-                { symbol: 'SOLUSDT', full_name: 'BINANCE:SOLUSDT', description: 'Solana/USDT', exchange: 'BINANCE', ticker: 'BINANCE:SOLUSDT', type: 'spot' }
+                { symbol: 'SOLUSDT', full_name: 'BINANCE:SOLUSDT', description: 'Solana/USDT', exchange: 'BINANCE', ticker: 'BINANCE:SOLUSDT', type: 'spot' },
+                { symbol: 'DOGEUSDT', full_name: 'BINANCE:DOGEUSDT', description: 'Dogecoin/USDT', exchange: 'BINANCE', ticker: 'BINANCE:DOGEUSDT', type: 'spot' },
+                { symbol: 'AVAXUSDT', full_name: 'BINANCE:AVAXUSDT', description: 'Avalanche/USDT', exchange: 'BINANCE', ticker: 'BINANCE:AVAXUSDT', type: 'spot' },
+                { symbol: 'MATICUSDT', full_name: 'BINANCE:MATICUSDT', description: 'Polygon/USDT', exchange: 'BINANCE', ticker: 'BINANCE:MATICUSDT', type: 'spot' },
+                { symbol: 'DOTUSDT', full_name: 'BINANCE:DOTUSDT', description: 'Polkadot/USDT', exchange: 'BINANCE', ticker: 'BINANCE:DOTUSDT', type: 'spot' },
+                
+                // 알트코인
+                { symbol: 'LINKUSDT', full_name: 'BINANCE:LINKUSDT', description: 'Chainlink/USDT', exchange: 'BINANCE', ticker: 'BINANCE:LINKUSDT', type: 'spot' },
+                { symbol: 'LTCUSDT', full_name: 'BINANCE:LTCUSDT', description: 'Litecoin/USDT', exchange: 'BINANCE', ticker: 'BINANCE:LTCUSDT', type: 'spot' },
+                { symbol: 'BCHUSDT', full_name: 'BINANCE:BCHUSDT', description: 'Bitcoin Cash/USDT', exchange: 'BINANCE', ticker: 'BINANCE:BCHUSDT', type: 'spot' },
+                { symbol: 'UNIUSDT', full_name: 'BINANCE:UNIUSDT', description: 'Uniswap/USDT', exchange: 'BINANCE', ticker: 'BINANCE:UNIUSDT', type: 'spot' },
+                { symbol: 'ATOMUSDT', full_name: 'BINANCE:ATOMUSDT', description: 'Cosmos/USDT', exchange: 'BINANCE', ticker: 'BINANCE:ATOMUSDT', type: 'spot' },
+                { symbol: 'XLMUSDT', full_name: 'BINANCE:XLMUSDT', description: 'Stellar/USDT', exchange: 'BINANCE', ticker: 'BINANCE:XLMUSDT', type: 'spot' },
+                { symbol: 'VETUSDT', full_name: 'BINANCE:VETUSDT', description: 'VeChain/USDT', exchange: 'BINANCE', ticker: 'BINANCE:VETUSDT', type: 'spot' },
+                { symbol: 'FILUSDT', full_name: 'BINANCE:FILUSDT', description: 'Filecoin/USDT', exchange: 'BINANCE', ticker: 'BINANCE:FILUSDT', type: 'spot' },
+                { symbol: 'TRXUSDT', full_name: 'BINANCE:TRXUSDT', description: 'TRON/USDT', exchange: 'BINANCE', ticker: 'BINANCE:TRXUSDT', type: 'spot' },
+                { symbol: 'ETCUSDT', full_name: 'BINANCE:ETCUSDT', description: 'Ethereum Classic/USDT', exchange: 'BINANCE', ticker: 'BINANCE:ETCUSDT', type: 'spot' },
+                
+                // 디파이 토큰
+                { symbol: 'AAVEUSDT', full_name: 'BINANCE:AAVEUSDT', description: 'Aave/USDT', exchange: 'BINANCE', ticker: 'BINANCE:AAVEUSDT', type: 'spot' },
+                { symbol: 'SUSHIUSDT', full_name: 'BINANCE:SUSHIUSDT', description: 'SushiSwap/USDT', exchange: 'BINANCE', ticker: 'BINANCE:SUSHIUSDT', type: 'spot' },
+                { symbol: 'COMPUSDT', full_name: 'BINANCE:COMPUSDT', description: 'Compound/USDT', exchange: 'BINANCE', ticker: 'BINANCE:COMPUSDT', type: 'spot' },
+                { symbol: 'MKRUSDT', full_name: 'BINANCE:MKRUSDT', description: 'Maker/USDT', exchange: 'BINANCE', ticker: 'BINANCE:MKRUSDT', type: 'spot' },
+                { symbol: 'YFIUSDT', full_name: 'BINANCE:YFIUSDT', description: 'yearn.finance/USDT', exchange: 'BINANCE', ticker: 'BINANCE:YFIUSDT', type: 'spot' },
+                
+                // 레이어1/레이어2
+                { symbol: 'NEARUSDT', full_name: 'BINANCE:NEARUSDT', description: 'NEAR Protocol/USDT', exchange: 'BINANCE', ticker: 'BINANCE:NEARUSDT', type: 'spot' },
+                { symbol: 'ALGOUSDT', full_name: 'BINANCE:ALGOUSDT', description: 'Algorand/USDT', exchange: 'BINANCE', ticker: 'BINANCE:ALGOUSDT', type: 'spot' },
+                { symbol: 'FTMUSDT', full_name: 'BINANCE:FTMUSDT', description: 'Fantom/USDT', exchange: 'BINANCE', ticker: 'BINANCE:FTMUSDT', type: 'spot' },
+                { symbol: 'HBARUSDT', full_name: 'BINANCE:HBARUSDT', description: 'Hedera/USDT', exchange: 'BINANCE', ticker: 'BINANCE:HBARUSDT', type: 'spot' },
+                { symbol: 'ICPUSDT', full_name: 'BINANCE:ICPUSDT', description: 'Internet Computer/USDT', exchange: 'BINANCE', ticker: 'BINANCE:ICPUSDT', type: 'spot' },
+                
+                // 밈코인
+                { symbol: 'SHIBUSDT', full_name: 'BINANCE:SHIBUSDT', description: 'Shiba Inu/USDT', exchange: 'BINANCE', ticker: 'BINANCE:SHIBUSDT', type: 'spot' },
+                { symbol: 'PEPEUSDT', full_name: 'BINANCE:PEPEUSDT', description: 'Pepe/USDT', exchange: 'BINANCE', ticker: 'BINANCE:PEPEUSDT', type: 'spot' },
+                { symbol: 'FLOKIUSDT', full_name: 'BINANCE:FLOKIUSDT', description: 'Floki/USDT', exchange: 'BINANCE', ticker: 'BINANCE:FLOKIUSDT', type: 'spot' },
+                
+                // AI/메타버스
+                { symbol: 'FETUSDT', full_name: 'BINANCE:FETUSDT', description: 'Fetch.ai/USDT', exchange: 'BINANCE', ticker: 'BINANCE:FETUSDT', type: 'spot' },
+                { symbol: 'AGIXUSDT', full_name: 'BINANCE:AGIXUSDT', description: 'SingularityNET/USDT', exchange: 'BINANCE', ticker: 'BINANCE:AGIXUSDT', type: 'spot' },
+                { symbol: 'SANDUSDT', full_name: 'BINANCE:SANDUSDT', description: 'The Sandbox/USDT', exchange: 'BINANCE', ticker: 'BINANCE:SANDUSDT', type: 'spot' },
+                { symbol: 'MANAUSDT', full_name: 'BINANCE:MANAUSDT', description: 'Decentraland/USDT', exchange: 'BINANCE', ticker: 'BINANCE:MANAUSDT', type: 'spot' },
+                
+                // 게임파이
+                { symbol: 'AXSUSDT', full_name: 'BINANCE:AXSUSDT', description: 'Axie Infinity/USDT', exchange: 'BINANCE', ticker: 'BINANCE:AXSUSDT', type: 'spot' },
+                { symbol: 'GALAUSDT', full_name: 'BINANCE:GALAUSDT', description: 'Gala/USDT', exchange: 'BINANCE', ticker: 'BINANCE:GALAUSDT', type: 'spot' },
+                { symbol: 'ENJUSDT', full_name: 'BINANCE:ENJUSDT', description: 'Enjin Coin/USDT', exchange: 'BINANCE', ticker: 'BINANCE:ENJUSDT', type: 'spot' },
+                
+                // 기타 주요 알트코인
+                { symbol: 'APTUSDT', full_name: 'BINANCE:APTUSDT', description: 'Aptos/USDT', exchange: 'BINANCE', ticker: 'BINANCE:APTUSDT', type: 'spot' },
+                { symbol: 'SUIUSDT', full_name: 'BINANCE:SUIUSDT', description: 'Sui/USDT', exchange: 'BINANCE', ticker: 'BINANCE:SUIUSDT', type: 'spot' },
+                { symbol: 'ARBUSDT', full_name: 'BINANCE:ARBUSDT', description: 'Arbitrum/USDT', exchange: 'BINANCE', ticker: 'BINANCE:ARBUSDT', type: 'spot' },
+                { symbol: 'OPUSDT', full_name: 'BINANCE:OPUSDT', description: 'Optimism/USDT', exchange: 'BINANCE', ticker: 'BINANCE:OPUSDT', type: 'spot' },
+                { symbol: 'INJUSDT', full_name: 'BINANCE:INJUSDT', description: 'Injective/USDT', exchange: 'BINANCE', ticker: 'BINANCE:INJUSDT', type: 'spot' },
+                { symbol: 'THETAUSDT', full_name: 'BINANCE:THETAUSDT', description: 'THETA/USDT', exchange: 'BINANCE', ticker: 'BINANCE:THETAUSDT', type: 'spot' },
+                { symbol: 'LDOUSDT', full_name: 'BINANCE:LDOUSDT', description: 'Lido DAO/USDT', exchange: 'BINANCE', ticker: 'BINANCE:LDOUSDT', type: 'spot' },
+                { symbol: 'GRTUSDT', full_name: 'BINANCE:GRTUSDT', description: 'The Graph/USDT', exchange: 'BINANCE', ticker: 'BINANCE:GRTUSDT', type: 'spot' }
             ];
             
             const filtered = symbols.filter(s => 
@@ -58,7 +126,14 @@ function createDatafeed() {
                 pricescale: 100,
                 has_intraday: true,
                 has_no_volume: false,
-                supported_resolutions: ['1', '5', '15', '60', '240', 'D'],
+                supported_resolutions: [
+                    // 분 단위
+                    '1', '3', '5', '15', '30', 
+                    // 시간 단위 (분으로 표현)
+                    '60', '120', '240', '360', '480', '720', 
+                    // 일/주/월 단위
+                    'D', 'W', 'M'
+                ],
                 volume_precision: 8,
                 data_status: 'streaming',
             };
@@ -70,8 +145,15 @@ function createDatafeed() {
             const { from, to } = periodParams;
             const symbol = symbolInfo.name;
             
-            // 해상도 매핑
-            const intervalMap = { '1': '1m', '5': '5m', '15': '15m', '60': '1h', '240': '4h', 'D': '1d' };
+            // 해상도 매핑 (확장된 분봉 지원)
+            const intervalMap = { 
+                // 분 단위
+                '1': '1m', '3': '3m', '5': '5m', '15': '15m', '30': '30m',
+                // 시간 단위
+                '60': '1h', '120': '2h', '240': '4h', '360': '6h', '480': '8h', '720': '12h',
+                // 일/주/월 단위
+                'D': '1d', 'W': '1w', 'M': '1M'
+            };
             const interval = intervalMap[resolution] || '1h';
             
             try {
@@ -157,27 +239,31 @@ function createChartStorageAdapter() {
                     throw new Error('유효하지 않은 차트 데이터');
                 }
 
+                // 차트 내용을 JSON 문자열로 직렬화
+                let serializedContent;
+                const contentToSave = chartData.content || chartData;
+                
+                try {
+                    serializedContent = typeof contentToSave === 'string' 
+                        ? contentToSave 
+                        : JSON.stringify(contentToSave);
+                } catch (jsonError) {
+                    console.error('차트 데이터 직렬화 실패:', jsonError);
+                    throw new Error('차트 데이터를 저장할 수 없습니다');
+                }
+
                 const saveData = {
                     userId: window.currentUser.uid,
                     name: chartData.name || `차트 ${new Date().toLocaleDateString()}`,
-                    content: chartData.content || chartData,  // content가 없으면 전체 데이터 사용
+                    content: serializedContent,  // JSON 문자열로 저장
                     symbol: chartData.symbol || 'BTCUSDT',
                     resolution: chartData.resolution || '1h',
-                    timestamp: Date.now(),
+                    timestamp: new Date(),
                     createdAt: new Date()
                 };
 
-                // content가 문자열이면 JSON 파싱 시도
-                if (typeof saveData.content === 'string') {
-                    try {
-                        saveData.content = JSON.parse(saveData.content);
-                    } catch (e) {
-                        console.log('Content는 이미 문자열 형태입니다.');
-                    }
-                }
-
                 const docRef = await window.db.collection('chartLayouts').add(saveData);
-                console.log('차트 저장 완료:', docRef.id, saveData);
+                console.log('차트 저장 완료:', docRef.id, '크기:', serializedContent.length, 'bytes');
                 showNotification('차트가 저장되었습니다.', 'success');
                 return docRef.id;
             } catch (error) {
@@ -197,17 +283,88 @@ function createChartStorageAdapter() {
                     if (data.userId === window.currentUser.uid) {
                         console.log('차트 로드 완료:', chartId);
                         showNotification('차트가 로드되었습니다.', 'success');
-                        return data.content;
+                        
+                        // JSON 문자열을 객체로 파싱
+                        try {
+                            return typeof data.content === 'string' 
+                                ? JSON.parse(data.content) 
+                                : data.content;
+                        } catch (parseError) {
+                            console.error('차트 데이터 파싱 실패:', parseError);
+                            return data.content; // 원본 반환
+                        }
                     }
                 }
-                throw new Error('차트를 찾을 수 없습니다.');
+                return null;
             } catch (error) {
                 console.error('차트 로드 실패:', error);
-                showNotification('차트 로드에 실패했습니다.', 'error');
                 return null;
             }
         },
 
+        // 마지막 저장된 차트 가져오기
+        getLastChart: async function() {
+            if (!window.currentUser) return null;
+            
+            try {
+                // 1. 먼저 chartStates에서 자동 저장된 상태 확인
+                const stateDoc = await window.db.collection('chartStates').doc(window.currentUser.uid).get();
+                if (stateDoc.exists) {
+                    const stateData = stateDoc.data();
+                    if (stateData.content) {
+                        console.log('chartStates에서 마지막 상태 로드');
+                        try {
+                            return typeof stateData.content === 'string' 
+                                ? JSON.parse(stateData.content) 
+                                : stateData.content;
+                        } catch (parseError) {
+                            console.error('자동 저장 차트 파싱 실패:', parseError);
+                        }
+                    }
+                }
+                
+                // 2. chartStates에 없으면 chartLayouts에서 수동 저장된 차트 가져오기 (인덱스 없이)
+                const snapshot = await window.db.collection('chartLayouts')
+                    .where('userId', '==', window.currentUser.uid)
+                    .get();
+                
+                if (!snapshot.empty) {
+                    // 최신 차트 찾기
+                    let latestDoc = null;
+                    let latestTime = 0;
+                    
+                    snapshot.docs.forEach(doc => {
+                        const data = doc.data();
+                        const timestamp = data.timestamp?.toDate()?.getTime() || 0;
+                        if (timestamp > latestTime) {
+                            latestTime = timestamp;
+                            latestDoc = doc;
+                        }
+                    });
+                    
+                    if (latestDoc) {
+                        const data = latestDoc.data();
+                        console.log('chartLayouts에서 마지막 저장된 차트 로드:', latestDoc.id);
+                        try {
+                            return typeof data.content === 'string' 
+                                ? JSON.parse(data.content) 
+                                : data.content;
+                        } catch (parseError) {
+                            console.error('수동 저장 차트 파싱 실패:', parseError);
+                            return data.content; // 원본 반환
+                        }
+                    }
+                }
+                
+                console.log('저장된 차트 없음');
+                return null;
+            } catch (error) {
+                console.error('마지막 차트 로드 실패:', error);
+                return null;
+            }
+        },
+
+        // 차트 내용 가져오기 (TradingView에서 요구하는 함수)
         getChartContent: async function(chartId) {
             if (!window.currentUser || !chartId) return null;
             
@@ -217,7 +374,16 @@ function createChartStorageAdapter() {
                     const data = doc.data();
                     if (data.userId === window.currentUser.uid) {
                         console.log('차트 내용 로드 성공:', chartId);
-                        return data.content || {};
+                        
+                        // JSON 문자열을 객체로 파싱
+                        try {
+                            return typeof data.content === 'string' 
+                                ? JSON.parse(data.content) 
+                                : (data.content || {});
+                        } catch (parseError) {
+                            console.error('차트 내용 파싱 실패:', parseError);
+                            return data.content || {};
+                        }
                     }
                 }
                 console.log('차트 문서가 존재하지 않음:', chartId);
@@ -297,7 +463,7 @@ function createChartStorageAdapter() {
 }
 
 // TradingView 차트 초기화
-function initializeTradingViewChart() {
+async function initializeTradingViewChart() {
     const chartContainer = document.getElementById('chart-container');
     const loadingIndicator = document.getElementById('chart-loading');
     
@@ -306,7 +472,7 @@ function initializeTradingViewChart() {
         return;
     }
 
-    // 기존 위젯 제거
+    // 기존 위젯 제거 및 플래그 리셋
     if (widget) {
         try {
             widget.remove();
@@ -315,16 +481,47 @@ function initializeTradingViewChart() {
         }
         widget = null;
     }
+    
+    // AI 버튼 추가 플래그 리셋
+    aiButtonsAdded = false;
 
     // 로딩 표시
     if (loadingIndicator) {
         loadingIndicator.style.display = 'block';
     }
 
+    // 차트 저장/불러오기 어댑터 생성
+    const chartStorageAdapter = createChartStorageAdapter();
+
+        // 저장된 차트 데이터 미리 로드
+    let savedData = null;
+    try {
+        if (window.currentUser) {
+            const userId = window.currentUser.uid;
+            const chartDoc = await window.db.collection('chartStates').doc(userId).get();
+            if (chartDoc.exists) {
+                const data = chartDoc.data();
+                if (data.content) {
+                    try {
+                        // JSON 문자열을 객체로 파싱
+                        savedData = typeof data.content === 'string' 
+                            ? JSON.parse(data.content) 
+                            : data.content;
+                        console.log('저장된 차트 데이터 미리 로드 완료');
+                    } catch (parseError) {
+                        console.error('저장된 차트 데이터 파싱 실패:', parseError);
+                    }
+                }
+            }
+        }
+    } catch (e) {
+        console.log('저장된 차트 데이터 미리 로드 실패:', e);
+    }
+
     // TradingView 위젯 설정
     const widgetOptions = {
         symbol: 'BINANCE:BTCUSDT',
-        interval: '1h',
+        interval: '15',  // 기본값을 15분으로 설정
         container: chartContainer,
         datafeed: createDatafeed(),
         library_path: '/charting_library-master/charting_library/',
@@ -333,31 +530,71 @@ function initializeTradingViewChart() {
         autosize: true,
         theme: document.documentElement.classList.contains('dark-mode') ? 'Dark' : 'Light',
         
-        // 저장/불러오기 기능 활성화
-        disabled_features: [
-            'use_localstorage_for_settings',
-            'header_symbol_search',
-            'header_resolutions',
-            'timeframes_toolbar',
-            'study_templates',  // Study templates 비활성화로 404 오류 방지
-            'drawing_templates' // Drawing templates도 비활성화
-        ],
-        
         enabled_features: [
+            // 헤더 기능들
             'header_indicators',
             'header_chart_type',
             'header_screenshot',
             'header_settings',
             'header_undo_redo',
-            'header_saveload',  // 저장/불러오기 버튼 활성화
-            'save_chart_properties_to_local_storage'
+            'header_saveload',
+            'header_symbol_search',  // Symbol Search 활성화
+            'header_resolutions',  // Resolution 버튼 활성화
+            'header_fullscreen_button',  // 전체화면 버튼
+            'header_compare',  // 비교 차트 기능
+            'header_widget',  // 위젯 기능
+            
+            // 검색 및 심볼 기능
+            'symbol_search_hot_key',  // 심볼 검색 단축키 (Ctrl+K)
+            'symbol_info',  // 심볼 정보
+            
+            // 시간프레임 및 분봉 기능
+            'timeframes_toolbar',  // 시간프레임 툴바 활성화
+            'custom_resolutions',  // 커스텀 분봉 활성화
+            'show_interval_dialog_on_key_press',  // 키 단축키로 분봉 변경
+            'adaptive_logo',  // 적응형 로고
+            
+            // 설정 및 저장 기능
+            'use_localstorage_for_settings',
+            'save_chart_properties_to_local_storage',
+            
+            // 차트 기능
+            'chart_property_page_style',
+            'chart_property_page_scales',
+            'chart_property_page_background',
+            'chart_crosshair_menu',
+            'context_menus',
+            'control_bar',
+            'timeframes_toolbar',
+            
+            // 기타 유용한 기능
+            'volume_force_overlay',  // 거래량 오버레이
+            'create_volume_indicator_by_default',  // 기본 볼륨 지표
+            'legend_widget',  // 범례 위젯
+            'left_toolbar',  // 왼쪽 도구바
+            'hide_left_toolbar_by_default',  // 기본적으로 왼쪽 도구바 숨김
+            'constraint_dialogs_movement',  // 대화상자 이동 제한
+            'charting_library_debug_mode'  // TradingView 디버그 모드
         ],
-
-        // 차트 저장/불러오기 어댑터 설정
-        save_load_adapter: createChartStorageAdapter(),
-        auto_save_chart: false,  // 자동 저장 비활성화로 오류 방지
-        load_last_chart: false,  // 마지막 차트 자동 로드 비활성화
-
+        disabled_features: [
+            'study_templates',  // 연구 템플릿 비활성화
+            'drawing_templates',  // 그리기 템플릿 비활성화
+            'property_pages',  // 속성 페이지 일부 제한
+            'show_chart_property_page'  // 차트 속성 페이지 제한
+        ],
+        
+        // 커스텀 설정
+        
+        save_load_adapter: chartStorageAdapter,
+        auto_save_chart: false,
+        load_last_chart: savedData ? true : false, // 저장된 데이터가 있으면 활성화
+        
+        // 자동 저장 관련 설정
+        auto_save_delay: 5, // 5초 후 자동 저장
+        
+        // 저장된 데이터가 있으면 설정
+        ...(savedData && { saved_data: savedData }),
+        
         overrides: {
             "mainSeriesProperties.candleStyle.upColor": "#26a69a",
             "mainSeriesProperties.candleStyle.downColor": "#ef5350",
@@ -375,24 +612,265 @@ function initializeTradingViewChart() {
             if (loadingIndicator) {
                 loadingIndicator.style.display = 'none';
             }
+            
             setupChartEventListeners();
             
-            // 차트 저장/불러오기 이벤트 처리
+            // TradingView 공식 API로 툴바에 AI 버튼들 추가
+            widget.headerReady().then(() => {
+                addAIButtonsToToolbar();
+            });
+            
+            // 초기 코인 정보 업데이트
+            setTimeout(() => {
+                updateCoinInfo();
+            }, 1500);
+            
+            const userId = window.currentUser?.uid || 'anonymous';
+
+            // 🚀 간소화된 안정적인 차트 자동 저장 시스템
+            let saveTimeout = null;
+            let lastSaveTime = 0;
+            const SAVE_COOLDOWN = 3000; // 3초 쿨다운
+            
+            const saveChartLayout = async (layoutData) => {
+                if (!window.currentUser || !layoutData) return;
+                
+                const now = Date.now();
+                if (now - lastSaveTime < SAVE_COOLDOWN) return;
+                
+                try {
+                    // TradingView 데이터를 JSON 문자열로 직렬화
+                    let serializedData;
+                    try {
+                        serializedData = JSON.stringify(layoutData);
+                    } catch (jsonError) {
+                        console.error('JSON 직렬화 실패:', jsonError);
+                        return;
+                    }
+                    
+                    const saveData = {
+                        content: serializedData, // JSON 문자열로 저장
+                        timestamp: new Date(),
+                        updatedAt: now,
+                        userId: window.currentUser.uid,
+                        symbol: widget.activeChart()?.symbol() || 'BTCUSDT',
+                        interval: widget.activeChart()?.resolution() || '1h'
+                    };
+                    
+                    await window.db.collection('chartStates').doc(window.currentUser.uid).set(saveData);
+                    lastSaveTime = now;
+                    
+                    // 간단한 저장 알림
+                    const notification = document.createElement('div');
+                    notification.style.cssText = `
+                        position: fixed; top: 20px; right: 20px; z-index: 10000;
+                        background: #22c55e; color: white; padding: 6px 10px;
+                        border-radius: 4px; font-size: 11px; opacity: 0.9;
+                    `;
+                    notification.textContent = '💾 저장됨';
+                    document.body.appendChild(notification);
+                    
+                    setTimeout(() => {
+                        if (notification.parentNode) {
+                            notification.parentNode.removeChild(notification);
+                        }
+                    }, 1500);
+                    
+                    console.log('✅ 차트 저장 완료 (크기:', serializedData.length, 'bytes)');
+                } catch (error) {
+                    console.error('❌ 차트 저장 실패:', error);
+                }
+            };
+            
+            // 디바운스된 자동 저장 함수
+            const debouncedAutoSave = () => {
+                if (saveTimeout) clearTimeout(saveTimeout);
+                saveTimeout = setTimeout(() => {
+                    widget.save((layoutData) => {
+                        if (layoutData) {
+                            saveChartLayout(layoutData);
+                        }
+                    });
+                }, 2000); // 2초 디바운스
+            };
+
+            // 차트 이벤트 구독 (TradingView 공식 방법)
             try {
-                widget.subscribe('onAutoSaveNeeded', () => {
-                    console.log('자동 저장 요청됨');
+                // onAutoSaveNeeded 이벤트 구독 (TradingView 권장)
+                if (widget.onAutoSaveNeeded) {
+                    widget.onAutoSaveNeeded.subscribe(null, () => {
+                        console.log('📊 TradingView onAutoSaveNeeded 이벤트');
+                        debouncedAutoSave();
+                    });
+                    console.log('✅ onAutoSaveNeeded 이벤트 구독 완료');
+                }
+                
+                // 차트 변경 이벤트 구독 (백업)
+                const chart = widget.activeChart();
+                chart.onSymbolChanged().subscribe(null, () => {
+                    console.log('📊 심볼 변경');
+                    debouncedAutoSave();
+                });
+                chart.onIntervalChanged().subscribe(null, () => {
+                    console.log('📊 간격 변경');
+                    debouncedAutoSave();
                 });
                 
-                widget.subscribe('onChartLoad', (chartId) => {
-                    console.log('차트 로드됨:', chartId);
-                });
-                
-                widget.subscribe('onChartSave', (chartId) => {
-                    console.log('차트 저장됨:', chartId);
-                });
+                console.log('✅ 차트 이벤트 구독 완료');
             } catch (error) {
-                console.log('차트 이벤트 구독 중 오류:', error);
+                console.error('❌ 차트 이벤트 구독 실패:', error);
             }
+
+            // 사용자 상호작용 감지 (차트 컨테이너에서) - 향상된 버전
+            const chartContainer = document.getElementById('tradingview_chart');
+            if (chartContainer) {
+                // 마우스 이벤트
+                ['mouseup', 'touchend', 'click'].forEach(eventType => {
+                    chartContainer.addEventListener(eventType, debouncedAutoSave);
+                });
+                
+                // 키보드 이벤트 (드로잉 도구 사용 시)
+                document.addEventListener('keyup', (e) => {
+                    // Delete, Backspace, Escape 키 감지 (드로잉 삭제/취소)
+                    if (['Delete', 'Backspace', 'Escape'].includes(e.key)) {
+                        debouncedAutoSave();
+                    }
+                });
+                
+                console.log('✅ 향상된 상호작용 이벤트 구독 완료');
+            }
+
+            // 차트 복원 함수 (안정화)
+            // 차트 복원 상태 관리
+            let chartRestored = false;
+            
+            const restoreChart = async () => {
+                if (!window.currentUser) {
+                    console.log('❌ 사용자 미로그인 - 차트 복원 건너뜀');
+                    return;
+                }
+                
+                // 이미 복원되었다면 건너뜀
+                if (chartRestored) {
+                    console.log('ℹ️ 차트가 이미 복원됨 - 중복 실행 방지');
+                    return;
+                }
+                
+                try {
+                    const userId = window.currentUser.uid;
+                    console.log('🔄 차트 복원 시작...', userId);
+                    
+                    // 1차: 자동 저장된 차트 확인
+                    const chartDoc = await window.db.collection('chartStates').doc(userId).get();
+                    if (chartDoc.exists) {
+                        const data = chartDoc.data();
+                        if (data.content) {
+                            try {
+                                // JSON 문자열을 객체로 파싱
+                                const layoutData = typeof data.content === 'string' 
+                                    ? JSON.parse(data.content) 
+                                    : data.content;
+                                
+                                widget.load(layoutData);
+                                showNotification('차트가 복원되었습니다', 'success');
+                                console.log('✅ 자동 저장 차트 복원 완료');
+                                chartRestored = true; // 복원 완료 플래그 설정
+                                return;
+                            } catch (parseError) {
+                                console.error('차트 데이터 파싱 실패:', parseError);
+                            }
+                        }
+                    }
+                    
+                    // 2차: 수동 저장된 차트 확인 (인덱스 오류 방지)
+                    const layoutSnapshot = await window.db.collection('chartLayouts')
+                        .where('userId', '==', userId)
+                        .get();
+                    
+                    if (!layoutSnapshot.empty) {
+                        // 최신 데이터 찾기
+                        let latestDoc = null;
+                        let latestTime = 0;
+                        
+                        layoutSnapshot.docs.forEach(doc => {
+                            const data = doc.data();
+                            const timestamp = data.timestamp?.toDate()?.getTime() || 0;
+                            if (timestamp > latestTime) {
+                                latestTime = timestamp;
+                                latestDoc = doc;
+                            }
+                        });
+                        
+                        if (latestDoc && latestDoc.data().content) {
+                            try {
+                                // JSON 문자열을 객체로 파싱
+                                const layoutData = typeof latestDoc.data().content === 'string' 
+                                    ? JSON.parse(latestDoc.data().content) 
+                                    : latestDoc.data().content;
+                                
+                                widget.load(layoutData);
+                                showNotification('저장된 차트가 복원되었습니다', 'success');
+                                console.log('✅ 수동 저장 차트 복원 완료');
+                                chartRestored = true; // 복원 완료 플래그 설정
+                                return;
+                            } catch (parseError) {
+                                console.error('수동 저장 차트 데이터 파싱 실패:', parseError);
+                            }
+                        }
+                    }
+                    
+                    console.log('ℹ️ 복원할 차트 없음');
+                } catch (error) {
+                    console.error('❌ 차트 복원 실패:', error);
+                }
+            };
+            
+            // 차트 완전 로드 후 복원 (초기 시도 후 백업으로 한 번 더)
+            setTimeout(restoreChart, 100);
+            setTimeout(() => {
+                if (!chartRestored) {
+                    console.log('🔄 백업 차트 복원 시도');
+                    restoreChart();
+                }
+            }, 3000);
+
+            // 주기적 백업 저장 (1분마다)
+            setInterval(() => {
+                if (window.currentUser) {
+                    console.log('⏰ 주기적 백업 저장');
+                    debouncedAutoSave();
+                }
+            }, 60000);
+
+            // 페이지 종료 시 최종 저장
+            const handlePageExit = () => {
+                if (window.currentUser) {
+                    widget.save((layoutData) => {
+                        if (layoutData) {
+                            try {
+                                // JSON 직렬화
+                                const serializedData = JSON.stringify(layoutData);
+                                
+                                // 즉시 저장
+                                window.db.collection('chartStates')
+                                    .doc(window.currentUser.uid)
+                                    .set({
+                                        content: serializedData,
+                                        timestamp: new Date(),
+                                        updatedAt: Date.now(),
+                                        userId: window.currentUser.uid
+                                    });
+                                console.log('🚪 페이지 종료 시 차트 저장 완료');
+                            } catch (error) {
+                                console.error('페이지 종료 시 저장 실패:', error);
+                            }
+                        }
+                    });
+                }
+            };
+            
+            window.addEventListener('beforeunload', handlePageExit);
+            window.addEventListener('pagehide', handlePageExit);
         });
 
     } catch (error) {
@@ -414,155 +892,317 @@ function initializeTradingViewChart() {
     }
 }
 
+
+
 function setupChartEventListeners() {
-    // 코인 선택 이벤트
-    const coinSelector = document.getElementById('coin-selector');
-    if (coinSelector) {
-        coinSelector.addEventListener('click', () => {
-            document.getElementById('coin-search-modal').style.display = 'flex';
-        });
-    }
-
-    // 인터벌 선택 이벤트
-    const intervalButtons = document.querySelectorAll('.interval-button');
-    intervalButtons.forEach(button => {
-        button.addEventListener('click', () => {
-            intervalButtons.forEach(btn => btn.classList.remove('active'));
-            button.classList.add('active');
+    // TradingView 차트 이벤트 리스너 설정
+    if (widget && widget.chart) {
+        try {
+            const chart = widget.chart();
             
-            const interval = button.dataset.interval;
-            const resolutionMap = { '1m': '1', '5m': '5', '15m': '15', '1h': '60', '4h': '240', '1d': 'D' };
-            const resolution = resolutionMap[interval] || '60';
-            
-            if (widget && widget.activeChart) {
-                widget.activeChart().setResolution(resolution);
-            }
-        });
-    });
-
-    // 코인 검색 모달 이벤트
-    setupCoinSearchModal();
-}
-
-function setupCoinSearchModal() {
-    const modal = document.getElementById('coin-search-modal');
-    const closeBtn = document.getElementById('coin-search-close');
-    const searchInput = document.getElementById('coin-search-input');
-    const searchList = document.getElementById('coin-search-list');
-    const tabs = document.querySelectorAll('.coin-search-tab');
-
-    if (closeBtn) {
-        closeBtn.addEventListener('click', () => {
-            modal.style.display = 'none';
-        });
-    }
-
-    if (searchInput) {
-        searchInput.addEventListener('input', debounce(async (e) => {
-            const query = e.target.value.toLowerCase();
-            await loadCoinList(query);
-        }, 300));
-    }
-
-    tabs.forEach(tab => {
-        tab.addEventListener('click', () => {
-            tabs.forEach(t => t.classList.remove('active'));
-            tab.classList.add('active');
-            loadCoinList(searchInput.value.toLowerCase(), tab.dataset.tab);
-        });
-    });
-
-    // 초기 코인 목록 로드
-    loadCoinList('', 'all');
-}
-
-async function loadCoinList(query = '', type = 'all') {
-    const searchList = document.getElementById('coin-search-list');
-    if (!searchList) return;
-
-    try {
-        const response = await fetch('https://api.binance.com/api/v3/exchangeInfo');
-        const data = await response.json();
-        
-        let symbols = data.symbols.filter(symbol => 
-            symbol.status === 'TRADING' && 
-            symbol.quoteAsset === 'USDT'
-        );
-
-        if (type === 'spot') {
-            symbols = symbols.filter(symbol => !symbol.symbol.includes('_'));
-        } else if (type === 'futures') {
-            symbols = symbols.filter(symbol => symbol.symbol.includes('_'));
-        }
-
-        if (query) {
-            symbols = symbols.filter(symbol => 
-                symbol.baseAsset.toLowerCase().includes(query) ||
-                symbol.symbol.toLowerCase().includes(query)
-            );
-        }
-
-        // 상위 50개만 표시
-        symbols = symbols.slice(0, 50);
-
-        searchList.innerHTML = symbols.map(symbol => `
-            <div class="coin-search-item" data-symbol="${symbol.symbol}">
-                <div class="coin-search-item-icon">${symbol.baseAsset.charAt(0)}</div>
-                <div class="coin-search-item-info">
-                    <div class="coin-search-item-symbol">${symbol.baseAsset}</div>
-                    <div class="coin-search-item-name">${symbol.baseAsset} / USDT</div>
-                </div>
-                <div class="coin-search-item-price">
-                    <div class="coin-search-item-price-value">--</div>
-                    <div class="coin-search-item-price-change">--</div>
-                </div>
-            </div>
-        `).join('');
-
-        // 코인 선택 이벤트
-        const coinItems = searchList.querySelectorAll('.coin-search-item');
-        coinItems.forEach(item => {
-            item.addEventListener('click', () => {
-                const symbol = item.dataset.symbol;
-                if (widget && widget.activeChart) {
-                    widget.activeChart().setSymbol(`BINANCE:${symbol}`);
-                }
-                document.getElementById('selected-coin-text').textContent = symbol;
-                modal.style.display = 'none';
+            // 심볼 변경 이벤트 (TradingView 내장 검색만 사용)
+            chart.onSymbolChanged().subscribe(null, (symbolInfo) => {
+                console.log('Symbol changed:', symbolInfo);
+                // TradingView 내장 기능만 사용하므로 추가 UI 업데이트 없음
             });
-        });
-
-        // 실시간 가격 업데이트
-        updateCoinPrices(symbols.map(s => s.symbol));
-
-    } catch (error) {
-        console.error('Error loading coin list:', error);
-        searchList.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--text-color-secondary);">코인 목록을 불러올 수 없습니다.</div>';
+            
+            // Resolution 변경 이벤트 (TradingView 내장 기능만 사용)
+            chart.onIntervalChanged().subscribe(null, (interval) => {
+                console.log('Resolution changed to:', interval);
+                // 커스텀 분봉 버튼이 제거되어 동기화 코드 불필요
+            });
+            
+            // 해상도 변경 이벤트
+            chart.onIntervalChanged().subscribe(null, (interval) => {
+                console.log('Interval changed:', interval);
+                
+                // 간격 변경 시 UI 업데이트
+                const intervalButtons = document.querySelectorAll('.interval-button');
+                intervalButtons.forEach(btn => btn.classList.remove('active'));
+                
+                const intervalMap = { 
+                    '1': '1m', 
+                    '5': '5m', 
+                    '15': '15m', 
+                    '60': '1h', 
+                    '240': '4h', 
+                    'D': '1d' 
+                };
+                const intervalText = intervalMap[interval] || interval;
+                const targetButton = document.querySelector(`[data-interval="${intervalText}"]`);
+                if (targetButton) {
+                    targetButton.classList.add('active');
+                }
+            });
+            
+            console.log('TradingView 차트 이벤트 리스너 설정 완료');
+        } catch (error) {
+            console.error('TradingView 차트 이벤트 리스너 설정 실패:', error);
+        }
     }
+
+    // 코인 선택 이벤트는 TradingView 내장 기능만 사용 (Ctrl+K)
+
+    // 분봉 버튼 제거됨 - TradingView 내장 기능만 사용
+
+    // 코인 검색 모달 제거됨 (TradingView 내장 기능 사용)
 }
 
-async function updateCoinPrices(symbols) {
+// TradingView 공식 API로 툴바에 AI 버튼들 추가
+let aiButtonsAdded = false; // 중복 추가 방지 플래그
+
+function addAIButtonsToToolbar() {
     try {
-        const response = await fetch(`https://api.binance.com/api/v3/ticker/24hr?symbols=${JSON.stringify(symbols)}`);
-        const data = await response.json();
-        
-        data.forEach(ticker => {
-            const item = document.querySelector(`[data-symbol="${ticker.symbol}"]`);
-            if (item) {
-                const priceValue = item.querySelector('.coin-search-item-price-value');
-                const priceChange = item.querySelector('.coin-search-item-price-change');
+        if (!widget) {
+            console.error('❌ TradingView widget이 준비되지 않았습니다');
+            return;
+        }
+
+        // 이미 추가된 경우 중복 방지
+        if (aiButtonsAdded) {
+            console.log('ℹ️ AI 버튼들이 이미 추가되어 있습니다');
+            return;
+        }
+
+        console.log('🔧 TradingView 공식 API로 AI 버튼들 추가 시작...');
+
+        // AI 버튼 설정 배열
+        const aiButtons = [
+            {
+                id: 'volume-alert-btn',
+                text: '🔔',
+                tooltip: '거래량 알람 설정',
+                onClick: () => {
+                    if (!window.currentUser) {
+                        showNotification('로그인이 필요합니다.', 'warning');
+                        return;
+                    }
+                    document.getElementById('volume-alert-modal').style.display = 'flex';
+                }
+            },
+            {
+                id: 'ai-analysis-btn', 
+                text: '🧠',
+                tooltip: 'AI 분석',
+                onClick: () => {
+                    if (!window.currentUser) {
+                        showNotification('로그인이 필요합니다.', 'warning');
+                        return;
+                    }
+                    document.getElementById('ai-analysis-modal').style.display = 'flex';
+                }
+            },
+            {
+                id: 'notification-settings-btn',
+                text: '⚙️',
+                tooltip: '알림 설정', 
+                onClick: () => {
+                    if (!window.currentUser) {
+                        showNotification('로그인이 필요합니다.', 'warning');
+                        return;
+                    }
+                    document.getElementById('notification-settings-modal').style.display = 'flex';
+                }
+            }
+        ];
+
+        // 각 AI 버튼을 TradingView 툴바에 추가
+        aiButtons.forEach((buttonConfig, index) => {
+            try {
+                // TradingView API 사용법 개선 - 왼쪽 정렬
+                const buttonElement = widget.createButton({
+                    align: 'right'
+                });
                 
-                priceValue.textContent = `$${parseFloat(ticker.lastPrice).toFixed(4)}`;
-                
-                const changePercent = parseFloat(ticker.priceChangePercent);
-                priceChange.textContent = `${changePercent >= 0 ? '+' : ''}${changePercent.toFixed(2)}%`;
-                priceChange.className = `coin-search-item-price-change ${changePercent >= 0 ? 'positive' : 'negative'}`;
+                // 반환된 객체가 DOM element인지 확인
+                if (!buttonElement || typeof buttonElement.style === 'undefined') {
+                    throw new Error('TradingView API가 유효한 DOM 요소를 반환하지 않음');
+                }
+
+                // 안전한 속성 설정
+                if (buttonElement.textContent !== undefined) {
+                    buttonElement.textContent = buttonConfig.text;
+                }
+                if (buttonElement.title !== undefined) {
+                    buttonElement.title = buttonConfig.tooltip;
+                }
+                if (typeof buttonElement.addEventListener === 'function') {
+                    buttonElement.addEventListener('click', buttonConfig.onClick);
+                } else if (buttonElement.onclick !== undefined) {
+                    buttonElement.onclick = buttonConfig.onClick;
+                }
+
+                // 안전한 스타일 설정
+                if (buttonElement.style) {
+                    try {
+                        Object.assign(buttonElement.style, {
+                            fontSize: '16px',
+                            minWidth: '32px',
+                            height: '32px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            margin: '0 2px',
+                            border: 'none',
+                            background: 'transparent',
+                            cursor: 'pointer',
+                            borderRadius: '4px',
+                            transition: 'all 0.2s ease'
+                        });
+                    } catch (styleError) {
+                        console.warn(`⚠️ ${buttonConfig.tooltip} 버튼 스타일 설정 실패:`, styleError);
+                    }
+                }
+
+                console.log(`✅ ${buttonConfig.tooltip} 버튼 추가 완료`);
+
+            } catch (buttonError) {
+                console.error(`❌ ${buttonConfig.tooltip} 버튼 추가 실패:`, buttonError);
+                // 개별 버튼 실패시 전체 폴백 모드로 전환
+                if (index === 0) {
+                    throw buttonError; // 첫 번째 버튼이 실패하면 전체 폴백 모드로
+                }
             }
         });
+
+        console.log('✅ 모든 AI 버튼들이 TradingView 툴바에 추가되었습니다');
+        aiButtonsAdded = true; // 성공 플래그 설정
+
     } catch (error) {
-        console.error('Error updating coin prices:', error);
+        console.error('❌ TradingView API로 AI 버튼 추가 실패:', error);
+        
+        // 폴백: 플로팅 버튼으로 추가
+        console.log('🔄 폴백 모드로 전환...');
+        addFallbackAIButtons();
     }
 }
+
+// 폴백: 차트 위에 플로팅 AI 버튼들 추가
+function addFallbackAIButtons() {
+    const chartContainer = document.getElementById('chart-container');
+    if (!chartContainer) {
+        console.error('❌ 차트 컨테이너를 찾을 수 없습니다');
+        return;
+    }
+    
+    // 기존 폴백 버튼이 있으면 제거
+    const existingFallback = document.getElementById('ai-fallback-buttons');
+    if (existingFallback) {
+        existingFallback.remove();
+    }
+    
+    console.log('🔄 폴백 모드: 플로팅 AI 버튼들 추가...');
+    
+    // 차트 컨테이너를 relative로 설정
+    chartContainer.style.position = 'relative';
+    
+    const fallbackContainer = document.createElement('div');
+    fallbackContainer.id = 'ai-fallback-buttons';
+    fallbackContainer.style.cssText = `
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        display: flex;
+        gap: 6px;
+        z-index: 1000;
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        padding: 6px;
+        border-radius: 10px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        border: 1px solid rgba(240, 243, 250, 0.8);
+    `;
+    
+    const aiButtons = [
+        {
+            id: 'fallback-volume-alert-btn',
+            emoji: '🔔',
+            title: '거래량 알람 설정',
+            onClick: () => {
+                if (!window.currentUser) {
+                    showNotification('로그인이 필요합니다.', 'warning');
+                    return;
+                }
+                document.getElementById('volume-alert-modal').style.display = 'flex';
+            }
+        },
+        {
+            id: 'fallback-ai-analysis-btn',
+            emoji: '🧠',
+            title: 'AI 분석',
+            onClick: () => {
+                if (!window.currentUser) {
+                    showNotification('로그인이 필요합니다.', 'warning');
+                    return;
+                }
+                document.getElementById('ai-analysis-modal').style.display = 'flex';
+            }
+        },
+        {
+            id: 'fallback-notification-settings-btn',
+            emoji: '⚙️',
+            title: '알림 설정',
+            onClick: () => {
+                if (!window.currentUser) {
+                    showNotification('로그인이 필요합니다.', 'warning');
+                    return;
+                }
+                document.getElementById('notification-settings-modal').style.display = 'flex';
+            }
+        }
+    ];
+    
+    aiButtons.forEach(buttonConfig => {
+        const button = document.createElement('button');
+        button.id = buttonConfig.id;
+        button.title = buttonConfig.title;
+        button.innerHTML = buttonConfig.emoji;
+        button.addEventListener('click', buttonConfig.onClick);
+        
+        button.style.cssText = `
+            background: transparent;
+            color: #131722;
+            border: none;
+            padding: 6px;
+            cursor: pointer;
+            border-radius: 6px;
+            font-size: 16px;
+            min-width: 30px;
+            height: 30px;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        `;
+        
+        button.addEventListener('mouseenter', () => {
+            button.style.background = 'rgba(41, 98, 255, 0.1)';
+            button.style.transform = 'translateY(-1px) scale(1.05)';
+        });
+        
+        button.addEventListener('mouseleave', () => {
+            button.style.background = 'transparent';
+            button.style.transform = 'translateY(0) scale(1)';
+        });
+        
+        button.addEventListener('mousedown', () => {
+            button.style.transform = 'translateY(0) scale(0.95)';
+        });
+        
+        button.addEventListener('mouseup', () => {
+            button.style.transform = 'translateY(-1px) scale(1.05)';
+        });
+        
+        fallbackContainer.appendChild(button);
+    });
+    
+    chartContainer.appendChild(fallbackContainer);
+    console.log('✅ 폴백 AI 버튼들이 차트 위에 추가되었습니다');
+}
+
+// 코인 선택 모달 기능 제거됨 (TradingView 내장 기능 사용)
+
+// 코인 목록 및 가격 업데이트 함수들 제거됨 (TradingView 내장 기능 사용)
 
 function debounce(func, wait) {
     let timeout;
@@ -578,40 +1218,8 @@ function debounce(func, wait) {
 
 // AI 기능 초기화
 function initializeAIFeatures() {
-    // AI 기능 버튼 이벤트 리스너
-    const volumeAlertBtn = document.getElementById('volume-alert-btn');
-    const aiAnalysisBtn = document.getElementById('ai-analysis-btn');
-    const notificationSettingsBtn = document.getElementById('notification-settings-btn');
-
-    if (volumeAlertBtn) {
-        volumeAlertBtn.addEventListener('click', () => {
-            if (!window.currentUser) {
-                showNotification('로그인이 필요합니다.', 'warning');
-                return;
-            }
-            document.getElementById('volume-alert-modal').style.display = 'flex';
-        });
-    }
-
-    if (aiAnalysisBtn) {
-        aiAnalysisBtn.addEventListener('click', () => {
-            if (!window.currentUser) {
-                showNotification('로그인이 필요합니다.', 'warning');
-                return;
-            }
-            document.getElementById('ai-analysis-modal').style.display = 'flex';
-        });
-    }
-
-    if (notificationSettingsBtn) {
-        notificationSettingsBtn.addEventListener('click', () => {
-            if (!window.currentUser) {
-                showNotification('로그인이 필요합니다.', 'warning');
-                return;
-            }
-            document.getElementById('notification-settings-modal').style.display = 'flex';
-        });
-    }
+    // AI 버튼들은 이제 TradingView 툴바에 동적으로 생성되므로
+    // 여기서는 AI 분석 관련 이벤트만 설정
 
     // AI 분석 카드 이벤트
     const analysisCards = document.querySelectorAll('.analysis-card');
@@ -2266,30 +2874,37 @@ function analyzeRecommendation(marketData) {
 
 // 코인 정보 업데이트 함수
 async function updateCoinInfo() {
+    // AI 모달의 코인 정보 업데이트
     const coinSelect = document.getElementById('ai-coin-select');
     const coinInfo = document.getElementById('coin-info');
     
-    if (!coinSelect || !coinInfo) return;
-    
-    const symbol = coinSelect.value;
-    
-    try {
-        const response = await fetch(`https://api.binance.com/api/v3/ticker/24hr?symbol=${symbol}`);
-        const data = await response.json();
+    if (coinSelect && coinInfo) {
+        const symbol = coinSelect.value;
         
-        const price = parseFloat(data.lastPrice);
-        const change = parseFloat(data.priceChangePercent);
-        
-        const priceElement = coinInfo.querySelector('.coin-price');
-        const changeElement = coinInfo.querySelector('.coin-change');
-        
-        priceElement.textContent = `$${price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 6 })}`;
-        changeElement.textContent = `${change >= 0 ? '+' : ''}${change.toFixed(2)}%`;
-        changeElement.className = `coin-change ${change >= 0 ? 'positive' : 'negative'}`;
-        
-    } catch (error) {
-        console.error('코인 정보 업데이트 실패:', error);
+        try {
+            const response = await fetch(`https://api.binance.com/api/v3/ticker/24hr?symbol=${symbol}`);
+            const data = await response.json();
+            
+            const price = parseFloat(data.lastPrice);
+            const change = parseFloat(data.priceChangePercent);
+            
+            const priceElement = coinInfo.querySelector('.coin-price');
+            const changeElement = coinInfo.querySelector('.coin-change');
+            
+            if (priceElement) {
+                priceElement.textContent = `$${price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 6 })}`;
+            }
+            if (changeElement) {
+                changeElement.textContent = `${change >= 0 ? '+' : ''}${change.toFixed(2)}%`;
+                changeElement.className = `coin-change ${change >= 0 ? 'positive' : 'negative'}`;
+            }
+            
+        } catch (error) {
+            console.error('AI 모달 코인 정보 업데이트 실패:', error);
+        }
     }
+    
+    // 차트 헤더의 코인 선택기가 제거되어 이 부분은 더 이상 필요하지 않음
 }
 
 async function startAIAnalysis() {
@@ -3215,12 +3830,78 @@ function onAuthStateChanged(user) {
         console.log('사용자 로그인:', user.uid);
         updateUserMessageStyles(); // 로그인 시 메시지 스타일 업데이트
         
-        // 로그인 후 차트 저장/불러오기 기능 활성화
+        // 로그인 후 차트 저장/불러오기 기능 활성화 및 자동 복원
         if (widget && widget.onChartReady) {
-            widget.onChartReady(() => {
+            widget.onChartReady(async () => {
                 // 차트 저장/불러오기 어댑터 설정
                 widget.save_load_adapter = createChartStorageAdapter();
                 console.log('차트 저장/불러오기 기능이 활성화되었습니다.');
+                
+                // 로그인 후 자동으로 차트 복원
+                try {
+                    console.log('🔄 로그인 후 차트 자동 복원 시작...');
+                    
+                    // 1차: 자동 저장된 차트 확인
+                    const chartDoc = await window.db.collection('chartStates').doc(user.uid).get();
+                    if (chartDoc.exists) {
+                        const data = chartDoc.data();
+                        if (data.content) {
+                            try {
+                                // JSON 문자열을 객체로 파싱
+                                const layoutData = typeof data.content === 'string' 
+                                    ? JSON.parse(data.content) 
+                                    : data.content;
+                                
+                                widget.load(layoutData);
+                                showNotification('로그인 후 차트가 자동 복원되었습니다', 'success');
+                                console.log('✅ 로그인 후 자동 저장 차트 복원 완료');
+                                return;
+                            } catch (parseError) {
+                                console.error('차트 데이터 파싱 실패:', parseError);
+                            }
+                        }
+                    }
+                    
+                    // 2차: 수동 저장된 차트 확인
+                    const layoutSnapshot = await window.db.collection('chartLayouts')
+                        .where('userId', '==', user.uid)
+                        .get();
+                    
+                    if (!layoutSnapshot.empty) {
+                        // 최신 데이터 찾기
+                        let latestDoc = null;
+                        let latestTime = 0;
+                        
+                        layoutSnapshot.docs.forEach(doc => {
+                            const data = doc.data();
+                            const timestamp = data.timestamp?.toDate()?.getTime() || 0;
+                            if (timestamp > latestTime) {
+                                latestTime = timestamp;
+                                latestDoc = doc;
+                            }
+                        });
+                        
+                        if (latestDoc && latestDoc.data().content) {
+                            try {
+                                // JSON 문자열을 객체로 파싱
+                                const layoutData = typeof latestDoc.data().content === 'string' 
+                                    ? JSON.parse(latestDoc.data().content) 
+                                    : latestDoc.data().content;
+                                
+                                widget.load(layoutData);
+                                showNotification('로그인 후 저장된 차트가 자동 복원되었습니다', 'success');
+                                console.log('✅ 로그인 후 수동 저장 차트 복원 완료');
+                                return;
+                            } catch (parseError) {
+                                console.error('수동 저장 차트 데이터 파싱 실패:', parseError);
+                            }
+                        }
+                    }
+                    
+                    console.log('ℹ️ 로그인 후 복원할 차트 없음');
+                } catch (error) {
+                    console.error('❌ 로그인 후 차트 자동 복원 실패:', error);
+                }
             });
         }
     } else {
@@ -4258,3 +4939,526 @@ function calculateAdvancedTradingRecommendation(signals, patterns, currentPrice,
          confidence: Math.abs(normalizedScore) * 100
      };
  }
+
+// ==================== 추가 기술적 지표들 ====================
+
+// TSI (True Strength Index) 계산
+function calculateTSI(closes, longPeriod = 25, shortPeriod = 13, signalPeriod = 13) {
+    if (closes.length < longPeriod + shortPeriod) return null;
+    
+    const priceChanges = [];
+    for (let i = 1; i < closes.length; i++) {
+        priceChanges.push(closes[i] - closes[i - 1]);
+    }
+    
+    // 첫 번째 평활화
+    const firstSmoothed = calculateEMA(priceChanges, longPeriod);
+    const firstSmoothedAbs = calculateEMA(priceChanges.map(Math.abs), longPeriod);
+    
+    // 두 번째 평활화
+    const secondSmoothed = calculateEMA(firstSmoothed, shortPeriod);
+    const secondSmoothedAbs = calculateEMA(firstSmoothedAbs, shortPeriod);
+    
+    // TSI 계산
+    const tsi = secondSmoothed.map((val, idx) => 
+        secondSmoothedAbs[idx] !== 0 ? (val / secondSmoothedAbs[idx]) * 100 : 0
+    );
+    
+    // 신호선 계산
+    const signalLine = calculateEMA(tsi, signalPeriod);
+    
+    return {
+        tsi: tsi[tsi.length - 1],
+        signal: signalLine[signalLine.length - 1],
+        histogram: tsi[tsi.length - 1] - signalLine[signalLine.length - 1]
+    };
+}
+
+// UO (Ultimate Oscillator) 계산
+function calculateUO(highs, lows, closes, period1 = 7, period2 = 14, period3 = 28) {
+    if (closes.length < period3) return null;
+    
+    const trueRanges = [];
+    const buyingPressures = [];
+    
+    for (let i = 1; i < closes.length; i++) {
+        const prevClose = closes[i - 1];
+        const currentHigh = highs[i];
+        const currentLow = lows[i];
+        const currentClose = closes[i];
+        
+        const trueHigh = Math.max(currentHigh, prevClose);
+        const trueLow = Math.min(currentLow, prevClose);
+        const trueRange = trueHigh - trueLow;
+        const buyingPressure = currentClose - trueLow;
+        
+        trueRanges.push(trueRange);
+        buyingPressures.push(buyingPressure);
+    }
+    
+    const bp1 = buyingPressures.slice(-period1).reduce((sum, val) => sum + val, 0);
+    const tr1 = trueRanges.slice(-period1).reduce((sum, val) => sum + val, 0);
+    
+    const bp2 = buyingPressures.slice(-period2).reduce((sum, val) => sum + val, 0);
+    const tr2 = trueRanges.slice(-period2).reduce((sum, val) => sum + val, 0);
+    
+    const bp3 = buyingPressures.slice(-period3).reduce((sum, val) => sum + val, 0);
+    const tr3 = trueRanges.slice(-period3).reduce((sum, val) => sum + val, 0);
+    
+    const uo = ((4 * (bp1 / tr1)) + (2 * (bp2 / tr2)) + (bp3 / tr3)) / (4 + 2 + 1) * 100;
+    
+    return uo;
+}
+
+// DMI (Directional Movement Index) 계산
+function calculateDMI(highs, lows, closes, period = 14) {
+    if (closes.length < period + 1) return null;
+    
+    const dxValues = [];
+    const plusDM = [];
+    const minusDM = [];
+    const trValues = [];
+    
+    for (let i = 1; i < closes.length; i++) {
+        const upMove = highs[i] - highs[i - 1];
+        const downMove = lows[i - 1] - lows[i];
+        
+        plusDM.push(upMove > downMove && upMove > 0 ? upMove : 0);
+        minusDM.push(downMove > upMove && downMove > 0 ? downMove : 0);
+        
+        const tr = Math.max(
+            highs[i] - lows[i],
+            Math.abs(highs[i] - closes[i - 1]),
+            Math.abs(lows[i] - closes[i - 1])
+        );
+        trValues.push(tr);
+    }
+    
+    const smoothedPlusDM = calculateSMA(plusDM, period);
+    const smoothedMinusDM = calculateSMA(minusDM, period);
+    const smoothedTR = calculateSMA(trValues, period);
+    
+    const plusDI = smoothedPlusDM.map((val, idx) => 
+        smoothedTR[idx] !== 0 ? (val / smoothedTR[idx]) * 100 : 0
+    );
+    const minusDI = smoothedMinusDM.map((val, idx) => 
+        smoothedTR[idx] !== 0 ? (val / smoothedTR[idx]) * 100 : 0
+    );
+    
+    const dx = plusDI.map((val, idx) => 
+        (val + minusDI[idx]) !== 0 ? Math.abs(val - minusDI[idx]) / (val + minusDI[idx]) * 100 : 0
+    );
+    
+    const adx = calculateSMA(dx, period);
+    
+    return {
+        plusDI: plusDI[plusDI.length - 1],
+        minusDI: minusDI[minusDI.length - 1],
+        adx: adx[adx.length - 1]
+    };
+}
+
+// Aroon 지표 계산
+function calculateAroon(highs, lows, period = 14) {
+    if (highs.length < period) return null;
+    
+    const recentHighs = highs.slice(-period);
+    const recentLows = lows.slice(-period);
+    
+    const highestIndex = recentHighs.indexOf(Math.max(...recentHighs));
+    const lowestIndex = recentLows.indexOf(Math.min(...recentLows));
+    
+    const aroonUp = ((period - highestIndex) / period) * 100;
+    const aroonDown = ((period - lowestIndex) / period) * 100;
+    const aroonOsc = aroonUp - aroonDown;
+    
+    return {
+        aroonUp,
+        aroonDown,
+        oscillator: aroonOsc
+    };
+}
+
+// Chande Momentum Oscillator (CMO) 계산
+function calculateCMO(closes, period = 14) {
+    if (closes.length < period + 1) return null;
+    
+    const gains = [];
+    const losses = [];
+    
+    for (let i = 1; i < closes.length; i++) {
+        const change = closes[i] - closes[i - 1];
+        gains.push(change > 0 ? change : 0);
+        losses.push(change < 0 ? Math.abs(change) : 0);
+    }
+    
+    const sumGains = gains.slice(-period).reduce((sum, val) => sum + val, 0);
+    const sumLosses = losses.slice(-period).reduce((sum, val) => sum + val, 0);
+    
+    const cmo = ((sumGains - sumLosses) / (sumGains + sumLosses)) * 100;
+    
+    return cmo;
+}
+
+// Price Channel 계산
+function calculatePriceChannel(highs, lows, period = 20) {
+    if (highs.length < period) return null;
+    
+    const recentHighs = highs.slice(-period);
+    const recentLows = lows.slice(-period);
+    
+    const upperChannel = Math.max(...recentHighs);
+    const lowerChannel = Math.min(...recentLows);
+    const midChannel = (upperChannel + lowerChannel) / 2;
+    
+    return {
+        upper: upperChannel,
+        lower: lowerChannel,
+        middle: midChannel
+    };
+}
+
+// Elder Ray Index 계산
+function calculateElderRay(highs, lows, closes, period = 13) {
+    if (closes.length < period) return null;
+    
+    const ema = calculateEMA(closes, period);
+    const currentEMA = ema[ema.length - 1];
+    const currentHigh = highs[highs.length - 1];
+    const currentLow = lows[lows.length - 1];
+    
+    const bullPower = currentHigh - currentEMA;
+    const bearPower = currentLow - currentEMA;
+    
+    return {
+        bullPower,
+        bearPower,
+        netPower: bullPower + bearPower
+    };
+}
+
+// Ease of Movement (EOM) 계산
+function calculateEOM(highs, lows, volumes, period = 14) {
+    if (highs.length < 2 || volumes.length < 2) return null;
+    
+    const emvValues = [];
+    
+    for (let i = 1; i < highs.length; i++) {
+        const distance = ((highs[i] + lows[i]) / 2) - ((highs[i - 1] + lows[i - 1]) / 2);
+        const boxHeight = (volumes[i] / 100000000) / (highs[i] - lows[i]);
+        const emv = distance / boxHeight;
+        emvValues.push(emv);
+    }
+    
+    const smaEMV = calculateSMA(emvValues, period);
+    return smaEMV[smaEMV.length - 1];
+}
+
+// Klinger Oscillator 계산
+function calculateKlinger(highs, lows, closes, volumes, fastPeriod = 34, slowPeriod = 55, signalPeriod = 13) {
+    if (closes.length < slowPeriod) return null;
+    
+    const vfValues = [];
+    
+    for (let i = 1; i < closes.length; i++) {
+        const hlc = (highs[i] + lows[i] + closes[i]) / 3;
+        const prevHLC = (highs[i - 1] + lows[i - 1] + closes[i - 1]) / 3;
+        const dm = highs[i] - lows[i];
+        
+        const trend = hlc > prevHLC ? 1 : -1;
+        const vf = volumes[i] * trend * Math.abs(2 * ((dm / (highs[i] + lows[i])) - 1)) * 100;
+        vfValues.push(vf);
+    }
+    
+    const fastEMA = calculateEMA(vfValues, fastPeriod);
+    const slowEMA = calculateEMA(vfValues, slowPeriod);
+    
+    const klinger = fastEMA.map((val, idx) => val - slowEMA[idx]);
+    const signal = calculateEMA(klinger, signalPeriod);
+    
+    return {
+        klinger: klinger[klinger.length - 1],
+        signal: signal[signal.length - 1],
+        histogram: klinger[klinger.length - 1] - signal[signal.length - 1]
+    };
+}
+
+// Trix 지표 계산
+function calculateTrix(closes, period = 14, signalPeriod = 9) {
+    if (closes.length < period * 3) return null;
+    
+    const firstEMA = calculateEMA(closes, period);
+    const secondEMA = calculateEMA(firstEMA, period);
+    const thirdEMA = calculateEMA(secondEMA, period);
+    
+    const trixValues = [];
+    for (let i = 1; i < thirdEMA.length; i++) {
+        const trix = ((thirdEMA[i] - thirdEMA[i - 1]) / thirdEMA[i - 1]) * 10000;
+        trixValues.push(trix);
+    }
+    
+    const signal = calculateEMA(trixValues, signalPeriod);
+    
+    return {
+        trix: trixValues[trixValues.length - 1],
+        signal: signal[signal.length - 1],
+        histogram: trixValues[trixValues.length - 1] - signal[signal.length - 1]
+    };
+}
+
+// Mass Index 계산
+function calculateMassIndex(highs, lows, period = 9, sumPeriod = 25) {
+    if (highs.length < sumPeriod) return null;
+    
+    const ranges = highs.map((high, idx) => high - lows[idx]);
+    const ema9 = calculateEMA(ranges, period);
+    const ema9of9 = calculateEMA(ema9, period);
+    
+    const ratios = ema9.map((val, idx) => val / ema9of9[idx]);
+    const massIndex = ratios.slice(-sumPeriod).reduce((sum, val) => sum + val, 0);
+    
+    return massIndex;
+}
+
+// Chaikin A/D Line 계산
+function calculateChaikinADLine(highs, lows, closes, volumes) {
+    if (closes.length === 0) return null;
+    
+    let adLine = 0;
+    const adValues = [0];
+    
+    for (let i = 0; i < closes.length; i++) {
+        const clv = ((closes[i] - lows[i]) - (highs[i] - closes[i])) / (highs[i] - lows[i]);
+        const adVolume = clv * volumes[i];
+        adLine += adVolume;
+        adValues.push(adLine);
+    }
+    
+    return adValues[adValues.length - 1];
+}
+
+// Chaikin Oscillator 계산
+function calculateChaikinOscillator(highs, lows, closes, volumes, fastPeriod = 3, slowPeriod = 10) {
+    const adLine = [];
+    let accumulator = 0;
+    
+    for (let i = 0; i < closes.length; i++) {
+        const clv = ((closes[i] - lows[i]) - (highs[i] - closes[i])) / (highs[i] - lows[i]);
+        const adVolume = clv * volumes[i];
+        accumulator += adVolume;
+        adLine.push(accumulator);
+    }
+    
+    const fastEMA = calculateEMA(adLine, fastPeriod);
+    const slowEMA = calculateEMA(adLine, slowPeriod);
+    
+    return fastEMA[fastEMA.length - 1] - slowEMA[slowEMA.length - 1];
+}
+
+// Detrended Price Oscillator (DPO) 계산
+function calculateDPO(closes, period = 20) {
+    if (closes.length < period + Math.floor(period / 2) + 1) return null;
+    
+    const sma = calculateSMA(closes, period);
+    const lookback = Math.floor(period / 2) + 1;
+    const currentPrice = closes[closes.length - lookback];
+    const smaValue = sma[sma.length - lookback];
+    
+    return currentPrice - smaValue;
+}
+
+// Percentage Price Oscillator (PPO) 계산
+function calculatePPO(closes, fastPeriod = 12, slowPeriod = 26, signalPeriod = 9) {
+    if (closes.length < slowPeriod) return null;
+    
+    const fastEMA = calculateEMA(closes, fastPeriod);
+    const slowEMA = calculateEMA(closes, slowPeriod);
+    
+    const ppo = fastEMA.map((val, idx) => 
+        slowEMA[idx] !== 0 ? ((val - slowEMA[idx]) / slowEMA[idx]) * 100 : 0
+    );
+    
+    const signal = calculateEMA(ppo, signalPeriod);
+    const histogram = ppo.map((val, idx) => val - signal[idx]);
+    
+    return {
+        ppo: ppo[ppo.length - 1],
+        signal: signal[signal.length - 1],
+        histogram: histogram[histogram.length - 1]
+    };
+}
+
+// Coppock Curve 계산
+function calculateCoppock(closes, roc1Period = 14, roc2Period = 11, wmaPeriod = 10) {
+    if (closes.length < Math.max(roc1Period, roc2Period) + wmaPeriod) return null;
+    
+    const roc1 = calculateROC(closes, roc1Period);
+    const roc2 = calculateROC(closes, roc2Period);
+    
+    const rocSum = roc1.map((val, idx) => val + roc2[idx]);
+    
+    // WMA (Weighted Moving Average) 계산
+    const wma = [];
+    for (let i = wmaPeriod - 1; i < rocSum.length; i++) {
+        let sum = 0;
+        let weightSum = 0;
+        for (let j = 0; j < wmaPeriod; j++) {
+            const weight = wmaPeriod - j;
+            sum += rocSum[i - j] * weight;
+            weightSum += weight;
+        }
+        wma.push(sum / weightSum);
+    }
+    
+    return wma[wma.length - 1];
+}
+
+// Know Sure Thing (KST) 계산
+function calculateKST(closes, roc1 = 10, roc2 = 15, roc3 = 20, roc4 = 30, 
+                     sma1 = 10, sma2 = 10, sma3 = 10, sma4 = 15, signalPeriod = 9) {
+    if (closes.length < roc4 + Math.max(sma1, sma2, sma3, sma4)) return null;
+    
+    const roc1Values = [];
+    const roc2Values = [];
+    const roc3Values = [];
+    const roc4Values = [];
+    
+    for (let i = roc1; i < closes.length; i++) {
+        roc1Values.push(((closes[i] - closes[i - roc1]) / closes[i - roc1]) * 100);
+    }
+    
+    for (let i = roc2; i < closes.length; i++) {
+        roc2Values.push(((closes[i] - closes[i - roc2]) / closes[i - roc2]) * 100);
+    }
+    
+    for (let i = roc3; i < closes.length; i++) {
+        roc3Values.push(((closes[i] - closes[i - roc3]) / closes[i - roc3]) * 100);
+    }
+    
+    for (let i = roc4; i < closes.length; i++) {
+        roc4Values.push(((closes[i] - closes[i - roc4]) / closes[i - roc4]) * 100);
+    }
+    
+    const sma1Values = calculateSMA(roc1Values, sma1);
+    const sma2Values = calculateSMA(roc2Values, sma2);
+    const sma3Values = calculateSMA(roc3Values, sma3);
+    const sma4Values = calculateSMA(roc4Values, sma4);
+    
+    const minLength = Math.min(sma1Values.length, sma2Values.length, sma3Values.length, sma4Values.length);
+    
+    const kst = [];
+    for (let i = 0; i < minLength; i++) {
+        const kstValue = (sma1Values[i] * 1) + (sma2Values[i] * 2) + (sma3Values[i] * 3) + (sma4Values[i] * 4);
+        kst.push(kstValue);
+    }
+    
+    const signal = calculateSMA(kst, signalPeriod);
+    
+    return {
+        kst: kst[kst.length - 1],
+        signal: signal[signal.length - 1],
+        histogram: kst[kst.length - 1] - signal[signal.length - 1]
+    };
+}
+
+// ==================== 추가 볼륨 지표들 ====================
+
+// Volume Weighted Moving Average (VWMA) 계산
+function calculateVWMA(closes, volumes, period = 20) {
+    if (closes.length < period || volumes.length < period) return null;
+    
+    const vwma = [];
+    for (let i = period - 1; i < closes.length; i++) {
+        let sumPV = 0;
+        let sumV = 0;
+        
+        for (let j = 0; j < period; j++) {
+            sumPV += closes[i - j] * volumes[i - j];
+            sumV += volumes[i - j];
+        }
+        
+        vwma.push(sumV !== 0 ? sumPV / sumV : closes[i]);
+    }
+    
+    return vwma[vwma.length - 1];
+}
+
+// Accumulation/Distribution Line with Volume Rate of Change
+function calculateADLVROC(highs, lows, closes, volumes, period = 14) {
+    const adl = calculateChaikinADLine(highs, lows, closes, volumes);
+    const adlArray = [];
+    let accumulator = 0;
+    
+    for (let i = 0; i < closes.length; i++) {
+        const clv = ((closes[i] - lows[i]) - (highs[i] - closes[i])) / (highs[i] - lows[i]);
+        const adVolume = clv * volumes[i];
+        accumulator += adVolume;
+        adlArray.push(accumulator);
+    }
+    
+    if (adlArray.length < period + 1) return null;
+    
+    const currentADL = adlArray[adlArray.length - 1];
+    const previousADL = adlArray[adlArray.length - 1 - period];
+    
+    return ((currentADL - previousADL) / previousADL) * 100;
+}
+
+// Volume Oscillator 계산
+function calculateVolumeOscillator(volumes, shortPeriod = 5, longPeriod = 10) {
+    if (volumes.length < longPeriod) return null;
+    
+    const shortMA = calculateSMA(volumes, shortPeriod);
+    const longMA = calculateSMA(volumes, longPeriod);
+    
+    const shortValue = shortMA[shortMA.length - 1];
+    const longValue = longMA[longMA.length - 1];
+    
+    return ((shortValue - longValue) / longValue) * 100;
+}
+
+// ==================== 시장 심리 지표들 ====================
+
+// Fear & Greed Index (단순화된 버전)
+function calculateFearGreedIndex(rsi, macd, volatility, momentum, volume) {
+    let score = 0;
+    let factors = 0;
+    
+    // RSI 점수 (0-100을 0-20으로 변환)
+    if (rsi <= 30) score += 0;      // 극도의 공포
+    else if (rsi <= 45) score += 5;  // 공포
+    else if (rsi <= 55) score += 10; // 중립
+    else if (rsi <= 70) score += 15; // 탐욕
+    else score += 20;                // 극도의 탐욕
+    factors++;
+    
+    // MACD 모멘텀 점수
+    if (macd.histogram > 0) score += 10;
+    else score -= 10;
+    factors++;
+    
+    // 변동성 점수 (낮은 변동성 = 탐욕, 높은 변동성 = 공포)
+    if (volatility < 0.02) score += 10;      // 낮은 변동성
+    else if (volatility > 0.05) score -= 10; // 높은 변동성
+    factors++;
+    
+    // 모멘텀 점수
+    if (momentum > 0.05) score += 10;
+    else if (momentum < -0.05) score -= 10;
+    factors++;
+    
+    // 점수를 0-100 범위로 정규화
+    const normalizedScore = Math.max(0, Math.min(100, (score + (factors * 10)) / (factors * 0.4)));
+    
+    let sentiment = '';
+    if (normalizedScore <= 25) sentiment = '극도의 공포';
+    else if (normalizedScore <= 45) sentiment = '공포';
+    else if (normalizedScore <= 55) sentiment = '중립';
+    else if (normalizedScore <= 75) sentiment = '탐욕';
+    else sentiment = '극도의 탐욕';
+    
+    return {
+        score: normalizedScore,
+        sentiment: sentiment
+    };
+}

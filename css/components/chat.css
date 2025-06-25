@@ -635,7 +635,7 @@
     overflow-y: auto;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 0px;
     background: none;
     border: none;
     box-shadow: none;

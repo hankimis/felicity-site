@@ -425,7 +425,7 @@
       padding: 8px !important;
     }
     #chat-messages {
-      padding: 8px !important;
+      padding: 0px !important;
     }
     .chat-input-form {
       position: fixed;
