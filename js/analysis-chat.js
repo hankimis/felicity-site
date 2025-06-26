@@ -7,7 +7,7 @@ class AnalysisChat {
         this.usersCountElement = document.getElementById('chat-users-count');
         this.messagesUnsubscribe = null;
         this.isChatFormInitialized = false;
-        this.MESSAGES_PER_PAGE = 30; // 대시보드에서는 더 적은 메시지 로드
+        this.MESSAGES_PER_PAGE = 40; // 컴팩트한 디자인으로 더 많은 메시지 표시
         
         this.init();
     }
@@ -77,7 +77,7 @@ class AnalysisChat {
                 
                 setTimeout(() => {
                     this.messagesContainer.scrollTop = this.messagesContainer.scrollHeight;
-                }, 100);
+                }, 50);
             }
             
             this.setupRealtimeListener();
@@ -115,7 +115,7 @@ class AnalysisChat {
             });
             
             // 새 메시지 수신 시 스크롤 조정
-            const isScrolledToBottom = this.messagesContainer.scrollHeight - this.messagesContainer.clientHeight <= this.messagesContainer.scrollTop + 100;
+            const isScrolledToBottom = this.messagesContainer.scrollHeight - this.messagesContainer.clientHeight <= this.messagesContainer.scrollTop + 50;
             if (isScrolledToBottom) {
                 this.messagesContainer.scrollTop = this.messagesContainer.scrollHeight;
             }

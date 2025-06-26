@@ -9,8 +9,26 @@ export class MarketHeatmap {
         this.isTracking = false;
         this.heatmapContainer = null;
         this.colors = {
-            positive: ['#dcfce7', '#bbf7d0', '#86efac', '#4ade80', '#22c55e', '#16a34a', '#15803d'],
-            negative: ['#fef2f2', '#fecaca', '#fca5a5', '#f87171', '#ef4444', '#dc2626', '#b91c1c']
+            // 더 현대적이고 시각적으로 매력적인 색상 팔레트
+            positive: [
+                '#f0fdf4', // 매우 연한 초록
+                '#dcfce7', // 연한 초록
+                '#bbf7d0', // 중간 연한 초록
+                '#86efac', // 중간 초록
+                '#4ade80', // 진한 초록
+                '#22c55e', // 매우 진한 초록
+                '#16a34a'  // 가장 진한 초록
+            ],
+            negative: [
+                '#fef2f2', // 매우 연한 빨강
+                '#fecaca', // 연한 빨강
+                '#fca5a5', // 중간 연한 빨강
+                '#f87171', // 중간 빨강
+                '#ef4444', // 진한 빨강
+                '#dc2626', // 매우 진한 빨강
+                '#b91c1c'  // 가장 진한 빨강
+            ],
+            neutral: '#f8fafc' // 중립 색상 (변동이 거의 없을 때)
         };
         
         this.init();
@@ -20,6 +38,27 @@ export class MarketHeatmap {
         console.log('🔥 Market Heatmap initializing...');
         this.setupEventListeners();
         this.heatmapContainer = document.getElementById('heatmap-container');
+        
+        // 리사이즈 이벤트 리스너 추가
+        this.resizeObserver = new ResizeObserver(() => {
+            if (this.marketData.length > 0) {
+                this.debounceRegenerate();
+            }
+        });
+        
+        if (this.heatmapContainer) {
+            this.resizeObserver.observe(this.heatmapContainer);
+        }
+    }
+
+    // 리사이즈 시 히트맵 재생성을 위한 디바운스 함수
+    debounceRegenerate() {
+        if (this.regenerateTimeout) {
+            clearTimeout(this.regenerateTimeout);
+        }
+        this.regenerateTimeout = setTimeout(() => {
+            this.generateHeatmap();
+        }, 150);
     }
 
     setupEventListeners() {
@@ -31,6 +70,11 @@ export class MarketHeatmap {
                 this.generateHeatmap();
             });
         }
+        
+        // 윈도우 리사이즈 이벤트 (추가 보험)
+        window.addEventListener('resize', () => {
+            this.debounceRegenerate();
+        });
     }
 
     async start() {
@@ -54,6 +98,13 @@ export class MarketHeatmap {
         if (this.trackingInterval) {
             clearInterval(this.trackingInterval);
         }
+        if (this.regenerateTimeout) {
+            clearTimeout(this.regenerateTimeout);
+        }
+        if (this.resizeObserver) {
+            this.resizeObserver.disconnect();
+        }
+        this.hideTooltip();
         console.log('🔥 Market heatmap stopped');
     }
 
@@ -176,87 +227,65 @@ export class MarketHeatmap {
         // 시가총액 기준으로 정렬
         const sortedData = [...this.marketData].sort((a, b) => b.market_cap - a.market_cap);
         
-        // 상위 20개만 표시
-        const topCoins = sortedData.slice(0, 20);
+        // 상위 16개만 표시 (4x4 그리드에 최적화)
+        const topCoins = sortedData.slice(0, 16);
         
-        // 히트맵 생성
-        this.createTreemap(topCoins);
+        // 깔끔한 그리드 레이아웃으로 생성
+        this.createGridHeatmap(topCoins);
     }
 
-    createTreemap(data) {
+    createGridHeatmap(data) {
         const container = this.heatmapContainer;
         container.innerHTML = '';
         
-        const containerWidth = container.clientWidth;
-        const containerHeight = container.clientHeight;
+        // 컨테이너에 히트맵 전용 스타일 적용
+        container.style.cssText = `
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            grid-template-rows: repeat(4, 1fr);
+            gap: 2px;
+            padding: 8px;
+            box-sizing: border-box;
+            background: #f8fafc;
+            border-radius: 8px;
+        `;
+        
+        const containerWidth = container.clientWidth - 16; // padding 고려
+        const containerHeight = container.clientHeight - 16; // padding 고려
 
-        if (containerWidth === 0 || containerHeight === 0) {
+        if (containerWidth <= 0 || containerHeight <= 0) {
             console.warn("Heatmap container has zero dimensions.");
+            setTimeout(() => this.generateHeatmap(), 100);
             return;
         }
 
-        const totalMarketCap = data.reduce((sum, coin) => sum + coin.market_cap, 0);
-        
-        const squarify = (items, x, y, width, height) => {
-            if (!items.length) return;
-
-            const totalValue = items.reduce((sum, item) => sum + item.value, 0);
-            
-            let i = 1;
-            for (; i < items.length; i++) {
-                const row = items.slice(0, i + 1);
-                if (this.worstAspectRatio(row, width, totalValue) > this.worstAspectRatio(items.slice(0, i), width, totalValue)) {
-                    break;
-                }
-            }
-            const currentRow = items.slice(0, i);
-            const remaining = items.slice(i);
-            
-            const rowTotalValue = currentRow.reduce((sum, item) => sum + item.value, 0);
-            const rowHeight = rowTotalValue / totalValue * height;
-            
-            let currentX = x;
-            currentRow.forEach(item => {
-                const itemWidth = item.value / rowTotalValue * width;
-                this.createHeatmapTile(item.data, currentX, y, itemWidth, rowHeight);
-                currentX += itemWidth;
-            });
-
-            squarify(remaining, x, y + rowHeight, width, height - rowHeight);
-        };
-        
-        const items = data.map(coin => ({ value: coin.market_cap, data: coin }));
-        squarify(items, 0, 0, containerWidth, containerHeight);
-    }
-    
-    worstAspectRatio(row, length, totalValue) {
-        const rowTotalValue = row.reduce((sum, item) => sum + item.value, 0);
-        const rowArea = (rowTotalValue / totalValue) * length * length; // 가정: 정사각형 영역
-        const rowLength = rowArea / length;
-        let maxRatio = 0;
-        row.forEach(item => {
-            const itemArea = item.value / rowTotalValue * rowArea;
-            const itemHeight = itemArea / rowLength;
-            maxRatio = Math.max(maxRatio, rowLength / itemHeight, itemHeight / rowLength);
+        // 16개 그리드 셀 생성
+        data.forEach((coin, index) => {
+            this.createHeatmapTile(coin, index);
         });
-        return maxRatio;
+        
+        // 빈 셀 채우기 (16개 미만일 경우)
+        for (let i = data.length; i < 16; i++) {
+            this.createEmptyTile(i);
+        }
     }
 
-    createHeatmapTile(coin, x, y, width, height) {
+    createHeatmapTile(coin, index) {
         const tile = document.createElement('div');
         tile.className = 'heatmap-tile';
         
         const change = coin.change_24h;
         const color = this.getColorForChange(change);
         
+        // 그리드 아이템 스타일
         tile.style.cssText = `
-            position: absolute;
-            left: ${x}px;
-            top: ${y}px;
-            width: ${width - 2}px; /* border 고려 */
-            height: ${height - 2}px; /* border 고려 */
+            position: relative;
             background-color: ${color};
-            border: 1px solid rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 4px;
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -265,35 +294,104 @@ export class MarketHeatmap {
             transition: all 0.2s ease;
             box-sizing: border-box;
             overflow: hidden;
+            min-height: 0;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         `;
         
-        const smallerDim = Math.min(width, height);
-        const symbolSize = Math.max(8, smallerDim * 0.18);
-        const changeSize = Math.max(7, smallerDim * 0.12);
+        // 동적 폰트 크기 계산 (컨테이너 크기 기반)
+        const containerRect = this.heatmapContainer.getBoundingClientRect();
+        const baseFontSize = Math.max(8, Math.min(14, containerRect.width / 30));
+        
+        const symbolSize = Math.max(10, baseFontSize * 1.2);
+        const priceSize = Math.max(8, baseFontSize * 0.8);
+        const changeSize = Math.max(9, baseFontSize * 0.9);
+        
+        // 가격 포맷팅
+        const formatPrice = (price) => {
+            if (price >= 1000) return `$${(price/1000).toFixed(1)}K`;
+            if (price >= 1) return `$${price.toFixed(2)}`;
+            if (price >= 0.01) return `$${price.toFixed(3)}`;
+            return `$${price.toFixed(6)}`;
+        };
+        
+        const textColor = this.getTextColor(color);
         
         tile.innerHTML = `
             <div class="tile-symbol" style="
                 font-weight: bold;
                 font-size: ${symbolSize}px;
-                color: ${this.getTextColor(color)};
-                margin-bottom: ${smallerDim * 0.05}px;
+                color: ${textColor};
+                margin-bottom: 1px;
                 white-space: nowrap;
+                text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+                line-height: 1;
             ">${coin.symbol.replace(/USDT$/, '')}</div>
+            <div class="tile-price" style="
+                font-size: ${priceSize}px;
+                color: ${textColor};
+                opacity: 0.8;
+                margin-bottom: 1px;
+                white-space: nowrap;
+                line-height: 1;
+            ">${formatPrice(coin.price)}</div>
             <div class="tile-change" style="
                 font-size: ${changeSize}px;
-                color: ${this.getTextColor(color)};
-                opacity: 0.9;
+                font-weight: 600;
+                color: ${textColor};
+                padding: 1px 3px;
+                border-radius: 2px;
+                background: rgba(0,0,0,0.1);
                 white-space: nowrap;
+                line-height: 1;
             ">${change > 0 ? '+' : ''}${change.toFixed(2)}%</div>
         `;
         
+        // 호버 효과
         tile.addEventListener('mouseenter', () => {
+            tile.style.transform = 'scale(1.02)';
             tile.style.zIndex = '10';
+            tile.style.boxShadow = '0 4px 12px rgba(0,0,0,0.2)';
+            this.showTooltip(coin, tile);
         });
         
         tile.addEventListener('mouseleave', () => {
+            tile.style.transform = 'scale(1)';
             tile.style.zIndex = '1';
+            tile.style.boxShadow = '0 1px 3px rgba(0,0,0,0.1)';
+            this.hideTooltip();
         });
+        
+        // 클릭 이벤트
+        tile.addEventListener('click', () => {
+            console.log(`Clicked on ${coin.symbol}:`, coin);
+        });
+        
+        this.heatmapContainer.appendChild(tile);
+    }
+
+    createEmptyTile(index) {
+        const tile = document.createElement('div');
+        tile.className = 'heatmap-tile empty';
+        
+        tile.style.cssText = `
+            position: relative;
+            background-color: #f1f5f9;
+            border: 1px solid rgba(0,0,0,0.05);
+            border-radius: 4px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-sizing: border-box;
+            min-height: 0;
+        `;
+        
+        tile.innerHTML = `
+            <div style="
+                color: #94a3b8;
+                font-size: 12px;
+                opacity: 0.5;
+            ">-</div>
+        `;
         
         this.heatmapContainer.appendChild(tile);
     }
@@ -302,22 +400,40 @@ export class MarketHeatmap {
         const absChange = Math.abs(change);
         let colorIndex;
         
-        if (absChange < 1) colorIndex = 0;
-        else if (absChange < 3) colorIndex = 1;
-        else if (absChange < 5) colorIndex = 2;
-        else if (absChange < 10) colorIndex = 3;
-        else if (absChange < 15) colorIndex = 4;
-        else if (absChange < 25) colorIndex = 5;
+        // 더 세밀한 색상 구분
+        if (absChange < 0.5) colorIndex = 0;
+        else if (absChange < 1.5) colorIndex = 1;
+        else if (absChange < 3) colorIndex = 2;
+        else if (absChange < 6) colorIndex = 3;
+        else if (absChange < 10) colorIndex = 4;
+        else if (absChange < 20) colorIndex = 5;
         else colorIndex = 6;
+        
+        // 변동이 매우 작을 때는 중립 색상 사용
+        if (absChange < 0.1) {
+            return this.colors.neutral;
+        }
         
         return change >= 0 ? this.colors.positive[colorIndex] : this.colors.negative[colorIndex];
     }
 
     getTextColor(backgroundColor) {
-        // 배경색이 밝으면 검정, 어두우면 흰색
+        // 더 정확한 텍스트 색상 계산
+        if (backgroundColor === this.colors.neutral) {
+            return '#374151'; // 중립 색상일 때는 회색 텍스트
+        }
+        
         const rgb = this.hexToRgb(backgroundColor);
         const brightness = (rgb.r * 299 + rgb.g * 587 + rgb.b * 114) / 1000;
-        return brightness > 150 ? '#1f2937' : '#ffffff';
+        
+        // 밝기에 따라 텍스트 색상 결정
+        if (brightness > 180) {
+            return '#1f2937'; // 어두운 회색
+        } else if (brightness > 120) {
+            return '#374151'; // 중간 회색
+        } else {
+            return '#ffffff'; // 흰색
+        }
     }
 
     hexToRgb(hex) {
@@ -330,31 +446,116 @@ export class MarketHeatmap {
     }
 
     showTooltip(coin, element) {
-        // 간단한 툴팁 구현
+        // 기존 툴팁이 있으면 제거
+        this.hideTooltip();
+        
         const tooltip = document.createElement('div');
         tooltip.className = 'heatmap-tooltip';
+        
+        // 가격 및 시가총액 포맷팅 함수
+        const formatPrice = (price) => {
+            if (price >= 1000) return `$${(price/1000).toFixed(1)}K`;
+            if (price >= 1) return `$${price.toFixed(2)}`;
+            if (price >= 0.01) return `$${price.toFixed(3)}`;
+            return `$${price.toFixed(6)}`;
+        };
+        
+        const formatMarketCap = (marketCap) => {
+            if (marketCap >= 1e12) return `$${(marketCap/1e12).toFixed(2)}T`;
+            if (marketCap >= 1e9) return `$${(marketCap/1e9).toFixed(2)}B`;
+            if (marketCap >= 1e6) return `$${(marketCap/1e6).toFixed(2)}M`;
+            return `$${(marketCap/1e3).toFixed(2)}K`;
+        };
+        
+        const formatVolume = (volume) => {
+            if (volume >= 1e9) return `$${(volume/1e9).toFixed(2)}B`;
+            if (volume >= 1e6) return `$${(volume/1e6).toFixed(2)}M`;
+            return `$${(volume/1e3).toFixed(2)}K`;
+        };
+        
+        const changeColor = coin.change_24h >= 0 ? '#22c55e' : '#ef4444';
+        
         tooltip.innerHTML = `
-            <div><strong>${coin.name} (${coin.symbol})</strong></div>
-            <div>가격: ${window.formatPrice(coin.price)}</div>
-            <div>24h 변동: ${coin.change_24h > 0 ? '+' : ''}${coin.change_24h.toFixed(2)}%</div>
-            <div>시가총액: ${window.formatNumber(coin.market_cap)}</div>
-            <div>거래량: ${window.formatNumber(coin.volume)}</div>
+            <div class="tooltip-header">
+                <div class="tooltip-symbol">${coin.symbol}</div>
+                <div class="tooltip-name">${coin.name || coin.symbol}</div>
+            </div>
+            <div class="tooltip-body">
+                <div class="tooltip-row">
+                    <span class="tooltip-label">현재가:</span>
+                    <span class="tooltip-value">${formatPrice(coin.price)}</span>
+                </div>
+                <div class="tooltip-row">
+                    <span class="tooltip-label">24h 변동:</span>
+                    <span class="tooltip-value" style="color: ${changeColor}; font-weight: 600;">
+                        ${coin.change_24h > 0 ? '+' : ''}${coin.change_24h.toFixed(2)}%
+                    </span>
+                </div>
+                <div class="tooltip-row">
+                    <span class="tooltip-label">시가총액:</span>
+                    <span class="tooltip-value">${formatMarketCap(coin.market_cap)}</span>
+                </div>
+                <div class="tooltip-row">
+                    <span class="tooltip-label">거래량:</span>
+                    <span class="tooltip-value">${formatVolume(coin.volume)}</span>
+                </div>
+            </div>
         `;
         
         tooltip.style.cssText = `
             position: fixed;
-            background: rgba(0,0,0,0.9);
+            background: linear-gradient(135deg, rgba(17, 24, 39, 0.95), rgba(31, 41, 55, 0.95));
+            backdrop-filter: blur(10px);
             color: white;
-            padding: 8px 12px;
-            border-radius: 4px;
+            padding: 12px;
+            border-radius: 8px;
             font-size: 12px;
             pointer-events: none;
             z-index: 1000;
-            max-width: 200px;
+            min-width: 180px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
         `;
         
+        // 툴팁 내부 스타일
+        const style = document.createElement('style');
+        style.textContent = `
+            .tooltip-header {
+                margin-bottom: 8px;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+                padding-bottom: 6px;
+            }
+            .tooltip-symbol {
+                font-weight: bold;
+                font-size: 14px;
+                color: #60a5fa;
+            }
+            .tooltip-name {
+                font-size: 11px;
+                color: #9ca3af;
+                margin-top: 2px;
+            }
+            .tooltip-row {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 4px;
+            }
+            .tooltip-label {
+                color: #d1d5db;
+                font-size: 11px;
+            }
+            .tooltip-value {
+                color: #ffffff;
+                font-weight: 500;
+                font-size: 11px;
+            }
+        `;
+        
+        document.head.appendChild(style);
         document.body.appendChild(tooltip);
         this.currentTooltip = tooltip;
+        this.currentTooltipStyle = style;
         
         // 마우스 위치에 따라 툴팁 위치 조정
         document.addEventListener('mousemove', this.updateTooltipPosition);
@@ -362,8 +563,24 @@ export class MarketHeatmap {
 
     updateTooltipPosition = (e) => {
         if (this.currentTooltip) {
-            this.currentTooltip.style.left = (e.clientX + 10) + 'px';
-            this.currentTooltip.style.top = (e.clientY - 10) + 'px';
+            const tooltip = this.currentTooltip;
+            const rect = tooltip.getBoundingClientRect();
+            
+            let left = e.clientX + 15;
+            let top = e.clientY - 15;
+            
+            // 화면 경계 확인 및 조정
+            if (left + rect.width > window.innerWidth) {
+                left = e.clientX - rect.width - 15;
+            }
+            if (top + rect.height > window.innerHeight) {
+                top = e.clientY - rect.height - 15;
+            }
+            if (left < 0) left = 10;
+            if (top < 0) top = 10;
+            
+            tooltip.style.left = left + 'px';
+            tooltip.style.top = top + 'px';
         }
     }
 
@@ -372,6 +589,10 @@ export class MarketHeatmap {
             document.body.removeChild(this.currentTooltip);
             this.currentTooltip = null;
             document.removeEventListener('mousemove', this.updateTooltipPosition);
+        }
+        if (this.currentTooltipStyle) {
+            document.head.removeChild(this.currentTooltipStyle);
+            this.currentTooltipStyle = null;
         }
     }
 

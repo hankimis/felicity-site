@@ -7,7 +7,7 @@ html, body {
     margin: 0;
     padding: 0;
     overflow: hidden; /* Prevent body scroll */
-    background-color: #f4f7fc;
+    background-color: var(--bg-primary);
     font-family: 'Pretendard', sans-serif;
 }
 
@@ -334,153 +334,89 @@ html, body {
     position: relative;
 }
 
-/* GridStack 컨테이너 스타일 */
+/* GridStack Container */
 .grid-stack {
-    flex-grow: 1;
-    overflow-y: auto;
+    background: transparent;
     position: relative;
-    border-radius: 4px;
-    background: transparent; /* 배경을 완전히 투명하게 설정 */
+    min-height: auto;
 }
 
 .grid-stack-item {
-    border-radius: 12px;
-    overflow: hidden;
-    box-shadow: 0 4px 16px var(--shadow);
     transition: all 0.3s ease;
-    background: var(--bg-card);
-}
-
-.grid-stack-item:hover {
-    box-shadow: 0 8px 24px var(--shadow);
-    transform: translateY(-2px);
 }
 
 .grid-stack-item-content {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    background: var(--bg-card);
-    border-radius: 12px;
-    overflow: hidden;
-}
-
-/* 그리드 배경 표시 모드 */
-.grid-stack.grid-background {
-    background: 
-        linear-gradient(rgba(0,0,0,0.1) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(0,0,0,0.1) 1px, transparent 1px);
-}
-
-.grid-stack.grid-background::after {
-    content: none;
-}
-
-/* Grid lines for better visibility */
-.grid-stack::before {
-    content: none;
-}
-
-/* Card positioning */
-.analysis-card {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    transition: all 0.3s ease;
-}
-
-.analysis-card.resizing {
-    z-index: 1000;
-    box-shadow: 0 12px 32px rgba(0,0,0,0.3);
-}
-
-/* Card sizes - These are for reference, GridStack controls the actual size */
-.whale-card,
-.realtime-card,
-.orderbook-card,
-.indicators-card,
-.sentiment-card,
-.heatmap-card,
-.longshort-card,
-.liquidation-card,
-.chat-card {
-    /* CSS Grid properties are removed as they are controlled by GridStack */
-}
-
-/* Layout edit mode */
-.analysis-dashboard.edit-mode {
-    background: 
-        linear-gradient(rgba(255,255,0,0.2) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255,255,0,0.2) 1px, transparent 1px);
-    background-size: 30px 30px;
-}
-
-.analysis-dashboard.edit-mode .analysis-card {
-    border: 2px dashed rgba(255, 255, 0, 0.5);
-    cursor: move;
-}
-
-.analysis-dashboard.edit-mode .analysis-card:hover {
-    border-color: rgba(255, 255, 0, 0.8);
-    box-shadow: 0 0 20px rgba(255, 255, 0, 0.3);
-}
-
-/* Resize handles */
-.resize-handle {
-    position: absolute;
-    width: 10px;
-    height: 10px;
-    background: rgba(255, 255, 255, 0.3);
-    border-radius: 50%;
-    cursor: nw-resize;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-}
-
-.analysis-card:hover .resize-handle,
-.analysis-dashboard.edit-mode .resize-handle {
-    opacity: 1;
-}
-
-.resize-handle.top-left { top: 5px; left: 5px; }
-.resize-handle.top-right { top: 5px; right: 5px; }
-.resize-handle.bottom-left { bottom: 5px; left: 5px; }
-.resize-handle.bottom-right { bottom: 5px; right: 5px; }
-
-/* Layout controls */
-.layout-controls {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    background: rgba(0, 0, 0, 0.8);
-    border-radius: 8px;
-    padding: 10px;
-    z-index: 1000;
-    display: flex;
-    gap: 10px;
-}
-
-.layout-btn {
-    background: rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    box-shadow: 
+        0 8px 32px rgba(0, 0, 0, 0.12),
+        0 2px 8px rgba(0, 0, 0, 0.08);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    background: rgba(255, 255, 255, 0.95);
     border: 1px solid rgba(255, 255, 255, 0.2);
-    color: white;
-    padding: 8px 12px;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: all 0.3s ease;
+    overflow: hidden;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    
+    position: relative;
 }
 
-.layout-btn:hover {
-    background: rgba(255, 255, 255, 0.2);
+/* Dark mode */
+[data-theme="dark"] .grid-stack-item-content {
+    background: rgba(30, 35, 50, 0.95);
+    border: 1px solid rgba(100, 116, 139, 0.2);
+    box-shadow: 
+        0 8px 32px rgba(0, 0, 0, 0.3),
+        0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
-.layout-btn.active {
-    background: rgba(255, 255, 0, 0.3);
-    border-color: rgba(255, 255, 0, 0.5);
+/* Edit Mode Styles - 깔끔하고 안정적 */
+.grid-stack.edit-mode {
+    background: rgba(59, 130, 246, 0.01);
+    border-radius: 8px;
 }
+
+.grid-stack.edit-mode .grid-stack-item {
+    cursor: default;
+}
+
+.grid-stack.edit-mode .grid-stack-item .card-header {
+    cursor: grab;
+}
+
+.grid-stack.edit-mode .grid-stack-item:hover .grid-stack-item-content {
+    border: 1px solid rgba(59, 130, 246, 0.4);
+    box-shadow: 0 2px 12px rgba(59, 130, 246, 0.1);
+}
+
+.grid-stack.edit-mode .grid-stack-item.ui-draggable-dragging {
+    z-index: 1000;
+    opacity: 0.9;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.grid-stack.edit-mode .grid-stack-item.ui-draggable-dragging .card-header {
+    cursor: grabbing;
+}
+
+.grid-stack.edit-mode .grid-stack-item.ui-resizable-resizing {
+    z-index: 1000;
+    box-shadow: 0 4px 20px rgba(59, 130, 246, 0.2);
+}
+
+/* 카드 콘텐츠 영역은 드래그 비활성화 */
+.grid-stack.edit-mode .grid-stack-item .card-content {
+    cursor: default;
+    pointer-events: auto;
+}
+
+
+
+
+
+/* Layout Controls */
+
 
 /* Grid lines for better visibility */
 .grid-lines {
@@ -621,41 +557,6 @@ html, body {
     background-size: 100%;
 }
 
-/* Layout Controls */
-.layout-controls {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    background: rgba(0,0,0,0.7);
-    border-radius: 8px;
-    padding: 8px;
-    z-index: 1001; /* gridstack item보다 위에 오도록 */
-    display: flex;
-    gap: 8px;
-}
-
-.layout-btn {
-    background: #fff;
-    border: 1px solid #ccc;
-    color: #333;
-    padding: 8px 12px;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-}
-
-.layout-btn:hover {
-    background: #f0f0f0;
-    border-color: #bbb;
-}
-
-.layout-btn.active {
-    background: #007bff;
-    border-color: #007bff;
-    color: white;
-}
-
 /* Grid Background for editing mode */
 .grid-stack.grid-background {
     background: 
@@ -687,17 +588,14 @@ html, body {
     cursor: move;
 }
 
-/* 리사이즈 핸들 기본 스타일 (평상시에는 숨김) */
+/* 리사이즈 핸들 - 최소한의 깔끔한 디자인 */
 .grid-stack-item > .ui-resizable-handle {
     display: none;
     position: absolute;
-    width: 20px;
-    height: 20px;
-    background: rgba(245, 158, 11, 0.7);
-    border: 2px solid white;
-    border-radius: 50%;
+    background: transparent;
+    border: none;
     z-index: 20;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+    opacity: 0;
 }
 
 /* 편집 모드에서만 리사이즈 핸들 표시 */
@@ -705,15 +603,91 @@ html, body {
     display: block;
 }
 
-/* 각 핸들 위치 및 커서 모양 설정 */
-.ui-resizable-se { right: -5px; bottom: -5px; cursor: se-resize; }
-.ui-resizable-sw { left: -5px; bottom: -5px; cursor: sw-resize; }
-.ui-resizable-ne { right: -5px; top: -5px; cursor: ne-resize; }
-.ui-resizable-nw { left: -5px; top: -5px; cursor: nw-resize; }
-.ui-resizable-e { right: -5px; top: 50%; margin-top: -10px; cursor: e-resize; }
-.ui-resizable-s { left: 50%; bottom: -5px; margin-left: -10px; cursor: s-resize; }
-.ui-resizable-w { left: -5px; top: 50%; margin-top: -10px; cursor: w-resize; }
-.ui-resizable-n { left: 50%; top: -5px; margin-left: -10px; cursor: n-resize; }
+/* 호버 시에만 아주 미세한 표시 */
+.grid-stack.edit-mode .grid-stack-item:hover > .ui-resizable-handle {
+    opacity: 0.3;
+    background: rgba(59, 130, 246, 0.2);
+    border: 1px solid rgba(59, 130, 246, 0.4);
+}
+
+.grid-stack.edit-mode .grid-stack-item > .ui-resizable-handle:hover {
+    opacity: 0.6;
+    background: rgba(59, 130, 246, 0.3);
+}
+
+/* 코너 핸들 - 아주 작은 점 */
+.ui-resizable-se { 
+    right: -3px; 
+    bottom: -3px; 
+    width: 6px; 
+    height: 6px; 
+    border-radius: 50%;
+    cursor: se-resize;
+}
+
+.ui-resizable-sw { 
+    left: -3px; 
+    bottom: -3px; 
+    width: 6px; 
+    height: 6px; 
+    border-radius: 50%;
+    cursor: sw-resize;
+}
+
+.ui-resizable-ne { 
+    right: -3px; 
+    top: -3px; 
+    width: 6px; 
+    height: 6px; 
+    border-radius: 50%;
+    cursor: ne-resize;
+}
+
+.ui-resizable-nw { 
+    left: -3px; 
+    top: -3px; 
+    width: 6px; 
+    height: 6px; 
+    border-radius: 50%;
+    cursor: nw-resize;
+}
+
+/* 사이드 핸들 - 거의 보이지 않는 얇은 선 */
+.ui-resizable-e { 
+    right: -1px; 
+    top: 20%; 
+    bottom: 20%;
+    width: 2px; 
+    border-radius: 1px;
+    cursor: e-resize;
+}
+
+.ui-resizable-s { 
+    left: 20%; 
+    right: 20%;
+    bottom: -1px; 
+    height: 2px; 
+    border-radius: 1px;
+    cursor: s-resize;
+}
+
+.ui-resizable-w { 
+    left: -1px; 
+    top: 20%; 
+    bottom: 20%;
+    width: 2px; 
+    border-radius: 1px;
+    cursor: w-resize;
+}
+
+.ui-resizable-n { 
+    left: 20%; 
+    right: 20%;
+    top: -1px; 
+    height: 2px; 
+    border-radius: 1px;
+    cursor: n-resize;
+}
 
 /* 기존 배경 그리드 관련 코드 모두 제거 */
 .grid-stack.grid-background,
@@ -721,4 +695,309 @@ html, body {
 .grid-stack::before {
     background: none;
     content: none;
+}
+
+/* =================================
+   Card Styles - Square Grid Optimized
+   ================================= */
+
+.analysis-card {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.card-header {
+    padding: 12px 16px;
+    border-bottom: 1px solid rgba(226, 232, 240, 0.5);
+    background: rgba(248, 250, 252, 0.8);
+    backdrop-filter: blur(10px);
+    flex-shrink: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    min-height: 48px;
+}
+
+[data-theme="dark"] .card-header {
+    background: rgba(15, 23, 42, 0.8);
+    border-bottom: 1px solid rgba(71, 85, 105, 0.3);
+}
+
+.card-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    min-width: 0;
+}
+
+.card-title h3 {
+    font-size: 14px;
+    font-weight: 600;
+    margin: 0;
+    color: #1e293b;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+[data-theme="dark"] .card-title h3 {
+    color: #f1f5f9;
+}
+
+.card-title i {
+    font-size: 16px;
+    opacity: 0.8;
+    flex-shrink: 0;
+}
+
+.card-controls {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.card-content {
+    flex: 1;
+    overflow: hidden;
+    padding: 12px 16px;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+/* 채팅 카드는 패딩 제거 */
+.chat-card .card-content {
+    padding: 0 !important;
+}
+
+/* 작은 카드에서의 스타일 조정 */
+.grid-stack-item[gs-h="2"] .card-header {
+    padding: 8px 12px;
+    min-height: 40px;
+}
+
+.grid-stack-item[gs-h="2"] .card-title h3 {
+    font-size: 13px;
+}
+
+.grid-stack-item[gs-h="2"] .card-content {
+    padding: 8px 12px;
+}
+
+/* 채팅 카드는 작은 카드에서도 패딩 제거 */
+.grid-stack-item[gs-h="2"] .chat-card .card-content {
+    padding: 0 !important;
+}
+
+.grid-stack-item[gs-h="3"] .card-header {
+    padding: 10px 14px;
+    min-height: 44px;
+}
+
+.grid-stack-item[gs-h="3"] .card-title h3 {
+    font-size: 13px;
+}
+
+.grid-stack-item[gs-h="3"] .card-content {
+    padding: 10px 14px;
+}
+
+/* 채팅 카드는 중간 카드에서도 패딩 제거 */
+.grid-stack-item[gs-h="3"] .chat-card .card-content {
+    padding: 0 !important;
+}
+
+/* 스크롤바 최적화 */
+.styled-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(148, 163, 184, 0.5) transparent;
+}
+
+.styled-scrollbar::-webkit-scrollbar {
+    width: 4px;
+}
+
+.styled-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.styled-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, 0.5);
+    border-radius: 2px;
+}
+
+.styled-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(148, 163, 184, 0.7);
+}
+
+/* =================================
+   Responsive Layout Controls
+   ================================= */
+
+/* 모바일 및 태블릿에서의 정사각형 그리드 최적화 */
+@media (max-width: 1199px) {
+    .card-header {
+        padding: 10px 12px;
+        min-height: 42px;
+    }
+    
+    .card-title h3 {
+        font-size: 13px;
+    }
+    
+    .card-content {
+        padding: 10px 12px;
+    }
+    
+    /* 채팅 카드는 반응형에서도 패딩 제거 */
+    .chat-card .card-content {
+        padding: 0 !important;
+    }
+}
+
+@media (max-width: 767px) {
+    .card-header {
+        padding: 8px 10px;
+        min-height: 36px;
+    }
+    
+    .card-title h3 {
+        font-size: 12px;
+    }
+    
+    .card-content {
+        padding: 8px 10px;
+    }
+    
+    /* 채팅 카드는 모바일에서도 패딩 제거 */
+    .chat-card .card-content {
+        padding: 0 !important;
+    }
+    
+    .card-controls {
+        gap: 6px;
+    }
+}
+
+@media (max-width: 575px) {
+    .grid-stack-item-content {
+        border-radius: 12px;
+    }
+    
+    .card-header {
+        padding: 6px 8px;
+        min-height: 32px;
+    }
+    
+    .card-title h3 {
+        font-size: 11px;
+    }
+    
+    .card-content {
+        padding: 6px 8px;
+    }
+    
+    /* 채팅 카드는 초소형 화면에서도 패딩 제거 */
+    .chat-card .card-content {
+        padding: 0 !important;
+    }
+}
+
+/* =================================
+   Layout Controls - Inline in Dashboard Controls
+   ================================= */
+
+.layout-controls-inline {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+/* 레이아웃 버튼 스타일 */
+.control-btn.layout-edit {
+    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+    border-color: #3b82f6;
+    color: white;
+}
+
+.control-btn.layout-edit:hover {
+    background: linear-gradient(135deg, #2563eb, #1e40af);
+    border-color: #2563eb;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.control-btn.layout-save {
+    background: linear-gradient(135deg, #10b981, #047857);
+    border-color: #10b981;
+    color: white;
+}
+
+.control-btn.layout-save:hover {
+    background: linear-gradient(135deg, #059669, #065f46);
+    border-color: #059669;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.control-btn.layout-cancel {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    border-color: #ef4444;
+    color: white;
+}
+
+.control-btn.layout-cancel:hover {
+    background: linear-gradient(135deg, #dc2626, #b91c1c);
+    border-color: #dc2626;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+.control-btn.layout-reset {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    border-color: #f59e0b;
+    color: white;
+}
+
+.control-btn.layout-reset:hover {
+    background: linear-gradient(135deg, #d97706, #b45309);
+    border-color: #d97706;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+}
+
+/* 모바일에서 레이아웃 컨트롤 최적화 */
+@media (max-width: 768px) {
+    .layout-controls-inline {
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+    
+    .layout-controls-inline .control-btn {
+        padding: 8px 12px;
+        font-size: 12px;
+    }
+    
+    .layout-controls-inline .control-btn span {
+        display: none;
+    }
+    
+    .layout-controls-inline .control-btn i {
+        font-size: 14px;
+    }
+}
+
+@media (max-width: 480px) {
+    .layout-controls-inline {
+        order: -1;
+        width: 100%;
+        justify-content: center;
+        margin-bottom: 12px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid rgba(226, 232, 240, 0.5);
+    }
 } 

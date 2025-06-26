@@ -48,6 +48,11 @@
     <!-- Plotly.js for advanced charts -->
     <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
     
+    <!-- jQuery and jQuery UI (required for GridStack) -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/ui-lightness/jquery-ui.css">
+    
     <!-- GridStack.js -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gridstack@9.3.0/dist/gridstack.min.css" />
     <script src="https://cdn.jsdelivr.net/npm/gridstack@9.3.0/dist/gridstack-all.js"></script>
@@ -81,7 +86,27 @@
                         <span class="status-dot active"></span>
                         <span class="status-text">실시간 연결됨</span>
                     </div>
-                    <div id="layout-controls-container"></div>
+                    
+                    <!-- 레이아웃 컨트롤 버튼들 -->
+                    <div class="layout-controls-inline">
+                        <button id="edit-layout-btn" class="control-btn layout-edit">
+                            <i class="fas fa-edit"></i>
+                            <span>편집</span>
+                        </button>
+                        <button id="save-layout-btn" class="control-btn layout-save" style="display: none;">
+                            <i class="fas fa-save"></i>
+                            <span>저장</span>
+                        </button>
+                        <button id="cancel-edit-btn" class="control-btn layout-cancel" style="display: none;">
+                            <i class="fas fa-times"></i>
+                            <span>취소</span>
+                        </button>
+                        <button id="reset-layout-btn" class="control-btn layout-reset">
+                            <i class="fas fa-undo"></i>
+                            <span>초기화</span>
+                        </button>
+                    </div>
+                    
                     <button id="refresh-all" class="control-btn primary">
                         <i class="fas fa-sync-alt"></i>
                         <span>새로고침</span>
@@ -95,8 +120,8 @@
 
             <!-- Dashboard Grid -->
             <div class="grid-stack" id="dashboard-grid">
-                <!-- 고래 탐지 카드 (2x3) -->
-                <div class="grid-stack-item" gs-x="0" gs-y="0" gs-w="2" gs-h="3" gs-min-w="2" gs-min-h="3">
+                <!-- 고래 탐지 카드 (3x3) -->
+                <div class="grid-stack-item" gs-x="0" gs-y="0" gs-w="3" gs-h="3" gs-min-w="2" gs-min-h="3">
                     <div class="grid-stack-item-content analysis-card whale-card" id="whale-card">
                         <div class="card-header">
                             <div class="card-title">
@@ -119,8 +144,8 @@
                     </div>
                 </div>
 
-                <!-- 실시간 거래 카드 (2x3) -->
-                <div class="grid-stack-item" gs-x="2" gs-y="0" gs-w="2" gs-h="3" gs-min-w="2" gs-min-h="3">
+                <!-- 실시간 거래 카드 (3x3) -->
+                <div class="grid-stack-item" gs-x="3" gs-y="0" gs-w="3" gs-h="3" gs-min-w="2" gs-min-h="3">
                     <div class="grid-stack-item-content analysis-card realtime-card" id="realtime-card">
                         <div class="card-header">
                             <div class="card-title">
@@ -149,8 +174,8 @@
                     </div>
                 </div>
 
-                <!-- 오더북 카드 (2x3) -->
-                <div class="grid-stack-item" gs-x="4" gs-y="0" gs-w="2" gs-h="3" gs-min-w="2" gs-min-h="2">
+                <!-- 오더북 카드 (3x3) -->
+                <div class="grid-stack-item" gs-x="6" gs-y="0" gs-w="3" gs-h="3" gs-min-w="2" gs-min-h="3">
                     <div class="grid-stack-item-content analysis-card orderbook-card" id="orderbook-card">
                         <div class="card-header">
                             <div class="card-title">
@@ -181,8 +206,25 @@
                     </div>
                 </div>
                 
-                <!-- 기술지표 카드 (4x3) -->
-                <div class="grid-stack-item" id="indicators-card-item" gs-x="6" gs-y="0" gs-w="4" gs-h="3" gs-min-w="2" gs-min-h="2">
+                <!-- 마켓 히트맵 카드 (3x3) -->
+                <div class="grid-stack-item" gs-x="9" gs-y="0" gs-w="3" gs-h="3" gs-min-w="2" gs-min-h="3">
+                    <div class="grid-stack-item-content analysis-card heatmap-card" id="heatmap-card">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <i class="fas fa-th"></i>
+                                <h3>마켓 히트맵</h3>
+                            </div>
+                        </div>
+                        <div class="card-content">
+                            <div class="heatmap-container" id="heatmap-container">
+                                <!-- Dynamic heatmap tiles -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 기술지표 카드 (4x4) -->
+                <div class="grid-stack-item" id="indicators-card-item" gs-x="0" gs-y="3" gs-w="3" gs-h="6" gs-min-w="3" gs-min-h="4">
                     <div class="grid-stack-item-content analysis-card indicators-card" id="indicators-card">
                         <div class="card-header">
                             <h3><i class="fas fa-chart-bar"></i> 기술지표</h3>
@@ -203,8 +245,8 @@
                     </div>
                 </div>
 
-                <!-- 롱/숏 비율 카드 (2x2) -->
-                <div class="grid-stack-item" gs-x="10" gs-y="0" gs-w="2" gs-h="2" gs-min-w="2" gs-min-h="2">
+                <!-- 롱/숏 비율 카드 (4x2) -->
+                <div class="grid-stack-item" gs-x="3" gs-y="3" gs-w="3" gs-h="3" gs-min-w="2" gs-min-h="2">
                     <div class="grid-stack-item-content analysis-card longshort-card" id="longshort-card">
                         <div class="card-header">
                             <div class="card-title">
@@ -245,8 +287,8 @@
                     </div>
                 </div>
                 
-                <!-- 심리지수 카드 (2x2) -->
-                <div class="grid-stack-item" gs-x="10" gs-y="2" gs-w="2" gs-h="2" gs-min-w="2" gs-min-h="2">
+                <!-- 심리지수 카드 (4x2) -->
+                <div class="grid-stack-item" gs-x="6" gs-y="3" gs-w="3" gs-h="3" gs-min-w="2" gs-min-h="2">
                     <div class="grid-stack-item-content analysis-card sentiment-card" id="sentiment-card">
                         <div class="card-header">
                             <div class="card-title">
@@ -264,8 +306,8 @@
                     </div>
                 </div>
 
-                <!-- 실시간 채팅 카드 (2x4) -->
-                <div class="grid-stack-item" gs-x="0" gs-y="3" gs-w="2" gs-h="4" gs-min-w="2" gs-min-h="4">
+                <!-- 실시간 채팅 카드 (6x2) -->
+                <div class="grid-stack-item" gs-x="0" gs-y="7" gs-w="3" gs-h="3" gs-min-w="2" gs-min-h="2">
                     <div class="grid-stack-item-content analysis-card chat-card" id="chat-card">
                         <div class="card-header">
                             <div class="card-title">
@@ -291,25 +333,8 @@
                     </div>
                 </div>
 
-                <!-- 시장 히트맵 카드 (4x3) -->
-                <div class="grid-stack-item" gs-x="2" gs-y="3" gs-w="4" gs-h="3" gs-min-w="3" gs-min-h="3">
-                    <div class="grid-stack-item-content analysis-card heatmap-card" id="heatmap-card">
-                        <div class="card-header">
-                            <div class="card-title">
-                                <i class="fas fa-fire"></i>
-                                <h3>시장 히트맵</h3>
-                            </div>
-                        </div>
-                        <div class="card-content">
-                            <div class="heatmap-container" id="heatmap-container">
-                                <!-- 히트맵이 여기에 동적으로 생성됩니다 -->
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 청산 지도 카드 (4x2) -->
-                <div class="grid-stack-item" gs-x="6" gs-y="3" gs-w="4" gs-h="2" gs-min-w="2" gs-min-h="2">
+                <!-- 청산 지도 카드 (6x2) -->
+                <div class="grid-stack-item" gs-x="9" gs-y="3" gs-w="3" gs-h="3" gs-min-w="2" gs-min-h="2">
                     <div class="grid-stack-item-content analysis-card liquidation-card" id="liquidation-card">
                         <div class="card-header">
                             <div class="card-title">

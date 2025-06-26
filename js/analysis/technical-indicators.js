@@ -35,6 +35,13 @@ export class TechnicalIndicators {
         this.isTracking = false;
         this.interval = null;
         
+        // 깜빡거림 방지를 위한 상태 관리
+        this.lastUpdateHash = '';
+        this.lastSummaryHash = '';
+        this.lastDataHash = '';
+        this.stylesInjected = false;
+        this.isUpdating = false;
+        
         this.init();
     }
 
@@ -75,25 +82,37 @@ export class TechnicalIndicators {
     }
 
     async start() {
-        // console.log('📊 Starting technical indicators tracking...');
+        if (this.isTracking) return; // 이미 시작된 경우 중복 실행 방지
+        
+        this.isTracking = true;
+        
+        // 초기 스타일 주입 (한 번만)
+        this.addSummaryStyles();
         
         // 실제 데이터 로드
         await this.loadData();
         
-        // 10초마다 데이터를 새로고침하여 실시간에 가깝게 업데이트합니다.
-        this.interval = setInterval(() => this.loadData(), 10000);
+        // 15초마다 데이터를 새로고침 (분봉 변경 시 빠른 반응을 위해)
+        this.interval = setInterval(async () => {
+            if (this.isTracking && !this.isUpdating) {
+                await this.loadData();
+            }
+        }, 15000);
     }
 
     stop() {
+        this.isTracking = false;
         if (this.interval) {
             clearInterval(this.interval);
-            // console.log('🛑 Stopped technical indicators tracking.');
+            this.interval = null;
         }
     }
 
     async loadData() {
+        if (this.isUpdating) return; // 업데이트 중이면 스킵
+        
+        this.isUpdating = true;
         const symbol = this.currentSymbol;
-        // console.log(`[TechnicalIndicators] Loading data for ${symbol} with timeframe ${this.currentTimeframe}`);
         
         // Binance API는 klines(캔들) 데이터를 사용하여 기술 지표를 계산합니다.
         const url = `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${this.currentTimeframe}&limit=200`;
@@ -103,14 +122,11 @@ export class TechnicalIndicators {
             const klines = await response.json();
             
             if (!klines || klines.length === 0) {
-                // console.warn(`[TechnicalIndicators] No kline data for ${symbol}`);
                 this.updateDisplay();
                 return;
             }
 
-            // console.log(`[TechnicalIndicators] Loaded ${klines.length} klines for ${symbol}`);
-
-            this.priceData = klines.map(k => ({
+            const newPriceData = klines.map(k => ({
                 open: parseFloat(k[1]),
                 high: parseFloat(k[2]),
                 low: parseFloat(k[3]),
@@ -118,22 +134,37 @@ export class TechnicalIndicators {
                 volume: parseFloat(k[5])
             }));
             
+            // 데이터 변경 감지
+            const dataHash = this.generateDataHash(newPriceData);
+            if (dataHash === this.lastDataHash) {
+                this.isUpdating = false;
+                return; // 데이터가 변경되지 않았으면 업데이트 스킵
+            }
+            
+            this.priceData = newPriceData;
+            this.lastDataHash = dataHash;
+            
             this.calculateIndicators();
             this.updateDisplay();
 
         } catch (error) {
-            console.error(`[TechnicalIndicators] Error loading data for ${symbol}:`, error);
             this.updateDisplay();
+        } finally {
+            this.isUpdating = false;
         }
+    }
+
+    // 데이터 변경 감지를 위한 해시 생성
+    generateDataHash(data) {
+        if (!data || data.length === 0) return '';
+        const lastCandle = data[data.length - 1];
+        return `${lastCandle.close}_${lastCandle.volume}_${data.length}`;
     }
 
     calculateIndicators() {
         if (this.priceData.length < 52) { // 일목균형표 기준(52)
-            // console.warn(`[TechnicalIndicators] Insufficient data (${this.priceData.length} < 52), skipping calculations`);
             return;
         }
-
-        // console.log(`[TechnicalIndicators] Calculating indicators with ${this.priceData.length} data points`);
 
         this.calculateRSI();
         this.calculateMACD();
@@ -158,8 +189,6 @@ export class TechnicalIndicators {
         this.calculateAroon();
         this.calculateUltimateOscillator();
         this.calculateChaikinMoneyFlow();
-        
-        // console.log('[TechnicalIndicators] All indicators calculated');
     }
 
     calculateRSI(period = 14) {
@@ -554,17 +583,22 @@ export class TechnicalIndicators {
     }
 
     updateDisplay() {
-        // console.log('[TechnicalIndicators] updateDisplay called');
+        if (this.isUpdating) return; // 업데이트 중이면 스킵
+        
         if (!this.indicators) {
-            // console.warn('[TechnicalIndicators] No indicators data available');
             return;
         }
 
-        // console.log('[TechnicalIndicators] Current indicators:', this.indicators);
+        // 표시할 내용의 해시 생성
+        const displayHash = this.generateDisplayHash();
+        if (displayHash === this.lastUpdateHash) {
+            return; // 변경사항이 없으면 업데이트 스킵
+        }
+        
+        this.lastUpdateHash = displayHash;
 
         // indicators-list 컨테이너에 HTML 생성
         const container = document.getElementById('indicators-list');
-        // console.log('[TechnicalIndicators] Container element:', container);
         
         if (container) {
             // AnalysisConfig가 없을 경우 fallback
@@ -594,11 +628,8 @@ export class TechnicalIndicators {
                 { key: 'atr', name: 'ATR', description: '평균 변동폭' }
             ];
             
-            // console.log('[TechnicalIndicators] Using indicators config:', indicators);
-            
             const indicatorsHTML = indicators.map(indicator => {
                 const data = this.indicators[indicator.key];
-                // console.log(`[TechnicalIndicators] Processing ${indicator.key}:`, data);
                 
                 let value = '계산 중...';
                 let status = '계산 중...';
@@ -624,8 +655,6 @@ export class TechnicalIndicators {
                         signalClass = this.getIndicatorClass(status);
                     }
         }
-
-                // console.log(`[TechnicalIndicators] ${indicator.key} - value: ${value}, status: ${status}, class: ${signalClass}`);
                 
                 const displayText = value !== '계산 중...' ? `${status} (${value})` : status;
 
@@ -642,17 +671,31 @@ export class TechnicalIndicators {
                 `;
             }).join('');
             
-            // console.log('[TechnicalIndicators] Generated HTML length:', indicatorsHTML.length);
-            // console.log('[TechnicalIndicators] Generated HTML preview:', indicatorsHTML.substring(0, 200) + '...');
-            
+            // 부드러운 업데이트를 위한 페이드 효과
+            container.style.opacity = '0.7';
+            setTimeout(() => {
             container.innerHTML = indicatorsHTML;
-            // console.log('[TechnicalIndicators] HTML inserted into container');
-        } else {
-            console.error('[TechnicalIndicators] Container element not found!');
+                container.style.opacity = '1';
+            }, 50);
         }
 
-        // console.log('[TechnicalIndicators] updateDisplay completed');
         this.updateSummary();
+    }
+
+    // 표시 내용 해시 생성 (변경 감지용)
+    generateDisplayHash() {
+        const values = Object.values(this.indicators).map(indicator => {
+            if (typeof indicator.value === 'number') {
+                return `${indicator.value.toFixed(2)}_${indicator.status}`;
+            } else if (indicator.k !== undefined) {
+                return `${indicator.k.toFixed(2)}_${indicator.status}`;
+            } else if (indicator.histogram !== undefined) {
+                return `${indicator.histogram.toFixed(4)}_${indicator.status}`;
+            } else {
+                return indicator.status || 'N/A';
+            }
+        });
+        return values.join('|');
     }
 
     getIndicatorClass(status) {
@@ -682,43 +725,87 @@ export class TechnicalIndicators {
     }
 
     updateSummary() {
-        // console.log('[TechnicalIndicators] updateSummary called');
-        
-        // 현재 가격 데이터가 없으면 기본값 사용
-        if (!this.priceData || this.priceData.length === 0) {
-            // console.log('[TechnicalIndicators] No price data available, showing default summary');
+        // 현재 가격 데이터가 없거나 지표 계산이 완료되지 않았으면 기본값 사용
+        if (!this.priceData || this.priceData.length === 0 || this.priceData.length < 52) {
             this.showDefaultSummary();
             return;
         }
         
+        // 모든 지표가 계산되었는지 확인
+        const requiredIndicators = ['rsi', 'macd', 'bb', 'stoch', 'sma', 'ichimoku'];
+        const indicatorStatus = requiredIndicators.map(key => {
+            const indicator = this.indicators[key];
+            let isCalculated = false;
+            
+            if (indicator) {
+                if (key === 'bb') {
+                    // 볼린저 밴드는 upper, middle, lower 값이 있으면 계산된 것
+                    isCalculated = typeof indicator.upper === 'number' && 
+                                   typeof indicator.middle === 'number' && 
+                                   typeof indicator.lower === 'number';
+                } else if (key === 'macd') {
+                    // MACD는 histogram 값이 있으면 계산된 것
+                    isCalculated = typeof indicator.histogram === 'number';
+                } else if (key === 'stoch') {
+                    // Stochastic은 k 값이 있으면 계산된 것
+                    isCalculated = typeof indicator.k === 'number';
+                } else if (key === 'sma') {
+                    // SMA는 short, long 값이 있으면 계산된 것
+                    isCalculated = typeof indicator.short === 'number' && typeof indicator.long === 'number';
+                } else if (key === 'ichimoku') {
+                    // Ichimoku는 senkouA 값이 있으면 계산된 것
+                    isCalculated = typeof indicator.senkouA === 'number';
+                } else {
+                    // 기타 지표들은 value 값이 있으면 계산된 것
+                    isCalculated = typeof indicator.value === 'number';
+                }
+            }
+            
+            return isCalculated;
+        });
+        
+        const allCalculated = indicatorStatus.every(status => status);
+        
+        if (!allCalculated) {
+            // 지표 계산이 완료되지 않았으면 잠시 후 다시 시도
+            setTimeout(() => this.updateSummary(), 1000);
+            return;
+        }
+        
+        // 안전하게 지표 상태 가져오기
+        const getStatus = (indicator) => indicator && indicator.status ? indicator.status : '중립';
+        const getCurrentPrice = () => this.priceData.length ? this.priceData[this.priceData.length-1].close : 0;
+        
         const statuses = [
-            this.indicators.rsi.status,
-            this.indicators.macd.status,
-            this.getBBStatus(this.priceData.length ? this.priceData[this.priceData.length-1].close : 0, this.indicators.bb.upper, this.indicators.bb.lower),
-            this.indicators.stoch.status,
-            this.indicators.sma.status,
-            this.indicators.ichimoku.status,
-            this.indicators.vo.status,
-            this.indicators.ao.status,
-            this.indicators.williamsR.status,
-            this.indicators.stochRsi.status,
-            this.indicators.cci.status,
-            this.indicators.mom.status,
-            this.indicators.psar.status,
-            this.indicators.adx.status,
-            this.indicators.obv.status,
-            this.indicators.mfi.status,
-            this.indicators.roc.status,
-            this.indicators.keltner.status,
-            this.indicators.donchian.status,
-            this.indicators.aroon.status,
-            this.indicators.ultimate.status,
-            this.indicators.cmf.status
-        ];
-
-        // console.log('[TechnicalIndicators] Statuses:', statuses);
+            getStatus(this.indicators.rsi),
+            getStatus(this.indicators.macd),
+            this.getBBStatus(getCurrentPrice(), this.indicators.bb.upper, this.indicators.bb.lower),
+            getStatus(this.indicators.stoch),
+            getStatus(this.indicators.sma),
+            getStatus(this.indicators.ichimoku),
+            getStatus(this.indicators.vo),
+            getStatus(this.indicators.ao),
+            getStatus(this.indicators.williamsR),
+            getStatus(this.indicators.stochRsi),
+            getStatus(this.indicators.cci),
+            getStatus(this.indicators.mom),
+            getStatus(this.indicators.psar),
+            getStatus(this.indicators.adx),
+            getStatus(this.indicators.obv),
+            getStatus(this.indicators.mfi),
+            getStatus(this.indicators.roc),
+            getStatus(this.indicators.keltner),
+            getStatus(this.indicators.donchian),
+            getStatus(this.indicators.aroon),
+            getStatus(this.indicators.ultimate),
+            getStatus(this.indicators.cmf)
+        ].filter(status => status && status !== ''); // 빈 값 제거
 
         let score = 0;
+        let buyCount = 0;
+        let sellCount = 0;
+        let neutralCount = 0;
+        
         // 과매도는 매수 신호 (초록색)
         const longSignals = ['과매도', '강세', '상승추세', '구름대 상단 돌파', '거래량 증가', '강세 전환', '상승', '강한추세', '돌파'];
         // 과매수는 매도 신호 (빨간색)
@@ -727,8 +814,12 @@ export class TechnicalIndicators {
         statuses.forEach(status => {
             if (longSignals.includes(status)) {
                 score++;
+                buyCount++;
             } else if (shortSignals.includes(status)) {
                 score--;
+                sellCount++;
+            } else {
+                neutralCount++;
             }
         });
 
@@ -736,15 +827,16 @@ export class TechnicalIndicators {
         // Normalize score from [-totalIndicators, +totalIndicators] to [0, 100]
         const percentage = totalIndicators > 0 ? ((score + totalIndicators) / (2 * totalIndicators)) * 100 : 50;
 
-        // console.log('[TechnicalIndicators] Score:', score, 'Total:', totalIndicators, 'Percentage:', percentage);
+        // 요약 데이터 해시 생성 (일시적으로 비활성화하여 항상 업데이트)
+        const summaryHash = `${percentage.toFixed(0)}_${buyCount}_${sellCount}_${neutralCount}`;
+        // if (summaryHash === this.lastSummaryHash) {
+        //     return; // 변경사항이 없으면 업데이트 스킵
+        // }
+        this.lastSummaryHash = summaryHash;
 
         const summaryContainer = document.getElementById('indicator-summary-container');
 
-        // console.log('[TechnicalIndicators] Summary container:', summaryContainer);
-
         if (summaryContainer) {
-            // console.log('[TechnicalIndicators] Updating summary container');
-            
             let summaryStatusText = '';
             let statusClass = '';
             let statusIcon = '';
@@ -777,52 +869,592 @@ export class TechnicalIndicators {
                 statusColor = '#dc2626';
             }
 
-            summaryContainer.innerHTML = `
+            // 항상 새로운 카드를 생성하여 "대기중" 문제 해결
+            this.createNewSummaryCard(summaryContainer, {
+                summaryStatusText,
+                statusClass,
+                statusIcon,
+                statusColor,
+                percentage,
+                buyCount,
+                sellCount,
+                neutralCount,
+                totalIndicators
+            });
+            
+            // 스타일 재적용 확인
+            this.addSummaryStyles();
+        }
+    }
+
+    updateExistingSummaryCard(card, data) {
+        // 상태 텍스트 업데이트
+        const statusElement = card.querySelector('.summary-status');
+        if (statusElement) {
+            statusElement.className = `summary-status ${data.statusClass}`;
+            statusElement.querySelector('.status-icon').textContent = data.statusIcon;
+            statusElement.querySelector('.status-text').textContent = data.summaryStatusText;
+        }
+
+        // 게이지 업데이트
+        const gaugeProgress = card.querySelector('.gauge-progress');
+        const gaugePercentage = card.querySelector('.gauge-percentage');
+        const gaugeGradient = card.querySelector('#gaugeGradient stop');
+        
+        if (gaugeProgress) {
+            gaugeProgress.setAttribute('stroke-dasharray', `${(data.percentage * 2.2).toFixed(1)} 220`);
+        }
+        if (gaugePercentage) {
+            gaugePercentage.textContent = `${data.percentage.toFixed(0)}%`;
+            gaugePercentage.setAttribute('fill', data.statusColor);
+        }
+        if (gaugeGradient) {
+            gaugeGradient.style.stopColor = data.statusColor;
+        }
+
+        // 신호 분석 업데이트
+        const signalCounts = card.querySelectorAll('.signal-count');
+        if (signalCounts.length >= 3) {
+            signalCounts[0].textContent = data.buyCount;
+            signalCounts[1].textContent = data.neutralCount;
+            signalCounts[2].textContent = data.sellCount;
+        }
+
+        // 푸터 정보 업데이트
+        const countValue = card.querySelector('.count-value');
+        const updateTime = card.querySelector('.update-time');
+        
+        if (countValue) {
+            countValue.textContent = `${data.totalIndicators}개`;
+        }
+        if (updateTime) {
+            updateTime.textContent = new Date().toLocaleTimeString('ko-KR', {hour: '2-digit', minute: '2-digit'});
+        }
+    }
+
+    createNewSummaryCard(container, data) {
+        container.innerHTML = `
+            <div class="technical-summary-card">
                 <div class="summary-header">
-                    <div class="summary-title">종합 매매 신호</div>
-                    <div class="summary-percentage ${statusClass}">${percentage.toFixed(0)}%</div>
+                    <div class="summary-title">
+                        <span class="title-icon">📊</span>
+                        <span>종합 매매 신호</span>
                 </div>
-                <div class="summary-gauge-container">
-                    <div class="summary-gauge">
-                        <div class="summary-bar ${statusClass}" style="width: ${percentage.toFixed(1)}%; background-color: ${statusColor};"></div>
+                    <div class="summary-status ${data.statusClass}">
+                        <span class="status-icon">${data.statusIcon}</span>
+                        <span class="status-text">${data.summaryStatusText}</span>
                     </div>
-                    <div class="summary-labels">
-                        <span class="label-bearish">매도</span>
-                        <span class="label-neutral">중립</span>
-                        <span class="label-bullish">매수</span>
+                </div>
+                
+                <div class="circular-gauge-container">
+                    <div class="circular-gauge">
+                        <svg class="gauge-svg" viewBox="0 0 200 120">
+                            <!-- 배경 호 -->
+                            <path class="gauge-bg" 
+                                  d="M 30 100 A 70 70 0 0 1 170 100" 
+                                  fill="none" 
+                                  stroke="#e5e7eb" 
+                                  stroke-width="12" 
+                                  stroke-linecap="round"/>
+                            <!-- 진행 호 -->
+                            <path class="gauge-progress" 
+                                  d="M 30 100 A 70 70 0 0 1 170 100"
+                                  fill="none" 
+                                  stroke="url(#gaugeGradient)" 
+                                  stroke-width="12" 
+                                  stroke-linecap="round"
+                                  stroke-dasharray="${(data.percentage * 2.2).toFixed(1)} 220"
+                                  style="transition: stroke-dasharray 1s ease-in-out;"/>
+                            <!-- 그라디언트 정의 -->
+                            <defs>
+                                <linearGradient id="gaugeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                    <stop offset="0%" style="stop-color:${data.statusColor};stop-opacity:1" />
+                                    <stop offset="100%" style="stop-color:${data.statusColor};stop-opacity:0.7" />
+                                </linearGradient>
+                            </defs>
+                            <!-- 중앙 텍스트 -->
+                            <text x="100" y="75" text-anchor="middle" class="gauge-percentage" 
+                                  fill="${data.statusColor}" font-size="24" font-weight="bold">
+                                ${data.percentage.toFixed(0)}%
+                            </text>
+                            <text x="100" y="95" text-anchor="middle" class="gauge-label" 
+                                  fill="#6b7280" font-size="12">
+                                신뢰도
+                            </text>
+                        </svg>
+                    </div>
+                </div>
+                
+                <div class="signal-breakdown">
+                    <div class="signal-item bullish">
+                        <div class="signal-dot"></div>
+                        <span class="signal-label">매수</span>
+                        <span class="signal-count">${data.buyCount}</span>
+                    </div>
+                    <div class="signal-item neutral">
+                        <div class="signal-dot"></div>
+                        <span class="signal-label">중립</span>
+                        <span class="signal-count">${data.neutralCount}</span>
+                    </div>
+                    <div class="signal-item bearish">
+                        <div class="signal-dot"></div>
+                        <span class="signal-label">매도</span>
+                        <span class="signal-count">${data.sellCount}</span>
+                    </div>
+                </div>
+                
+                <div class="summary-footer">
+                    <div class="indicator-count">
+                        <span class="count-label">분석 지표</span>
+                        <span class="count-value">${data.totalIndicators}개</span>
+                    </div>
+                    <div class="last-updated">
+                        <span class="update-label">업데이트</span>
+                        <span class="update-time">${new Date().toLocaleTimeString('ko-KR', {hour: '2-digit', minute: '2-digit'})}</span>
+                    </div>
                     </div>
                 </div>
             `;
-            // console.log('[TechnicalIndicators] Summary container updated successfully');
-        } else {
-            console.error('[TechnicalIndicators] Summary container not found!');
+    }
+
+    addSummaryStyles() {
+        // 이미 스타일이 주입되었으면 스킵
+        if (this.stylesInjected) return;
+        
+        // 기존 스타일이 있으면 제거
+        const existingStyle = document.getElementById('technical-summary-styles');
+        if (existingStyle) {
+            existingStyle.remove();
         }
         
-        // console.log('[TechnicalIndicators] updateSummary completed');
+        const style = document.createElement('style');
+        style.id = 'technical-summary-styles';
+        style.textContent = `
+            .technical-summary-card {
+                background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+                border-radius: 12px;
+                padding: 20px;
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+                position: relative;
+                overflow: hidden;
+                transition: all 0.3s ease;
+            }
+            
+            .technical-summary-card::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                height: 3px;
+                background: linear-gradient(90deg, #3b82f6, #10b981, #f59e0b, #ef4444);
+                opacity: 0.6;
+            }
+            
+            .summary-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 20px;
+            }
+            
+            .summary-title {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                font-size: 16px;
+                font-weight: 600;
+                color: #1f2937;
+            }
+            
+            .title-icon {
+                font-size: 18px;
+            }
+            
+            .summary-status {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                padding: 6px 12px;
+                border-radius: 20px;
+                font-size: 14px;
+                font-weight: 600;
+                transition: all 0.3s ease;
+            }
+            
+            .summary-status.strong-buy {
+                background: linear-gradient(135deg, #dcfce7, #bbf7d0);
+                color: #059669;
+                border: 1px solid #86efac;
+            }
+            
+            .summary-status.buy {
+                background: linear-gradient(135deg, #ecfdf5, #d1fae5);
+                color: #10b981;
+                border: 1px solid #a7f3d0;
+            }
+            
+            .summary-status.neutral {
+                background: linear-gradient(135deg, #f9fafb, #f3f4f6);
+                color: #6b7280;
+                border: 1px solid #d1d5db;
+            }
+            
+            .summary-status.sell {
+                background: linear-gradient(135deg, #fffbeb, #fef3c7);
+                color: #f59e0b;
+                border: 1px solid #fcd34d;
+            }
+            
+            .summary-status.strong-sell {
+                background: linear-gradient(135deg, #fef2f2, #fecaca);
+                color: #dc2626;
+                border: 1px solid #fca5a5;
+            }
+            
+            .circular-gauge-container {
+                display: flex;
+                justify-content: center;
+                margin: 20px 0;
+            }
+            
+            .circular-gauge {
+                width: 200px;
+                height: 120px;
+            }
+            
+            .gauge-svg {
+                width: 100%;
+                height: 100%;
+                filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+            }
+            
+            .signal-breakdown {
+                display: flex;
+                justify-content: space-around;
+                margin: 20px 0;
+                padding: 16px;
+                background: rgba(0, 0, 0, 0.02);
+                border-radius: 8px;
+                border: 1px solid rgba(0, 0, 0, 0.05);
+            }
+            
+            .signal-item {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 4px;
+            }
+            
+            .signal-dot {
+                width: 12px;
+                height: 12px;
+                border-radius: 50%;
+                margin-bottom: 4px;
+            }
+            
+            .signal-item.bullish .signal-dot {
+                background: linear-gradient(135deg, #10b981, #34d399);
+                box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);
+            }
+            
+            .signal-item.neutral .signal-dot {
+                background: linear-gradient(135deg, #6b7280, #9ca3af);
+                box-shadow: 0 2px 4px rgba(107, 114, 128, 0.3);
+            }
+            
+            .signal-item.bearish .signal-dot {
+                background: linear-gradient(135deg, #ef4444, #f87171);
+                box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);
+            }
+            
+            .signal-label {
+                font-size: 12px;
+                color: #6b7280;
+                font-weight: 500;
+            }
+            
+            .signal-count {
+                font-size: 16px;
+                font-weight: bold;
+                color: #1f2937;
+                transition: all 0.3s ease;
+            }
+            
+            .summary-footer {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-top: 16px;
+                padding-top: 16px;
+                border-top: 1px solid rgba(0, 0, 0, 0.08);
+            }
+            
+            .indicator-count, .last-updated {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 2px;
+            }
+            
+            .count-label, .update-label {
+                font-size: 11px;
+                color: #9ca3af;
+                font-weight: 500;
+            }
+            
+            .count-value, .update-time {
+                font-size: 13px;
+                color: #374151;
+                font-weight: 600;
+            }
+            
+            /* 지표 목록 스크롤 스타일 */
+            #indicators-list {
+                max-height: 400px;
+                overflow-y: auto;
+                padding-right: 8px;
+                margin-right: -8px;
+            }
+            
+            /* 커스텀 스크롤바 */
+            #indicators-list::-webkit-scrollbar {
+                width: 6px;
+            }
+            
+            #indicators-list::-webkit-scrollbar-track {
+                background: #f1f5f9;
+                border-radius: 3px;
+            }
+            
+            #indicators-list::-webkit-scrollbar-thumb {
+                background: linear-gradient(135deg, #cbd5e1, #94a3b8);
+                border-radius: 3px;
+                transition: background 0.3s ease;
+            }
+            
+            #indicators-list::-webkit-scrollbar-thumb:hover {
+                background: linear-gradient(135deg, #94a3b8, #64748b);
+            }
+            
+            /* Firefox 스크롤바 */
+            #indicators-list {
+                scrollbar-width: thin;
+                scrollbar-color: #cbd5e1 #f1f5f9;
+            }
+            
+            /* 스크롤 영역 페이드 효과 */
+            .indicators-scroll-fade {
+                position: relative;
+            }
+            
+            .indicators-scroll-fade::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                height: 10px;
+                background: linear-gradient(to bottom, rgba(255,255,255,1), rgba(255,255,255,0));
+                z-index: 1;
+                pointer-events: none;
+            }
+            
+            .indicators-scroll-fade::after {
+                content: '';
+                position: absolute;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                height: 10px;
+                background: linear-gradient(to top, rgba(255,255,255,1), rgba(255,255,255,0));
+                z-index: 1;
+                pointer-events: none;
+            }
+            
+            /* 지표 아이템 스타일 개선 */
+            .indicator-item {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 12px 16px;
+                margin-bottom: 8px;
+                background: linear-gradient(135deg, #ffffff, #f8fafc);
+                border: 1px solid rgba(0, 0, 0, 0.05);
+                border-radius: 8px;
+                transition: all 0.2s ease;
+                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+            }
+            
+            .indicator-item:hover {
+                transform: translateY(-1px);
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+                border-color: rgba(59, 130, 246, 0.2);
+            }
+            
+            .indicator-item:last-child {
+                margin-bottom: 0;
+            }
+            
+            .indicator-info {
+                display: flex;
+                flex-direction: column;
+                gap: 2px;
+                flex: 1;
+            }
+            
+            .indicator-name {
+                font-weight: 600;
+                font-size: 14px;
+                color: #1f2937;
+            }
+            
+            .indicator-desc {
+                font-size: 12px;
+                color: #6b7280;
+                opacity: 0.8;
+            }
+            
+            .indicator-value {
+                font-weight: 600;
+                font-size: 13px;
+                padding: 4px 8px;
+                border-radius: 6px;
+                white-space: nowrap;
+                min-width: 80px;
+                text-align: center;
+                transition: all 0.2s ease;
+            }
+            
+            /* 지표 상태별 색상 */
+            .indicator-value.bullish {
+                background: linear-gradient(135deg, #dcfce7, #bbf7d0);
+                color: #059669;
+                border: 1px solid #86efac;
+            }
+            
+            .indicator-value.bearish {
+                background: linear-gradient(135deg, #fef2f2, #fecaca);
+                color: #dc2626;
+                border: 1px solid #fca5a5;
+            }
+            
+            .indicator-value.neutral {
+                background: linear-gradient(135deg, #f9fafb, #f3f4f6);
+                color: #6b7280;
+                border: 1px solid #d1d5db;
+            }
+            
+            .indicator-value.overbought {
+                background: linear-gradient(135deg, #fffbeb, #fef3c7);
+                color: #f59e0b;
+                border: 1px solid #fcd34d;
+            }
+            
+            .indicator-value.oversold {
+                background: linear-gradient(135deg, #ecfdf5, #d1fae5);
+                color: #10b981;
+                border: 1px solid #a7f3d0;
+            }
+            
+            .indicator-value.calculating {
+                background: linear-gradient(135deg, #f3f4f6, #e5e7eb);
+                color: #9ca3af;
+                border: 1px solid #d1d5db;
+                animation: pulse 2s ease-in-out infinite;
+            }
+            
+            @keyframes pulse {
+                0%, 100% {
+                    opacity: 1;
+                }
+                50% {
+                    opacity: 0.7;
+                }
+            }
+        `;
+        
+        document.head.appendChild(style);
+        this.stylesInjected = true;
     }
 
     showDefaultSummary() {
-        // console.log('[TechnicalIndicators] Showing default summary');
         const summaryContainer = document.getElementById('indicator-summary-container');
 
         if (summaryContainer) {
             summaryContainer.innerHTML = `
+                <div class="technical-summary-card">
                 <div class="summary-header">
-                    <div class="summary-title">종합 매매 신호</div>
-                    <div class="summary-percentage neutral">--</div>
+                        <div class="summary-title">
+                            <span class="title-icon">📊</span>
+                            <span>종합 매매 신호</span>
                 </div>
-                <div class="summary-gauge-container">
-                    <div class="summary-gauge">
-                        <div class="summary-bar neutral" style="width: 50%; background-color: #6b7280;"></div>
+                        <div class="summary-status neutral">
+                            <span class="status-icon">⏳</span>
+                            <span class="status-text">분석 중</span>
                     </div>
-                    <div class="summary-labels">
-                        <span class="label-bearish">매도</span>
-                        <span class="label-neutral">중립</span>
-                        <span class="label-bullish">매수</span>
+                    </div>
+                    
+                    <div class="circular-gauge-container">
+                        <div class="circular-gauge">
+                            <svg class="gauge-svg" viewBox="0 0 200 120">
+                                <path class="gauge-bg" 
+                                      d="M 30 100 A 70 70 0 0 1 170 100" 
+                                      fill="none" 
+                                      stroke="#e5e7eb" 
+                                      stroke-width="12" 
+                                      stroke-linecap="round"/>
+                                <path class="gauge-progress" 
+                                      d="M 30 100 A 70 70 0 0 1 170 100"
+                                      fill="none" 
+                                      stroke="#9ca3af" 
+                                      stroke-width="12" 
+                                      stroke-linecap="round"
+                                      stroke-dasharray="110 220"/>
+                                <text x="100" y="75" text-anchor="middle" class="gauge-percentage" 
+                                      fill="#6b7280" font-size="24" font-weight="bold">
+                                    --
+                                </text>
+                                <text x="100" y="95" text-anchor="middle" class="gauge-label" 
+                                      fill="#6b7280" font-size="12">
+                                    대기 중
+                                </text>
+                            </svg>
+                        </div>
+                    </div>
+                    
+                    <div class="signal-breakdown">
+                        <div class="signal-item bullish">
+                            <div class="signal-dot"></div>
+                            <span class="signal-label">매수</span>
+                            <span class="signal-count">-</span>
+                        </div>
+                        <div class="signal-item neutral">
+                            <div class="signal-dot"></div>
+                            <span class="signal-label">중립</span>
+                            <span class="signal-count">-</span>
+                        </div>
+                        <div class="signal-item bearish">
+                            <div class="signal-dot"></div>
+                            <span class="signal-label">매도</span>
+                            <span class="signal-count">-</span>
+                        </div>
+                    </div>
+                    
+                    <div class="summary-footer">
+                        <div class="indicator-count">
+                            <span class="count-label">분석 지표</span>
+                            <span class="count-value">대기 중</span>
+                        </div>
+                        <div class="last-updated">
+                            <span class="update-label">상태</span>
+                            <span class="update-time">로딩 중</span>
+                        </div>
                     </div>
                 </div>
             `;
-            // console.log('[TechnicalIndicators] Default summary displayed');
+            
+            this.addSummaryStyles();
         }
     }
 
@@ -1157,8 +1789,15 @@ export class TechnicalIndicators {
 
     changeTimeframe(newTimeframe) {
         if (this.currentTimeframe === newTimeframe) return;
-        console.log(`[TechnicalIndicators] Timeframe changed to: ${newTimeframe}`);
         this.currentTimeframe = newTimeframe;
+        
+        // 빠른 로딩을 위해 즉시 데이터 초기화 및 로딩
+        this.priceData = [];
+        this.lastDataHash = '';
+        this.lastSummaryHash = '';
+        this.isUpdating = false;
+        
+        // 즉시 로딩 시작
         this.loadData();
     }
 
@@ -1180,69 +1819,73 @@ export class TechnicalIndicators {
         }
 
         // 3. 레이아웃이 그려진 후 필요한 스크립트 실행
-        this.updateSummaryGauge();
-        this.updateTimeframeButtons();
+        setTimeout(() => {
+            this.updateSummary();
+            this.updateDisplay();
+        }, 100); // DOM 업데이트 후 실행
     }
 
     getFullLayoutHTML() {
-        const summary = this.calculateSummary();
-        const signalClass = this.getSignalClass(summary.recommendation);
-        const percentage = (summary.buy + summary.sell + summary.neutral) > 0 ? (summary.buy * 100) / (summary.buy + summary.sell + summary.neutral) : 50;
-        
         return `
             <div id="indicator-summary-container">
-                <div class="summary-header">
-                    <div class="summary-title">종합 매매 신호</div>
-                    <div class="summary-percentage ${signalClass}">${summary.recommendation}</div>
+                <!-- 종합 매매 신호는 updateSummary()에서 동적으로 생성됨 -->
                 </div>
-                <div class="summary-gauge-container">
-                    <div class="summary-gauge">
-                        <div class="summary-bar" style="width: ${percentage}%"></div>
-                    </div>
-                </div>
-                <div class="summary-labels">
-                    <span class="label-bearish">매도 (${summary.sell})</span>
-                    <span class="label-neutral">중립 (${summary.neutral})</span>
-                    <span class="label-bullish">매수 (${summary.buy})</span>
-                </div>
-            </div>
-            <div id="indicators-list" class="styled-scrollbar">
+            <div class="indicators-scroll-fade">
+                <div id="indicators-list">
                 ${this.getListHTML()}
+                </div>
             </div>
         `;
     }
 
     getCompactLayoutHTML() {
-        const summary = this.calculateSummary();
-        const signalClass = this.getSignalClass(summary.recommendation);
-        const percentage = (summary.buy + summary.sell + summary.neutral) > 0 ? (summary.buy * 100) / (summary.buy + summary.sell + summary.neutral) : 50;
-
-        // 컴팩트 뷰에서는 종합 신호와 전체 목록을 합쳐서 보여줌
         return `
-            <div class="compact-summary">
-                <span>종합 신호: <b class="${signalClass}">${summary.recommendation}</b></span>
-                <div class="summary-gauge-container compact">
-                    <div class="summary-gauge">
-                        <div class="summary-bar" style="width: ${percentage}%"></div>
+            <div id="indicator-summary-container">
+                <!-- 종합 매매 신호는 updateSummary()에서 동적으로 생성됨 -->
                     </div>
-                </div>
-            </div>
-            <div id="indicators-list" class="styled-scrollbar compact-list">
+            <div class="indicators-scroll-fade">
+                <div id="indicators-list">
                 ${this.getListHTML(true)}
+                </div>
             </div>
         `;
     }
 
     getListHTML(isCompact = false) {
-        // 컴팩트 모드일 때는 값만, 아닐 때는 설명과 함께 표시
-        return this.indicators.map(indicator => `
+        // 지표 데이터 구성
+        const indicatorList = [
+            { name: 'RSI', desc: '상대강도지수', value: this.indicators.rsi.value, status: this.indicators.rsi.status },
+            { name: 'MACD', desc: '이동평균수렴확산', value: this.indicators.macd.histogram, status: this.indicators.macd.status },
+            { name: 'Bollinger Bands', desc: '볼린저밴드', value: this.indicators.bb.middle, status: this.getBBStatus(this.priceData.length ? this.priceData[this.priceData.length-1].close : 0, this.indicators.bb.upper, this.indicators.bb.lower) },
+            { name: 'Stochastic', desc: '스토캐스틱', value: this.indicators.stoch.k, status: this.indicators.stoch.status },
+            { name: 'SMA', desc: '단순이동평균', value: this.indicators.sma.short, status: this.indicators.sma.status },
+            { name: 'Ichimoku', desc: '일목균형표', value: this.indicators.ichimoku.spanA, status: this.indicators.ichimoku.status },
+            { name: 'Volume Oscillator', desc: '거래량오실레이터', value: this.indicators.vo.value, status: this.indicators.vo.status },
+            { name: 'Awesome Oscillator', desc: '어썸오실레이터', value: this.indicators.ao.value, status: this.indicators.ao.status },
+            { name: 'Williams %R', desc: '윌리엄스 %R', value: this.indicators.williamsR.value, status: this.indicators.williamsR.status },
+            { name: 'Stoch RSI', desc: '스토캐스틱 RSI', value: this.indicators.stochRsi.k, status: this.indicators.stochRsi.status },
+            { name: 'CCI', desc: '상품채널지수', value: this.indicators.cci.value, status: this.indicators.cci.status },
+            { name: 'Momentum', desc: '모멘텀', value: this.indicators.mom.value, status: this.indicators.mom.status },
+            { name: 'Parabolic SAR', desc: '패러볼릭 SAR', value: this.indicators.psar.value, status: this.indicators.psar.status },
+            { name: 'ADX', desc: '평균방향지수', value: this.indicators.adx.value, status: this.indicators.adx.status },
+            { name: 'OBV', desc: '거래량균형지수', value: this.indicators.obv.value, status: this.indicators.obv.status },
+            { name: 'MFI', desc: '자금흐름지수', value: this.indicators.mfi.value, status: this.indicators.mfi.status },
+            { name: 'ROC', desc: '변화율', value: this.indicators.roc.value, status: this.indicators.roc.status },
+            { name: 'Keltner Channel', desc: '켈트너 채널', value: this.indicators.keltner.middle, status: this.indicators.keltner.status },
+            { name: 'Donchian Channel', desc: '돈치안 채널', value: this.indicators.donchian.middle, status: this.indicators.donchian.status },
+            { name: 'Aroon', desc: '아룬 지표', value: this.indicators.aroon.up, status: this.indicators.aroon.status },
+            { name: 'Ultimate Oscillator', desc: '궁극적 오실레이터', value: this.indicators.ultimate.value, status: this.indicators.ultimate.status },
+            { name: 'Chaikin Money Flow', desc: '차이킨 자금흐름', value: this.indicators.cmf.value, status: this.indicators.cmf.status }
+        ];
+
+        return indicatorList.map(indicator => `
             <div class="indicator-item">
                 <div class="indicator-info">
                     <span class="indicator-name">${indicator.name}</span>
-                    ${!isCompact ? `<span class="indicator-desc">${indicator.description}</span>` : ''}
+                    ${!isCompact ? `<span class="indicator-desc">${indicator.desc}</span>` : ''}
                 </div>
-                <div class="indicator-value ${this.getSignalClass(indicator.signal)}">
-                    ${isCompact ? '' : `${indicator.signal} `}(${indicator.value.toFixed(2)})
+                <div class="indicator-value ${this.getIndicatorClass(indicator.status)}">
+                    ${indicator.status} ${indicator.value ? `(${typeof indicator.value === 'number' ? indicator.value.toFixed(2) : indicator.value})` : ''}
                 </div>
             </div>
         `).join('');

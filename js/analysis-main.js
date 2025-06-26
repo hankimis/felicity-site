@@ -18,8 +18,11 @@ class AnalysisDashboard {
         this.isTracking = false;
         this.intervals = {};
         this.modules = {};
-        this.grid = null; // GridStack instance
+        this.grid = null;
         this.isEditMode = false;
+        this.currentUser = this.getCurrentUser();
+        this.gridInitialized = false;
+        
         this.data = {
             whales: [],
             trades: [],
@@ -34,19 +37,65 @@ class AnalysisDashboard {
         this.init();
     }
     
+    getCurrentUser() {
+        try {
+            // Firebase Auth에서 현재 사용자 가져오기
+            if (typeof firebase !== 'undefined' && firebase.auth && firebase.auth().currentUser) {
+                const user = firebase.auth().currentUser;
+                return user.uid || user.email || 'firebase_user';
+            }
+            
+            // 전역 변수에서 사용자 정보 확인
+            if (window.currentUser) {
+                return window.currentUser;
+            }
+            
+            // 로컬 스토리지에서 사용자 정보 확인
+            const localUser = localStorage.getItem('currentUserId') || localStorage.getItem('currentUser');
+            if (localUser && localUser !== 'guest') {
+                return localUser;
+            }
+            
+            // 브라우저별 고유 ID 생성 및 저장
+            let browserUserId = localStorage.getItem('browserUserId');
+            if (!browserUserId) {
+                browserUserId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                localStorage.setItem('browserUserId', browserUserId);
+                console.log('🆔 Generated new browser user ID:', browserUserId);
+            }
+            
+            return browserUserId;
+            
+        } catch (error) {
+            console.warn('⚠️ Error getting current user:', error);
+            return 'anonymous_user_' + Date.now();
+        }
+    }
+    
     async init() {
         console.log('🚀 Initializing Analysis Dashboard...');
         
         await this.initializeModules();
         this.setupEventListeners();
         
-        // GridStack 초기화
-        this.initializeGridStack();
-        
-        this.loadInitialData();
-        this.startTracking();
+        // GridStack 초기화를 DOM 로드 후에 실행
+        this.waitForDOM().then(() => {
+            this.initializeGridStack();
+            this.loadInitialData();
+            this.startTracking();
+        });
         
         console.log('✅ Analysis Dashboard initialized');
+    }
+
+    waitForDOM() {
+        return new Promise((resolve) => {
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', resolve);
+            } else {
+                resolve();
+            }
+        });
     }
 
     async initializeModules() {
@@ -108,9 +157,6 @@ class AnalysisDashboard {
         
         // Symbol selectors
         document.getElementById('whale-symbol-selector')?.addEventListener('change', (e) => {
-            // This now acts as a filter, not a symbol changer for the tracker
-            // The actual connections are managed in the settings modal.
-            // We can implement a UI filter based on this value later if needed.
             console.log(`UI Symbol filter changed to: ${e.target.value}`);
         });
         
@@ -118,9 +164,7 @@ class AnalysisDashboard {
             this.updateSymbol('realtime', e.target.value);
         });
         
-        document.getElementById('longshort-symbol')?.addEventListener('change', (e) => {
-            this.updateSymbol('longshort', e.target.value);
-        });
+        // longshort-symbol 이벤트는 LongShortTracker에서 직접 처리
         
         document.getElementById('orderbook-symbol')?.addEventListener('change', (e) => {
             this.updateSymbol('orderbook', e.target.value);
@@ -146,6 +190,9 @@ class AnalysisDashboard {
         
         // Settings modal
         this.setupSettingsModal();
+        
+        // Window resize
+        window.addEventListener('resize', () => this.handleResize());
     }
     
     setupSettingsModal() {
@@ -213,6 +260,13 @@ class AnalysisDashboard {
         this.isTracking = true;
         this.updateStatus('active', '실시간 추적 중');
         
+        // 각 모듈 시작
+        Object.entries(this.modules).forEach(([name, module]) => {
+            if (module && typeof module.start === 'function') {
+                module.start();
+            }
+        });
+        
         // 각 모듈의 데이터를 주기적으로 업데이트
         this.intervals.dataUpdate = setInterval(() => {
             this.updateAllDisplays();
@@ -258,7 +312,14 @@ class AnalysisDashboard {
         }
         
         if (this.modules.longShortTracker) {
-            this.data.longshort = this.modules.longShortTracker.getLongShortRatio() || { long: 50, short: 50, ratio: 1.0, status: 'neutral' };
+            const currentRatio = this.modules.longShortTracker.getLongShortRatio();
+            // 유효한 데이터가 있을 때만 업데이트 (초기화 방지)
+            if (currentRatio && currentRatio.long !== undefined && currentRatio.short !== undefined) {
+                this.data.longshort = currentRatio;
+            } else if (!this.data.longshort) {
+                // 초기값만 설정
+                this.data.longshort = { long: 50, short: 50, ratio: 1.0, status: 'neutral' };
+            }
         }
         
         if (this.modules.orderbookTracker) {
@@ -279,11 +340,6 @@ class AnalysisDashboard {
         
         // 실시간 통계 업데이트
         this.updateStats();
-    }
-    
-    // Update Display Methods
-    updateWhaleDisplay() {
-        // 이 함수는 더 이상 사용되지 않습니다. WhaleTracker가 자체적으로 업데이트합니다.
     }
     
     updateRealtimeDisplay() {
@@ -383,47 +439,11 @@ class AnalysisDashboard {
     }
     
     updateLiquidationDisplay() {
-        const mapContainer = document.getElementById('liquidation-map-container');
-        if (!mapContainer) return;
-        
-        if (this.data.liquidations.length === 0) {
-            mapContainer.innerHTML = '<div class="no-data"><i class="fas fa-chart-line"></i><p>청산 데이터를 로딩 중...</p></div>';
-            return;
-        }
-        
-        // 청산 데이터 표시 로직
-        mapContainer.innerHTML = this.data.liquidations.map(liquidation => `
-            <div class="liquidation-item">
-                <span class="liquidation-price">$${liquidation.price}</span>
-                <span class="liquidation-amount">${liquidation.amount}</span>
-                <span class="liquidation-side ${liquidation.side}">${liquidation.side}</span>
-            </div>
-        `).join('');
+        // LiquidationMap 모듈이 직접 렌더링을 담당하므로 여기서는 아무것도 하지 않음
+        // 데이터는 this.data.liquidations에 저장되어 있음
     }
     
     // Helper Methods
-    createWhaleHTML(whale) {
-        const size = AnalysisUtils.getWhaleSizeDescription(whale.type, whale.amount);
-        const timeAgo = AnalysisUtils.getTimeAgo(whale.timestamp);
-        const amount = AnalysisUtils.formatCurrency(whale.usdValue);
-        const crypto = whale.type === 'bitcoin' ? 'BTC' : 'ETH';
-        
-        return `
-            <div class="whale-item ${whale.confirmed ? 'confirmed' : 'pending'}">
-                <div class="whale-header">
-                    <span class="whale-crypto">${crypto}</span>
-                    <span class="whale-size">${size}</span>
-                    <span class="whale-time">${timeAgo}</span>
-                </div>
-                <div class="whale-details">
-                    <div class="whale-amount">${whale.amount.toFixed(4)} ${crypto}</div>
-                    <div class="whale-value">${amount}</div>
-                    <div class="whale-status">${whale.confirmed ? '✅ 확정됨' : '⏳ 대기 중'}</div>
-                </div>
-            </div>
-        `;
-    }
-    
     createTradeHTML(trade) {
         return `
             <div class="trade-item ${trade.side}">
@@ -438,26 +458,9 @@ class AnalysisDashboard {
         return new Date(timestamp).toLocaleTimeString('en-GB');
     }
     
-    updateWhaleStats() {
-        const largeTradesElement = document.getElementById('large-trades');
-        const totalVolumeElement = document.getElementById('total-volume');
-        
-        if (largeTradesElement) {
-            largeTradesElement.textContent = this.data.whales.length;
-        }
-        
-        if (totalVolumeElement) {
-            const totalVolume = this.data.whales.reduce((sum, whale) => sum + whale.usdValue, 0);
-            totalVolumeElement.textContent = AnalysisUtils.formatCurrency(totalVolume);
-        }
-    }
-    
     updateSentimentGauge(value) {
-        // This would update the canvas-based gauge
-        // For now, just update the styling
         const canvas = document.getElementById('sentiment-gauge');
         if (canvas) {
-            // Simple color update based on value
             const container = canvas.parentElement;
             if (value <= 25) {
                 container.style.background = 'radial-gradient(circle, rgba(239,68,68,0.1) 0%, transparent 70%)';
@@ -480,33 +483,6 @@ class AnalysisDashboard {
             'neutral': '중립'
         };
         return statusTexts[status] || '중립';
-    }
-    
-    getSignalClass(status) {
-        if (!status || status === '계산 중...' || status === 'N/A') {
-            return 'calculating';
-        }
-        
-        // 과매수 신호 (빨간색)
-        const overboughtSignals = ['과매수'];
-        // 과매도 신호 (초록색)
-        const oversoldSignals = ['과매도'];
-        // 매수 신호 (초록색)
-        const bullishSignals = ['강세', '상승추세', '구름대 상단 돌파', '거래량 증가', '강세 전환', '상승', '강한추세', '돌파'];
-        // 매도 신호 (빨간색)
-        const bearishSignals = ['약세', '하락추세', '구름대 하단 이탈', '거래량 감소', '약세 전환', '하락', '약한추세', '이탈'];
-        
-        if (overboughtSignals.includes(status)) {
-            return 'overbought'; // 과매수 - 빨간색
-        } else if (oversoldSignals.includes(status)) {
-            return 'oversold'; // 과매도 - 초록색
-        } else if (bullishSignals.includes(status)) {
-            return 'bullish'; // 매수 - 초록색
-        } else if (bearishSignals.includes(status)) {
-            return 'bearish'; // 매도 - 빨간색
-        } else {
-            return 'neutral'; // 중립
-        }
     }
     
     // Control Methods
@@ -624,169 +600,595 @@ class AnalysisDashboard {
         }
     }
 
-    // Layout Management
+    // GridStack Layout Management
     initializeGridStack() {
-        this.grid = GridStack.init({
-            float: false, // float를 false로 변경하여 겹치지 않도록 함
-            // Responsive columns
-            columnOpts: {
-                1200: 12,
-                992: 10,
-                768: 8,
-                576: 6,
-                0: 4
-            },
-            minRow: 1,
-            cellHeight: 30, // 고정 높이로 설정하여 정확한 그리드 계산
-            margin: 10,
-            resizable: {
-                handles: 'all'
-            },
-            alwaysShowResizeHandle: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent),
-            // 그리드 아이템이 겹치지 않도록 설정
-            disableOneColumnMode: true,
-            // 그리드 라인 표시
-            showGrid: true,
-            // 그리드 아이템이 겹치지 않도록 추가 설정
-            acceptWidgets: false,
-            // 그리드 아이템 이동 시 겹침 방지
-            preventCollision: true
-        });
+        console.log('🎯 Initializing GridStack...');
+        
+        const gridElement = document.getElementById('dashboard-grid');
+        if (!gridElement) {
+            console.error('Grid element not found');
+            return;
+        }
 
-        this.grid.on('resizestop', (event, el) => {
-            // Trigger a resize event for any charts in the card
-            const chartCanvas = el.querySelector('canvas');
-            if (chartCanvas && chartCanvas.chart) {
-                chartCanvas.chart.resize();
+        // 정사각형 셀 높이 계산
+        const calculateSquareCellHeight = () => {
+            const containerWidth = gridElement.clientWidth;
+            const margin = 12;
+            const columns = 12;
+            return Math.floor((containerWidth - (margin * (columns - 1))) / columns);
+        };
+
+        // GridStack 옵션 설정 - 정사방형 그리드
+        const options = {
+            column: 12,
+            cellHeight: calculateSquareCellHeight(),
+            margin: 12,
+            minRow: 1,
+            disableOneColumnMode: true,
+            resizable: {
+                handles: 'se, sw, ne, nw, e, w, n, s',
+                autoHide: true
+            },
+            removable: false,
+            acceptWidgets: false,
+            alwaysShowResizeHandle: false,
+            // 반응형 컬럼 설정
+            columnOpts: {
+                1200: 12,  // 1200px 이상: 12컬럼
+                768: 8,    // 768px-1199px: 8컬럼
+                576: 4,    // 576px-767px: 4컬럼
+                0: 2       // 575px 이하: 2컬럼
+            },
+            // 초기에는 정적 그리드 (편집 버튼으로 제어)
+            staticGrid: true,
+            // 애니메이션 설정 - 부드러운 전환
+            animate: true,
+            animationSpeed: 200,
+            // 자동 위치 조정 비활성화 (안정성 향상)
+            float: false,
+            // 드래그 핸들을 카드 헤더로 제한
+            handle: '.card-header',
+            // 리사이즈 안정성 개선
+            resizable: {
+                handles: 'se, sw, ne, nw, e, w, n, s',
+                autoHide: true,
+                minWidth: 2,
+                minHeight: 2,
+                maxWidth: 12,
+                maxHeight: 20
+            }
+        };
+
+        try {
+            this.grid = GridStack.init(options, gridElement);
+            
+            if (!this.grid) {
+                throw new Error('GridStack initialization failed');
+            }
+
+            // 이벤트 리스너 설정
+            this.setupGridEvents();
+            
+            // 정사각형 비율 유지 설정
+            this.setupSquareGrid();
+            
+            // 레이아웃 로드 - HTML 기본 구조 사용 후 사용자 레이아웃 적용
+            // GridStack 완전 초기화 후 레이아웃 로드
+            setTimeout(() => {
+                this.loadUserLayout();
+            }, 300);
+            
+            // 인라인 컨트롤 버튼 이벤트 리스너 설정
+            this.setupLayoutControlEvents();
+            
+            this.gridInitialized = true;
+            console.log('✅ GridStack initialized successfully with square grid layout');
+            
+        } catch (error) {
+            console.error('❌ GridStack initialization failed:', error);
+            this.fallbackToRegularGrid();
+        }
+    }
+
+    fallbackToRegularGrid() {
+        console.log('📋 Falling back to regular CSS grid layout');
+        const gridElement = document.getElementById('dashboard-grid');
+        if (gridElement) {
+            gridElement.style.display = 'grid';
+            gridElement.style.gridTemplateColumns = 'repeat(12, 1fr)';
+            gridElement.style.gap = '1rem';
+        }
+    }
+
+    setupGridEvents() {
+        if (!this.grid) return;
+
+        // 그리드 변경 이벤트
+        this.grid.on('change', (event, items) => {
+            if (this.isEditMode) {
+                this.autoSaveLayout();
             }
         });
 
-        this.grid.on('change', (event, items) => {
-            // 그리드 변경 시 레이아웃 저장
-            this.saveLayout();
+        // 리사이즈 완료 이벤트
+        this.grid.on('resizestop', (event, element) => {
+            this.onGridItemResize(element);
         });
 
-        this.loadLayout();
-        this.createLayoutControls();
-        this.setupSquareGrid(); // 정사각형 그리드 설정 추가
+        // 드래그 완료 이벤트
+        this.grid.on('dragstop', (event, element) => {
+            if (this.isEditMode) {
+                this.autoSaveLayout();
+            }
+        });
     }
 
-    createLayoutControls() {
-        const container = document.getElementById('layout-controls-container');
-        if (!container) return;
+    onGridItemResize(element) {
+        // 차트나 기타 컴포넌트 리사이즈 트리거
+        const canvases = element.querySelectorAll('canvas');
+        canvases.forEach(canvas => {
+            if (canvas.chart && typeof canvas.chart.resize === 'function') {
+                canvas.chart.resize();
+            }
+        });
 
-        container.innerHTML = `
-            <button class="layout-btn" id="edit-layout-btn" title="레이아웃 편집">
-                <i class="fas fa-edit"></i>
-            </button>
-            <button class="layout-btn" id="save-layout-btn" title="레이아웃 저장">
-                <i class="fas fa-save"></i>
-            </button>
-            <button class="layout-btn" id="reset-layout-btn" title="레이아웃 초기화">
-                <i class="fas fa-undo"></i>
-            </button>
-        `;
+        // 자동 저장
+        if (this.isEditMode) {
+            this.autoSaveLayout();
+        }
+    }
+
+    setupLayoutControlEvents() {
+        // 인라인 레이아웃 컨트롤 버튼들에 이벤트 리스너 추가
+        const editBtn = document.getElementById('edit-layout-btn');
+        const saveBtn = document.getElementById('save-layout-btn');
+        const resetBtn = document.getElementById('reset-layout-btn');
+        const cancelBtn = document.getElementById('cancel-edit-btn');
         
-        document.getElementById('edit-layout-btn').addEventListener('click', () => this.toggleEditMode());
-        document.getElementById('save-layout-btn').addEventListener('click', () => this.saveLayout());
-        document.getElementById('reset-layout-btn').addEventListener('click', () => this.resetLayout());
+        if (editBtn) {
+            editBtn.addEventListener('click', () => this.toggleEditMode());
+        }
+        
+        if (saveBtn) {
+            saveBtn.addEventListener('click', () => this.saveUserLayout());
+        }
+        
+        if (resetBtn) {
+            resetBtn.addEventListener('click', () => this.resetLayout());
+        }
+        
+        if (cancelBtn) {
+            cancelBtn.addEventListener('click', () => this.cancelEditMode());
+        }
+        
+        console.log('🎮 Layout control events setup completed');
     }
 
     toggleEditMode() {
+        if (!this.grid) {
+            console.error('❌ Grid not initialized');
+            return;
+        }
+
         this.isEditMode = !this.isEditMode;
+        
         const editBtn = document.getElementById('edit-layout-btn');
+        const saveBtn = document.getElementById('save-layout-btn');
+        const cancelBtn = document.getElementById('cancel-edit-btn');
         const gridElement = document.getElementById('dashboard-grid');
         
+        console.log(`🔄 Toggling edit mode to: ${this.isEditMode}`);
+        
         if (this.isEditMode) {
-            // 편집 모드 활성화 - 이동과 크기 조절 모두 허용
-            this.grid.enable();
-            this.grid.enableMove(true);
-            this.grid.enableResize(true);
-            editBtn.classList.add('active');
-            editBtn.innerHTML = '<i class="fas fa-save"></i>';
-            editBtn.title = '편집 완료';
-            // 그리드 배경 표시
-            if (gridElement) {
-                gridElement.classList.add('grid-background');
+            try {
+                // 현재 레이아웃 백업
+                this.backupLayout = this.grid.save();
+                
+                // GridStack 편집 활성화 - staticGrid 해제
+                this.grid.setStatic(false);
+                
+                // 편집 모드 UI 업데이트
+                gridElement?.classList.add('edit-mode');
+                editBtn.style.display = 'none';
+                saveBtn.style.display = 'flex';
+                cancelBtn.style.display = 'flex';
+                
+                // 드래그 핸들 확인 (이미 GridStack 옵션에서 설정됨)
+                console.log('드래그 핸들: .card-header로 제한됨');
+                
+                console.log('✏️ Edit mode enabled - 헤더로 드래그 제한');
+                
+                if (window.notifications) {
+                    window.notifications.info('편집 모드 활성화: 카드 헤더를 드래그하여 이동하세요');
+                }
+                
+            } catch (error) {
+                console.error('❌ Error enabling edit mode:', error);
+                if (window.notifications) {
+                    window.notifications.error('편집 모드 활성화에 실패했습니다.');
+                }
             }
         } else {
-            // 편집 모드 비활성화
-            this.grid.disable();
-            this.grid.enableMove(false);
-            this.grid.enableResize(false);
-            editBtn.classList.remove('active');
-            editBtn.innerHTML = '<i class="fas fa-edit"></i>';
-            editBtn.title = '레이아웃 편집';
-            // 그리드 배경 숨김
-            if (gridElement) {
-                gridElement.classList.remove('grid-background');
-            }
+            this.disableEditMode();
         }
     }
 
-    saveLayout() {
-        const serializedData = this.grid.save();
-        localStorage.setItem('grid-layout', JSON.stringify(serializedData));
+    disableEditMode() {
+        if (!this.grid) return;
+
+        this.isEditMode = false;
+        
+        try {
+            // GridStack 편집 비활성화 - staticGrid 활성화
+            this.grid.setStatic(true);
+            
+            console.log('🔒 Edit mode disabled');
+            
+        } catch (error) {
+            console.error('❌ Error disabling edit mode:', error);
+        }
+        
+        const editBtn = document.getElementById('edit-layout-btn');
+        const saveBtn = document.getElementById('save-layout-btn');
+        const cancelBtn = document.getElementById('cancel-edit-btn');
+        const gridElement = document.getElementById('dashboard-grid');
+        
+        gridElement?.classList.remove('edit-mode');
+        editBtn.style.display = 'flex';
+        saveBtn.style.display = 'none';
+        cancelBtn.style.display = 'none';
+        
+        console.log('✅ Edit mode disabled - drag and resize deactivated');
+    }
+
+    cancelEditMode() {
+        if (!this.grid || !this.backupLayout) return;
+
+        // 백업된 레이아웃으로 복원
+        this.grid.load(this.backupLayout);
+        this.disableEditMode();
         
         if (window.notifications) {
-            window.notifications.success('레이아웃이 저장되었습니다.');
-        } else {
-            alert('레이아웃이 저장되었습니다.');
-        }
-
-        // Disable edit mode after saving
-        if (this.isEditMode) {
-            this.toggleEditMode();
+            window.notifications.info('편집이 취소되었습니다.');
         }
     }
 
-    loadLayout() {
-        const savedLayout = localStorage.getItem('grid-layout');
-        if (savedLayout) {
-            try {
-                const serializedData = JSON.parse(savedLayout);
-                this.grid.load(serializedData);
-            } catch (e) {
-                console.error("Could not parse or load layout from localStorage", e);
+    autoSaveLayout() {
+        // 편집 중 자동 저장 (debounce 적용)
+        if (this.autoSaveTimeout) {
+            clearTimeout(this.autoSaveTimeout);
+        }
+        
+        this.autoSaveTimeout = setTimeout(() => {
+            const currentLayout = this.grid.save();
+            this.tempLayout = currentLayout;
+        }, 1000);
+    }
+
+    saveUserLayout() {
+        if (!this.grid) {
+            console.error('❌ Grid not available for saving');
+            return;
+        }
+
+        try {
+            const serializedData = this.grid.save();
+            
+            // 데이터 유효성 검사
+            if (!serializedData || !Array.isArray(serializedData) || serializedData.length === 0) {
+                console.warn('⚠️ No valid layout data to save');
+                if (window.notifications) {
+                    window.notifications.warning('저장할 레이아웃 데이터가 없습니다.');
+                }
+                return;
             }
+            
+            const currentUser = this.getCurrentUser();
+            const storageKey = `gridLayout_${currentUser}`;
+            
+            const layoutData = {
+                layout: serializedData,
+                timestamp: Date.now(),
+                version: '2.0',
+                user: currentUser,
+                itemCount: serializedData.length,
+                checksum: this.generateLayoutChecksum(serializedData)
+            };
+            
+            // 로컬 스토리지에 저장
+            localStorage.setItem(storageKey, JSON.stringify(layoutData));
+            
+            // 백업 저장 (최근 3개 유지)
+            this.saveLayoutBackup(currentUser, layoutData);
+            
+            this.disableEditMode();
+            
+            console.log('💾 Layout saved successfully:', {
+                user: currentUser,
+                itemCount: serializedData.length,
+                timestamp: new Date(layoutData.timestamp).toLocaleString()
+            });
+            
+            if (window.notifications) {
+                window.notifications.success('레이아웃이 성공적으로 저장되었습니다.');
+            }
+            
+        } catch (error) {
+            console.error('❌ Failed to save layout:', error);
+            
+            if (window.notifications) {
+                window.notifications.error('레이아웃 저장에 실패했습니다: ' + error.message);
+            }
+        }
+    }
+
+    generateLayoutChecksum(layoutData) {
+        // 간단한 체크섬 생성 (데이터 무결성 확인용)
+        const str = JSON.stringify(layoutData);
+        let hash = 0;
+        for (let i = 0; i < str.length; i++) {
+            const char = str.charCodeAt(i);
+            hash = ((hash << 5) - hash) + char;
+            hash = hash & hash; // 32bit 정수로 변환
+        }
+        return hash.toString(16);
+    }
+
+    saveLayoutBackup(userId, layoutData) {
+        try {
+            const backupKey = `gridLayoutBackups_${userId}`;
+            let backups = JSON.parse(localStorage.getItem(backupKey) || '[]');
+            
+            // 새 백업 추가
+            backups.unshift({
+                ...layoutData,
+                backupId: Date.now()
+            });
+            
+            // 최근 3개만 유지
+            backups = backups.slice(0, 3);
+            
+            localStorage.setItem(backupKey, JSON.stringify(backups));
+            console.log('📦 Layout backup saved, total backups:', backups.length);
+            
+        } catch (error) {
+            console.warn('⚠️ Failed to save layout backup:', error);
+        }
+    }
+
+    loadUserLayout() {
+        if (!this.grid) {
+            console.warn('⚠️ Grid not available for loading layout');
+            return;
+        }
+
+        try {
+            const currentUser = this.getCurrentUser();
+            const storageKey = `gridLayout_${currentUser}`;
+            const savedData = localStorage.getItem(storageKey);
+            
+            if (savedData) {
+                const layoutData = JSON.parse(savedData);
+                const { layout, timestamp, version, user, itemCount, checksum } = layoutData;
+                
+                // 데이터 유효성 검사
+                if (!layout || !Array.isArray(layout)) {
+                    throw new Error('Invalid layout data structure');
+                }
+                
+                // 체크섬 검증 (버전 2.0 이상)
+                if (version === '2.0' && checksum) {
+                    const calculatedChecksum = this.generateLayoutChecksum(layout);
+                    if (calculatedChecksum !== checksum) {
+                        console.warn('⚠️ Layout checksum mismatch, data may be corrupted');
+                        // 백업에서 복원 시도
+                        if (this.loadFromBackup(currentUser)) {
+                            return;
+                        }
+                    }
+                }
+                
+                // 버전 호환성 체크 및 로드
+                if ((version === '1.0' || version === '2.0') && layout.length > 0) {
+                    // GridStack이 완전히 초기화되었는지 확인
+                    if (this.grid && this.gridInitialized) {
+                        try {
+                            // 기존 HTML 아이템들을 모두 제거하고 저장된 레이아웃 로드
+                            this.grid.removeAll();
+                            
+                            // 약간의 지연을 두고 로드 (DOM 안정화)
+                            setTimeout(() => {
+                                this.grid.load(layout);
+                                
+                                console.log('📂 User layout loaded successfully:', {
+                                    user: currentUser,
+                                    version: version,
+                                    itemCount: layout.length,
+                                    savedAt: new Date(timestamp).toLocaleString()
+                                });
+                                
+                                if (window.notifications) {
+                                    window.notifications.info(`저장된 레이아웃을 불러왔습니다 (${layout.length}개 카드)`);
+                                }
+                            }, 200);
+                            
+                            return;
+                        } catch (loadError) {
+                            console.error('❌ Error loading saved layout:', loadError);
+                            // 에러 발생 시 백업에서 복원 시도
+                            throw loadError;
+                        }
+                    } else {
+                        console.warn('⚠️ GridStack not ready, deferring layout load');
+                        // GridStack이 준비되지 않았으면 잠시 후 재시도
+                        setTimeout(() => this.loadUserLayout(), 500);
+                        return;
+                    }
+                }
+            }
+            
+            // 저장된 레이아웃이 없으면 HTML 기본 구조 사용
+            console.log('📋 No saved layout found, using HTML default layout');
+            
+        } catch (error) {
+            console.error('❌ Failed to load user layout:', error);
+            
+            // 백업에서 복원 시도
+            const currentUser = this.getCurrentUser();
+            if (this.loadFromBackup(currentUser)) {
+                console.log('🔄 Restored layout from backup');
+                return;
+            }
+            
+            console.log('📋 Falling back to HTML default layout');
+            
+            if (window.notifications) {
+                window.notifications.warning('저장된 레이아웃을 불러오는데 실패했습니다. 기본 레이아웃을 사용합니다.');
+            }
+        }
+    }
+
+    loadFromBackup(userId) {
+        try {
+            const backupKey = `gridLayoutBackups_${userId}`;
+            const backups = JSON.parse(localStorage.getItem(backupKey) || '[]');
+            
+            if (backups.length > 0) {
+                const latestBackup = backups[0];
+                if (latestBackup.layout && Array.isArray(latestBackup.layout)) {
+                    this.grid.removeAll();
+                    this.grid.load(latestBackup.layout);
+                    
+                    console.log('🔄 Layout restored from backup:', {
+                        backupId: latestBackup.backupId,
+                        itemCount: latestBackup.layout.length
+                    });
+                    
+                    if (window.notifications) {
+                        window.notifications.info('백업에서 레이아웃을 복원했습니다.');
+                    }
+                    return true;
+                }
+            }
+            return false;
+            
+        } catch (error) {
+            console.error('❌ Failed to load from backup:', error);
+            return false;
         }
     }
 
     resetLayout() {
-        if (confirm('레이아웃을 초기 설정으로 되돌리시겠습니까?')) {
-            localStorage.removeItem('grid-layout');
-            window.location.reload();
+        const confirmed = confirm('레이아웃을 기본 설정으로 되돌리시겠습니까?\n\n저장된 레이아웃과 백업이 모두 삭제됩니다.');
+        
+        if (confirmed && this.grid) {
+            try {
+                const currentUser = this.getCurrentUser();
+                
+                // 사용자 레이아웃 삭제
+                const storageKey = `gridLayout_${currentUser}`;
+                localStorage.removeItem(storageKey);
+                
+                // 백업도 삭제
+                const backupKey = `gridLayoutBackups_${currentUser}`;
+                localStorage.removeItem(backupKey);
+                
+                console.log('🗑️ Layout and backups cleared for user:', currentUser);
+                
+                // 편집 모드 비활성화
+                if (this.isEditMode) {
+                    this.disableEditMode();
+                }
+                
+                if (window.notifications) {
+                    window.notifications.success('레이아웃이 초기화되었습니다. 페이지를 새로고침합니다.');
+                }
+                
+                // 짧은 지연 후 페이지 새로고침으로 HTML 기본 레이아웃 복원
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
+                
+            } catch (error) {
+                console.error('❌ Failed to reset layout:', error);
+                
+                if (window.notifications) {
+                    window.notifications.error('레이아웃 초기화에 실패했습니다: ' + error.message);
+                }
+            }
         }
     }
 
     setupSquareGrid() {
-        // 그리드 컨테이너의 너비를 기준으로 셀 크기 계산
+        if (!this.grid) return;
+
         const gridElement = document.getElementById('dashboard-grid');
-        if (gridElement) {
-            const updateGridSize = () => {
-                const containerWidth = gridElement.clientWidth;
-                const margin = this.grid.opts.margin;
-                const columns = this.grid.getColumn();
-                const cellWidth = (containerWidth - (margin * (columns - 1))) / columns;
-                
-                // GridStack의 cellHeight를 동적으로 설정 (정사각형 유지)
-                this.grid.cellHeight(cellWidth);
-                
-                // JS에서 직접 background-size를 설정
-                const bgSize = cellWidth + margin;
-                gridElement.style.backgroundSize = `${bgSize}px ${bgSize}px`;
-            };
+        if (!gridElement) return;
+
+        const updateSquareGrid = () => {
+            const containerWidth = gridElement.clientWidth;
+            const margin = this.grid.opts.margin || 12;
+            const columns = this.grid.getColumn();
             
-            // 초기 설정 및 리사이즈 이벤트 리스너
-            updateGridSize();
-            window.addEventListener('resize', updateGridSize);
+            // 정사각형 셀 높이 계산
+            const cellHeight = Math.floor((containerWidth - (margin * (columns - 1))) / columns);
             
-            // GridStack column 변경 시에도 업데이트
-            this.grid.on('change', updateGridSize);
+            // GridStack의 cellHeight 업데이트
+            this.grid.cellHeight(cellHeight);
             
-            // 그리드 아이템이 로드된 후에도 업데이트
-            setTimeout(updateGridSize, 100);
+            console.log(`📐 Square grid updated: ${columns} columns, ${cellHeight}px cell height`);
+        };
+
+        // 초기 설정
+        updateSquareGrid();
+
+        // 윈도우 리사이즈 이벤트
+        const resizeObserver = new ResizeObserver(() => {
+            if (this.gridInitialized) {
+                requestAnimationFrame(updateSquareGrid);
+            }
+        });
+
+        resizeObserver.observe(gridElement);
+
+        // GridStack 컬럼 변경 시에도 업데이트
+        this.grid.on('change', () => {
+            setTimeout(updateSquareGrid, 100);
+        });
+
+        // 리사이즈 observer를 나중에 정리할 수 있도록 저장
+        this.resizeObserver = resizeObserver;
+    }
+
+    handleResize() {
+        // 윈도우 리사이즈 시 그리드 조정 (이제 ResizeObserver가 처리)
+        if (this.grid && this.gridInitialized) {
+            console.log('🔄 Window resized, grid will auto-adjust');
         }
+    }
+
+    // Cleanup method
+    destroy() {
+        if (this.grid) {
+            this.grid.destroy();
+        }
+        
+        // ResizeObserver 정리
+        if (this.resizeObserver) {
+            this.resizeObserver.disconnect();
+        }
+        
+        // Clear intervals
+        Object.values(this.intervals).forEach(interval => {
+            if (interval) clearInterval(interval);
+        });
+        
+        // Remove event listeners
+        window.removeEventListener('resize', this.handleResize);
+        
+        // Clean up layout control event listeners (인라인 컨트롤은 자동 정리됨)
+        
+        console.log('🧹 Dashboard cleanup completed');
     }
 }
 

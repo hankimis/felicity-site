@@ -3,9 +3,9 @@
  * 롱숏 포지션 비율을 추적하고 표시하는 모듈
  */
 export class LongShortTracker {
-    constructor() {
-        this.currentSymbol = 'BTCUSDT';
-        this.currentTimeframe = '1h';
+    constructor(options = {}) {
+        this.currentSymbol = options.symbol || 'BTCUSDT';
+        this.currentTimeframe = options.timeframe || '1h';
         this.ratioData = {
             overall: { long: 50, short: 50 },
             exchanges: {
@@ -22,40 +22,88 @@ export class LongShortTracker {
 
     init() {
         console.log('⚖️ Long/Short Tracker initializing...');
-        this.setupEventListeners();
+        
+        // 약간의 지연을 두고 이벤트 리스너 설정 (DOM 안정화)
+        setTimeout(() => {
+            this.setupEventListeners();
+        }, 100);
     }
 
     setupEventListeners() {
-        // 심볼 변경
-        const symbolSelect = document.getElementById('longshort-symbol');
-        if (symbolSelect) {
-            symbolSelect.addEventListener('change', (e) => {
-                this.currentSymbol = e.target.value;
-                this.loadData();
-            });
-        }
-        
-        // 시간봉 변경 (드롭다운)
-        const timeframeSelect = document.getElementById('longshort-timeframe');
-        if (timeframeSelect) {
-            timeframeSelect.addEventListener('change', (e) => {
-                this.currentTimeframe = e.target.value;
-                console.log(`Long/Short timeframe changed to: ${this.currentTimeframe}`);
-                this.loadData();
-            });
+        // DOM이 완전히 로드된 후 이벤트 리스너 설정
+        const setupListeners = () => {
+            // 심볼 변경
+            const symbolSelect = document.getElementById('longshort-symbol');
+            if (symbolSelect) {
+                console.log('🎯 Setting up longshort symbol listener');
+                
+                // 현재 선택된 값으로 초기화
+                if (symbolSelect.value && symbolSelect.value !== this.currentSymbol) {
+                    this.currentSymbol = symbolSelect.value;
+                    console.log(`📌 Initial symbol set to: ${this.currentSymbol}`);
+                }
+                
+                symbolSelect.addEventListener('change', (e) => {
+                    console.log(`🔄 Long/Short symbol changed to: ${e.target.value}`);
+                    this.currentSymbol = e.target.value;
+                    this.loadData();
+                });
+            } else {
+                console.warn('⚠️ longshort-symbol element not found');
+            }
+            
+            // 시간봉 변경 (드롭다운)
+            const timeframeSelect = document.getElementById('longshort-timeframe');
+            if (timeframeSelect) {
+                console.log('🎯 Setting up longshort timeframe listener');
+                
+                // 현재 선택된 값으로 초기화
+                if (timeframeSelect.value && timeframeSelect.value !== this.currentTimeframe) {
+                    this.currentTimeframe = timeframeSelect.value;
+                    console.log(`📌 Initial timeframe set to: ${this.currentTimeframe}`);
+                }
+                
+                timeframeSelect.addEventListener('change', (e) => {
+                    console.log(`🔄 Long/Short timeframe changed to: ${e.target.value}`);
+                    this.currentTimeframe = e.target.value;
+                    this.loadData();
+                });
+            } else {
+                console.warn('⚠️ longshort-timeframe element not found');
+            }
+        };
+
+        // DOM이 로드되어 있으면 즉시 설정, 아니면 대기
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', setupListeners);
+        } else {
+            setupListeners();
         }
     }
 
     async start() {
         console.log('⚖️ Starting long/short tracking...');
+        this.isTracking = true;
+        
+        // 이벤트 리스너가 설정될 때까지 대기
+        await new Promise(resolve => setTimeout(resolve, 200));
+        
+        // 현재 설정으로 데이터 로드
         await this.loadData();
+        
         // 10초마다 데이터를 새로고침합니다.
-        this.interval = setInterval(() => this.loadData(), 10000);
+        this.interval = setInterval(() => {
+            if (this.isTracking) {
+                this.loadData();
+            }
+        }, 10000);
     }
 
     stop() {
+        this.isTracking = false;
         if (this.interval) {
             clearInterval(this.interval);
+            this.interval = null;
             console.log('🛑 Stopped long/short tracker.');
         }
     }
@@ -180,15 +228,19 @@ export class LongShortTracker {
     updateDisplay(data) {
         if (!data) return;
 
+        // 롱/숏 퍼센트 계산
+        const longPercent = data.longAccount;
+        const shortPercent = 100 - longPercent;
+
+        // 내부 데이터 업데이트 (중요!)
+        this.ratioData.overall.long = longPercent;
+        this.ratioData.overall.short = shortPercent;
+
         // 비율 값 업데이트
         const ratioEl = document.getElementById('longshort-ratio');
         if (ratioEl) {
             ratioEl.textContent = data.longShortRatio.toFixed(2);
         }
-
-        // 롱/숏 퍼센트 계산
-        const longPercent = data.longAccount;
-        const shortPercent = 100 - longPercent;
 
         // 퍼센트 값 업데이트
         const longPercentEl = document.getElementById('long-percentage');
@@ -223,6 +275,8 @@ export class LongShortTracker {
         if (longFillEl) {
             longFillEl.style.width = `${longPercent}%`;
         }
+
+        console.log(`📊 Long/Short updated: ${longPercent.toFixed(1)}% / ${shortPercent.toFixed(1)}%`);
     }
 
     async refresh() {
@@ -254,24 +308,29 @@ export class LongShortTracker {
     generateSampleData() {
         console.log("Generating sample long/short data due to an API error.");
         const history = [];
-        let ratio = 1.2;
+        let ratio = 1.2 + (Math.random() - 0.5) * 0.4; // 0.8 ~ 1.6 범위
+        
         for (let i = 0; i < 30; i++) {
-            ratio += (Math.random() - 0.5) * 0.2;
+            ratio += (Math.random() - 0.5) * 0.1;
+            ratio = Math.max(0.5, Math.min(2.0, ratio)); // 0.5 ~ 2.0 범위로 제한
             history.push({
                 timestamp: Date.now() - (30 - i) * 60 * 1000,
                 longShortRatio: ratio,
             });
         }
+        
+        const longAccount = (ratio / (1 + ratio)) * 100;
+        
         return {
             longShortRatio: ratio,
-            longAccount: (1 / (1 + 1/ratio)) * 100,
+            longAccount: longAccount,
             history: history
         };
     }
 
     getLongShortRatio() {
-        const long = this.ratioData.overall.long || 50;
-        const short = this.ratioData.overall.short || 50;
+        const long = this.ratioData.overall.long;
+        const short = this.ratioData.overall.short;
         
         // 상태 결정
         let status = 'neutral';
@@ -281,10 +340,12 @@ export class LongShortTracker {
             status = 'short-dominant';
         }
         
+        const ratio = short > 0 ? long / short : 1.0;
+        
         return {
             long: long,
             short: short,
-            ratio: long / short || 1.0,
+            ratio: ratio,
             status: status
         };
     }
