@@ -2,6 +2,7 @@
 const firebaseConfig = {
     apiKey: "AIzaSyB8F0yZgZL0uqnXfh_gGsGVxaMgwBuTWrI",
     authDomain: "selferal-site.firebaseapp.com",
+    databaseURL: "https://selferal-site-default-rtdb.firebaseio.com",
     projectId: "selferal-site",
     storageBucket: "selferal-site.appspot.com",
     messagingSenderId: "1098087321907",
@@ -12,5 +13,13 @@ const firebaseConfig = {
 // Firebase 초기화
 firebase.initializeApp(firebaseConfig);
 
-// Firestore 데이터베이스 참조 생성
-window.db = firebase.firestore(); 
+// 서비스 참조 생성
+window.auth = firebase.auth();
+window.db = firebase.firestore();
+window.database = firebase.database();
+
+console.log('Firebase 초기화 완료:', {
+    auth: !!window.auth,
+    firestore: !!window.db,
+    database: !!window.database
+}); 

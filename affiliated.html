@@ -17,6 +17,86 @@
     <!-- Custom CSS -->
     <link rel="stylesheet" href="css/style.css"/>
     <link rel="stylesheet" href="./auth.css"/>
+    
+    <style>
+        .info-cards-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+        
+        .info-card {
+            background: white;
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            border: 1px solid #f1f5f9;
+            transition: all 0.3s ease;
+        }
+        
+        .info-card:hover {
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+            transform: translateY(-2px);
+        }
+        
+        .card-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin: 0 0 1rem 0;
+            color: #1f2937;
+        }
+        
+        .banner-link {
+            display: flex;
+            align-items: center;
+            text-decoration: none;
+            gap: 1rem;
+        }
+        
+        .banner-image {
+            width: 60px;
+            height: 60px;
+            object-fit: contain;
+            border-radius: 8px;
+            flex-shrink: 0;
+        }
+        
+        .banner-content {
+            flex: 1;
+        }
+        
+        .banner-card-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #1f2937;
+            margin: 0 0 0.5rem 0;
+        }
+        
+        .banner-card-desc {
+            font-size: 0.9rem;
+            color: #6b7280;
+            margin: 0;
+        }
+        
+        /* 반응형 디자인 */
+        @media (max-width: 768px) {
+            .info-cards-container {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+            
+            .banner-link {
+                flex-direction: column;
+                text-align: center;
+            }
+            
+            .banner-image {
+                width: 80px;
+                height: 80px;
+            }
+        }
+    </style>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" />
     <link rel="stylesheet" href="https://unpkg.com/swiper/swiper-bundle.min.css" />
     <link rel="icon" type="image/png" href="/onbit/favicon-96x96.png" sizes="96x96" />
@@ -58,15 +138,7 @@
             <div class="section-header">
                 <p class="section-title">Onbit 제휴거래소</p>
             </div>
-            <div class="affiliate-grid-container">
-                <div class="info-card">
-                  <p class="card-title">Onbit 명예의 전당</p>
-                  <div class="card-rows">
-                    <div class="card-row"><div class="row-left"><p class="index">1</p><img src="https://prod-tethermax.s3.ap-northeast-2.amazonaws.com/exchange/detail/fb401999-b8d8-4bbf-a5f7-b739f5c9e10d.png" alt="MEXC"><p class="exchange-name">함00 트레이더</p></div><p class="amount blue">81,676 USDT</p></div>
-                    <div class="card-row"><div class="row-left"><p class="index">2</p><img src="https://prod-tethermax.s3.ap-northeast-2.amazonaws.com/exchange/detail/ae5bc2dc-4a5d-48f6-8570-54e1ee6809dc.png" alt="Bitget"><p class="exchange-name">한00 트레이더</p></div><p class="amount blue">54,715 USDT</p></div>
-                    <div class="card-row"><div class="row-left"><p class="index">3</p><img src="https://prod-tethermax.s3.ap-northeast-2.amazonaws.com/exchange/detail/ae5bc2dc-4a5d-48f6-8570-54e1ee6809dc.png" alt="Bitget"><p class="exchange-name">양00 트레이더</p></div><p class="amount blue">45,087 USDT</p></div>
-                  </div>
-                </div>
+            <div class="info-cards-container">
                 <div class="info-card">
                   <p class="card-title">인기 이벤트 <i class="fas fa-fire" style="color: #ff5252;"></i></p>
                   <a href="event-board.html" class="banner-link">
@@ -79,8 +151,8 @@
                 </div>
                 <div class="info-card">
                   <p class="card-title">주목할 거래소 <i class="fas fa-star" style="color: #ffc107;"></i></p>
-                  <a href="bitget.html" class="banner-link">
-                    <img src="assets/tradelogo/bitgetlogo.png" alt="banner" class="banner-image">
+                  <a href="lbank.html" class="banner-link">
+                    <img src="assets/tradelogo/lbanklogo.png" alt="banner" class="banner-image">
                     <div class="banner-content">
                         <p class="banner-card-title">Lbank 거래소</p>
                         <p class="banner-card-desc"><strong>#Lbank</strong> 30% 페이백</p>
@@ -119,27 +191,27 @@
                     </thead>
                     <tbody>
                         <tr>
-                            <td><div class="exchange-info"><img src="assets/tradelogo/bitgetlogo.png" class="exchange-logo"><span>BITGET</span></div></td>
-                            <td class="red-highlight">20%</td>
-                            <td>0.032%</td>
-                            <td>0.048%</td>
-                            <td>71만원</td>
-                            <td><div class="tag-cell">
-                              <span class="tag v2">최상위 거래소 <i class="fa-solid fa-medal"></i></span>
-                          </div></td>
-                            <td><button class="signup-button filled" onclick="window.location.href='bitget.html'">계정 개설</button></td>
-                        </tr>
-                        <tr>
                             <td><div class="exchange-info"><img src="assets/tradelogo/lbanklogo.png" class="exchange-logo"><span>Lbank</span></div></td>
                             <td class="red-highlight">30%</td>
                             <td>0.014%</td>
                             <td>0.042%</td>
                             <td>94만원</td>
                             <td><div class="tag-cell">
-                              <span class="tag v2">인기 거래소 <i class="fa-solid fa-medal"></i></span>
+                              <span class="tag v2">메인 거래소 <i class="fa-solid fa-medal"></i></span>
                           </div></td>
                             <td><button class="signup-button filled" onclick="window.location.href='lbank.html'">계정 개설</button></td>
                         </tr>
+                        <tr>
+                          <td><div class="exchange-info"><img src="assets/tradelogo/bitgetlogo.png" class="exchange-logo"><span>BITGET</span></div></td>
+                          <td class="red-highlight">20%</td>
+                          <td>0.032%</td>
+                          <td>0.048%</td>
+                          <td>71만원</td>
+                          <td><div class="tag-cell">
+                            <span class="tag v2">인기 거래소 <i class="fa-solid fa-medal"></i></span>
+                        </div></td>
+                          <td><button class="signup-button filled" onclick="window.location.href='bitget.html'">계정 개설</button></td>
+                      </tr>
                         <tr>
                             <td><div class="exchange-info"><img src="assets/tradelogo/bitmexlogo.png" class="exchange-logo"><span>Bitmex</span></div></td>
                             <td>50%</td>
@@ -170,38 +242,40 @@
             </div>
             <div class="partner-slider">
                 <div class="partner-track" id="track1">
-                    <div class="partner-logo-item"><img src="https://i.imgur.com/yFwDAtn.png" alt="CoinCatch"></div>
-                    <div class="partner-logo-item"><img src="https://i.imgur.com/GEnVd8S.png" alt="ZCOMEX"></div>
-                    <div class="partner-logo-item"><img src="https://prod-tethermax.s3.ap-northeast-2.amazonaws.com/exchange/detail/885ffad0-35f4-41cc-a2d3-77bba1c09615.png" alt="BitMart"></div>
-                    <div class="partner-logo-item"><img src="https://prod-tethermax.s3.ap-northeast-2.amazonaws.com/exchange/detail/ba9c3ce9-e94d-4464-9e95-674a4349e46e.png" alt="WOOX"></div>
-                    <div class="partner-logo-item"><img src="https://prod-tethermax.s3.ap-northeast-2.amazonaws.com/exchange/icon/htx.png" alt="HTX"></div>
-                    <div class="partner-logo-item"><img src="https://prod-tethermax.s3.ap-northeast-2.amazonaws.com/exchange/logo/bybit.png" alt="BYBIT"></div>
-                    <div class="partner-logo-item"><img src="https://prod-tethermax.s3.ap-northeast-2.amazonaws.com/exchange/logo/bitget.png" alt="Bitget"></div>
-                    <div class="partner-logo-item"><img src="https://prod-tethermax.s3.ap-northeast-2.amazonaws.com/exchange/detail/c340b25d-db6a-42bb-bb4b-bf72a90837b4.png" alt="BloFin"></div>
-                    <div class="partner-logo-item"><img src="https://i.imgur.com/yFwDAtn.png" alt="CoinCatch"></div>
-                    <div class="partner-logo-item"><img src="https://i.imgur.com/GEnVd8S.png" alt="ZCOMEX"></div>
-                    <div class="partner-logo-item"><img src="https://prod-tethermax.s3.ap-northeast-2.amazonaws.com/exchange/detail/885ffad0-35f4-41cc-a2d3-77bba1c09615.png" alt="BitMart"></div>
-                    <div class="partner-logo-item"><img src="https://prod-tethermax.s3.ap-northeast-2.amazonaws.com/exchange/detail/ba9c3ce9-e94d-4464-9e95-674a4349e46e.png" alt="WOOX"></div>
-                    <div class="partner-logo-item"><img src="https://prod-tethermax.s3.ap-northeast-2.amazonaws.com/exchange/icon/htx.png" alt="HTX"></div>
-                    <div class="partner-logo-item"><img src="https://prod-tethermax.s3.ap-northeast-2.amazonaws.com/exchange/logo/bybit.png" alt="BYBIT"></div>
-                    <div class="partner-logo-item"><img src="https://prod-tethermax.s3.ap-northeast-2.amazonaws.com/exchange/logo/bitget.png" alt="Bitget"></div>
-                    <div class="partner-logo-item"><img src="https://prod-tethermax.s3.ap-northeast-2.amazonaws.com/exchange/detail/c340b25d-db6a-42bb-bb4b-bf72a90837b4.png" alt="BloFin"></div>
+                    <div class="partner-logo-item"><img src="assets/tradelogo/bitgetlogo.png" alt="Bitget"></div>
+                    <div class="partner-logo-item"><img src="assets/tradelogo/Bitmexlogo.png" alt="Bitmex"></div>
+                    <div class="partner-logo-item"><img src="assets/tradelogo/lbanklogo.png" alt="Lbank"></div>
+                    <div class="partner-logo-item"><img src="assets/tradelogo/bitgetlogo.png" alt="Bitget"></div>
+                    <div class="partner-logo-item"><img src="assets/tradelogo/Bitmexlogo.png" alt="Bitmex"></div>
+                    <div class="partner-logo-item"><img src="assets/tradelogo/lbanklogo.png" alt="Lbank"></div>
+                    <div class="partner-logo-item"><img src="assets/tradelogo/bitgetlogo.png" alt="Bitget"></div>
+                    <div class="partner-logo-item"><img src="assets/tradelogo/Bitmexlogo.png" alt="Bitmex"></div>
+                    <div class="partner-logo-item"><img src="assets/tradelogo/lbanklogo.png" alt="Lbank"></div>
+                    <div class="partner-logo-item"><img src="assets/tradelogo/bitgetlogo.png" alt="Bitget"></div>
+                    <div class="partner-logo-item"><img src="assets/tradelogo/Bitmexlogo.png" alt="Bitmex"></div>
+                    <div class="partner-logo-item"><img src="assets/tradelogo/lbanklogo.png" alt="Lbank"></div>
+                    <div class="partner-logo-item"><img src="assets/tradelogo/bitgetlogo.png" alt="Bitget"></div>
+                    <div class="partner-logo-item"><img src="assets/tradelogo/Bitmexlogo.png" alt="Bitmex"></div>
+                    <div class="partner-logo-item"><img src="assets/tradelogo/lbanklogo.png" alt="Lbank"></div>
+                    <div class="partner-logo-item"><img src="assets/tradelogo/bitgetlogo.png" alt="Bitget"></div>
                 </div>
                 <div class="partner-track" id="track2">
-                    <div class="partner-logo-item"><img src="https://prod-tethermax.s3.ap-northeast-2.amazonaws.com/exchange/detail/a53d0158-e7b7-43c5-b22a-60bc097ae730.png" alt="BitMEX"></div>
-                    <div class="partner-logo-item"><img src="https://prod-tethermax.s3.ap-northeast-2.amazonaws.com/exchange/detail/8cde443f-fc48-4dfb-ae03-5e2fd09c9adb.png" alt="Bitunix"></div>
-                    <div class="partner-logo-item"><img src="https://prod-tethermax.s3.ap-northeast-2.amazonaws.com/exchange/detail/fb401999-b8d8-4bbf-a5f7-b739f5c9e10d.png" alt="MEXC"></div>
-                    <div class="partner-logo-item"><img src="https://prod-tethermax.s3.ap-northeast-2.amazonaws.com/exchange/icon/okx.png" alt="OKX"></div>
-                    <div class="partner-logo-item"><img src="https://prod-tethermax.s3.ap-northeast-2.amazonaws.com/exchange/detail/8afec6d4-1c4d-4228-b9a7-0c8679175cb2.png" alt="BVOX"></div>
-                    <div class="partner-logo-item"><img src="https://prod-tethermax.s3.ap-northeast-2.amazonaws.com/exchange/detail/69f51d45-f5a4-4134-89e5-d0a4294477fd.png" alt="Gate.io"></div>
-                    <div class="partner-logo-item"><img src="https://prod-tethermax.s3.ap-northeast-2.amazonaws.com/exchange/icon/bingx.png" alt="BingX"></div>
-                    <div class="partner-logo-item"><img src="https://prod-tethermax.s3.ap-northeast-2.amazonaws.com/exchange/detail/a53d0158-e7b7-43c5-b22a-60bc097ae730.png" alt="BitMEX"></div>
-                    <div class="partner-logo-item"><img src="https://prod-tethermax.s3.ap-northeast-2.amazonaws.com/exchange/detail/8cde443f-fc48-4dfb-ae03-5e2fd09c9adb.png" alt="Bitunix"></div>
-                    <div class="partner-logo-item"><img src="https://prod-tethermax.s3.ap-northeast-2.amazonaws.com/exchange/detail/fb401999-b8d8-4bbf-a5f7-b739f5c9e10d.png" alt="MEXC"></div>
-                    <div class="partner-logo-item"><img src="https://prod-tethermax.s3.ap-northeast-2.amazonaws.com/exchange/icon/okx.png" alt="OKX"></div>
-                    <div class="partner-logo-item"><img src="https://prod-tethermax.s3.ap-northeast-2.amazonaws.com/exchange/detail/8afec6d4-1c4d-4228-b9a7-0c8679175cb2.png" alt="BVOX"></div>
-                    <div class="partner-logo-item"><img src="https://prod-tethermax.s3.ap-northeast-2.amazonaws.com/exchange/detail/69f51d45-f5a4-4134-89e5-d0a4294477fd.png" alt="Gate.io"></div>
-                    <div class="partner-logo-item"><img src="https://prod-tethermax.s3.ap-northeast-2.amazonaws.com/exchange/icon/bingx.png" alt="BingX"></div>
+                  <div class="partner-logo-item"><img src="assets/tradelogo/bitgetlogo.png" alt="Bitget"></div>
+                  <div class="partner-logo-item"><img src="assets/tradelogo/Bitmexlogo.png" alt="Bitmex"></div>
+                  <div class="partner-logo-item"><img src="assets/tradelogo/lbanklogo.png" alt="Lbank"></div>
+                  <div class="partner-logo-item"><img src="assets/tradelogo/bitgetlogo.png" alt="Bitget"></div>
+                  <div class="partner-logo-item"><img src="assets/tradelogo/Bitmexlogo.png" alt="Bitmex"></div>
+                  <div class="partner-logo-item"><img src="assets/tradelogo/lbanklogo.png" alt="Lbank"></div>
+                  <div class="partner-logo-item"><img src="assets/tradelogo/bitgetlogo.png" alt="Bitget"></div>
+                  <div class="partner-logo-item"><img src="assets/tradelogo/Bitmexlogo.png" alt="Bitmex"></div>
+                  <div class="partner-logo-item"><img src="assets/tradelogo/lbanklogo.png" alt="Lbank"></div>
+                  <div class="partner-logo-item"><img src="assets/tradelogo/bitgetlogo.png" alt="Bitget"></div>
+                  <div class="partner-logo-item"><img src="assets/tradelogo/Bitmexlogo.png" alt="Bitmex"></div>
+                  <div class="partner-logo-item"><img src="assets/tradelogo/lbanklogo.png" alt="Lbank"></div>
+                  <div class="partner-logo-item"><img src="assets/tradelogo/bitgetlogo.png" alt="Bitget"></div>
+                  <div class="partner-logo-item"><img src="assets/tradelogo/Bitmexlogo.png" alt="Bitmex"></div>
+                  <div class="partner-logo-item"><img src="assets/tradelogo/lbanklogo.png" alt="Lbank"></div>
+                  <div class="partner-logo-item"><img src="assets/tradelogo/bitgetlogo.png" alt="Bitget"></div>
                 </div>
             </div>
         </section>

@@ -6,7 +6,7 @@
   margin-bottom: 40px;
   padding: 40px 20px;
   border-radius: 12px;
-  max-width: 1200px;
+  max-width: 1600px;
   margin-left: auto;
   margin-right: auto;
 }
@@ -353,10 +353,11 @@
 .benefit-banner-swiper-wrapper,
 .main-banner-list,
 .main-banner-item {
-  max-width: 1200px;
+  max-width: 1800px;
   margin-left: auto;
   margin-right: auto;
   padding-left: 20px;
   padding-right: 20px;
+  padding-top: 20px;
   box-sizing: border-box;
 } 

@@ -723,4 +723,4 @@ export class LiquidationMap {
 // 전역 등록
 if (typeof window !== 'undefined') {
     window.LiquidationMap = LiquidationMap;
-}
+} 
