@@ -37,10 +37,14 @@
 
     <!-- Main Content -->
     <main class="main-container">
+        <h1 class="page-title">뉴스</h1>
+        
         <div class="news-filters">
             <button class="filter-btn active" data-source="all">전체</button>
-            <button class="filter-btn" data-source="coindesk">코인데스크</button>
             <button class="filter-btn" data-source="cointelegraph">코인텔레그래프</button>
+            <button class="filter-btn" data-source="yonhap">연합뉴스</button>
+            <button class="filter-btn" data-source="investing">Investing.com</button>
+            <button class="filter-btn" data-source="litefinance">LiteFinance</button>
         </div>
 
         <div class="news-list" id="newsGrid">
@@ -48,8 +52,12 @@
         </div>
     </main>
 
+    <!-- Footer -->
+    <div id="footer-placeholder"></div>
+
     <!-- Auth Modals are now in _header.html -->
 
     <script src="js/news.js"></script>
+    <script src="js/footer-loader.js" defer></script>
 </body>
 </html> 

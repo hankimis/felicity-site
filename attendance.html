@@ -18,6 +18,8 @@
 
   <!-- Common Scripts -->
   <script src="js/auth.js"></script>
+  <!-- Cloudflare Turnstile -->
+  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
   <!-- Unified Header Loader -->
   <script src="js/header-loader.js" defer></script>
 </head>
@@ -147,7 +149,11 @@
             </div>
           </div>
 
+  <!-- Footer -->
+  <div id="footer-placeholder"></div>
+
   <!-- Page specific script -->
   <script type="module" src="attendance.js"></script>
+  <script src="js/footer-loader.js" defer></script>
 </body>
 </html> 

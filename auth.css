@@ -174,4 +174,41 @@
     .auth-form-switch {
         margin-top: 8px;
     }
+}
+
+/* Cloudflare Turnstile 스타일링 */
+.cf-turnstile {
+    margin: 0 auto 16px auto;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    background-color: var(--bg-secondary-color);
+    padding: 8px;
+    transition: border-color 0.2s;
+}
+
+.cf-turnstile:hover {
+    border-color: var(--primary-color);
+}
+
+/* Turnstile iframe 컨테이너 */
+.cf-turnstile iframe {
+    border-radius: 6px;
+    border: none;
+}
+
+/* 다크 모드에서 Turnstile 스타일링 */
+:root.dark-mode .cf-turnstile {
+    background-color: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+@media (max-width: 768px) {
+    .cf-turnstile {
+        margin: 0 auto 12px auto;
+        transform: scale(0.9);
+        transform-origin: center;
+    }
 } 

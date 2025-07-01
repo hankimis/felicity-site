@@ -18,17 +18,17 @@
 
 :root.dark-mode {
     /* Dark Mode */
-    --bg-primary: #181c23;
-    --bg-secondary: #232733;
-    --bg-card: #232733;
+    --bg-primary: #1a1a1a;
+    --bg-secondary: #2a2a2a;
+    --bg-card: #2a2a2a;
     --bg-hover: rgba(255, 255, 255, 0.05);
-    --text-primary: #f0f0f0;
-    --text-secondary: #bfc9da;
-    --text-muted: #9ca3af;
+    --text-primary: #ffffff;
+    --text-secondary: #cccccc;
+    --text-muted: #999999;
     --accent-primary: #f59e0b;
     --accent-secondary: #10b981;
-    --border-color: #2e3646;
-    --shadow: rgba(49, 130, 246, 0.08);
+    --border-color: #3a3a3a;
+    --shadow: rgba(0, 0, 0, 0.3);
 }
 
 /* Base Styles */
@@ -38,7 +38,12 @@ html, body {
     font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
     margin: 0;
     padding: 0;
-    transition: background-color 0.1s ease, color 0.1s ease;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+body {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
 }
 
 * {

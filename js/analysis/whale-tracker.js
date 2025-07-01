@@ -82,11 +82,9 @@ export class WhaleTracker {
     }
 
     async init() {
-        console.log('🐳 Whale Tracker initializing...');
         this.setupAudio();
         this.connectWebSockets();
         this.start();
-        console.log('🐳 Whale Tracker initialized and started.');
     }
 
     setupAudio() {
@@ -96,23 +94,21 @@ export class WhaleTracker {
             this.audioGain.connect(this.audioContext.destination);
             this.audioGain.gain.value = this.muted ? 0 : this.audioVolume;
         } catch (error) {
-            console.warn('Audio not supported:', error);
+            // Audio not supported
             this.audioContext = null;
         }
     }
 
     connectWebSockets() {
-        console.log(`Connecting to WebSockets...`);
         this.closeAllConnections();
         this.markets.forEach(market => {
             if (!market.enabled) return;
 
             const connector = this[`connect${market.exchange}${market.type}`];
             if (typeof connector === 'function') {
-                console.log(`Connecting to ${market.exchange} ${market.type} for ${market.symbol}...`);
                 connector.call(this, market);
             } else {
-                console.warn(`No connector found for ${market.exchange} ${market.type}`);
+                // No connector found for this exchange/type
             }
         });
     }
@@ -151,7 +147,6 @@ export class WhaleTracker {
             }
             this.exchangeStats[trade.exchange].count++;
             this.exchangeStats[trade.exchange].totalValue += trade.value;
-            console.log(`%c[WhaleTracker] Large trade detected! Value: $${trade.value.toFixed(2)} from ${trade.exchange}`, 'color: #22c55e; font-weight: bold;');
         });
 
         this.whaleTrades.unshift(...newValidTrades.sort((a, b) => b.timestamp - a.timestamp));
@@ -181,7 +176,9 @@ export class WhaleTracker {
                 symbol: market.symbol
             });
         };
-        ws.onerror = (e) => console.error('Binance Spot WS Error', e);
+        ws.onerror = (e) => {
+            // Bitfinex Spot WS Error
+        };
         ws.onclose = () => { if (this.isTracking) setTimeout(() => this.connectBinanceSpot(market), 5000); };
         this.connections[market.id] = ws;
     }
@@ -204,7 +201,9 @@ export class WhaleTracker {
                 type: 'Futures'
             });
         };
-        ws.onerror = (e) => console.error('Binance Futures WS Error', e);
+        ws.onerror = (e) => {
+            // Binance Futures WS Error
+        };
         ws.onclose = () => { if (this.isTracking) setTimeout(() => this.connectBinanceFutures(market), 5000); };
         this.connections[market.id] = ws;
     }
@@ -229,7 +228,9 @@ export class WhaleTracker {
                 this.addTrades(trades);
             }
         };
-        ws.onerror = (e) => console.error('Bybit Linear WS Error', e);
+        ws.onerror = (e) => {
+            // Bybit Linear WS Error
+        };
         ws.onclose = () => { if (this.isTracking) setTimeout(() => this.connectBybitLinear(market), 5000); };
         this.connections[market.id] = ws;
     }
@@ -254,7 +255,9 @@ export class WhaleTracker {
                 this.addTrades(trades);
             }
         };
-        ws.onerror = (e) => console.error('Bybit Inverse WS Error', e);
+        ws.onerror = (e) => {
+            // Bybit Inverse WS Error
+        };
         ws.onclose = () => { if (this.isTracking) setTimeout(() => this.connectBybitInverse(market), 5000); };
         this.connections[market.id] = ws;
     }
@@ -285,7 +288,9 @@ export class WhaleTracker {
                 this.addTrades(trades);
             }
         };
-        ws.onerror = (e) => console.error('OKX Futures WS Error', e);
+        ws.onerror = (e) => {
+            // OKX Futures WS Error
+        };
         ws.onclose = () => { if (this.isTracking) setTimeout(() => this.connectOKXFutures(market), 5000); };
         this.connections[market.id] = ws;
     }
@@ -310,7 +315,9 @@ export class WhaleTracker {
                 });
             }
         };
-        ws.onerror = (e) => console.error('Bitfinex Spot WS Error', e);
+        ws.onerror = (e) => {
+            // Bitfinex Spot WS Error
+        };
         ws.onclose = () => { if (this.isTracking) setTimeout(() => this.connectBitfinexSpot(market), 5000); };
         this.connections[market.id] = ws;
     }
@@ -335,7 +342,9 @@ export class WhaleTracker {
                 });
             }
         };
-        ws.onerror = (e) => console.error('Bitfinex Futures WS Error', e);
+        ws.onerror = (e) => {
+            // Bitfinex Futures WS Error
+        };
         ws.onclose = () => { if (this.isTracking) setTimeout(() => this.connectBitfinexFutures(market), 5000); };
         this.connections[market.id] = ws;
     }
@@ -360,7 +369,9 @@ export class WhaleTracker {
                 this.addTrades(trades);
             }
         };
-        ws.onerror = (e) => console.error('BitMEX Futures WS Error', e);
+        ws.onerror = (e) => {
+            // BitMEX Futures WS Error
+        };
         ws.onclose = () => { if (this.isTracking) setTimeout(() => this.connectBitMEXFutures(market), 5000); };
         this.connections[market.id] = ws;
     }
@@ -395,7 +406,9 @@ export class WhaleTracker {
                 }
             }
         };
-        ws.onerror = (e) => console.error('Coinbase Spot WS Error', e);
+        ws.onerror = (e) => {
+            // Coinbase Spot WS Error
+        };
         ws.onclose = () => { if (this.isTracking) setTimeout(() => this.connectCoinbaseSpot(market), 5000); };
         this.connections[market.id] = ws;
     }
@@ -420,7 +433,9 @@ export class WhaleTracker {
                 this.addTrades(trades);
             }
         };
-        ws.onerror = (e) => console.error('Deribit Futures WS Error', e);
+        ws.onerror = (e) => {
+            // Deribit Futures WS Error
+        };
         ws.onclose = () => { if (this.isTracking) setTimeout(() => this.connectDeribitFutures(market), 5000); };
         this.connections[market.id] = ws;
     }
@@ -445,7 +460,9 @@ export class WhaleTracker {
                 });
             }
         };
-        ws.onerror = (e) => console.error('Bitstamp Spot WS Error', e);
+        ws.onerror = (e) => {
+            // Bitstamp Spot WS Error
+        };
         ws.onclose = () => { if (this.isTracking) setTimeout(() => this.connectBitstampSpot(market), 5000); };
         this.connections[market.id] = ws;
     }
@@ -554,7 +571,7 @@ export class WhaleTracker {
 
     updateSymbol(newSymbol) {
        // This function will be replaced by a more generic updateSettings function
-       console.warn("updateSymbol is deprecated. Use updateSettings instead.");
+       // updateSymbol is deprecated. Use updateSettings instead.
     }
 
     closeAllConnections() {
@@ -636,11 +653,11 @@ export class WhaleTracker {
 
     // 거래소별 통계 출력 함수 추가
     logExchangeStats() {
-        console.log('=== Exchange Statistics (Last 10 seconds) ===');
+        // Exchange Statistics (Last 10 seconds)
         Object.entries(this.exchangeStats).forEach(([exchange, stats]) => {
-            console.log(`${exchange}: ${stats.count} trades, Total: $${stats.totalValue.toLocaleString()}`);
+            // ${exchange}: ${stats.count} trades, Total: $${stats.totalValue.toLocaleString()}
         });
-        console.log('==========================================');
+        // ==========================================
         
         // 통계 초기화
         this.exchangeStats = {};
@@ -927,6 +944,4 @@ function updateConnectionStatus() {
 
 // 주기적 업데이트 시작
 setInterval(updateWhaleStats, 1000);
-setInterval(updateConnectionStatus, 2000);
-
-console.log('🐋 Advanced Whale Tracker loaded successfully!'); 
+setInterval(updateConnectionStatus, 2000); 

@@ -1,10 +1,36 @@
 {
   "dependencies": {
+    "axios": "^1.10.0",
+    "chart.js": "^4.4.6",
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
     "firebase": "^11.9.1",
     "lightweight-charts": "^5.0.7",
     "vite": "^6.3.5",
     "web3": "^4.15.0",
-    "axios": "^1.7.9",
-    "chart.js": "^4.4.6"
-  }
+    "ws": "^8.16.0",
+    "sqlite3": "^5.1.7",
+    "node-cron": "^3.0.3",
+    "technicalindicators": "^3.1.0",
+    "mathjs": "^12.3.1"
+  },
+  "name": "felicity-site",
+  "version": "1.0.0",
+  "description": "",
+  "main": "admin.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hankimis/felicity-site.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/hankimis/felicity-site/issues"
+  },
+  "homepage": "https://github.com/hankimis/felicity-site#readme"
 }

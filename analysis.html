@@ -59,8 +59,13 @@
     
     <!-- Common Scripts -->
     <script src="js/auth.js"></script>
-    <script src="js/level-system.js"></script>
+    <!-- <script src="js/level-system.js"></script> -->
+    <!-- Unified Header Loader -->
     <script src="js/header-loader.js" defer></script>
+    <!-- Footer Loader -->
+    <script src="js/footer-loader.js" defer></script>
+    <!-- Cloudflare Turnstile -->
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
     
     <!-- Analysis Configuration (전역 변수로 로드) -->
     <script src="js/analysis-config.js"></script>
@@ -357,12 +362,93 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- 미결제 약정 카드 (6x3) -->
+                <div class="grid-stack-item" gs-x="0" gs-y="10" gs-w="6" gs-h="3" gs-min-w="4" gs-min-h="3">
+                    <div class="grid-stack-item-content analysis-card open-interest-card" id="open-interest-card">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <i class="fas fa-chart-area"></i>
+                                <h3>미결제 약정 (Open Interest)</h3>
+                            </div>
+                            <div class="card-controls">
+                                <div class="oi-timeframe-buttons" id="oi-timeframe-buttons">
+                                    <button class="timeframe-btn" data-period="1d">1일</button>
+                                    <button class="timeframe-btn" data-period="1w">1주</button>
+                                    <button class="timeframe-btn" data-period="1m">1월</button>
+                                    <button class="timeframe-btn" data-period="1y">1년</button>
+                                    <button class="timeframe-btn" data-period="ytd">YTD</button>
+                                    <button class="timeframe-btn active" data-period="all">ALL</button>
+                                </div>
+                                <select id="open-interest-symbol" class="symbol-selector">
+                                    <option value="BTCUSDT">BTC/USDT</option>
+                                    <option value="ETHUSDT">ETH/USDT</option>
+                                    <option value="ADAUSDT">ADA/USDT</option>
+                                    <option value="SOLUSDT">SOL/USDT</option>
+                                    <option value="BNBUSDT">BNB/USDT</option>
+                                    <option value="XRPUSDT">XRP/USDT</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="card-content">
+                            <div class="open-interest-container" id="open-interest-container">
+                                <div class="open-interest-summary" id="open-interest-summary">
+                                    <div class="oi-summary-item">
+                                        <span class="oi-label">현재 미결제 약정</span>
+                                        <span class="oi-value">-- BTC</span>
+                                    </div>
+                                    <div class="oi-summary-item">
+                                        <span class="oi-label">미결제 약정 가치</span>
+                                        <span class="oi-value">--</span>
+                                    </div>
+                                    <div class="oi-summary-item">
+                                        <span class="oi-label">변화</span>
+                                        <span class="oi-change">--</span>
+                                    </div>
+                                </div>
+                                <div class="open-interest-chart-container">
+                                    <canvas id="open-interest-chart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 암호화폐 시세 위젯 카드 (3x3) -->
+                <div class="grid-stack-item" gs-x="3" gs-y="6" gs-w="3" gs-h="3" gs-min-w="2" gs-min-h="3">
+                    <div class="grid-stack-item-content analysis-card crypto-rates-card" id="crypto-rates-card">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <i class="fas fa-coins"></i>
+                                <h3>암호화폐 시세</h3>
+                            </div>
+                        </div>
+                        <div class="card-content">
+                            <div class="crypto-widget-container">
+                                <iframe src="https://kr.widgets.investing.com/crypto-currency-rates?theme=darkTheme&hideTitle=true&roundedCorners=true&pairs=945629,997650,1001803,1010773,1010776,1031068,1058450,1070733,1228635,1219524,1226634,1225820" 
+                                        width="100%" 
+                                        height="100%" 
+                                        frameborder="0" 
+                                        allowtransparency="true" 
+                                        marginwidth="0" 
+                                        marginheight="0">
+                                </iframe>
+                                <div class="poweredBy" style="font-family: Arial, Helvetica, sans-serif; font-size: 10px; text-align: center; margin-top: 5px; color: #666;">
+                                    제공자 <a href="https://kr.investing.com?utm_source=WMT&utm_medium=referral&utm_campaign=CRYPTO_CURRENCY_RATES&utm_content=Footer%20Link" target="_blank" rel="nofollow" style="color: #0066cc; text-decoration: none;">Investing.com</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </main>
 
     <!-- Toast 알림 -->
     <div id="toast-container"></div>
+    
+    <!-- Footer Placeholder -->
+    <div id="footer-placeholder"></div>
 
     <!-- 설정 모달 -->
     <div id="settings-modal" class="modal">

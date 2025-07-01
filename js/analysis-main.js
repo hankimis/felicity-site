@@ -8,6 +8,7 @@ import { OrderbookTracker } from './analysis/orderbook-tracker.js';
 import { MarketHeatmap } from './analysis/market-heatmap.js';
 import { LiquidationMap } from './analysis/liquidation-map.js';
 import { RealtimeTrades } from './analysis/realtime-trades.js';
+import { OpenInterestTracker } from './analysis/open-interest-tracker.js';
 import { AnalysisUtils } from './analysis-utils.js';
 
 // AnalysisConfig를 전역에서 가져오기
@@ -134,6 +135,15 @@ class AnalysisDashboard {
 
             this.modules.realtimeTrades = new RealtimeTrades();
 
+            this.modules.openInterestTracker = new OpenInterestTracker({
+                symbol: 'BTCUSDT'
+            });
+
+            // Open Interest Tracker 기간 선택 버튼 이벤트 재설정
+            setTimeout(() => {
+                this.setupOpenInterestTimeframeButtons();
+            }, 100);
+
             console.log('✅ All analysis modules initialized');
         } catch (error) {
             console.error('❌ Error initializing modules:', error);
@@ -160,15 +170,22 @@ class AnalysisDashboard {
             console.log(`UI Symbol filter changed to: ${e.target.value}`);
         });
         
-        document.getElementById('realtime-symbol')?.addEventListener('change', (e) => {
-            this.updateSymbol('realtime', e.target.value);
+        document.getElementById('realtime-symbol')?.addEventListener('change', async (e) => {
+            await this.updateSymbol('realtime', e.target.value);
         });
         
         // longshort-symbol 이벤트는 LongShortTracker에서 직접 처리
         
-        document.getElementById('orderbook-symbol')?.addEventListener('change', (e) => {
-            this.updateSymbol('orderbook', e.target.value);
+        document.getElementById('orderbook-symbol')?.addEventListener('change', async (e) => {
+            await this.updateSymbol('orderbook', e.target.value);
         });
+        
+        document.getElementById('open-interest-symbol')?.addEventListener('change', async (e) => {
+            await this.updateSymbol('open-interest', e.target.value);
+        });
+
+        // Open Interest 기간 선택 버튼들
+        this.setupOpenInterestTimeframeButtons();
         
         // Timeframe selectors for Technical Indicators
         const timeframeContainer = document.getElementById('indicator-timeframe-selector');
@@ -210,6 +227,27 @@ class AnalysisDashboard {
             if (e.target === modal) this.closeSettings();
         });
     }
+
+    setupOpenInterestTimeframeButtons() {
+        const timeframeButtons = document.querySelectorAll('#oi-timeframe-buttons .timeframe-btn');
+        
+        timeframeButtons.forEach(btn => {
+            // 기존 이벤트 리스너 제거 (중복 방지)
+            btn.replaceWith(btn.cloneNode(true));
+        });
+
+        // 새로운 버튼들에 이벤트 리스너 추가
+        document.querySelectorAll('#oi-timeframe-buttons .timeframe-btn').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                const period = e.target.dataset.period;
+                if (period && this.modules.openInterestTracker) {
+                    await this.modules.openInterestTracker.changeTimeframe(period);
+                }
+            });
+        });
+
+        console.log('✅ Open Interest timeframe buttons setup complete');
+    }
     
     async loadInitialData() {
         console.log('📊 Loading initial data...');
@@ -246,6 +284,10 @@ class AnalysisDashboard {
             
             if (this.modules.realtimeTrades) {
                 await this.modules.realtimeTrades.start();
+            }
+            
+            if (this.modules.openInterestTracker) {
+                await this.modules.openInterestTracker.start();
             }
             
             console.log('✅ Initial data loaded');
@@ -495,7 +537,7 @@ class AnalysisDashboard {
         }
     }
     
-    updateSymbol(card, symbol) {
+    async updateSymbol(card, symbol) {
         console.log(`🔄 Updating ${card} symbol to ${symbol}`);
         
         switch(card) {
@@ -506,6 +548,11 @@ class AnalysisDashboard {
             case 'orderbook':
                 this.data.orderbook = AnalysisSimulation.generateOrderbook(symbol);
                 this.updateOrderbookDisplay();
+                break;
+            case 'open-interest':
+                if (this.modules.openInterestTracker) {
+                    await this.modules.openInterestTracker.updateSymbol(symbol);
+                }
                 break;
         }
     }
@@ -625,10 +672,6 @@ class AnalysisDashboard {
             margin: 12,
             minRow: 1,
             disableOneColumnMode: true,
-            resizable: {
-                handles: 'se, sw, ne, nw, e, w, n, s',
-                autoHide: true
-            },
             removable: false,
             acceptWidgets: false,
             alwaysShowResizeHandle: false,
@@ -648,15 +691,6 @@ class AnalysisDashboard {
             float: false,
             // 드래그 핸들을 카드 헤더로 제한
             handle: '.card-header',
-            // 리사이즈 안정성 개선
-            resizable: {
-                handles: 'se, sw, ne, nw, e, w, n, s',
-                autoHide: true,
-                minWidth: 2,
-                minHeight: 2,
-                maxWidth: 12,
-                maxHeight: 20
-            }
         };
 
         try {
@@ -710,32 +744,12 @@ class AnalysisDashboard {
             }
         });
 
-        // 리사이즈 완료 이벤트
-        this.grid.on('resizestop', (event, element) => {
-            this.onGridItemResize(element);
-        });
-
         // 드래그 완료 이벤트
         this.grid.on('dragstop', (event, element) => {
             if (this.isEditMode) {
                 this.autoSaveLayout();
             }
         });
-    }
-
-    onGridItemResize(element) {
-        // 차트나 기타 컴포넌트 리사이즈 트리거
-        const canvases = element.querySelectorAll('canvas');
-        canvases.forEach(canvas => {
-            if (canvas.chart && typeof canvas.chart.resize === 'function') {
-                canvas.chart.resize();
-            }
-        });
-
-        // 자동 저장
-        if (this.isEditMode) {
-            this.autoSaveLayout();
-        }
     }
 
     setupLayoutControlEvents() {

@@ -405,11 +405,6 @@
     .grid-stack.edit-mode .grid-stack-item {
         border-width: 3px;
     }
-    
-    .grid-stack.edit-mode .ui-resizable-handle {
-        width: 24px;
-        height: 24px;
-    }
 }
 
 /* Dark mode responsive adjustments */

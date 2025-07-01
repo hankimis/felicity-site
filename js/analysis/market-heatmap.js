@@ -48,6 +48,7 @@ export class MarketHeatmap {
         
         if (this.heatmapContainer) {
             this.resizeObserver.observe(this.heatmapContainer);
+            this.heatmapContainer.classList.add('dashboard-card');
         }
     }
 

@@ -965,7 +965,6 @@ class TradingAnalyticsPlatform {
     }
     
     async startBitcoinTracking() {
-        console.log('🔄 비트코인 고래 추적 시작 - mempool.space API 사용');
         this.updateStatus('btc', 'connecting', '비트코인 네트워크 연결 중...');
         this.bitcoinFailCount = 0;
 

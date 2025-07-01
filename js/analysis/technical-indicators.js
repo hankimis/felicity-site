@@ -934,7 +934,7 @@ export class TechnicalIndicators {
 
     createNewSummaryCard(container, data) {
         container.innerHTML = `
-            <div class="technical-summary-card">
+            <div class="technical-summary-card dashboard-card">
                 <div class="summary-header">
                     <div class="summary-title">
                         <span class="title-icon">📊</span>
@@ -1383,7 +1383,7 @@ export class TechnicalIndicators {
 
         if (summaryContainer) {
             summaryContainer.innerHTML = `
-                <div class="technical-summary-card">
+                <div class="technical-summary-card dashboard-card">
                 <div class="summary-header">
                         <div class="summary-title">
                             <span class="title-icon">📊</span>

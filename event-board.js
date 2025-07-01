@@ -15,9 +15,15 @@ const eventForm = document.getElementById('event-form');
 
 // 이미지/로고 미리보기 및 유효성 안내
 const eventImgInput = document.getElementById('event-img');
-const eventLogoInput = document.getElementById('event-logo');
+const exchangeSelect = document.getElementById('event-exchange');
+const exchangePreview = document.getElementById('exchange-preview');
+const exchangePreviewLogo = document.getElementById('exchange-preview-logo');
+const exchangePreviewName = document.getElementById('exchange-preview-name');
+const customExchangeGroup = document.getElementById('custom-exchange-group');
+const customLogoGroup = document.getElementById('custom-logo-group');
+const customExchangeName = document.getElementById('custom-exchange-name');
+const customLogoUrl = document.getElementById('custom-logo-url');
 const previewEventImg = document.getElementById('preview-event-img');
-const previewEventLogo = document.getElementById('preview-event-logo');
 const eventFormMessage = document.getElementById('event-form-message');
 
 let currentUser = null;
@@ -97,13 +103,54 @@ async function renderEvents() {
         const eventDoc = await getDoc(doc(db, 'events', id));
         if (!eventDoc.exists()) return alert('이벤트를 찾을 수 없습니다.');
         const data = eventDoc.data();
+        
+        // 기본 필드 채우기
         document.getElementById('event-title').value = data.title;
         document.getElementById('event-desc').value = data.desc;
         document.getElementById('event-period').value = data.period;
-        document.getElementById('event-exchange').value = data.exchange;
         document.getElementById('event-img').value = data.img;
-        document.getElementById('event-logo').value = data.logo;
         document.getElementById('event-link').value = data.link;
+        
+        // 거래소 선택 처리
+        const exchangeSelect = document.getElementById('event-exchange');
+        const exchangeName = data.exchange;
+        const logoUrl = data.logo;
+        
+        // 기본 거래소 목록에서 찾기
+        let foundOption = false;
+        for (let option of exchangeSelect.options) {
+          if (option.value === exchangeName && option.getAttribute('data-logo') === logoUrl) {
+            exchangeSelect.value = exchangeName;
+            foundOption = true;
+            break;
+          }
+        }
+        
+        if (!foundOption) {
+          // 기타 거래소인 경우
+          exchangeSelect.value = '기타';
+          document.getElementById('custom-exchange-name').value = exchangeName;
+          document.getElementById('custom-logo-url').value = logoUrl;
+          customExchangeGroup.style.display = 'block';
+          customLogoGroup.style.display = 'block';
+          exchangePreviewLogo.src = logoUrl;
+          exchangePreviewName.textContent = exchangeName;
+          exchangePreview.style.display = 'flex';
+        } else {
+          // 기본 거래소인 경우
+          exchangePreviewLogo.src = logoUrl;
+          exchangePreviewName.textContent = exchangeName;
+          exchangePreview.style.display = 'flex';
+          customExchangeGroup.style.display = 'none';
+          customLogoGroup.style.display = 'none';
+        }
+        
+        // 이미지 미리보기
+        if (data.img) {
+          previewEventImg.src = data.img;
+          previewEventImg.style.display = 'block';
+        }
+        
         eventModal.setAttribute('data-edit-id', id);
         eventModal.style.display = 'flex';
         document.body.style.overflow = 'hidden';
@@ -121,6 +168,12 @@ closeEventModal.addEventListener('click', () => {
   document.body.style.overflow = '';
   eventForm.reset();
   eventModal.removeAttribute('data-edit-id');
+  // 미리보기 초기화
+  exchangePreview.style.display = 'none';
+  customExchangeGroup.style.display = 'none';
+  customLogoGroup.style.display = 'none';
+  previewEventImg.style.display = 'none';
+  clearFormMessage();
 });
 
 function showPreview(input, preview) {
@@ -136,8 +189,53 @@ function showPreview(input, preview) {
 if (eventImgInput && previewEventImg) {
   eventImgInput.addEventListener('input', () => showPreview(eventImgInput, previewEventImg));
 }
-if (eventLogoInput && previewEventLogo) {
-  eventLogoInput.addEventListener('input', () => showPreview(eventLogoInput, previewEventLogo));
+if (exchangeSelect) {
+  exchangeSelect.addEventListener('change', (e) => {
+    const selectedOption = e.target.selectedOptions[0];
+    const exchangeName = selectedOption.value;
+    const logoPath = selectedOption.getAttribute('data-logo');
+    
+    if (exchangeName === '기타') {
+      // 기타 선택 시 직접 입력 필드 표시
+      customExchangeGroup.style.display = 'block';
+      customLogoGroup.style.display = 'block';
+      exchangePreview.style.display = 'none';
+    } else if (exchangeName && logoPath) {
+      // 기본 거래소 선택 시 미리보기 표시
+      exchangePreviewLogo.src = logoPath;
+      exchangePreviewName.textContent = exchangeName;
+      exchangePreview.style.display = 'flex';
+      customExchangeGroup.style.display = 'none';
+      customLogoGroup.style.display = 'none';
+    } else {
+      // 아무것도 선택하지 않은 경우
+      exchangePreview.style.display = 'none';
+      customExchangeGroup.style.display = 'none';
+      customLogoGroup.style.display = 'none';
+    }
+  });
+}
+
+// 커스텀 로고 URL 미리보기
+if (customLogoUrl) {
+  customLogoUrl.addEventListener('input', (e) => {
+    const url = e.target.value.trim();
+    if (url && /^https?:\/\//.test(url)) {
+      exchangePreviewLogo.src = url;
+      exchangePreviewName.textContent = customExchangeName.value || '사용자 지정';
+      exchangePreview.style.display = 'flex';
+    } else {
+      exchangePreview.style.display = 'none';
+    }
+  });
+}
+
+if (customExchangeName) {
+  customExchangeName.addEventListener('input', (e) => {
+    if (exchangePreview.style.display === 'flex') {
+      exchangePreviewName.textContent = e.target.value || '사용자 지정';
+    }
+  });
 }
 
 function showFormMessage(msg, color = '#ef5350') {
@@ -154,13 +252,26 @@ const eventFormSubmitHandler = async (e) => {
   e.preventDefault();
   if (!isAdmin) return;
   clearFormMessage();
+  
   const title = document.getElementById('event-title').value.trim();
   const desc = document.getElementById('event-desc').value.trim();
   const period = document.getElementById('event-period').value.trim();
-  const exchange = document.getElementById('event-exchange').value.trim();
   const img = document.getElementById('event-img').value.trim();
-  const logo = document.getElementById('event-logo').value.trim();
   const link = document.getElementById('event-link').value.trim();
+  
+  // 거래소 정보 처리
+  const exchangeSelect = document.getElementById('event-exchange');
+  const selectedExchange = exchangeSelect.value;
+  let exchange, logo;
+  
+  if (selectedExchange === '기타') {
+    exchange = document.getElementById('custom-exchange-name').value.trim();
+    logo = document.getElementById('custom-logo-url').value.trim();
+  } else if (selectedExchange) {
+    exchange = selectedExchange;
+    logo = exchangeSelect.selectedOptions[0].getAttribute('data-logo');
+  }
+  
   if (!title || !desc || !period || !exchange || !img || !logo || !link) {
     showFormMessage('모든 항목을 입력해 주세요.');
     return;
@@ -169,8 +280,10 @@ const eventFormSubmitHandler = async (e) => {
     showFormMessage('제목/설명 글자 수를 확인해 주세요.');
     return;
   }
+  
   showFormMessage('등록 중입니다...', '#1976d2');
   const editId = eventModal.getAttribute('data-edit-id');
+  
   try {
     if (editId) {
       await updateDoc(doc(db, 'events', editId), { title, desc, period, exchange, img, logo, link });
@@ -185,8 +298,10 @@ const eventFormSubmitHandler = async (e) => {
       document.body.style.overflow = '';
       eventForm.reset();
       clearFormMessage();
+      exchangePreview.style.display = 'none';
+      customExchangeGroup.style.display = 'none';
+      customLogoGroup.style.display = 'none';
       previewEventImg.style.display = 'none';
-      previewEventLogo.style.display = 'none';
       renderEvents();
     }, 800);
   } catch (err) {

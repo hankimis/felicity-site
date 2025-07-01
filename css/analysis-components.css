@@ -600,4 +600,273 @@
 :root.dark-mode .message-item.my-message .message-text {
     background-color: var(--primary-color);
     color: #fff;
+}
+
+/* Crypto Rates Widget Card */
+.crypto-rates-card .card-content {
+    height: 100%;
+    padding: 0;
+    overflow: hidden;
+}
+
+.crypto-widget-container {
+    height: 100%;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+.crypto-widget-container iframe {
+    flex: 1;
+    border: none;
+    border-radius: 0 0 8px 8px;
+    background: transparent;
+}
+
+.crypto-widget-container .poweredBy {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    padding: 2px 6px;
+    background: rgba(0, 0, 0, 0.7);
+    border-radius: 4px 0 0 0;
+    z-index: 10;
+}
+
+.crypto-widget-container .poweredBy a {
+    color: #0066cc !important;
+    text-decoration: none;
+}
+
+.crypto-widget-container .poweredBy a:hover {
+    text-decoration: underline;
+}
+
+/* Dark mode adjustments for crypto widget */
+:root.dark-mode .crypto-widget-container .poweredBy {
+    background: rgba(255, 255, 255, 0.1);
+    color: #ccc;
+}
+
+:root.dark-mode .crypto-widget-container .poweredBy a {
+    color: #66b3ff !important;
+} 
+
+/* Open Interest Card Styles */
+.open-interest-card {
+    background: #181824;
+}
+
+.open-interest-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    gap: 15px;
+}
+
+/* 기간 선택 버튼 스타일 */
+.oi-timeframe-buttons {
+    display: flex;
+    gap: 0.2rem;
+    margin-right: 0.5rem;
+}
+
+.timeframe-btn {
+    padding: 0.2rem 0.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.05);
+    color: #94a3b8;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    min-width: 32px;
+    text-align: center;
+}
+
+.timeframe-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #e2e8f0;
+    border-color: rgba(245, 158, 11, 0.3);
+}
+
+.timeframe-btn.active {
+    background: #f59e0b;
+    color: white;
+    border-color: #f59e0b;
+    box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
+}
+
+.timeframe-btn.loading {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+/* 카드 컨트롤 레이아웃 조정 */
+.open-interest-card .card-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.open-interest-summary {
+    display: none !important;
+}
+
+.oi-summary-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 5px;
+}
+
+.oi-label {
+    font-size: 12px;
+    color: #94a3b8;
+    font-weight: 500;
+}
+
+.oi-value {
+    font-size: 16px;
+    font-weight: 700;
+    color: #e2e8f0;
+}
+
+.oi-change {
+    font-size: 14px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 4px;
+}
+
+.oi-change.positive {
+    color: #10b981;
+    background: rgba(16, 185, 129, 0.1);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.oi-change.negative {
+    color: #ef4444;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.open-interest-chart-container {
+    padding: 0 !important;
+    margin: 0 !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    height: 100%;
+    min-height: 320px;
+    width: 100%;
+    display: flex;
+    align-items: stretch;
+    justify-content: stretch;
+}
+
+#open-interest-chart {
+    width: 100% !important;
+    height: 100% !important;
+    display: block;
+    background: transparent;
+}
+
+/* Light Mode Styles */
+body.light-mode .open-interest-card {
+    background: #fff;
+}
+
+body.light-mode .open-interest-summary {
+    background: rgba(255, 255, 255, 0.8);
+    border: 1px solid #cbd5e1;
+}
+
+body.light-mode .oi-label {
+    color: #64748b;
+}
+
+body.light-mode .oi-value {
+    color: #1e293b;
+}
+
+body.light-mode .oi-change.positive {
+    background: rgba(16, 185, 129, 0.1);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+body.light-mode .oi-change.negative {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+body.light-mode .open-interest-chart-container {
+    background: rgba(255, 255, 255, 0.8);
+    border: 1px solid #cbd5e1;
+}
+
+/* 라이트 모드 기간 선택 버튼 */
+body.light-mode .timeframe-btn {
+    border: 1px solid #cbd5e1;
+    background: #f8fafc;
+    color: #64748b;
+}
+
+body.light-mode .timeframe-btn:hover {
+    background: #e2e8f0;
+    color: #1e293b;
+    border-color: #f59e0b;
+}
+
+body.light-mode .timeframe-btn.active {
+    background: #f59e0b;
+    color: white;
+    border-color: #f59e0b;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .open-interest-summary {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+    
+    .oi-summary-item {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .oi-label {
+        font-size: 11px;
+    }
+    
+    .oi-value {
+        font-size: 14px;
+    }
+    
+    .oi-change {
+        font-size: 12px;
+    }
+    
+    /* 모바일에서 기간 선택 버튼 스타일 */
+    .oi-timeframe-buttons {
+        gap: 0.1rem;
+        margin-right: 0.3rem;
+    }
+    
+    .timeframe-btn {
+        padding: 0.15rem 0.3rem;
+        font-size: 0.65rem;
+        min-width: 26px;
+    }
+    
+    .open-interest-card .card-controls {
+        flex-wrap: wrap;
+        gap: 0.3rem;
+    }
 } 

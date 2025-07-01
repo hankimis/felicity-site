@@ -1,5 +1,5 @@
 <!-- Main Navigation Bar -->
-<header class="navbar">
+<header class="navbar" id="main-header" style="opacity: 0; transition: opacity 0.3s ease;">
     <a href="index.html" class="logo">
         <img id="main-logo" src="assets/lightlogo.png" alt="Onbit Logo" height="40"/>
     </a>
@@ -7,17 +7,9 @@
         <ul>
             <li><a href="affiliated.html">제휴 거래소</a></li>
             <li><a href="community.html">실시간 채팅</a></li>
-            <li><a href="analysis.html">대시보드</a></li>
-            <li class="dropdown">
-                <a href="#" class="dropdown-toggle">커뮤니티 <i class="fas fa-caret-down"></i></a>
-                <ul class="dropdown-menu">
-                    <li><a href="community-board.html">자유 게시판</a></li>
-                    <li><a href="attendance.html">출석체크</a></li>
-                    <li><a href="event-board.html">이벤트</a></li>
-                </ul>
-            </li>
-            <li><a href="notice-board.html">공지사항</a></li>
             <li><a href="news.html">뉴스</a></li>
+            <li><a href="event-board.html">이벤트</a></li>
+            <li><a href="notice-board.html">공지사항</a></li>
         </ul>
     </nav>
     <div class="header-right">
@@ -36,12 +28,54 @@
         <button class="theme-button" id="theme-toggle" data-action="toggle-theme" title="테마 변경">
             <i class="fas fa-moon"></i>
         </button>
-        <a href="my-account.html" id="my-page-link" class="icon-button" data-action="my-page" aria-label="마이페이지" style="display: none;"><i class="fas fa-user-circle"></i></a>
+        <a href="my-account.html" id="my-page-link" class="icon-button" data-action="my-page" aria-label="마이페이지"><i class="fas fa-user-circle"></i></a>
         <button class="mobile-menu-button" id="mobile-menu-button" data-action="open-mobile-menu" aria-label="메뉴 열기">
             <i class="fas fa-bars"></i>
         </button>
     </div>
 </header>
+
+<!-- Loading Spinner for Auth State -->
+<div id="auth-loading" style="
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    background: var(--header-bg, #ffffff);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: opacity 0.3s ease;
+">
+    <div style="
+        width: 20px;
+        height: 20px;
+        border: 2px solid #f3f3f3;
+        border-top: 2px solid #3498db;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    "></div>
+</div>
+
+<style>
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* 다크모드에서 로딩 스피너 색상 조정 */
+[data-theme="dark"] #auth-loading {
+    background: var(--header-bg, #1a1a1a);
+}
+
+[data-theme="dark"] #auth-loading div {
+    border-color: #333;
+    border-top-color: #3498db;
+}
+</style>
 
 <!-- Mobile Menu -->
 <div class="mobile-menu" id="mobile-menu">
@@ -61,12 +95,9 @@
             <ul>
                 <li><a href="affiliated.html">제휴 거래소</a></li>
                 <li><a href="community.html">실시간 채팅</a></li>
-                <li><a href="analysis.html">분석</a></li>
-                <li><a href="community-board.html">자유 게시판</a></li>
-                <li><a href="attendance.html">출석체크</a></li>
+                <li><a href="news.html">뉴스</a></li>
                 <li><a href="event-board.html">이벤트</a></li>
                 <li><a href="notice-board.html">공지사항</a></li>
-                <li><a href="news.html">뉴스</a></li>
             </ul>
         </nav>
         <div class="mobile-menu-footer">
@@ -122,10 +153,24 @@
                 <i class="fas fa-lock"></i>
                 <input type="password" name="signup-confirm-password" placeholder="비밀번호 확인" required autocomplete="new-password">
             </div>
+            <div class="input-group">
+                <div id="cf-turnstile" class="cf-turnstile" data-sitekey="0x4AAAAAABhG8vjyB5nsUxll" data-theme="light"></div>
+            </div>
             <button type="submit" class="submit-btn">회원가입</button>
             <p class="auth-form-switch">
                 이미 계정이 있으신가요? <a href="#" data-action="open-login-modal">로그인</a>
             </p>
         </form>
     </div>
-</div> 
+</div>
+
+<!-- Cloudflare Turnstile Script -->
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
+<!-- 통합 Turnstile 관리자 (캐시 버스팅) -->
+<script src="js/turnstile-manager.js?v=1.0.0" defer></script>
+<script>
+// 헤더 스크립트 (TurnstileManager가 모든 이벤트 처리)
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('📝 [헤더] TurnstileManager 사용 - 별도 이벤트 설정 불필요');
+});
+</script> 

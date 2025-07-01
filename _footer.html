@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        .footer {
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border-light);
+            margin-top: 4rem;
+            padding: 3rem 0 2rem 0;
+        }
+
+        .footer-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        .footer-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 3rem;
+            margin-bottom: 2rem;
+        }
+
+        .footer-section h4 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--accent-blue);
+            display: inline-block;
+        }
+
+        .footer-section ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .footer-section li {
+            margin-bottom: 0.75rem;
+        }
+
+        .footer-section a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: color 0.2s ease;
+        }
+
+        .footer-section a:hover {
+            color: var(--accent-blue);
+        }
+
+        .footer-info p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            line-height: 1.6;
+            margin-bottom: 0.5rem;
+        }
+
+        .footer-info .highlight {
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        .footer-bottom {
+            border-top: 1px solid var(--border-default);
+            padding-top: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .footer-logo {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .footer-logo h3 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--accent-blue);
+            margin: 0;
+        }
+
+        .footer-copyright {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+
+        .footer-social {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .social-link {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-default);
+            border-radius: 50%;
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+
+        .social-link:hover {
+            background: var(--accent-blue);
+            color: white;
+            border-color: var(--accent-blue);
+            transform: translateY(-2px);
+        }
+
+        .contact-info {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .contact-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .contact-item i {
+            width: 16px;
+            color: var(--accent-blue);
+        }
+
+        /* 반응형 디자인 */
+        @media (max-width: 768px) {
+            .footer-content {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+            }
+
+            .footer-container {
+                padding: 0 1rem;
+            }
+
+            .footer-bottom {
+                flex-direction: column;
+                text-align: center;
+                gap: 1.5rem;
+            }
+
+            .footer-social {
+                order: -1;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .footer {
+                padding: 2rem 0 1.5rem 0;
+            }
+
+            .footer-section h4 {
+                font-size: 1rem;
+            }
+
+            .footer-logo h3 {
+                font-size: 1.25rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <footer class="footer">
+        <div class="footer-container">
+            <div class="footer-content">
+                <!-- 회사 정보 -->
+                <div class="footer-section">
+                    <h4>회사 정보</h4>
+                    <div class="footer-info">
+                        <p><span class="highlight">Onbit Ltd.</span></p>
+                        <p>혁신적인 암호화폐 거래 플랫폼</p>
+                        <div class="contact-info">
+                            <div class="contact-item">
+                                <i class="fas fa-map-marker-alt"></i>
+                                <span>대한민국 서울특별시</span>
+                            </div>
+                            <div class="contact-item">
+                                <i class="fas fa-envelope"></i>
+                                <span>support@onbit.io</span>
+                            </div>
+                            <div class="contact-item">
+                                <i class="fas fa-phone"></i>
+                                <span>24시간 채팅 상담</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 서비스 -->
+                <div class="footer-section">
+                    <h4>서비스</h4>
+                    <ul>
+                        <li><a href="affiliated.html">제휴 거래소</a></li>
+                        <li><a href="community.html">실시간 채팅</a></li>
+                        <li><a href="news.html">뉴스</a></li>
+                        <li><a href="events.html">이벤트</a></li>
+                        <li><a href="notice-board.html">고객지원</a></li>
+                    </ul>
+                </div>
+
+                <!-- 고객지원 -->
+                <div class="footer-section">
+                    <h4>고객지원</h4>
+                    <ul>
+                        <li><a href="notice-board.html">공지사항</a></li>
+                        <li><a href="notice-board.html">이용 가이드</a></li>
+                        <li><a href="community.html">실시간 문의</a></li>
+                        <li><a href="my-account.html">내 계정</a></li>
+                        <li><a href="#" onclick="showTerms()">이용약관</a></li>
+                        <li><a href="#" onclick="showPrivacy()">개인정보처리방침</a></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="footer-bottom">
+                <div class="footer-logo">
+                    <h3>Onbit</h3>
+                </div>
+                
+                <div class="footer-copyright">
+                    © 2025 Onbit Ltd. All rights reserved.
+                </div>
+
+                <div class="footer-social">
+                    <a href="#" class="social-link" title="Twitter">
+                        <i class="fab fa-twitter"></i>
+                    </a>
+                    <a href="#" class="social-link" title="Telegram">
+                        <i class="fab fa-telegram"></i>
+                    </a>
+                    <a href="#" class="social-link" title="Discord">
+                        <i class="fab fa-discord"></i>
+                    </a>
+                    <a href="#" class="social-link" title="YouTube">
+                        <i class="fab fa-youtube"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        function showTerms() {
+            alert('이용약관 페이지로 이동합니다.');
+        }
+
+        function showPrivacy() {
+            alert('개인정보처리방침 페이지로 이동합니다.');
+        }
+    </script>
+</body>
+</html> 

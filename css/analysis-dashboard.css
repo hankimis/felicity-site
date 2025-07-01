@@ -688,7 +688,7 @@
 }
 
 [data-theme="dark"] .whale-trade {
-    background: rgba(30, 41, 59, 0.8);
+    background: rgba(42, 42, 42, 0.8);
 }
 
 .whale-trade.large {
@@ -705,7 +705,7 @@
 }
 
 [data-theme="dark"] .whale-trade-amount {
-    color: #60a5fa;
+    color: #3b82f6;
 }
 
 .whale-trade-time {
@@ -745,7 +745,7 @@
 }
 
 [data-theme="dark"] .trade-item {
-    background: rgba(30, 41, 59, 0.8);
+    background: rgba(42, 42, 42, 0.8);
 }
 
 .trade-time {
@@ -930,7 +930,7 @@
 }
 
 [data-theme="dark"] .indicator-item {
-    background: rgba(30, 41, 59, 0.8);
+    background: rgba(42, 42, 42, 0.8);
 }
 
 .indicator-name {
@@ -963,6 +963,11 @@
 .signal-neutral {
     background: #f1f5f9;
     color: #475569;
+}
+
+[data-theme="dark"] .signal-neutral {
+    background: #3a3a3a;
+    color: #cccccc;
 }
 
 /* 롱숏비율 카드 최적화 (2x4 -> 4x2) */
@@ -1053,7 +1058,7 @@
 }
 
 [data-theme="dark"] .sentiment-value {
-    color: #f1f5f9;
+    color: #ffffff;
 }
 
 .sentiment-label {
@@ -1076,7 +1081,7 @@
 }
 
 [data-theme="dark"] .chat-message {
-    background: rgba(30, 41, 59, 0.8);
+    background: rgba(42, 42, 42, 0.8);
 }
 
 /* 청산 지도 카드 최적화 (4x2 -> 6x2) */
@@ -1100,7 +1105,7 @@
 }
 
 [data-theme="dark"] .liquidation-item {
-    background: rgba(30, 41, 59, 0.8);
+    background: rgba(42, 42, 42, 0.8);
 }
 
 .liquidation-time {

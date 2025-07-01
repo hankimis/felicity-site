@@ -75,15 +75,7 @@ function setupMobileMenu() {
     }
 }
 
-// 테마 관련 기능
-function setupThemeToggle() {
-    const themeToggle = document.getElementById('theme-toggle');
-    if (themeToggle) {
-        themeToggle.addEventListener('click', () => {
-            toggleTheme();
-        });
-    }
-}
+// 테마 관련 기능 - auth.js에서 처리하므로 제거
 
 // 드롭다운 메뉴 관련 기능
 function setupDropdowns() {
@@ -110,7 +102,6 @@ function setupDropdowns() {
 // 공통 이벤트 리스너 설정
 function setupCommonEventListeners() {
     setupMobileMenu();
-    setupThemeToggle();
     setupDropdowns();
 }
 

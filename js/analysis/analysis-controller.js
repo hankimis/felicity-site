@@ -279,4 +279,23 @@ window.getTimeAgo = function(timestamp) {
     if (hours > 0) return `${hours}시간 전`;
     if (minutes > 0) return `${minutes}분 전`;
     return '방금 전';
-}; 
+};
+
+// 공통 대시보드 카드 스타일 삽입 (최초 1회)
+if (!document.getElementById('dashboard-card-style')) {
+  const style = document.createElement('style');
+  style.id = 'dashboard-card-style';
+  style.textContent = `
+    .dashboard-card {
+      background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+      border-radius: 12px;
+      border: 1px solid #e5e7eb;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+      padding: 20px;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.3s;
+    }
+  `;
+  document.head.appendChild(style);
+} 

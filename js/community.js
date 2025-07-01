@@ -1,6 +1,22 @@
 // TradingView Advanced Charts 초기화
 // 전역 변수
 let widget = null;
+let chartRestored = false; // 차트 복원 상태 전역 플래그
+
+// 차트 테마 변경 함수
+function updateChartTheme() {
+    if (widget && widget.changeTheme) {
+        const isDarkMode = document.documentElement.classList.contains('dark-mode');
+        const newTheme = isDarkMode ? 'Dark' : 'Light';
+        
+        try {
+            widget.changeTheme(newTheme);
+            console.log(`차트 테마 변경: ${newTheme}`);
+        } catch (error) {
+            console.error('차트 테마 변경 실패:', error);
+        }
+    }
+}
 
 // Firebase 초기화 대기 함수
 function waitForFirebase() {
@@ -180,11 +196,13 @@ function createDatafeed() {
         },
 
         subscribeBars: (symbolInfo, resolution, onRealtimeCallback, subscriberUID) => {
-            // 실시간 데이터는 별도 웹소켓으로 처리
+            const symbol = symbolInfo.name;
+            window.WebSocketManager.subscribeToSymbol(symbol, resolution, onRealtimeCallback);
         },
 
         unsubscribeBars: (subscriberUID) => {
-            // 구독 해제
+            const symbol = subscriberUID.split('_')[0];
+            window.WebSocketManager.unsubscribeFromSymbol(symbol);
         }
     };
 }
@@ -484,6 +502,9 @@ async function initializeTradingViewChart() {
     
     // AI 버튼 추가 플래그 리셋
     aiButtonsAdded = false;
+    
+    // 차트 복원 플래그 리셋
+    chartRestored = false;
 
     // 로딩 표시
     if (loadingIndicator) {
@@ -618,6 +639,11 @@ async function initializeTradingViewChart() {
             // TradingView 공식 API로 툴바에 AI 버튼들 추가
             widget.headerReady().then(() => {
                 addAIButtonsToToolbar();
+                
+                // 차트가 준비된 후 현재 테마 적용
+                setTimeout(() => {
+                    updateChartTheme();
+                }, 200);
             });
             
             // 초기 코인 정보 업데이트
@@ -752,7 +778,7 @@ async function initializeTradingViewChart() {
                 
                 // 이미 복원되었다면 건너뜀
                 if (chartRestored) {
-                    console.log('ℹ️ 차트가 이미 복원됨 - 중복 실행 방지');
+                    console.log('ℹ️ 차트가 이미 복원됨 - 로그인 후 복원 건너뜀');
                     return;
                 }
                 
@@ -772,9 +798,9 @@ async function initializeTradingViewChart() {
                                     : data.content;
                                 
                                 widget.load(layoutData);
-                                showNotification('차트가 복원되었습니다', 'success');
-                                console.log('✅ 자동 저장 차트 복원 완료');
                                 chartRestored = true; // 복원 완료 플래그 설정
+                                showNotification('차트가 복원되었습니다', 'success');
+                                console.log('✅ 로그인 후 자동 저장 차트 복원 완료');
                                 return;
                             } catch (parseError) {
                                 console.error('차트 데이터 파싱 실패:', parseError);
@@ -809,9 +835,9 @@ async function initializeTradingViewChart() {
                                     : latestDoc.data().content;
                                 
                                 widget.load(layoutData);
-                                showNotification('저장된 차트가 복원되었습니다', 'success');
-                                console.log('✅ 수동 저장 차트 복원 완료');
                                 chartRestored = true; // 복원 완료 플래그 설정
+                                showNotification('차트가 복원되었습니다', 'success');
+                                console.log('✅ 로그인 후 수동 저장 차트 복원 완료');
                                 return;
                             } catch (parseError) {
                                 console.error('수동 저장 차트 데이터 파싱 실패:', parseError);
@@ -819,7 +845,7 @@ async function initializeTradingViewChart() {
                         }
                     }
                     
-                    console.log('ℹ️ 복원할 차트 없음');
+                    console.log('ℹ️ 로그인 후 복원할 차트 없음');
                 } catch (error) {
                     console.error('❌ 차트 복원 실패:', error);
                 }
@@ -3855,7 +3881,7 @@ function onAuthStateChanged(user) {
                                 widget.load(layoutData);
                                 showNotification('로그인 후 차트가 자동 복원되었습니다', 'success');
                                 console.log('✅ 로그인 후 자동 저장 차트 복원 완료');
-                                return;
+                    return;
                             } catch (parseError) {
                                 console.error('차트 데이터 파싱 실패:', parseError);
                             }
@@ -5462,3 +5488,29 @@ function calculateFearGreedIndex(rsi, macd, volatility, momentum, volume) {
         sentiment: sentiment
     };
 }
+
+// ==================== 테마 변경 이벤트 리스너 ====================
+
+// 테마 변경 감지 및 차트 테마 업데이트
+document.addEventListener('DOMContentLoaded', function() {
+    // MutationObserver를 사용하여 dark-mode 클래스 변경 감지
+    const observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+            if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+                // 테마 변경이 감지되면 차트 테마도 즉시 업데이트
+                updateChartTheme();
+            }
+        });
+    });
+    
+    // HTML 요소의 클래스 변경 감지 시작
+    observer.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['class']
+    });
+    
+    console.log('차트 테마 변경 감지 시스템 초기화 완료');
+});
+
+// 전역 함수로 내보내기 (다른 스크립트에서 호출 가능)
+window.updateChartTheme = updateChartTheme;

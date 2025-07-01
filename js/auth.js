@@ -19,6 +19,16 @@ function initializeFirebase() {
                         return;
                     } else {
                         console.error('Firebase SDK 로딩 시간 초과');
+                        // FOUC 방지: Firebase 로딩 실패 시에도 헤더 표시
+                        const mainHeader = document.getElementById('main-header');
+                        const authLoading = document.getElementById('auth-loading');
+                        if (mainHeader && authLoading) {
+                            authLoading.style.opacity = '0';
+                            setTimeout(() => {
+                                authLoading.style.display = 'none';
+                            }, 300);
+                            mainHeader.style.opacity = '1';
+                        }
                         reject(new Error('Firebase SDK 로딩 시간 초과'));
                         return;
                     }
@@ -43,8 +53,10 @@ function initializeFirebase() {
                 window.auth = firebase.auth();
                 window.db = firebase.firestore();
                 
-                // Auth 상태 변경 리스너 설정
-                window.auth.onAuthStateChanged(updateAuthUI);
+                // Auth 상태 변경 리스너 설정 (FOUC 방지를 위해 즉시 호출)
+                window.auth.onAuthStateChanged((user) => {
+                    updateAuthUI(user);
+                });
                 
                 // 테마 적용 및 헤더 버튼 이벤트 리스너 초기화
                 applyTheme();
@@ -54,6 +66,16 @@ function initializeFirebase() {
                 resolve(true);
             } catch (error) {
                 console.error('Firebase 초기화 중 오류 발생:', error);
+                // FOUC 방지: Firebase 초기화 실패 시에도 헤더 표시
+                const mainHeader = document.getElementById('main-header');
+                const authLoading = document.getElementById('auth-loading');
+                if (mainHeader && authLoading) {
+                    authLoading.style.opacity = '0';
+                    setTimeout(() => {
+                        authLoading.style.display = 'none';
+                    }, 300);
+                    mainHeader.style.opacity = '1';
+                }
                 reject(error);
             }
         };
@@ -93,8 +115,27 @@ function controlModal(modalId, show) {
     if (modal) {
         if (show) {
             modal.classList.add('show', 'active');
+            // 회원가입 모달을 열 때 Turnstile 자동 렌더링
+            if (modalId === 'signup-modal') {
+                console.log('🔄 [controlModal] 회원가입 모달 열림 - Turnstile 자동 렌더링 시작');
+                // 약간의 지연 후 Turnstile 렌더링 (DOM이 완전히 준비된 후)
+                setTimeout(() => {
+                    if (typeof window.renderTurnstile === 'function') {
+                        window.renderTurnstile();
+                    } else if (window.TurnstileManager) {
+                        window.TurnstileManager.render();
+                    }
+                }, 100);
+            }
         } else {
             modal.classList.remove('show', 'active');
+            // 회원가입 모달을 닫을 때 Turnstile 상태 초기화
+            if (modalId === 'signup-modal') {
+                console.log('🔄 [controlModal] 회원가입 모달 닫힘 - Turnstile 상태 초기화');
+                // Turnstile 상태 초기화
+                window.turnstileAlreadyRendered = false;
+                window.turnstileRenderingInProgress = false;
+            }
         }
         document.body.style.overflow = show ? 'hidden' : '';
         console.log(`controlModal: Modal #${modalId} class list:`, modal.classList);
@@ -102,8 +143,12 @@ function controlModal(modalId, show) {
 }
 
 function applyTheme() {
-    const theme = localStorage.getItem('theme');
+    const theme = localStorage.getItem('theme') || 'light';
+    
+    // 모든 테마 속성 설정
     document.documentElement.classList.toggle('dark-mode', theme === 'dark');
+    document.documentElement.setAttribute('data-theme', theme);
+    
     updateLogos();
     updateThemeIcon();
 }
@@ -112,11 +157,37 @@ function toggleTheme() {
     console.log('Toggling theme...');
     const currentTheme = localStorage.getItem('theme') || 'light';
     const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+    
+    // 즉시 테마 적용
     document.documentElement.classList.toggle('dark-mode', newTheme === 'dark');
+    document.documentElement.setAttribute('data-theme', newTheme);
     localStorage.setItem('theme', newTheme);
+    
     console.log(`Theme changed to ${newTheme}. Dark mode class present:`, document.documentElement.classList.contains('dark-mode'));
+    
+    // 로고와 아이콘 즉시 업데이트
     updateLogos();
     updateThemeIcon();
+    
+    // 차트 테마 업데이트 (community 페이지에서만)
+    if (typeof window.updateChartTheme === 'function') {
+        window.updateChartTheme();
+    }
+    
+    // 인덱스 페이지 차트 테마 업데이트
+    if (typeof window.updateIndexChartTheme === 'function') {
+        window.updateIndexChartTheme();
+    }
+    
+    // Turnstile 테마 업데이트
+    if (window.TurnstileManager) {
+        setTimeout(() => {
+            window.TurnstileManager.reset();
+        }, 150);
+    }
+    
+    // 다른 페이지의 테마 변경 이벤트 발생
+    window.dispatchEvent(new CustomEvent('themeChanged', { detail: { theme: newTheme } }));
 }
 
 function updateThemeIcon() {
@@ -142,6 +213,8 @@ async function updateAuthUI(user) {
     const userProfile = getElement('user-profile');
     const authButtons = document.querySelector('.auth-buttons');
     const adminPageLink = getElement('admin-page-link');
+    const mainHeader = getElement('main-header');
+    const authLoading = getElement('auth-loading');
 
     if (user) {
         try {
@@ -156,57 +229,61 @@ async function updateAuthUI(user) {
 
             // 로그인 상태 UI 업데이트
             if (userProfile) userProfile.style.display = 'flex';
-        if (authButtons) authButtons.style.display = 'none';
+            if (authButtons) authButtons.style.display = 'none';
             if (getElement('user-display-name')) getElement('user-display-name').textContent = currentUser.displayName;
             
             // 레벨 정보 업데이트
             updateUserLevelDisplay();
             
-            if (adminPageLink) adminPageLink.style.display = currentUser.role === 'admin' ? 'inline-block' : 'none';
+            // 관리자 권한 확인
+            if (currentUser.isAdmin) {
+                if (adminPageLink) adminPageLink.style.display = 'inline-block';
+                if (getElement('mobile-admin-link')) getElement('mobile-admin-link').style.display = 'block';
+            } else {
+                if (adminPageLink) adminPageLink.style.display = 'none';
+                if (getElement('mobile-admin-link')) getElement('mobile-admin-link').style.display = 'none';
+            }
             
-            // 모바일 관리자 링크 업데이트
-            const mobileAdminLink = getElement('mobile-admin-link');
-            if (mobileAdminLink) mobileAdminLink.style.display = currentUser.role === 'admin' ? 'block' : 'none';
-
-            // 모바일 메뉴 업데이트
-            updateMobileMenuUserInfo();
-            
-            // 주기적 사용자 데이터 새로고침 시작
+            // 사용자 데이터 새로고침 시작
             startUserDataRefresh();
-
-            // Ensure any authentication modal is closed
-            hideOpenAuthModals();
+            
         } catch (error) {
             console.error("Error fetching user data:", error);
-            // 에러 발생 시 로그아웃 처리
-            window.auth.signOut().catch(console.error);
+            // 에러 발생 시에도 기본 사용자 정보로 설정
+            currentUser = { uid: user.uid, displayName: user.displayName || "사용자", points: 0, level: "새싹" };
+            window.currentUser = currentUser;
+            
+            if (userProfile) userProfile.style.display = 'flex';
+            if (authButtons) authButtons.style.display = 'none';
+            if (getElement('user-display-name')) getElement('user-display-name').textContent = currentUser.displayName;
         }
     } else {
-        console.log("User is logged out");
+        // 로그아웃 상태
         currentUser = null;
         window.currentUser = null;
-
-        // 주기적 새로고침 중지
-        stopUserDataRefresh();
-
-        // 로그아웃 상태 UI 업데이트
+        
         if (userProfile) userProfile.style.display = 'none';
         if (authButtons) authButtons.style.display = 'flex';
         if (adminPageLink) adminPageLink.style.display = 'none';
-
-        // 모바일 메뉴 업데이트
-    if (mobileAuthSection) {
-            mobileAuthSection.innerHTML = `
-                <div style="display:flex; flex-direction:column; gap:12px; padding:20px 0;">
-                    <button class="mobile-auth-btn login" data-action="open-login-modal" style="font-size:1.15rem; padding:14px 0; border-radius:12px; font-weight:700; display:flex; align-items:center; justify-content:center; gap:8px; background:var(--primary-color); color:#fff; border:none;">
-                        <i class="fas fa-sign-in-alt"></i> 로그인
-                    </button>
-                    <button class="mobile-auth-btn signup" data-action="open-signup-modal" style="font-size:1.15rem; padding:14px 0; border-radius:12px; font-weight:700; display:flex; align-items:center; justify-content:center; gap:8px; background:var(--bg-secondary-color); color:var(--primary-color); border:1.5px solid var(--primary-color);">
-                        <i class="fas fa-user-plus"></i> 회원가입
-                    </button>
-                </div>
-            `;
-        }
+        if (getElement('mobile-admin-link')) getElement('mobile-admin-link').style.display = 'none';
+        
+        // 사용자 데이터 새로고침 중지
+        stopUserDataRefresh();
+        
+        // 모바일 메뉴 초기화
+        updateMobileMenuUserInfo();
+    }
+    
+    // FOUC 해결: 인증 상태 확인 후 헤더 표시
+    if (mainHeader && authLoading) {
+        // 로딩 스피너 숨기기
+        authLoading.style.opacity = '0';
+        setTimeout(() => {
+            authLoading.style.display = 'none';
+        }, 300);
+        
+        // 헤더 표시
+        mainHeader.style.opacity = '1';
     }
 }
 
@@ -233,19 +310,12 @@ function updateMobileMenuUserInfo() {
         return;
     }
     
-    // 레벨 시스템이 로드될 때까지 기다림
-    if (!window.levelSystem) {
-        setTimeout(updateMobileMenuUserInfo, 100);
-        return;
-    }
-    
-    const levelInfo = window.levelSystem.calculateLevel(currentUser.points || 0);
+    // 레벨 시스템 제거됨
     
     mobileAuthSection.innerHTML = `
         <div class="mobile-user-profile">
             <div class="mobile-user-info">
                 <span class="mobile-user-name">${currentUser.displayName}님</span>
-                <span class="mobile-user-level" style="color: ${levelInfo.color || levelInfo.gradient || '#22c55e'}">${levelInfo.name}</span>
             </div>
             <div class="mobile-user-stats">
                 <span class="mobile-user-points">${(currentUser.points || 0).toLocaleString()}P</span>
@@ -267,30 +337,18 @@ window.refreshUserData = async function() {
                 
                 console.log('포인트 변경:', oldPoints, '->', newUserData.points);
                 
-                // 레벨 시스템이 로드될 때까지 기다림
-                if (!window.levelSystem) {
-                    console.log('레벨 시스템 로딩 대기 중...');
-                    setTimeout(window.refreshUserData, 200);
-                    return;
-                }
-                
-                // 헤더 레벨 업데이트
-                updateUserLevelDisplay();
-                
                 // 모바일 메뉴 업데이트
                 updateMobileMenuUserInfo();
                 
                 // 채팅에서 사용할 수 있도록 전역 변수 업데이트
-                window.currentUserLevel = window.levelSystem.calculateLevel(newUserData.points || 0);
                 window.currentUserData = { uid: window.auth.currentUser.uid, ...newUserData };
                 
                 // 마이페이지에서 사용할 수 있도록 이벤트 발생
                 window.dispatchEvent(new CustomEvent('userDataUpdated', { 
-                    detail: { user: window.currentUserData, level: window.currentUserLevel } 
+                    detail: { user: window.currentUserData } 
                 }));
                 
                 console.log('사용자 데이터가 새로고침되었습니다:', window.currentUserData);
-                console.log('현재 레벨:', window.currentUserLevel);
                 
                 // currentUser 업데이트
                 currentUser = { uid: window.auth.currentUser.uid, ...newUserData };
@@ -519,25 +577,32 @@ function showBacktestMarkers(results) {
 }
 
 // =========================
-// Lazy form binding for header-injected modals (duplicated to ensure standalone functionality)
+// 강력한 폼 바인딩 시스템
 // =========================
 
 if (!window.bindAuthForms) {
     function bindAuthForms() {
+        console.log('🔧 폼 바인딩 시작...');
+        bindLoginForm();
+        bindSignupForm();
+    }
+    
+    function bindLoginForm() {
         const loginForm = document.getElementById('login-form');
         if (loginForm && !loginForm.dataset.bound) {
             loginForm.dataset.bound = 'true';
+            console.log('✅ 로그인 폼 바인딩 완료');
             loginForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 const email = loginForm['login-email'].value;
                 const password = loginForm['login-password'].value;
                 const errorMsg = document.getElementById('login-error-message');
                 try {
-                    const userCredential = await auth.signInWithEmailAndPassword(email, password);
-                    const userDoc = await db.collection("users").doc(userCredential.user.uid).get();
+                    const userCredential = await window.auth.signInWithEmailAndPassword(email, password);
+                    const userDoc = await window.db.collection("users").doc(userCredential.user.uid).get();
                     const _exists = typeof userDoc.exists === 'function' ? userDoc.exists() : userDoc.exists;
                     if (!_exists) {
-                        await db.collection("users").doc(userCredential.user.uid).set({
+                        await window.db.collection("users").doc(userCredential.user.uid).set({
                             displayName: userCredential.user.displayName || "사용자",
                             email,
                             points: 0,
@@ -553,15 +618,17 @@ if (!window.bindAuthForms) {
                 }
             });
         }
+    }
+    
+    function bindSignupForm() {
         const signupForm = document.getElementById('signup-form');
         if (signupForm && !signupForm.dataset.bound) {
             signupForm.dataset.bound = 'true';
-            if (!document.getElementById('cf-turnstile')) {
-                const turnstileDiv = document.createElement('div');
-                turnstileDiv.className = 'input-group';
-                turnstileDiv.innerHTML = `<div id="cf-turnstile" class="cf-turnstile" data-sitekey="0x4AAAAAABhG8vjyB5nsUxll" data-theme="light"></div>`;
-                signupForm.insertBefore(turnstileDiv, signupForm.querySelector('button'));
-            }
+            console.log('✅ [js/auth.js] 회원가입 폼 바인딩 완료');
+            
+            // TurnstileManager가 자동으로 처리 - 별도 호출 불필요
+            console.log('✅ [js/auth.js] TurnstileManager가 자동 처리');
+            
             signupForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 const name = signupForm['signup-name'].value;
@@ -569,6 +636,7 @@ if (!window.bindAuthForms) {
                 const password = signupForm['signup-password'].value;
                 const confirmPassword = signupForm['signup-confirm-password'].value;
                 const errorMsg = document.getElementById('signup-error-message');
+                
                 if (name.length > 8) {
                     if(errorMsg) errorMsg.textContent = "닉네임은 8자 이하로 입력해주세요.";
                     return;
@@ -577,18 +645,24 @@ if (!window.bindAuthForms) {
                     if(errorMsg) errorMsg.textContent = "비밀번호가 일치하지 않습니다.";
                     return;
                 }
+                
+                // Turnstile 토큰 확인
                 const token = document.querySelector('#cf-turnstile input[name="cf-turnstile-response"]')?.value;
                 if (!token) {
                     if(errorMsg) errorMsg.textContent = "자동 가입 방지 인증을 완료해 주세요.";
+                    if (typeof renderTurnstile === 'function') {
+                        renderTurnstile();
+                    }
                     return;
                 }
+                
                 try {
-                    const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+                    const userCredential = await window.auth.createUserWithEmailAndPassword(email, password);
                     await userCredential.user.updateProfile({ displayName: name });
-                    const userDoc = await db.collection("users").doc(userCredential.user.uid).get();
+                    const userDoc = await window.db.collection("users").doc(userCredential.user.uid).get();
                     const _exists = typeof userDoc.exists === 'function' ? userDoc.exists() : userDoc.exists;
                     if (!_exists) {
-                        await db.collection("users").doc(userCredential.user.uid).set({
+                        await window.db.collection("users").doc(userCredential.user.uid).set({
                             displayName: name,
                             email,
                             points: 0,
@@ -606,6 +680,7 @@ if (!window.bindAuthForms) {
             });
         }
     }
+    
     window.bindAuthForms = bindAuthForms;
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', bindAuthForms);
@@ -625,4 +700,173 @@ function hideOpenAuthModals() {
 // Provide a minimal stub if level-system.js is not loaded
 if (!window.levelSystem) {
   window.levelSystem = { calculateLevel: (points)=>({name:'Lv.0', color:'#22c55e'}) };
-} 
+}
+
+// =========================
+// 강력한 Turnstile 렌더링 시스템
+// =========================
+
+// 강력한 Turnstile 렌더링 시스템
+function renderTurnstile() {
+    console.log('🎯 [js/auth.js] renderTurnstile 호출됨');
+    
+    // 중복 렌더링 방지
+    if (window.turnstileRenderingInProgress) {
+        console.log('⏳ [js/auth.js] Turnstile 렌더링 진행 중 - 대기');
+        return;
+    }
+    
+    if (window.turnstileAlreadyRendered) {
+        console.log('✅ [js/auth.js] Turnstile이 이미 렌더링됨 - 건너뛰기');
+        return;
+    }
+    
+    window.turnstileRenderingInProgress = true;
+    
+    // Turnstile 스크립트 로드 확인 및 렌더링
+    ensureTurnstileScript().then(() => {
+        const turnstileElement = findOrCreateTurnstileElement();
+        if (turnstileElement) {
+            performTurnstileRender(turnstileElement);
+        } else {
+            console.error('❌ [js/auth.js] Turnstile 요소를 찾거나 생성할 수 없음');
+            window.turnstileRenderingInProgress = false;
+        }
+    }).catch((error) => {
+        console.error('❌ [js/auth.js] Turnstile 렌더링 준비 실패:', error);
+        window.turnstileRenderingInProgress = false;
+    });
+}
+
+// Turnstile 스크립트 확실히 로드
+function ensureTurnstileScript() {
+    return new Promise((resolve) => {
+        if (window.turnstile) {
+            console.log('✅ Turnstile 스크립트 이미 로드됨');
+            resolve();
+            return;
+        }
+        
+        // 기존 스크립트 확인
+        const existingScript = document.querySelector('script[src*="turnstile"]');
+        if (existingScript) {
+            console.log('⏳ 기존 Turnstile 스크립트 로딩 대기...');
+            const checkLoaded = () => {
+                if (window.turnstile) {
+                    resolve();
+                } else {
+                    setTimeout(checkLoaded, 100);
+                }
+            };
+            checkLoaded();
+            return;
+        }
+        
+        // 새 스크립트 추가
+        console.log('📥 Turnstile 스크립트 추가 중...');
+        const script = document.createElement('script');
+        script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js';
+        script.async = true;
+        script.defer = true;
+        script.onload = () => {
+            console.log('✅ Turnstile 스크립트 로드 완료');
+            resolve();
+        };
+        script.onerror = () => {
+            console.error('❌ Turnstile 스크립트 로드 실패');
+            resolve(); // 계속 진행
+        };
+        document.head.appendChild(script);
+    });
+}
+
+// Turnstile 요소 찾기 또는 생성
+function findOrCreateTurnstileElement() {
+    let turnstileElement = document.getElementById('cf-turnstile');
+    
+    if (!turnstileElement) {
+        console.log('📝 Turnstile 요소 동적 생성...');
+        const signupForm = document.getElementById('signup-form');
+        if (!signupForm) {
+            console.log('❌ 회원가입 폼을 찾을 수 없음');
+            return null;
+        }
+        
+        const turnstileDiv = document.createElement('div');
+        turnstileDiv.className = 'input-group';
+        turnstileDiv.innerHTML = `<div id="cf-turnstile" class="cf-turnstile" data-sitekey="0x4AAAAAABhG8vjyB5nsUxll" data-theme="${document.documentElement.classList.contains('dark-mode') ? 'dark' : 'light'}"></div>`;
+        
+        const submitButton = signupForm.querySelector('button[type="submit"]');
+        if (submitButton) {
+            signupForm.insertBefore(turnstileDiv, submitButton);
+            turnstileElement = document.getElementById('cf-turnstile');
+            console.log('✅ Turnstile 요소 생성 완료');
+        }
+    }
+    
+    return turnstileElement;
+}
+
+// 실제 Turnstile 렌더링 수행 (중복 방지)
+function performTurnstileRender(turnstileElement) {
+    if (!window.turnstile) {
+        console.log('❌ [js/auth.js] Turnstile 스크립트가 로드되지 않음');
+        window.turnstileRenderingInProgress = false;
+        return;
+    }
+    
+    // 이미 렌더링되어 있는지 최종 확인
+    if (turnstileElement.querySelector('iframe')) {
+        console.log('⚠️ [js/auth.js] Turnstile이 이미 렌더링되어 있음 - 건너뛰기');
+        window.turnstileAlreadyRendered = true;
+        window.turnstileRenderingInProgress = false;
+        return;
+    }
+    
+    // 모든 Turnstile 요소들 정리 (중복 방지)
+    document.querySelectorAll('.cf-turnstile').forEach((element, index) => {
+        if (element !== turnstileElement && element.querySelector('iframe')) {
+            console.log(`🗑️ [js/auth.js] 중복 Turnstile 요소 ${index + 1} 제거`);
+            try {
+                window.turnstile.reset(element);
+            } catch (e) {
+                element.innerHTML = '';
+            }
+        }
+    });
+    
+    // 새로 렌더링
+    try {
+        console.log('🎨 [js/auth.js] Turnstile 렌더링 실행...');
+        window.turnstile.render(turnstileElement, {
+            sitekey: '0x4AAAAAABhG8vjyB5nsUxll',
+            theme: document.documentElement.classList.contains('dark-mode') ? 'dark' : 'light',
+            callback: function(token) {
+                console.log('✅ [js/auth.js] Turnstile 인증 완료!');
+                window.turnstileAlreadyRendered = true;
+                window.turnstileRenderingInProgress = false;
+            },
+            'error-callback': function() {
+                console.log('❌ [js/auth.js] Turnstile 오류 - 재시도 예약');
+                window.turnstileAlreadyRendered = false;
+                window.turnstileRenderingInProgress = false;
+                setTimeout(() => {
+                    renderTurnstile();
+                }, 2000);
+            }
+        });
+        console.log('✅ [js/auth.js] Turnstile 렌더링 성공!');
+        window.turnstileAlreadyRendered = true;
+        window.turnstileRenderingInProgress = false;
+    } catch (error) {
+        console.error('❌ [js/auth.js] Turnstile 렌더링 실패:', error);
+        window.turnstileAlreadyRendered = false;
+        window.turnstileRenderingInProgress = false;
+        setTimeout(() => {
+            renderTurnstile();
+        }, 2000);
+    }
+}
+
+// 전역에서 접근 가능하도록
+window.renderTurnstile = renderTurnstile; 

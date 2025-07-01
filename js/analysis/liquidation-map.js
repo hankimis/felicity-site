@@ -110,18 +110,15 @@ export class LiquidationMap {
 
     async fetchLiquidationData() {
         try {
-            // 실제 청산 데이터 API 호출
-            const response = await fetch('https://martyn-ukrainian.pp.ua/liq-data');
-            const data = await response.json();
+            // 실제 청산 데이터 API 호출 - 현재 사용 불가능한 도메인 제거
+            // const response = await fetch('https://martyn-ukrainian.pp.ua/liq-data');
+            // const data = await response.json();
             
-            if (data && data.data) {
-                this.liquidationData = this.processLiquidationData(data.data);
-                console.log('✅ Real liquidation data loaded');
-            } else {
-                throw new Error('Invalid data format');
-            }
+            // 폴백 데이터 사용
+            console.warn('⚠️ Using fallback liquidation data');
+            this.generateFallbackData();
         } catch (error) {
-            console.warn('⚠️ Failed to load real data, using fallback');
+            console.warn('⚠️ Failed to load data, using fallback');
             this.generateFallbackData();
         }
     }
@@ -199,7 +196,7 @@ export class LiquidationMap {
         if (!container) return;
 
         container.innerHTML = `
-            <div class="liquidation-heatmap-container">
+            <div class="liquidation-heatmap-container dashboard-card">
                 <div class="heatmap-header">
                     <div class="price-info">
                         <span class="current-price">$${this.currentPrice.toLocaleString()}</span>

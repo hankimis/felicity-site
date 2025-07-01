@@ -20,7 +20,6 @@ class WhaleTracker {
             // Start periodic ratio updates
             setInterval(() => this.updateLSRatio(), 1000);
         } else {
-            console.log('🐋 WhaleTracker: Container is null, running in headless mode');
             // Headless mode - only connect WebSockets and track trades
             this.connectWebSockets();
             
@@ -79,8 +78,6 @@ class WhaleTracker {
             this.recentTrades = this.recentTrades.slice(-20);
         }
 
-        console.log('📊 Calculating from', this.recentTrades.length, 'trades');
-
         // Calculate volumes from last 20 trades
         this.longVolume = this.recentTrades
             .filter(t => t.side === 'BUY')
@@ -93,8 +90,6 @@ class WhaleTracker {
         // Calculate ratio
         const totalVolume = this.longVolume + this.shortVolume;
         const longRatio = totalVolume > 0 ? (this.longVolume / totalVolume) * 100 : 50;
-
-        console.log(`📊 Calculated from ${this.recentTrades.length} trades: ${longRatio.toFixed(1)}% (Buy: ${this.longVolume.toFixed(0)}, Sell: ${this.shortVolume.toFixed(0)})`);
 
         // Update mini gauge in whale header
         this.updateWhaleHeaderGauge(longRatio);
@@ -115,22 +110,17 @@ class WhaleTracker {
                     // 롱 우세 (초록색)
                     ratioValueMini.style.color = '#10b981';
                     ratioValueMini.style.background = 'rgba(16, 185, 129, 0.2)';
-                    console.log('🎯 Applied long bias styling');
                 } else if (ratio < 40) {
                     // 숏 우세 (빨간색)
                     ratioValueMini.style.color = '#ef4444';
                     ratioValueMini.style.background = 'rgba(239, 68, 68, 0.2)';
-                    console.log('🎯 Applied short bias styling');
                 } else {
                     // 중립 (회색)
                     ratioValueMini.style.color = '#6b7280';
                     ratioValueMini.style.background = 'rgba(107, 114, 128, 0.2)';
-                    console.log('🎯 Applied neutral styling');
                 }
             }
         }
-
-        console.log('✅ Whale ratio display updated:', ratio.toFixed(1) + '%', `(${this.recentTrades.length} trades)`);
     }
 
     addTrade(exchange, price, amount, side) {
@@ -231,8 +221,8 @@ class WhaleTracker {
     }
 
     updateSymbol(newSymbol) {
-        console.log(`🐋 WhaleTracker: Updating symbol to ${newSymbol}`);
-        // 기존 웹소켓 연결들을 닫고 새로운 심볼로 재연결
+        this.symbol = newSymbol;
+        // Reconnect WebSockets with new symbol
         this.connectWebSockets();
     }
 

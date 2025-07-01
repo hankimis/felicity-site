@@ -33,11 +33,222 @@ const getElement = (id) => document.getElementById(id);
 // 전역으로도 접근 가능하도록 설정
 window.getElement = getElement;
 
+// 안전한 Turnstile 렌더링 함수
+function renderTurnstile() {
+    console.log('🎯 renderTurnstile 호출됨');
+    
+    // 이미 렌더링 중이면 중단
+    if (window.turnstileRenderingInProgress) {
+        console.log('⏳ Turnstile 렌더링이 이미 진행 중 - 건너뛰기');
+        return;
+    }
+    
+    // 이미 렌더링되어 있으면 건너뛰기
+    if (window.turnstileAlreadyRendered) {
+        console.log('✅ Turnstile 이미 렌더링됨 - 건너뛰기');
+        return;
+    }
+    
+    window.turnstileRenderingInProgress = true;
+    
+    // 스크립트 로드 후 렌더링
+    ensureTurnstileScript().then(() => {
+        const turnstileElement = findOrCreateTurnstileElement();
+        if (turnstileElement) {
+            performTurnstileRender(turnstileElement);
+        }
+        window.turnstileRenderingInProgress = false;
+    });
+}
+
+// Turnstile 스크립트 확실히 로드
+function ensureTurnstileScript() {
+    return new Promise((resolve) => {
+        if (window.turnstile) {
+            console.log('✅ Turnstile 스크립트 이미 로드됨');
+            resolve();
+            return;
+        }
+        
+        // 기존 스크립트 확인
+        const existingScript = document.querySelector('script[src*="turnstile"]');
+        if (existingScript) {
+            console.log('⏳ 기존 Turnstile 스크립트 로딩 대기...');
+            const checkLoaded = () => {
+                if (window.turnstile) {
+                    resolve();
+                } else {
+                    setTimeout(checkLoaded, 100);
+                }
+            };
+            checkLoaded();
+            return;
+        }
+        
+        // 새 스크립트 추가
+        console.log('📥 Turnstile 스크립트 추가 중...');
+        const script = document.createElement('script');
+        script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js';
+        script.async = true;
+        script.defer = true;
+        script.onload = () => {
+            console.log('✅ Turnstile 스크립트 로드 완료');
+            resolve();
+        };
+        script.onerror = () => {
+            console.error('❌ Turnstile 스크립트 로드 실패');
+            resolve(); // 계속 진행
+        };
+        document.head.appendChild(script);
+    });
+}
+
+// Turnstile 요소 찾기 또는 생성 (중복 방지)
+function findOrCreateTurnstileElement() {
+    // 기존 요소 먼저 찾기
+    let turnstileElement = document.getElementById('cf-turnstile');
+    
+    if (turnstileElement) {
+        console.log('✅ 기존 Turnstile 요소 발견');
+        return turnstileElement;
+    }
+    
+    // 중복 생성 방지
+    if (document.querySelector('.cf-turnstile')) {
+        console.log('⚠️ Turnstile 요소가 이미 존재함 (다른 방식으로)');
+        return document.querySelector('.cf-turnstile');
+    }
+    
+    console.log('📝 Turnstile 요소 동적 생성...');
+    const signupForm = document.getElementById('signup-form');
+    if (!signupForm) {
+        console.log('❌ 회원가입 폼을 찾을 수 없음');
+        return null;
+    }
+    
+    // 이미 input-group이 있는지 확인
+    const existingInputGroup = signupForm.querySelector('.input-group:has(.cf-turnstile)');
+    if (existingInputGroup) {
+        console.log('⚠️ Turnstile input-group이 이미 존재함');
+        return existingInputGroup.querySelector('.cf-turnstile');
+    }
+    
+    const turnstileDiv = document.createElement('div');
+    turnstileDiv.className = 'input-group';
+    turnstileDiv.innerHTML = `<div id="cf-turnstile" class="cf-turnstile" data-sitekey="0x4AAAAAABhG8vjyB5nsUxll" data-theme="${document.documentElement.classList.contains('dark-mode') ? 'dark' : 'light'}"></div>`;
+    
+    const submitButton = signupForm.querySelector('button[type="submit"]');
+    if (submitButton) {
+        signupForm.insertBefore(turnstileDiv, submitButton);
+        turnstileElement = document.getElementById('cf-turnstile');
+        console.log('✅ Turnstile 요소 생성 완료');
+    }
+    
+    return turnstileElement;
+}
+
+// 실제 Turnstile 렌더링 수행 (중복 방지)
+function performTurnstileRender(turnstileElement) {
+    if (!window.turnstile) {
+        console.log('❌ Turnstile 스크립트가 로드되지 않음');
+        return;
+    }
+    
+    // 이미 렌더링되어 있는지 최종 확인
+    if (turnstileElement.querySelector('iframe')) {
+        console.log('⚠️ Turnstile이 이미 렌더링되어 있음 - 건너뛰기');
+        window.turnstileAlreadyRendered = true;
+        return;
+    }
+    
+    // 기존 렌더링된 Turnstile 위젯 정리
+    try {
+        const existingWidgets = document.querySelectorAll('.cf-turnstile iframe');
+        existingWidgets.forEach((widget, index) => {
+            const parent = widget.closest('.cf-turnstile');
+            if (parent !== turnstileElement) {
+                console.log(`🗑️ 기존 Turnstile 위젯 ${index + 1} 제거`);
+                try {
+                    window.turnstile.reset(parent);
+                } catch (e) {
+                    parent.innerHTML = '';
+                }
+            }
+        });
+    } catch (error) {
+        console.warn('기존 위젯 정리 중 오류:', error);
+    }
+    
+    // 새로 렌더링
+    try {
+        console.log('🎨 Turnstile 렌더링 실행...');
+        
+        // 기존 내용 제거
+        turnstileElement.innerHTML = '';
+        
+        window.turnstile.render(turnstileElement, {
+            sitekey: '0x4AAAAAABhG8vjyB5nsUxll',
+            theme: document.documentElement.classList.contains('dark-mode') ? 'dark' : 'light',
+            callback: function(token) {
+                console.log('✅ Turnstile 인증 완료!');
+                window.turnstileAlreadyRendered = true;
+                window.turnstileToken = token;
+            },
+            'error-callback': function(error) {
+                console.log('❌ Turnstile 오류:', error);
+                window.turnstileAlreadyRendered = false;
+                // 오류 발생 시 재시도 지연
+                setTimeout(() => {
+                    window.turnstileRenderingInProgress = false;
+                    if (document.getElementById('signup-modal').style.display === 'flex') {
+                        renderTurnstile();
+                    }
+                }, 3000);
+            },
+            'expired-callback': function() {
+                console.log('⏰ Turnstile 만료됨');
+                window.turnstileAlreadyRendered = false;
+                window.turnstileToken = null;
+            }
+        });
+        console.log('✅ Turnstile 렌더링 성공!');
+        window.turnstileAlreadyRendered = true;
+    } catch (error) {
+        console.error('❌ Turnstile 렌더링 실패:', error);
+        window.turnstileAlreadyRendered = false;
+        // 오류 발생 시 재시도 지연
+        setTimeout(() => {
+            window.turnstileRenderingInProgress = false;
+            if (document.getElementById('signup-modal').style.display === 'flex') {
+                renderTurnstile();
+            }
+        }, 3000);
+    }
+}
+
 function controlModal(modalId, show) {
     const modal = getElement(modalId);
     if (modal) {
         modal.style.display = show ? 'flex' : 'none';
         document.body.style.overflow = show ? 'hidden' : '';
+        
+        // 회원가입 모달이 열릴 때 Turnstile 렌더링
+        if (modalId === 'signup-modal' && show) {
+            // 기존 상태 초기화
+            window.turnstileAlreadyRendered = false;
+            window.turnstileRenderingInProgress = false;
+            
+            setTimeout(() => {
+                renderTurnstile();
+            }, 300);
+        }
+        
+        // 모달이 닫힐 때 Turnstile 상태 초기화
+        if (modalId === 'signup-modal' && !show) {
+            window.turnstileAlreadyRendered = false;
+            window.turnstileRenderingInProgress = false;
+            window.turnstileToken = null;
+        }
     }
 }
 
@@ -289,7 +500,7 @@ function startUserDataRefresh() {
         if (auth.currentUser && currentUser) {
             try {
                 const userDoc = await db.collection("users").doc(auth.currentUser.uid).get();
-                if (userDoc.exists()) {
+                if (userDoc.exists) {
                     const newUserData = userDoc.data();
                     
                     // 포인트가 변경되었는지 확인
@@ -326,7 +537,9 @@ function handleGlobalClick(e) {
         'open-login': () => controlModal('login-modal', true),
         'open-signup': () => controlModal('signup-modal', true),
         'open-login-modal': () => controlModal('login-modal', true),
-        'open-signup-modal': () => controlModal('signup-modal', true),
+        'open-signup-modal': () => {
+            controlModal('signup-modal', true);
+        },
         'close-modal': () => {
             const modal = target.closest('.auth-modal');
             if (modal) {
@@ -334,7 +547,10 @@ function handleGlobalClick(e) {
                 controlModal(modal.id, false);
             }
         },
-        'show-signup': () => { controlModal('login-modal', false); controlModal('signup-modal', true); },
+        'show-signup': () => { 
+            controlModal('login-modal', false); 
+            controlModal('signup-modal', true);
+        },
         'show-login': () => { controlModal('signup-modal', false); controlModal('login-modal', true); },
         'toggle-theme': () => {
             console.log("Toggling theme");
@@ -540,6 +756,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 if(errorMsg) errorMsg.textContent = "비밀번호가 일치하지 않습니다.";
                 return;
             }
+
+            // turnstile 토큰 체크 (회원가입 전에 먼저 체크)
+            const turnstileToken = document.querySelector('#cf-turnstile input[name="cf-turnstile-response"]')?.value;
+            if (!turnstileToken) {
+                if(errorMsg) errorMsg.textContent = "자동 가입 방지 인증을 완료해 주세요.";
+                return;
+            }
+
             try {
                 const userCredential = await auth.createUserWithEmailAndPassword(email, password);
                 await userCredential.user.updateProfile({ displayName: name });
@@ -557,12 +781,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 alert('회원가입이 완료되었습니다!');
             } catch (error) {
                 if(errorMsg) errorMsg.textContent = error.code === 'auth/email-already-in-use' ? '이미 사용 중인 이메일입니다.' : "회원가입 중 오류가 발생했습니다.";
-            }
-            // turnstile 토큰 체크
-            const turnstileToken = document.querySelector('#cf-turnstile input[name="cf-turnstile-response"]')?.value;
-            if (!turnstileToken) {
-                if(errorMsg) errorMsg.textContent = "자동 가입 방지 인증을 완료해 주세요.";
-                return;
+                // 오류 발생 시 Turnstile 초기화
+                setTimeout(() => {
+                    renderTurnstile();
+                }, 100);
             }
         });
     }
@@ -719,13 +941,10 @@ function bindAuthForms() {
     const signupForm = document.getElementById('signup-form');
     if (signupForm && !signupForm.dataset.bound) {
         signupForm.dataset.bound = 'true';
-        // turnstile 추가(중복 방지)
-        if (!document.getElementById('cf-turnstile')) {
-            const turnstileDiv = document.createElement('div');
-            turnstileDiv.className = 'input-group';
-            turnstileDiv.innerHTML = `<div id="cf-turnstile" class="cf-turnstile" data-sitekey="0x4AAAAAABhG8vjyB5nsUxll" data-theme="light"></div>`;
-            signupForm.insertBefore(turnstileDiv, signupForm.querySelector('button'));
-        }
+        // Turnstile 위젯 렌더링
+        setTimeout(() => {
+            renderTurnstile();
+        }, 500);
 
         signupForm.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -744,7 +963,7 @@ function bindAuthForms() {
                 return;
             }
 
-            // turnstile 토큰 체크
+            // turnstile 토큰 체크 (회원가입 전에 먼저 체크)
             const turnstileToken = document.querySelector('#cf-turnstile input[name="cf-turnstile-response"]')?.value;
             if (!turnstileToken) {
                 if(errorMsg) errorMsg.textContent = "자동 가입 방지 인증을 완료해 주세요.";
@@ -754,19 +973,27 @@ function bindAuthForms() {
             try {
                 const userCredential = await auth.createUserWithEmailAndPassword(email, password);
                 await userCredential.user.updateProfile({ displayName: name });
-                await db.collection("users").doc(userCredential.user.uid).set({
-                    displayName: name,
-                    email,
-                    points: 0,
-                    level: "새싹",
-                    role: email === 'admin@site.com' ? 'admin' : 'user',
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                });
+                const userDoc = await db.collection("users").doc(userCredential.user.uid).get();
+                const _exists = typeof userDoc.exists === 'function' ? userDoc.exists() : userDoc.exists;
+                if (!_exists) {
+                    await db.collection("users").doc(userCredential.user.uid).set({
+                        displayName: name,
+                        email,
+                        points: 0,
+                        level: "새싹",
+                        role: email === 'admin@site.com' ? 'admin' : 'user',
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                }
                 controlModal('signup-modal', false);
                 signupForm.reset();
                 alert('회원가입이 완료되었습니다!');
             } catch (error) {
                 if(errorMsg) errorMsg.textContent = error.code === 'auth/email-already-in-use' ? '이미 사용 중인 이메일입니다.' : "회원가입 중 오류가 발생했습니다.";
+                // 오류 발생 시 Turnstile 초기화
+                setTimeout(() => {
+                    renderTurnstile();
+                }, 100);
             }
         });
     }

@@ -19,6 +19,25 @@
     <link rel="stylesheet" href="./auth.css"/>
     
     <style>
+        /* 다크모드 CSS 변수 */
+        :root {
+            --card-bg: white;
+            --card-border: #f1f5f9;
+            --card-shadow: rgba(0, 0, 0, 0.08);
+            --card-shadow-hover: rgba(0, 0, 0, 0.12);
+            --text-primary: #1f2937;
+            --text-secondary: #6b7280;
+        }
+
+        [data-theme="dark"] {
+            --card-bg: #1e293b;
+            --card-border: #334155;
+            --card-shadow: rgba(0, 0, 0, 0.3);
+            --card-shadow-hover: rgba(0, 0, 0, 0.4);
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+        }
+
         .info-cards-container {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -27,16 +46,16 @@
         }
         
         .info-card {
-            background: white;
+            background: var(--card-bg);
             border-radius: 16px;
             padding: 1.5rem;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-            border: 1px solid #f1f5f9;
+            box-shadow: 0 4px 20px var(--card-shadow);
+            border: 1px solid var(--card-border);
             transition: all 0.3s ease;
         }
         
         .info-card:hover {
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+            box-shadow: 0 8px 32px var(--card-shadow-hover);
             transform: translateY(-2px);
         }
         
@@ -44,7 +63,7 @@
             font-size: 1.2rem;
             font-weight: 600;
             margin: 0 0 1rem 0;
-            color: #1f2937;
+            color: var(--text-primary);
         }
         
         .banner-link {
@@ -60,6 +79,8 @@
             object-fit: contain;
             border-radius: 8px;
             flex-shrink: 0;
+            background: var(--card-bg);
+            padding: 4px;
         }
         
         .banner-content {
@@ -69,16 +90,70 @@
         .banner-card-title {
             font-size: 1.1rem;
             font-weight: 600;
-            color: #1f2937;
+            color: var(--text-primary);
             margin: 0 0 0.5rem 0;
         }
         
         .banner-card-desc {
             font-size: 0.9rem;
-            color: #6b7280;
+            color: var(--text-secondary);
             margin: 0;
         }
-        
+
+        /* 다크모드에서 거래소 테이블 스타일 개선 */
+        [data-theme="dark"] .exchange-table-wrapper {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+        }
+
+        [data-theme="dark"] .exchange-table-wrapper table {
+            background: transparent;
+        }
+
+        [data-theme="dark"] .exchange-table-wrapper th {
+            background: #334155;
+            color: var(--text-primary);
+            border-bottom: 1px solid var(--card-border);
+        }
+
+        [data-theme="dark"] .exchange-table-wrapper td {
+            background: transparent;
+            color: var(--text-primary);
+            border-bottom: 1px solid var(--card-border);
+        }
+
+        [data-theme="dark"] .exchange-table-wrapper tr:hover td {
+            background: #334155 !important;
+        }
+
+        /* 다크모드에서 탭 스타일 개선 */
+        [data-theme="dark"] .table-tabs .swiper-slide {
+            color: var(--text-secondary);
+            background: transparent;
+        }
+
+        [data-theme="dark"] .table-tabs .swiper-slide.active {
+            color: var(--text-primary);
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+        }
+
+        /* 다크모드에서 파트너 섹션 스타일 */
+        [data-theme="dark"] .partner-grid-title {
+            color: var(--text-primary);
+        }
+
+        [data-theme="dark"] .partner-grid-pre-title {
+            color: var(--text-secondary);
+        }
+
+        [data-theme="dark"] .partner-logo-item {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 8px;
+            padding: 8px;
+        }
+
         /* 반응형 디자인 */
         @media (max-width: 768px) {
             .info-cards-container {
@@ -108,11 +183,15 @@
     
     <!-- Common Scripts -->
     <script src="js/auth.js"></script>
-    <script src="js/level-system.js"></script>
     <!-- Unified Header Loader -->
     <script src="js/header-loader.js" defer></script>
+    <!-- Cloudflare Turnstile -->
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 </head>
 <body>
+    <!-- 헤더 플레이스홀더 -->
+    <div id="header-placeholder"></div>
+    
     <main class="main-container affiliated-page">
         <section class="pre-check-section">
             <h3 class="section-title">거래소 선택 전, 꼭 확인하세요!</h3>
@@ -213,7 +292,7 @@
                           <td><button class="signup-button filled" onclick="window.location.href='bitget.html'">계정 개설</button></td>
                       </tr>
                         <tr>
-                            <td><div class="exchange-info"><img src="assets/tradelogo/bitmexlogo.png" class="exchange-logo"><span>Bitmex</span></div></td>
+                            <td><div class="exchange-info"><img src="assets/tradelogo/Bitmexlogo.png" class="exchange-logo"><span>Bitmex</span></div></td>
                             <td>50%</td>
                             <td>0.0254%</td>
                             <td>0.025%</td>
@@ -281,28 +360,8 @@
         </section>
     </main>
 
-    <footer class="footer">
-        <div class="footer-wrapper">
-            <section class="footer-container">
-                <h4 class="footer-text">ONBit PTE. LTD</h4>
-                <ul class="info-list">
-                    <li><p>고유 법인 번호(UEN) : <span class="value">202326628N</span></p></li>
-                    <li><p>소재지 : <span class="value">38 BEACH ROAD #17-12 SOUTH BEACH TOWER SINGAPORE (189767)</span></p></li>
-                    <li><p>고객센터 : <span class="value">채팅 상담 (00:00 - 24:00)</span></p></li>
-                    <li><p>이메일 : <span class="value">support@ONBit.io</span></p></li>
-                    <li><p>copyright 2022 | ONBit | All Right Reserved.</p></li>
-                    <li><button>이용 약관</button><span>|</span><button>개인정보처리방침</button></li>
-                </ul>
-                <ul class="sns-list">
-                    <li><a href="#"><i class="fab fa-instagram"></i></a></li>
-                    <li><a href="#"><i class="fab fa-blogger-b"></i></a></li>
-                    <li><a href="#"><i class="fab fa-youtube"></i></a></li>
-                    <li><a href="#"><i class="fab fa-twitter"></i></a></li>
-                    <li><a href="#"><i class="fab fa-telegram-plane"></i></a></li>
-                </ul>
-            </section>
-        </div>
-    </footer>
+    <!-- Footer -->
+    <div id="footer-placeholder"></div>
 
     <div id="login-modal" class="auth-modal">
       <div class="auth-modal-content">
@@ -355,11 +414,22 @@
       </div>
     </div>
 
-    <script type="module" src="auth.js"></script>
     <script src="https://unpkg.com/swiper/swiper-bundle.min.js"></script>
     <script>
-      // Swiper 초기화 코드 등은 여기에 유지
-      document.addEventListener('DOMContentLoaded', function() {
+      // 페이지별 초기화 함수 정의
+      function initializePage() {
+        console.log('Affiliated page initialized');
+        
+        // 테마 변경 이벤트 리스닝
+        window.addEventListener('themeChanged', (e) => {
+          console.log('Affiliated page - Theme changed to:', e.detail.theme);
+        });
+
+        // Swiper 및 테이블 기능 초기화
+        initializeAffiliatedFeatures();
+      }
+
+      function initializeAffiliatedFeatures() {
         const tabsSwiper = new Swiper('.table-tabs', {
           slidesPerView: 'auto',
           spaceBetween: 24,
@@ -426,7 +496,8 @@
             });
           });
         }
-      });
+      }
     </script>
+    <script src="js/footer-loader.js" defer></script>
 </body>
 </html> 
