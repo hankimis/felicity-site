@@ -1,0 +1,634 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Felicity Security & Performance Rules
+
+## 🔒 SECURITY REQUIREMENTS (NON-NEGOTIABLE)
+
+### Authentication & Authorization (CRITICAL)
+```javascript
+// ✅ CORRECT - Secure authentication flow
+async function performSensitiveOperation(data) {
+  // 1. ALWAYS check authentication first
+  if (!window.currentUser) {
+    throw new Error('Authentication required');
+    // Redirect to login
+    window.location.href = '/login';
+    return;
+  }
+
+  // 2. Validate user permissions
+  if (!await validateUserPermissions(window.currentUser, 'ADMIN')) {
+    throw new Error('Insufficient permissions');
+    return;
+  }
+
+  // 3. Sanitize all inputs
+  const sanitizedData = sanitizeUserInput(data);
+  
+  // 4. Proceed with operation
+  return await executeOperation(sanitizedData);
+}
+
+// ❌ FORBIDDEN - Bypassing authentication
+function dangerousOperation(data) {
+  // Direct operation without auth check
+  return executeOperation(data);
+}
+```
+
+### Input Validation (MANDATORY)
+```javascript
+// ✅ CORRECT - Comprehensive input sanitization
+function sanitizeUserInput(input) {
+  if (typeof input !== 'string') {
+    throw new Error('Invalid input type');
+  }
+  
+  return input
+    .trim()                           // Remove whitespace
+    .replace(/[<>]/g, '')            // Remove HTML tags
+    .replace(/javascript:/gi, '')     // Remove javascript: protocol
+    .replace(/on\w+=/gi, '')         // Remove event handlers
+    .substring(0, 1000);             // Limit length
+}
+
+// ✅ CORRECT - Number validation for financial data
+function validateTradeAmount(amount) {
+  const numAmount = parseFloat(amount);
+  
+  if (isNaN(numAmount)) {
+    throw new Error('Invalid amount: must be a number');
+  }
+  
+  if (numAmount <= 0) {
+    throw new Error('Invalid amount: must be positive');
+  }
+  
+  if (numAmount > 1000000) {
+    throw new Error('Invalid amount: exceeds maximum limit');
+  }
+  
+  return numAmount;
+}
+
+// ❌ FORBIDDEN - No validation
+function dangerousTradeAmount(amount) {
+  return parseFloat(amount); // Direct conversion without checks
+}
+```
+
+### Firebase Security Rules (REQUIRED PATTERNS)
+```javascript
+// ✅ CORRECT - Secure Firebase operations
+async function updateUserData(userId, data) {
+  // 1. Verify user can only update their own data
+  if (window.currentUser.uid !== userId) {
+    throw new Error('Unauthorized: Cannot update other user data');
+  }
+  
+  // 2. Validate data structure
+  const validatedData = validateUserDataStructure(data);
+  
+  // 3. Use Firebase security rules
+  try {
+    await window.db.collection('users').doc(userId).update(validatedData);
+  } catch (error) {
+    console.error('❌ Firebase update failed:', error);
+    throw new Error('Failed to update user data');
+  }
+}
+
+// ❌ FORBIDDEN - Bypassing security
+async function dangerousUpdate(userId, data) {
+  // Direct update without validation
+  await window.db.collection('users').doc(userId).update(data);
+}
+```
+
+### API Security (CRITICAL IMPLEMENTATION)
+```javascript
+// ✅ CORRECT - Secure API calls
+async function secureApiCall(endpoint, data) {
+  // 1. Validate endpoint
+  const allowedEndpoints = ['/api/whale-data', '/api/user-settings'];
+  if (!allowedEndpoints.includes(endpoint)) {
+    throw new Error('Invalid API endpoint');
+  }
+  
+  // 2. Add authentication headers
+  const headers = {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${await getAuthToken()}`,
+    'X-Requested-With': 'XMLHttpRequest'
+  };
+  
+  // 3. Implement timeout
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000);
+  
+  try {
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(data),
+      signal: controller.signal
+    });
+    
+    clearTimeout(timeoutId);
+    
+    if (!response.ok) {
+      throw new Error(`API call failed: ${response.status}`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    clearTimeout(timeoutId);
+    console.error('❌ API call failed:', error);
+    throw error;
+  }
+}
+
+// ❌ FORBIDDEN - Insecure API calls
+async function dangerousApiCall(endpoint, data) {
+  // No validation, no timeout, no error handling
+  const response = await fetch(endpoint, {
+    method: 'POST',
+    body: JSON.stringify(data)
+  });
+  return await response.json();
+}
+```
+
+## ⚡ PERFORMANCE OPTIMIZATION (MANDATORY)
+
+### Bundle Size Management (CRITICAL)
+```javascript
+// ✅ CORRECT - Lazy loading modules
+async function loadAnalysisModule() {
+  try {
+    // Only load when needed
+    const { AnalysisController } = await import('./js/analysis/analysis-controller.js');
+    return new AnalysisController();
+  } catch (error) {
+    console.error('❌ Failed to load analysis module:', error);
+    throw error;
+  }
+}
+
+// ✅ CORRECT - Conditional loading
+function loadChartLibrary() {
+  if (document.querySelector('.chart-container')) {
+    // Only load chart library if charts are present
+    return import('./charting_library/charting_library.js');
+  }
+  return Promise.resolve();
+}
+
+// ❌ FORBIDDEN - Loading everything upfront
+import './js/analysis/whale-tracker.js';
+import './js/analysis/liquidation-predictor.js';
+import './js/analysis/technical-indicators.js';
+// ... all modules loaded regardless of need
+```
+
+### DOM Performance (REQUIRED OPTIMIZATION)
+```javascript
+// ✅ CORRECT - Efficient DOM operations
+class EfficientRenderer {
+  constructor() {
+    this.updateQueue = [];
+    this.isUpdating = false;
+  }
+  
+  queueUpdate(element, data) {
+    this.updateQueue.push({ element, data });
+    if (!this.isUpdating) {
+      this.processQueue();
+    }
+  }
+  
+  processQueue() {
+    this.isUpdating = true;
+    requestAnimationFrame(() => {
+      // Batch DOM updates
+      const fragment = document.createDocumentFragment();
+      
+      this.updateQueue.forEach(({ element, data }) => {
+        const updatedElement = this.updateElement(element, data);
+        fragment.appendChild(updatedElement);
+      });
+      
+      // Single DOM insertion
+      document.getElementById('container').appendChild(fragment);
+      
+      this.updateQueue = [];
+      this.isUpdating = false;
+    });
+  }
+}
+
+// ❌ FORBIDDEN - Inefficient DOM operations
+function inefficientUpdate(data) {
+  data.forEach(item => {
+    // Multiple DOM queries and updates
+    const element = document.getElementById(item.id);
+    element.innerHTML = item.content;
+    element.style.color = item.color;
+    document.body.appendChild(element); // Triggers reflow each time
+  });
+}
+```
+
+### Memory Management (CRITICAL)
+```javascript
+// ✅ CORRECT - Proper cleanup
+class WhaleTracker {
+  constructor() {
+    this.websocket = null;
+    this.intervals = [];
+    this.eventListeners = [];
+  }
+  
+  start() {
+    this.websocket = new WebSocket('wss://api.example.com');
+    
+    const handleMessage = (event) => {
+      this.processData(JSON.parse(event.data));
+    };
+    
+    this.websocket.addEventListener('message', handleMessage);
+    this.eventListeners.push({ target: this.websocket, type: 'message', handler: handleMessage });
+    
+    const intervalId = setInterval(() => {
+      this.updateUI();
+    }, 1000);
+    this.intervals.push(intervalId);
+  }
+  
+  destroy() {
+    // Clean up WebSocket
+    if (this.websocket) {
+      this.websocket.close();
+      this.websocket = null;
+    }
+    
+    // Clean up intervals
+    this.intervals.forEach(id => clearInterval(id));
+    this.intervals = [];
+    
+    // Clean up event listeners
+    this.eventListeners.forEach(({ target, type, handler }) => {
+      target.removeEventListener(type, handler);
+    });
+    this.eventListeners = [];
+  }
+}
+
+// ❌ FORBIDDEN - Memory leaks
+class LeakyTracker {
+  start() {
+    this.websocket = new WebSocket('wss://api.example.com');
+    this.websocket.onmessage = (event) => {
+      this.processData(JSON.parse(event.data));
+    };
+    
+    setInterval(() => {
+      this.updateUI();
+    }, 1000);
+    // No cleanup - memory leak!
+  }
+}
+```
+
+### Caching Strategy (MANDATORY IMPLEMENTATION)
+```javascript
+// ✅ CORRECT - Intelligent caching
+class DataCache {
+  constructor() {
+    this.cache = new Map();
+    this.maxSize = 100;
+    this.ttl = 5 * 60 * 1000; // 5 minutes
+  }
+  
+  set(key, data) {
+    // Implement LRU eviction
+    if (this.cache.size >= this.maxSize) {
+      const firstKey = this.cache.keys().next().value;
+      this.cache.delete(firstKey);
+    }
+    
+    this.cache.set(key, {
+      data,
+      timestamp: Date.now()
+    });
+  }
+  
+  get(key) {
+    const cached = this.cache.get(key);
+    if (!cached) return null;
+    
+    // Check TTL
+    if (Date.now() - cached.timestamp > this.ttl) {
+      this.cache.delete(key);
+      return null;
+    }
+    
+    return cached.data;
+  }
+  
+  clear() {
+    this.cache.clear();
+  }
+}
+
+// ✅ Usage
+const cache = new DataCache();
+
+async function fetchWhaleData() {
+  const cacheKey = 'whale-data';
+  let data = cache.get(cacheKey);
+  
+  if (!data) {
+    data = await fetch('/api/whale-data').then(r => r.json());
+    cache.set(cacheKey, data);
+  }
+  
+  return data;
+}
+
+// ❌ FORBIDDEN - No caching
+async function inefficientFetch() {
+  // Always fetch from server
+  return await fetch('/api/whale-data').then(r => r.json());
+}
+```
+
+## 📊 MONITORING & LOGGING (REQUIRED)
+
+### Error Tracking (MANDATORY IMPLEMENTATION)
+```javascript
+// ✅ CORRECT - Comprehensive error tracking
+class ErrorTracker {
+  static logError(error, context = {}) {
+    const errorData = {
+      message: error.message,
+      stack: error.stack,
+      timestamp: new Date().toISOString(),
+      url: window.location.href,
+      userAgent: navigator.userAgent,
+      userId: window.currentUser?.uid || 'anonymous',
+      context
+    };
+    
+    // Log to console in development
+    if (process.env.NODE_ENV === 'development') {
+      console.error('❌ Error logged:', errorData);
+    }
+    
+    // Send to monitoring service
+    this.sendToMonitoring(errorData);
+  }
+  
+  static async sendToMonitoring(errorData) {
+    try {
+      await fetch('/api/errors', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(errorData)
+      });
+    } catch (monitoringError) {
+      // Fallback: store in localStorage
+      const errors = JSON.parse(localStorage.getItem('pendingErrors') || '[]');
+      errors.push(errorData);
+      localStorage.setItem('pendingErrors', JSON.stringify(errors.slice(-50)));
+    }
+  }
+}
+
+// ✅ Usage in async functions
+async function trackableOperation() {
+  try {
+    const result = await riskyOperation();
+    return result;
+  } catch (error) {
+    ErrorTracker.logError(error, {
+      operation: 'trackableOperation',
+      parameters: { /* relevant data */ }
+    });
+    throw error;
+  }
+}
+
+// ❌ FORBIDDEN - Silent failures
+async function silentOperation() {
+  try {
+    return await riskyOperation();
+  } catch (error) {
+    // Error ignored - bad practice
+  }
+}
+```
+
+### Performance Monitoring (CRITICAL METRICS)
+```javascript
+// ✅ CORRECT - Performance tracking
+class PerformanceMonitor {
+  static measureOperation(name, operation) {
+    const startTime = performance.now();
+    
+    const finish = (result) => {
+      const duration = performance.now() - startTime;
+      
+      this.logMetric({
+        name,
+        duration,
+        timestamp: Date.now(),
+        success: true
+      });
+      
+      return result;
+    };
+    
+    const handleError = (error) => {
+      const duration = performance.now() - startTime;
+      
+      this.logMetric({
+        name,
+        duration,
+        timestamp: Date.now(),
+        success: false,
+        error: error.message
+      });
+      
+      throw error;
+    };
+    
+    try {
+      const result = operation();
+      
+      if (result instanceof Promise) {
+        return result.then(finish).catch(handleError);
+      }
+      
+      return finish(result);
+    } catch (error) {
+      return handleError(error);
+    }
+  }
+  
+  static logMetric(metric) {
+    // Send to analytics
+    if (typeof gtag !== 'undefined') {
+      gtag('event', 'performance', {
+        event_category: 'Performance',
+        event_label: metric.name,
+        value: Math.round(metric.duration)
+      });
+    }
+    
+    // Log slow operations
+    if (metric.duration > 1000) {
+      console.warn(`⚠️ Slow operation: ${metric.name} took ${metric.duration}ms`);
+    }
+  }
+}
+
+// ✅ Usage
+const data = await PerformanceMonitor.measureOperation('fetchWhaleData', () => {
+  return fetch('/api/whale-data').then(r => r.json());
+});
+
+// ❌ FORBIDDEN - No performance tracking
+const data = await fetch('/api/whale-data').then(r => r.json());
+```
+
+## 🔐 DATA PROTECTION (GDPR/PRIVACY COMPLIANCE)
+
+### User Data Handling (LEGAL REQUIREMENT)
+```javascript
+// ✅ CORRECT - Privacy-compliant data handling
+class UserDataManager {
+  static async collectUserData(data, consent) {
+    // 1. Verify explicit consent
+    if (!consent.analytics || !consent.functional) {
+      throw new Error('Required consent not provided');
+    }
+    
+    // 2. Minimize data collection
+    const minimalData = {
+      userId: data.userId,
+      timestamp: Date.now(),
+      // Only collect necessary fields
+      ...(consent.analytics && { analytics: data.analytics }),
+      ...(consent.functional && { preferences: data.preferences })
+    };
+    
+    // 3. Encrypt sensitive data
+    const encryptedData = await this.encryptSensitiveFields(minimalData);
+    
+    // 4. Set expiration
+    encryptedData.expiresAt = Date.now() + (30 * 24 * 60 * 60 * 1000); // 30 days
+    
+    return encryptedData;
+  }
+  
+  static async deleteUserData(userId) {
+    // Complete data deletion
+    await Promise.all([
+      window.db.collection('users').doc(userId).delete(),
+      window.db.collection('userSettings').doc(userId).delete(),
+      window.db.collection('userAnalytics').doc(userId).delete()
+    ]);
+    
+    // Clear local storage
+    localStorage.removeItem(`user_${userId}`);
+    sessionStorage.removeItem(`session_${userId}`);
+  }
+}
+
+// ❌ FORBIDDEN - Privacy violations
+function collectAllData(user) {
+  // Collecting unnecessary data without consent
+  const data = {
+    userId: user.id,
+    email: user.email,
+    location: user.location,
+    browsing_history: user.history,
+    device_fingerprint: generateFingerprint()
+  };
+  
+  // Storing indefinitely
+  localStorage.setItem('userData', JSON.stringify(data));
+}
+```
+
+## 🚨 SECURITY INCIDENT RESPONSE (MANDATORY PROCEDURES)
+
+### Incident Detection & Response
+```javascript
+// ✅ CORRECT - Security monitoring
+class SecurityMonitor {
+  static detectSuspiciousActivity(event) {
+    const suspiciousPatterns = [
+      /script/i,                    // Script injection attempts
+      /javascript:/i,               // JavaScript protocol
+      /on\w+=/i,                   // Event handler injection
+      /<iframe/i,                  // Iframe injection
+      /eval\(/i                    // Eval attempts
+    ];
+    
+    const isSuspicious = suspiciousPatterns.some(pattern => 
+      pattern.test(event.data || event.input || '')
+    );
+    
+    if (isSuspicious) {
+      this.handleSecurityIncident({
+        type: 'SUSPICIOUS_INPUT',
+        severity: 'HIGH',
+        data: event,
+        timestamp: Date.now(),
+        userId: window.currentUser?.uid
+      });
+    }
+  }
+  
+  static handleSecurityIncident(incident) {
+    // 1. Log incident
+    console.error('🚨 Security incident detected:', incident);
+    
+    // 2. Notify security team
+    this.notifySecurityTeam(incident);
+    
+    // 3. Take protective action
+    if (incident.severity === 'HIGH') {
+      this.lockUserSession();
+    }
+  }
+  
+  static lockUserSession() {
+    // Immediately terminate session
+    window.auth.signOut();
+    
+    // Clear sensitive data
+    localStorage.clear();
+    sessionStorage.clear();
+    
+    // Redirect to safe page
+    window.location.href = '/security-notice';
+  }
+}
+
+// ✅ Apply security monitoring
+document.addEventListener('input', (event) => {
+  SecurityMonitor.detectSuspiciousActivity({
+    type: 'USER_INPUT',
+    input: event.target.value,
+    element: event.target.tagName
+  });
+});
+```
+
+These security and performance rules are **MANDATORY** for all development on the Felicity platform. **NON-COMPLIANCE WILL RESULT IN IMMEDIATE CODE REJECTION AND SECURITY REVIEW.**

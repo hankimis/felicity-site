@@ -1,50 +1,14 @@
-/* Main Banner */
-.main-banner {
-  background: #181c23;
-  color: #f0f0f0;
-  text-align: center;
-  margin-bottom: 40px;
-  padding: 40px 20px;
-  border-radius: 12px;
-  max-width: 1600px;
-  margin-left: auto;
-  margin-right: auto;
-}
+/* ==========================================================================
+   HOME PAGE STYLES - OPTIMIZED
+   Critical styles are inlined in HTML, this file contains non-critical styles
+   ========================================================================== */
 
-.main-banner * {
-  color: #f0f0f0;
-}
+/* Non-critical styles that can be loaded after initial render */
 
-.main-banner .highlight-blue {
-  color: var(--primary-color) !important;
-}
-
-.main-banner .search-input-container {
-  background: rgba(255,255,255,0.1);
-  border: 1px solid rgba(255,255,255,0.2);
-}
-
-.main-banner .search-input-container input::placeholder {
-  color: #bfc9da;
-}
-
-.main-banner .floating-coin-item {
-  background: rgba(255,255,255,0.1);
-  border: 1px solid rgba(255,255,255,0.2);
-}
-
-.main-banner .payback-rate {
-  color: var(--primary-color) !important;
-}
-
-.main-banner .coin-name {
-  color: #bfc9da !important;
-}
-
-/* Search Input */
+/* Search Input - Enhanced */
 .search-input-container {
-  background: var(--card-bg);
-  border: 1px solid var(--border-color);
+  background: var(--card-bg, var(--bg-primary));
+  border: 1px solid var(--border-color, var(--border-default));
   border-radius: 8px;
   padding: 12px 20px;
   display: flex;
@@ -53,7 +17,13 @@
   max-width: 420px;
   margin: 0 auto 30px auto;
   margin-top: 15px;
-  box-shadow: 0 2px 8px var(--shadow-color);
+  box-shadow: 0 2px 8px var(--shadow-color, var(--shadow-light));
+  transition: all 0.2s ease;
+}
+
+.search-input-container:focus-within {
+  border-color: var(--accent-blue);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
 .search-selector {
@@ -61,26 +31,31 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  border: none;
+  cursor: pointer;
 }
 
 .search-exchange-icon {
   width: 24px;
   height: 24px;
+  border-radius: 50%;
+  object-fit: cover;
 }
 
 .search-input-container input {
   background: none;
   border: none;
-  color: var(--text-color);
+  color: var(--text-color, var(--text-primary));
   font-size: 1.1em;
   width: 100%;
+  outline: none;
 }
 
 .search-input-container input::placeholder {
-  color: #8899a6;
+  color: var(--text-muted);
 }
 
-/* Floating Coins */
+/* Floating Coins Animation */
 .floating-coins-container {
   display: flex;
   gap: 18px;
@@ -90,39 +65,52 @@
   max-width: 1200px;
   margin-left: auto;
   margin-right: auto;
-  padding-left: 20px;
-  padding-right: 20px;
+  padding: 0 20px;
 }
 
 .floating-coin-item {
-  background: var(--card-bg);
-  border: 1px solid var(--border-color);
+  background: var(--card-bg, var(--bg-primary));
+  border: 1px solid var(--border-color, var(--border-default));
   border-radius: 12px;
   padding: 18px 12px;
   min-width: 110px;
   text-align: center;
-  box-shadow: 0 2px 8px var(--shadow-color);
+  box-shadow: 0 2px 8px var(--shadow-color, var(--shadow-light));
   animation: float 3s ease-in-out infinite;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  cursor: pointer;
+}
+
+.floating-coin-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px var(--shadow-medium);
 }
 
 .floating-coin-item img {
   width: 38px;
   height: 38px;
   margin-bottom: 8px;
+  border-radius: 50%;
 }
 
 .coin-name {
-  color: var(--text-color-secondary);
+  color: var(--text-color-secondary, var(--text-secondary));
   font-size: 0.95em;
+  font-weight: 500;
 }
 
 .payback-rate {
-  color: var(--primary-color);
+  color: var(--primary-color, var(--accent-blue));
   font-weight: 700;
   font-size: 1.1em;
 }
 
-/* --- 메인 문구 --- */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+/* Main Section Enhancements */
 .main-section {
   position: relative;
   z-index: 2;
@@ -133,23 +121,26 @@
   min-height: 60vh;
   padding-top: 80px;
 }
+
 .main-section .p {
-  font-size: 2.2em;
+  font-size: clamp(1.5rem, 4vw, 2.2rem);
   font-weight: 800;
   color: #f0f0f0;
   text-align: center;
   line-height: 1.3;
   margin-bottom: 36px;
 }
+
 .main-section .span {
-  color: #3182f6;
+  color: var(--accent-blue);
   font-weight: 900;
 }
+
 .main-section .text-wrapper {
   color: #f0f0f0;
 }
 
-/* --- 오버레이/입력창/SVG --- */
+/* Overlay/Input/Form Enhancements */
 .overlay {
   position: relative;
   margin: 0 auto;
@@ -158,12 +149,14 @@
   background: #232733;
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(49,130,246,0.08);
-  padding: 24px 24px 32px 24px;
+  padding: 24px;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
+
 .bybit {
   width: 48px;
   height: 48px;
@@ -171,15 +164,18 @@
   border-radius: 50%;
   margin-bottom: 8px;
 }
+
 .SVG {
   width: 60px;
   height: 60px;
   margin-bottom: 8px;
 }
+
 .form-input {
   width: 100%;
   margin-top: 8px;
 }
+
 .container-6 {
   background: #181c23;
   border-radius: 8px;
@@ -187,177 +183,257 @@
   display: flex;
   align-items: center;
   border: 1px solid #2e3646;
+  transition: border-color 0.2s ease;
 }
+
+.container-6:focus-within {
+  border-color: var(--accent-blue);
+}
+
 .text-wrapper-2 {
   color: #bfc9da;
   font-size: 1.1em;
 }
 
-/* Top Event Banner */
+/* Event Banner Styles */
 .top-event-banner {
-  display: none;
+  display: block;
+  margin-bottom: 2rem;
 }
 
-/* New Swiper Event Banner */
 .top-event-banner-swiper {
-  margin-bottom: 50px;
-  border-radius: 16px;
+  border-radius: 12px;
   overflow: hidden;
-  position: relative;
-  width: 100%;
-  max-width: 1200px;
-  margin: 0 auto 50px;
-  padding: 0 20px;
-  box-sizing: border-box;
+  box-shadow: 0 4px 20px var(--shadow-light);
 }
+
 .top-event-banner-swiper .swiper {
-  width: 100%;
-  height: auto;
-  aspect-ratio: 16/9;
+  height: 200px;
 }
+
 .top-event-banner-swiper .swiper-slide {
   position: relative;
-  width: 100%;
-  height: 100%;
   overflow: hidden;
 }
+
 .top-event-banner-swiper .swiper-slide img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  opacity: 1;
-  transition: opacity 0.3s ease;
-  will-change: opacity;
-  backface-visibility: hidden;
-  transform: translateZ(0);
-  -webkit-font-smoothing: subpixel-antialiased;
+  transition: transform 0.3s ease;
 }
+
+.top-event-banner-swiper .swiper-slide:hover img {
+  transform: scale(1.05);
+}
+
 .banner-content-overlay {
   position: absolute;
   bottom: 0;
   left: 0;
-  width: 100%;
-  padding: 40px;
-  box-sizing: border-box;
-  color: #fff;
-  background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 100%);
-}
-.banner-content-overlay h2 {
-  font-size: 1.8em;
-  font-weight: 900;
-  margin: 0 0 8px 0;
-  text-shadow: 0 2px 4px rgba(0,0,0,0.5);
-}
-.banner-content-overlay p {
-  font-size: 1.1em;
-  text-shadow: 0 1px 3px rgba(0,0,0,0.5);
-}
-.top-event-banner-swiper .swiper-pagination-bullet {
-  background: rgba(255, 255, 255, 0.7);
-  width: 10px;
-  height: 10px;
-}
-.top-event-banner-swiper .swiper-pagination-bullet-active {
-  background: #ffffff;
-  width: 25px;
-  border-radius: 5px;
+  right: 0;
+  background: linear-gradient(transparent, rgba(0,0,0,0.7));
+  color: white;
+  padding: 20px;
 }
 
-.main-banner-list {
-  display: flex;
-  flex-direction: column;
-  gap: 32px;
+.banner-content-overlay h2 {
+  font-size: 1.5rem;
+  margin-bottom: 8px;
 }
+
+.banner-content-overlay p {
+  opacity: 0.9;
+}
+
+.top-event-banner-swiper .swiper-pagination-bullet {
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.top-event-banner-swiper .swiper-pagination-bullet-active {
+  background: var(--accent-blue);
+}
+
+/* Main Banner List */
+.main-banner-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
 .main-banner-item {
   position: relative;
-  width: 100%;
-  aspect-ratio: 16/8;
-  border-radius: 16px;
+  border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 4px 24px rgba(0,0,0,0.10);
-  background: #181c23;
+  box-shadow: 0 4px 20px var(--shadow-light);
+  transition: transform 0.2s ease;
 }
+
+.main-banner-item:hover {
+  transform: translateY(-4px);
+}
+
 .main-banner-item img {
   width: 100%;
-  height: 100%;
+  height: 200px;
   object-fit: cover;
-  display: block;
 }
+
 .main-banner-item .banner-content-overlay {
   position: absolute;
   bottom: 0;
   left: 0;
-  width: 100%;
-  padding: 40px;
-  box-sizing: border-box;
-  color: #fff;
-  background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 100%);
+  right: 0;
+  background: linear-gradient(transparent, rgba(0,0,0,0.8));
+  color: white;
+  padding: 1.5rem;
 }
 
+/* Responsive Design */
 @media (max-width: 900px) {
-  .main-section { padding-top: 40px; }
-  .p { font-size: 1.3em; }
+  .main-section { 
+    padding-top: 40px; 
+    min-height: 50vh;
+  }
+  
+  .main-section .p { 
+    font-size: 1.3em; 
+  }
 
   .main-banner {
-    padding-left: 8px;
-    padding-right: 8px;
+    margin-bottom: 20px;
+    padding: 20px 15px;
   }
+
   .banner-main-phrase {
-    font-size: 1.8em;
+    font-size: 1.1rem;
   }
+
   .top-event-banner-swiper {
-    padding: 0 8px;
-    margin-bottom: 32px;
+    margin: 0 -1rem;
   }
+
   .top-event-banner-swiper .swiper {
-    aspect-ratio: 16/7;
+    height: 150px;
   }
+
   .main-banner-list {
-    gap: 16px;
+    grid-template-columns: 1fr;
+    gap: 1rem;
   }
+
   .main-banner-item {
-    aspect-ratio: 16/10;
-    border-radius: 10px;
+    margin: 0 -1rem;
   }
+
   .main-banner-item .banner-content-overlay {
-    padding: 18px;
+    padding: 1rem;
+  }
+
+  .floating-coins-container {
+    gap: 12px;
+    padding: 0 10px;
+  }
+
+  .floating-coin-item {
+    min-width: 90px;
+    padding: 12px 8px;
+  }
+
+  .floating-coin-item img {
+    width: 32px;
+    height: 32px;
   }
 }
 
-/* Light/Dark Mode Overrides */
-:root:not(.dark-mode) .main-banner {
-  background: #232733;
-  border-color: #2e3646;
-  color: #f0f0f0;
-}
-:root:not(.dark-mode) .main-banner * {
-  color: #f0f0f0;
-}
-:root:not(.dark-mode) .main-banner .floating-coin-item,
-:root:not(.dark-mode) .main-banner .search-input-container {
-  background: #3a4151;
-  border-color: #4a5263;
-}
-:root:not(.dark-mode) .main-banner .coin-name {
-  color: var(--text-color-secondary);
-}
-:root:not(.dark-mode) .highlight-blue,
-:root:not(.dark-mode) .payback-rate {
-  color: var(--primary-color);
+@media (max-width: 480px) {
+  .main-section .p {
+    font-size: 1.1em;
+    margin-bottom: 24px;
+  }
+
+  .overlay {
+    margin: 0 1rem;
+    padding: 20px;
+  }
+
+  .search-input-container {
+    max-width: none;
+    margin: 15px 1rem 20px;
+  }
+
+  .floating-coins-container {
+    gap: 8px;
+    margin: 20px 0;
+  }
+
+  .floating-coin-item {
+    min-width: 80px;
+    padding: 10px 6px;
+  }
+
+  .coin-name {
+    font-size: 0.85em;
+  }
+
+  .payback-rate {
+    font-size: 1em;
+  }
 }
 
+/* Theme-specific overrides */
+:root:not([data-theme="dark"]) .main-banner {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+:root:not([data-theme="dark"]) .main-banner * {
+  color: white;
+}
+
+:root:not([data-theme="dark"]) .main-banner .floating-coin-item,
+:root:not([data-theme="dark"]) .main-banner .search-input-container {
+  background: rgba(255, 255, 255, 0.95);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+:root:not([data-theme="dark"]) .main-banner .coin-name {
+  color: var(--text-secondary);
+}
+
+:root:not([data-theme="dark"]) .highlight-blue,
+:root:not([data-theme="dark"]) .main-banner .payback-rate {
+  color: var(--accent-blue) !important;
+}
+
+/* Performance optimizations */
 .main-banner,
-.floating-coins-container,
-.band-banner-section,
-.event-section,
-.benefit-banner-swiper-wrapper,
-.main-banner-list,
-.main-banner-item {
-  max-width: 1800px;
-  margin-left: auto;
-  margin-right: auto;
-  padding-left: 20px;
-  padding-right: 20px;
-  padding-top: 20px;
-  box-sizing: border-box;
+.floating-coin-item,
+.search-input-container {
+  will-change: transform;
+}
+
+/* Reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  .floating-coin-item {
+    animation: none;
+  }
+  
+  .main-banner-item,
+  .floating-coin-item {
+    transition: none;
+  }
+  
+  .top-event-banner-swiper .swiper-slide img {
+    transition: none;
+  }
+}
+
+/* Print styles */
+@media print {
+  .main-banner,
+  .floating-coins-container,
+  .top-event-banner {
+    display: none;
+  }
 } 

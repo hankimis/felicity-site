@@ -1,0 +1,149 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Felicity Project Architecture Rules
+
+## 🏗️ CORE ARCHITECTURE PRINCIPLES
+
+### MANDATORY REQUIREMENTS ⚠️
+- **NEVER** break the ITCSS (Inverted Triangle CSS) import order in [css/style.css](mdc:css/style.css)
+- **ALWAYS** use CSS custom properties (variables) from [css/base/_variables.css](mdc:css/base/_variables.css)
+- **MUST** maintain the modular JavaScript structure with proper error handling
+- **REQUIRED** to follow the established naming conventions throughout the codebase
+
+### FORBIDDEN ACTIONS 🚫
+- **DO NOT** modify Firebase configuration in [firebase-config.js](mdc:firebase-config.js) without proper security review
+- **NEVER** bypass the authentication flow in [js/auth.js](mdc:js/auth.js)
+- **DO NOT** create inline styles - use the component-based CSS architecture
+- **NEVER** break the responsive design breakpoints defined in the base styles
+
+## 📁 PROJECT STRUCTURE
+
+### Directory Organization
+```
+felicity-site/
+├── css/                    # ITCSS Architecture
+│   ├── base/              # Variables, reset, base styles
+│   ├── components/        # Reusable UI components
+│   ├── layout/           # Layout-specific styles
+│   ├── pages/            # Page-specific styles
+│   └── utils/            # Utility classes
+├── js/                    # JavaScript modules
+│   └── analysis/         # Financial analysis modules
+├── assets/               # Static assets
+└── functions/            # Firebase functions
+```
+
+### Key Entry Points
+- Main HTML: [index.html](mdc:index.html)
+- CSS Entry: [css/style.css](mdc:css/style.css)
+- Auth System: [js/auth.js](mdc:js/auth.js)
+- Common Functions: [js/common.js](mdc:js/common.js)
+- Analysis Controller: [js/analysis/analysis-controller.js](mdc:js/analysis/analysis-controller.js)
+
+## 🎨 CSS ARCHITECTURE (ITCSS)
+
+### Import Order (CRITICAL - DO NOT CHANGE)
+```css
+/* 1. Settings */ @import url('base/_variables.css');
+/* 2. Tools */    @import url('base/_reset.css');
+/* 3. Generic */  @import url('base/_base.css');
+/* 4. Elements */ @import url('utils/_animations.css');
+/* 5. Objects */  @import url('layout/_main.css');
+/* 6. Components */ @import url('components/_buttons.css');
+/* 7. Trumps */   @import url('pages/_home.css');
+```
+
+### CSS Variable System
+- **Light/Dark Theme**: Managed via CSS custom properties
+- **Responsive Variables**: Defined in [css/base/_variables.css](mdc:css/base/_variables.css)
+- **Color Semantic**: `--positive-*` for gains, `--negative-*` for losses
+
+## 🔧 JAVASCRIPT PATTERNS
+
+### Module Structure
+- **ES6 Classes**: For complex components (AnalysisController, WhaleTracker)
+- **Functional Modules**: For utilities and simple features
+- **Async/Await**: Preferred over Promises for readability
+
+### Error Handling Pattern
+```javascript
+try {
+    await someAsyncOperation();
+    console.log('✅ Success message');
+} catch (error) {
+    console.error('❌ Error description:', error);
+    this.showToast('User-friendly message', 'error');
+}
+```
+
+### Event Delegation
+- **ALWAYS** use event delegation for dynamic content
+- **NEVER** attach events directly to dynamically created elements
+
+## 🔒 SECURITY REQUIREMENTS
+
+### Authentication
+- **MUST** validate user authentication state before sensitive operations
+- **REQUIRED** to use Firebase Auth patterns from [js/auth.js](mdc:js/auth.js)
+- **NEVER** expose sensitive configuration in client-side code
+
+### Data Validation
+- **ALWAYS** sanitize user inputs
+- **REQUIRED** to validate data types and ranges
+- **MUST** implement proper error boundaries
+
+## 📱 RESPONSIVE DESIGN
+
+### Breakpoints (MANDATORY)
+```css
+/* Mobile First */
+@media (max-width: 768px)     /* Mobile */
+@media (min-width: 769px) and (max-width: 1024px) /* Tablet */
+@media (min-width: 1025px)    /* Desktop */
+```
+
+### Touch Optimization
+- **REQUIRED**: Minimum 44px touch targets
+- **MUST**: Prevent iOS zoom with `font-size: 16px` on inputs
+
+## 🚀 PERFORMANCE RULES
+
+### Loading Optimization
+- **ALWAYS** implement loading states for async operations
+- **REQUIRED** to use lazy loading for heavy components
+- **MUST** prevent FOUC (Flash of Unstyled Content)
+
+### Bundle Management
+- **NEVER** load unnecessary libraries
+- **ALWAYS** check for existing implementations before adding new dependencies
+- **REQUIRED** to minimize DOM queries
+
+## 🧪 DEVELOPMENT WORKFLOW
+
+### Code Quality
+- **MUST** use consistent indentation (2 spaces)
+- **REQUIRED** to add meaningful comments for complex logic
+- **ALWAYS** use semantic HTML5 elements
+- **NEVER** commit console.log statements to production
+
+### Testing Considerations
+- **SHOULD** test responsive layouts on multiple devices
+- **MUST** verify theme switching functionality
+- **REQUIRED** to test authentication flows
+
+## 🔄 STATE MANAGEMENT
+
+### Theme Management
+- **CENTRALIZED** in [js/auth.js](mdc:js/auth.js) `applyTheme()` function
+- **NEVER** duplicate theme logic across files
+- **MUST** update all theme-dependent components simultaneously
+
+### User State
+- **SINGLE SOURCE** of truth in `window.currentUser`
+- **ALWAYS** update UI reactively to state changes
+- **NEVER** cache user data without proper invalidation
+
+This architecture ensures maintainability, scalability, and consistent user experience across the Felicity cryptocurrency analysis platform.

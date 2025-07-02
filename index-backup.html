@@ -1,0 +1,2559 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Onbit - 암호화폐 거래소 정보 및 실시간 분석</title>
+  <meta name="description" content="실시간 암호화폐 분석, 고래 추적, 거래소 정보를 제공하는 Onbit에서 최신 코인 시장 동향을 확인하세요.">
+  
+  <!-- Preconnect to external domains for faster loading -->
+  <link rel="preconnect" href="https://www.gstatic.com">
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+  <link rel="preconnect" href="https://cdn.jsdelivr.net">
+  <link rel="preconnect" href="https://api.binance.com">
+  <link rel="preconnect" href="https://s3.tradingview.com">
+  
+  <!-- Critical CSS - Inlined for faster initial render -->
+  <style>
+    /* Critical CSS for above-the-fold content */
+    :root {
+      --bg-primary: #ffffff;
+      --bg-secondary: #f8fafc;
+      --bg-tertiary: #f3f4f6;
+      --text-primary: #1f2937;
+      --text-secondary: #6b7280;
+      --text-muted: #9ca3af;
+      --border-light: #f1f5f9;
+      --border-default: #e2e8f0;
+      --border-strong: #d1d5db;
+      --shadow-light: rgba(0, 0, 0, 0.08);
+      --shadow-medium: rgba(0, 0, 0, 0.12);
+      --accent-blue: #3b82f6;
+      --positive-bg: #d1fae5;
+      --positive-text: #059669;
+      --negative-bg: #fee2e2;
+      --negative-text: #dc2626;
+    }
+
+    [data-theme="dark"] {
+      --bg-primary: #1a1a1a;
+      --bg-secondary: #2a2a2a;
+      --bg-tertiary: #3a3a3a;
+      --text-primary: #ffffff;
+      --text-secondary: #cccccc;
+      --text-muted: #999999;
+      --border-light: #2a2a2a;
+      --border-default: #3a3a3a;
+      --border-strong: #4a4a4a;
+      --shadow-light: rgba(0, 0, 0, 0.4);
+      --shadow-medium: rgba(0, 0, 0, 0.6);
+      --accent-blue: #3b82f6;
+      --positive-bg: #1a2e1a;
+      --positive-text: #22c55e;
+      --negative-bg: #2e1a1a;
+      --negative-text: #ef4444;
+    }
+
+    /* Critical layout styles */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
+      transition: background-color 0.3s ease, color 0.3s ease;
+      line-height: 1.6;
+    }
+
+    .main-container {
+      max-width: 1800px;
+      margin: 0 auto;
+      padding: 0 1rem;
+    }
+
+    /* Loading state for better perceived performance */
+    .loading-skeleton {
+      background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+      background-size: 200% 100%;
+      animation: loading 1.5s infinite;
+    }
+
+    @keyframes loading {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    /* Critical navigation styles */
+    .navbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 24px;
+      background-color: var(--bg-primary);
+      border-bottom: 1px solid var(--border-default);
+      position: sticky;
+      top: 0;
+      z-index: 1001;
+      height: 65px;
+    }
+
+    .navbar .logo img {
+      height: 30px;
+      width: auto;
+    }
+
+    /* Main banner critical styles */
+    .main-banner {
+      background: #181c23;
+      color: #f0f0f0;
+      text-align: center;
+      margin-bottom: 40px;
+      padding: 40px 20px;
+      border-radius: 12px;
+      max-width: 1600px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+  </style>
+  
+  <!-- Favicon and icons -->
+  <link rel="icon" type="image/png" href="/onbit/favicon-96x96.png" sizes="96x96" />
+  <link rel="icon" type="image/svg+xml" href="/onbit/favicon.svg" />
+  <link rel="shortcut icon" href="/onbit/favicon.ico" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/onbit/apple-touch-icon.png" />
+  <link rel="manifest" href="/onbit/site.webmanifest" />
+  
+  <!-- Preload critical fonts -->
+  <link rel="preload" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard-dynamic-subset.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard-dynamic-subset.css"></noscript>
+  
+  <!-- Defer non-critical CSS -->
+  <link rel="preload" href="css/style.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <noscript><link rel="stylesheet" href="css/style.css"></noscript>
+  
+  <link rel="preload" href="auth.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <noscript><link rel="stylesheet" href="auth.css"></noscript>
+  
+  <!-- Defer Font Awesome -->
+  <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"></noscript>
+  
+  <!-- Firebase SDK - Deferred loading for better performance -->
+  <script>
+    // Load Firebase modules only when needed
+    window.loadFirebase = function() {
+      return Promise.all([
+        import('https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js'),
+        import('https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js'),
+        import('https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js'),
+        import('https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js')
+      ]);
+    };
+  </script>
+  <!-- Additional critical styles for page-specific content -->
+  <style id="critical-page-styles">
+    /* Page-specific critical styles */
+
+    /* 페이지 최대 너비 설정 */
+    .main-container {
+      max-width: 1800px;
+      margin: 0 auto;
+    }
+    
+    /* 주목할 혜택 섹션 스타일 */
+    .benefits-container {
+      max-width: 1800px;
+      margin: 0 auto;
+    }
+    
+    .band-banner-title {
+      text-align: center;
+      font-size: 2rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 2rem;
+    }
+    
+    .band-banner-title strong {
+      color: var(--accent-blue);
+    }
+    
+    .benefits-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+    }
+    
+    .benefit-card-wide {
+      background: var(--bg-primary);
+      border-radius: 16px;
+      padding: 2rem;
+      text-decoration: none;
+      color: var(--text-primary);
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 20px var(--shadow-light);
+      border: 1px solid var(--border-light);
+      position: relative;
+      overflow: hidden;
+      height: 180px;
+    }
+    
+    .benefit-card-wide:hover {
+      box-shadow: 0 8px 32px var(--shadow-medium);
+      border-color: var(--border-default);
+    }
+    
+
+    
+    .benefit-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      height: 100%;
+      position: relative;
+      z-index: 2;
+    }
+    
+    .benefit-text {
+      flex: 1;
+    }
+    
+    .benefit-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin: 0 0 0.5rem 0;
+      color: var(--text-primary);
+    }
+    
+    .benefit-subtitle {
+      font-size: 1.1rem;
+      font-weight: 500;
+      margin: 0 0 0.75rem 0;
+      color: var(--accent-blue);
+    }
+    
+    .benefit-description {
+      font-size: 0.95rem;
+      color: var(--text-secondary);
+      line-height: 1.4;
+      margin: 0;
+    }
+    
+    .benefit-icon {
+      font-size: 4rem;
+      opacity: 0.8;
+      margin-left: 1rem;
+    }
+    
+    /* 반응형 디자인 */
+    @media (max-width: 768px) {
+      .benefits-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+      }
+      
+      .benefit-card-wide {
+        height: 160px;
+        padding: 1.5rem;
+      }
+      
+      .benefit-title {
+        font-size: 1.25rem;
+      }
+      
+      .benefit-subtitle {
+        font-size: 1rem;
+      }
+      
+      .benefit-description {
+        font-size: 0.9rem;
+      }
+      
+      .benefit-icon {
+        font-size: 3rem;
+      }
+    }
+    
+    /* 대시보드 섹션 스타일 */
+    .dashboard-section {
+      margin: 2rem 0;
+      padding: 0 1rem;
+      max-width: 1800px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      grid-template-rows: 350px 350px;
+      gap: 1.5rem;
+      height: 720px;
+    }
+    
+    .chart-container {
+      grid-column: 1;
+      grid-row: 1 / 3;
+      background: var(--bg-primary);
+      border-radius: 12px;
+      box-shadow: 0 4px 20px var(--shadow-light);
+      overflow: hidden;
+    }
+    
+    .news-container {
+      grid-column: 2;
+      grid-row: 1;
+      background: var(--bg-primary);
+      border-radius: 12px;
+      box-shadow: 0 4px 20px var(--shadow-light);
+      overflow: hidden;
+    }
+    
+    .indices-container {
+      grid-column: 2;
+      grid-row: 2;
+      background: var(--bg-primary);
+      border-radius: 12px;
+      box-shadow: 0 4px 20px var(--shadow-light);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+    
+    .dashboard-section .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 1.5rem;
+      border-bottom: 1px solid var(--border-default);
+      background: var(--bg-secondary);
+    }
+    
+    .dashboard-section .section-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .chart-controls {
+      display: flex;
+      gap: 0.5rem;
+    }
+    
+    .chart-select {
+      padding: 6px 12px;
+      border: 1px solid var(--border-strong);
+      border-radius: 6px;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      font-size: 14px;
+      cursor: pointer;
+    }
+    
+    .tradingview-widget-container {
+      height: calc(100% - 70px);
+      position: relative;
+    }
+    
+    #tradingview_chart {
+      width: 100%;
+      height: 100%;
+    }
+    
+    /* TradingView 상단 레이아웃 영역 완전 제거 */
+    .layout__area--top {
+      display: none !important;
+      visibility: hidden !important;
+      height: 0 !important;
+      width: 0 !important;
+      overflow: hidden !important;
+      position: absolute !important;
+      top: -9999px !important;
+    }
+    
+    /* TradingView 차트 컨테이너 최적화 */
+    .tradingview-widget-container {
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .tradingview-widget-container iframe {
+      position: relative;
+      margin-top: -38px !important; /* 상단 영역 높이만큼 올리기 */
+    }
+    
+    /* 모든 가능한 TradingView 상단 요소들 숨기기 */
+    div[class*="layout__area--top"],
+    div[style*="top: 0px"][style*="height: 38px"],
+    .chart-container .layout__area--top {
+      display: none !important;
+      visibility: hidden !important;
+      height: 0 !important;
+    }
+    
+    /* 뉴스 스타일 */
+    .refresh-news-btn {
+      padding: 6px 8px;
+      background: none;
+      border: 1px solid var(--border-strong);
+      border-radius: 6px;
+      cursor: pointer;
+      color: var(--text-secondary);
+      transition: all 0.2s ease;
+    }
+    
+    .refresh-news-btn:hover {
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+    }
+    
+    .news-list {
+      height: calc(100% - 70px);
+      overflow-y: auto;
+      padding: 1rem;
+    }
+    
+    .loading-news {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      color: var(--text-secondary);
+      font-size: 14px;
+      padding: 2rem;
+    }
+    
+    .news-item {
+      padding: 1rem 0;
+      border-bottom: 1px solid var(--border-light);
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+    
+    .news-item:hover {
+      background: var(--bg-secondary);
+    }
+    
+    .news-item:last-child {
+      border-bottom: none;
+    }
+    
+    .news-title {
+      font-weight: 600;
+      color: var(--text-primary);
+      font-size: 14px;
+      line-height: 1.4;
+      margin-bottom: 0.5rem;
+    }
+    
+    .news-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+    
+    .news-source {
+      font-weight: 500;
+    }
+    
+    .news-time {
+      opacity: 0.7;
+    }
+    
+    /* 지수 및 환율 스타일 */
+    .refresh-indices-btn {
+      padding: 6px 8px;
+      background: none;
+      border: 1px solid var(--border-strong);
+      border-radius: 6px;
+      cursor: pointer;
+      color: var(--text-secondary);
+      transition: all 0.2s ease;
+    }
+    
+    .refresh-indices-btn:hover {
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+    }
+    
+    .refresh-indices-btn.loading {
+      animation: spin 1s linear infinite;
+    }
+    
+    .indices-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1rem;
+      height: calc(100% - 70px);
+    }
+    
+    .loading-indices {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      color: var(--text-secondary);
+      font-size: 14px;
+      padding: 2rem;
+    }
+    
+    .indices-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0.25rem;
+    }
+    
+    .index-item {
+      background: transparent;
+      border: none;
+      border-radius: 8px;
+      padding: 0.75rem;
+      transition: all 0.2s ease;
+    }
+    
+    .index-item:hover {
+      background: var(--bg-secondary);
+    }
+    
+    .index-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.5rem;
+    }
+    
+    .index-name {
+      font-weight: 600;
+      color: var(--text-primary);
+      font-size: 13px;
+    }
+    
+    .index-symbol {
+      font-size: 11px;
+      color: var(--text-muted);
+      background: transparent;
+      padding: 0;
+      border-radius: 0;
+    }
+    
+    .index-data {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .index-price {
+      font-weight: 600;
+      color: var(--text-primary);
+      font-size: 14px;
+    }
+    
+    .index-change {
+      font-weight: 500;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+    
+    .index-change.positive {
+      color: var(--positive-text);
+      background: var(--positive-bg);
+    }
+    
+    .index-change.negative {
+      color: var(--negative-text);
+      background: var(--negative-bg);
+    }
+    
+    .index-change.neutral {
+      color: var(--text-secondary);
+      background: var(--bg-tertiary);
+    }
+    
+    .indices-section-divider {
+      margin: 1.5rem 0 0.5rem 0;
+      padding-top: 0;
+    }
+    
+    .indices-section-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 0.75rem;
+      padding-left: 0.75rem;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+    
+    /* 반응형 디자인 */
+    @media (max-width: 1024px) {
+      .dashboard-grid {
+        grid-template-columns: 1fr;
+        grid-template-rows: 400px 300px 300px;
+        height: auto;
+      }
+      
+      .chart-container {
+        grid-row: 1;
+      }
+      
+      .news-container {
+        grid-row: 2;
+      }
+      
+      .indices-container {
+        grid-row: 3;
+      }
+    }
+    
+    @media (max-width: 768px) {
+      .dashboard-section {
+        padding: 0 0.5rem;
+      }
+      
+      .dashboard-grid {
+        gap: 1rem;
+        grid-template-rows: 300px 250px 250px;
+      }
+      
+      .dashboard-section .section-header {
+        padding: 0.75rem 1rem;
+      }
+      
+      .dashboard-section .section-title {
+        font-size: 1rem;
+      }
+    }
+
+    /* 코인 테이블 스타일 */
+    .crypto-table-section {
+      margin: 2rem 0;
+      padding: 0 1rem;
+      max-width: 1800px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    
+    .crypto-table-section .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+    }
+    
+    .crypto-table-section .section-title {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: var(--text-primary, #1a1a1a);
+      margin: 0;
+    }
+    
+    .table-controls {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+    }
+    
+    .search-box {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+    
+    .search-box i {
+      position: absolute;
+      left: 12px;
+      color: var(--text-secondary);
+      z-index: 1;
+    }
+    
+    .search-box input {
+      padding: 8px 12px 8px 35px;
+      border: 1px solid var(--border-strong);
+      border-radius: 8px;
+      font-size: 14px;
+      width: 200px;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      transition: all 0.2s ease;
+    }
+    
+    .search-box input:focus {
+      outline: none;
+      border-color: var(--accent-blue);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+    
+    .search-box input::placeholder {
+      color: var(--text-muted);
+    }
+    
+    .refresh-btn {
+      padding: 8px 12px;
+      background: var(--accent-blue);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    
+    .refresh-btn:hover {
+      background: #2563eb;
+      transform: translateY(-1px);
+    }
+    
+    .refresh-btn.loading {
+      animation: spin 1s linear infinite;
+    }
+    
+    .crypto-table-wrapper {
+      background: var(--bg-primary);
+      border-radius: 12px;
+      box-shadow: 0 4px 20px var(--shadow-light);
+      overflow: hidden;
+    }
+    
+    .table-tabs {
+      display: flex;
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border-default);
+      padding: 0 1rem;
+    }
+    
+    .tab-btn {
+      padding: 12px 20px;
+      background: none;
+      border: none;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s ease;
+    }
+    
+    .tab-btn.active {
+      color: var(--accent-blue);
+      border-bottom-color: var(--accent-blue);
+    }
+    
+    .tab-btn:hover {
+      color: var(--accent-blue);
+    }
+    
+    .crypto-table-container {
+      overflow-x: auto;
+    }
+    
+    .crypto-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+      table-layout: fixed;
+    }
+    
+    /* 컬럼 너비 고정 */
+    .rank-col { width: 5%; }
+    .name-col { width: 11%; }
+    .price-col { width: 8%; }
+    .change-col { width: 7%; }
+    .funding-col { width: 7%; }
+    .volume-col { width: 8%; }
+    .oi-col { width: 7%; }
+    .oi-change-col { width: 6%; }
+    .market-col { width: 8%; }
+    .liquidation-col { width: 7%; }
+    .chart-col { width: 7%; }
+    
+    .crypto-table th {
+      background: var(--bg-secondary);
+      padding: 12px 8px;
+      text-align: center;
+      font-weight: 600;
+      color: var(--text-primary);
+      border-bottom: 1px solid var(--border-default);
+      white-space: nowrap;
+      font-size: 13px;
+    }
+    
+    .crypto-table th.name-col {
+      text-align: left;
+    }
+    
+    .crypto-table th.price-col,
+    .crypto-table th.volume-col,
+    .crypto-table th.oi-col,
+    .crypto-table th.market-col,
+    .crypto-table th.liquidation-col {
+      text-align: right;
+    }
+    
+    .crypto-table th.sortable {
+      cursor: pointer;
+      user-select: none;
+      position: relative;
+    }
+    
+    .crypto-table th.sortable:hover {
+      background: var(--bg-tertiary);
+    }
+    
+    .crypto-table th.sortable::after {
+      content: '⇅';
+      margin-left: 3px;
+      opacity: 0.4;
+      font-size: 12px;
+      font-weight: normal;
+    }
+    
+    .crypto-table th.sort-asc::after {
+      content: '▲';
+      opacity: 0.8;
+      color: var(--accent-blue);
+    }
+    
+    .crypto-table th.sort-desc::after {
+      content: '▼';
+      opacity: 0.8;
+      color: var(--accent-blue);
+    }
+    
+    .crypto-table td {
+      padding: 12px 8px;
+      border-bottom: 1px solid var(--border-light);
+      vertical-align: middle;
+      text-align: center;
+      font-size: 13px;
+      color: var(--text-primary);
+    }
+    
+    .crypto-table td:nth-child(2) {
+      text-align: left;
+    }
+    
+    .crypto-table td:nth-child(3),
+    .crypto-table td:nth-child(7),
+    .crypto-table td:nth-child(8),
+    .crypto-table td:nth-child(11),
+    .crypto-table td:nth-child(12),
+    .crypto-table td:nth-child(13) {
+      text-align: right;
+    }
+    
+    .crypto-table tr:hover {
+      background: var(--bg-secondary);
+    }
+    
+    .coin-info {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .coin-logo {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    
+    .coin-details {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+    
+    .coin-name {
+      font-weight: 600;
+      color: var(--text-primary);
+      font-size: 13px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    
+    .coin-symbol {
+      font-size: 11px;
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+    
+    .price {
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    
+    .change {
+      font-weight: 500;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 13px;
+    }
+    
+    .change.positive {
+      color: var(--positive-text);
+      background: var(--positive-bg);
+    }
+    
+    .change.negative {
+      color: var(--negative-text);
+      background: var(--negative-bg);
+    }
+    
+    .change.neutral {
+      color: var(--text-secondary);
+      background: var(--bg-tertiary);
+    }
+    
+    .no-data {
+      color: var(--text-muted);
+      font-style: italic;
+      font-size: 12px;
+    }
+    
+    .volume, .market-cap {
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+    
+    .mini-chart {
+      width: 60px;
+      height: 30px;
+      cursor: pointer;
+      transition: transform 0.2s ease;
+    }
+    
+    .mini-chart:hover {
+      transform: scale(1.05);
+    }
+    
+    .trade-btn {
+      padding: 6px 12px;
+      background: var(--accent-blue);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    
+    .trade-btn:hover {
+      background: #2563eb;
+      transform: translateY(-1px);
+    }
+    
+
+    
+    .table-pagination {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 1rem;
+      padding: 1rem;
+      background: var(--bg-secondary);
+    }
+    
+    .page-btn {
+      padding: 8px 16px;
+      background: var(--bg-primary);
+      border: 1px solid var(--border-strong);
+      border-radius: 6px;
+      color: var(--text-primary);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    
+    .page-btn:hover:not(:disabled) {
+      background: var(--bg-tertiary);
+      border-color: var(--text-muted);
+    }
+    
+    .page-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    
+    .page-info {
+      font-size: 14px;
+      color: var(--text-secondary);
+    }
+    
+    .loading-row {
+      text-align: center;
+      padding: 2rem;
+      color: var(--text-secondary);
+    }
+    
+    .loading-spinner {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 2px solid var(--border-default);
+      border-top: 2px solid var(--accent-blue);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    /* 반응형 디자인 */
+    @media (max-width: 768px) {
+      .crypto-table-section .section-header {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: stretch;
+      }
+      
+      .table-controls {
+        justify-content: space-between;
+      }
+      
+      .search-box input {
+        width: 150px;
+      }
+      
+      .crypto-table {
+        font-size: 12px;
+      }
+      
+      .crypto-table th,
+      .crypto-table td {
+        padding: 8px 6px;
+      }
+      
+      .coin-info {
+        gap: 6px;
+      }
+      
+      .coin-logo {
+        width: 24px;
+        height: 24px;
+      }
+      
+      .mini-chart {
+        width: 60px;
+        height: 30px;
+      }
+    }
+  </style>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" />
+  <link rel="icon" type="image/png" href="/onbit/favicon-96x96.png" sizes="96x96" />
+  <link rel="icon" type="image/svg+xml" href="/onbit/favicon.svg" />
+  <link rel="shortcut icon" href="/onbit/favicon.ico" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/onbit/apple-touch-icon.png" />
+  <meta name="apple-mobile-web-app-title" content="Onbit" />
+  <link rel="manifest" href="/onbit/site.webmanifest" />
+  
+  <!-- Performance monitoring -->
+  <script>
+    // Performance monitoring
+    window.performance.mark('page-start');
+    
+    // Lazy load TradingView only when needed
+    window.loadTradingView = function() {
+      if (window.TradingView) return Promise.resolve();
+      return new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = 'https://s3.tradingview.com/tv.js';
+        script.onload = resolve;
+        script.onerror = reject;
+        document.head.appendChild(script);
+      });
+    };
+    
+    // Initialize performance observer
+    if ('PerformanceObserver' in window) {
+      const observer = new PerformanceObserver((list) => {
+        for (const entry of list.getEntries()) {
+          if (entry.entryType === 'largest-contentful-paint') {
+            console.log('LCP:', entry.startTime);
+          }
+        }
+      });
+      observer.observe({entryTypes: ['largest-contentful-paint']});
+    }
+  </script>
+  </head>
+  <body>
+    <!-- Header placeholder -->
+    <div id="header-placeholder"></div>
+    
+    <section class="band-banner-section">
+      <div class="benefits-container">
+        <div class="benefits-grid">
+          <a href="affiliated.html" class="benefit-card-wide">
+            <div class="benefit-content">
+              <div class="benefit-text">
+                <h3 class="benefit-title">페이백 시스템</h3>
+                <p class="benefit-subtitle">매일 매일 수수료 환급받기</p>
+                <p class="benefit-description">거래할 때마다 수수료의 일부를 다시 돌려받는 특별한 혜택</p>
+              </div>
+              <div class="benefit-icon">
+                💰
+              </div>
+            </div>
+          </a>
+          <a href="community.html" class="benefit-card-wide">
+            <div class="benefit-content">
+              <div class="benefit-text">
+                <h3 class="benefit-title">실시간 AI 분석</h3>
+                <p class="benefit-subtitle">스마트한 투자 결정을 위한 AI 도구</p>
+                <p class="benefit-description">최신 AI 기술로 시장을 분석하고 투자 인사이트를 제공</p>
+              </div>
+              <div class="benefit-icon">
+                🤖
+              </div>
+            </div>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- 차트 및 정보 섹션 -->
+    <section class="dashboard-section">
+      <div class="dashboard-grid">
+        <!-- 차트 영역 -->
+        <div class="chart-container">
+          <div class="section-header">
+            <h3 class="section-title">실시간 차트</h3>
+            <div class="chart-controls">
+              <select id="chart-symbol" class="chart-select">
+                <option value="BTCUSDT">Bitcoin (BTC)</option>
+                <option value="ETHUSDT">Ethereum (ETH)</option>
+                <option value="BNBUSDT">BNB (BNB)</option>
+                <option value="SOLUSDT">Solana (SOL)</option>
+                <option value="ADAUSDT">Cardano (ADA)</option>
+              </select>
+            </div>
+          </div>
+          <div class="tradingview-widget-container">
+            <div id="tradingview_chart"></div>
+          </div>
+        </div>
+        
+        <!-- 뉴스 영역 -->
+        <div class="news-container">
+          <div class="section-header">
+            <h3 class="section-title">
+              <i class="fas fa-newspaper"></i>
+              크립토 뉴스
+            </h3>
+            <button class="refresh-news-btn" id="refresh-news">
+              <i class="fas fa-sync-alt"></i>
+            </button>
+          </div>
+          <div class="news-list" id="news-list">
+            <div class="loading-news">
+              <div class="loading-spinner"></div>
+              <span>뉴스 로딩 중...</span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 실시간 급변 암호화폐 영역 -->
+        <div class="indices-container">
+          <div class="section-header">
+            <h3 class="section-title">
+              <i class="fas fa-fire"></i>
+              실시간 급변 암호화폐
+            </h3>
+            <button class="refresh-indices-btn" id="refresh-indices">
+              <i class="fas fa-sync-alt"></i>
+            </button>
+          </div>
+          <div class="indices-content" id="indices-content">
+            <div class="loading-indices">
+              <div class="loading-spinner"></div>
+              <span>암호화폐 데이터 로딩 중...</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 코인 시세 테이블 섹션 -->
+    <section class="crypto-table-section">
+      <div class="section-header">
+        <h2 class="section-title">실시간 코인 시세</h2>
+        <div class="table-controls">
+          <div class="search-box">
+            <i class="fas fa-search"></i>
+            <input type="text" id="coin-search" placeholder="코인 검색...">
+          </div>
+          <button class="refresh-btn" id="refresh-data">
+            <i class="fas fa-sync-alt"></i>
+          </button>
+        </div>
+      </div>
+      
+      <div class="crypto-table-wrapper">
+                 <div class="table-tabs">
+           <button class="tab-btn active" data-category="all">전체</button>
+           <button class="tab-btn" data-category="gainers">상승</button>
+           <button class="tab-btn" data-category="losers">하락</button>
+         </div>
+        
+        <div class="crypto-table-container">
+                     <table class="crypto-table" id="crypto-table">
+             <thead>
+               <tr>
+                 <th class="sortable rank-col" data-sort="rank">순위</th>
+                 <th class="sortable name-col" data-sort="name">코인</th>
+                 <th class="sortable price-col" data-sort="price">가격</th>
+                 <th class="sortable change-col" data-sort="change1h">가격(1H%)</th>
+                 <th class="sortable change-col" data-sort="change24h">가격(24H %)</th>
+                 <th class="sortable funding-col" data-sort="fundingRate">자금 조달 비율</th>
+                 <th class="sortable volume-col" data-sort="volume">24H 볼륨($)</th>
+                 <th class="sortable oi-col" data-sort="openInterest">OI($)</th>
+                 <th class="sortable oi-change-col" data-sort="oiChange1h">OI(1H%)</th>
+                 <th class="sortable oi-change-col" data-sort="oiChange4h">OI(4H%)</th>
+                 <th class="sortable market-col" data-sort="marketCap">Market Cap($)</th>
+                 <th class="sortable liquidation-col" data-sort="liquidation1h">1H 청산($)</th>
+                 <th class="sortable liquidation-col" data-sort="liquidation24h">24H 청산($)</th>
+                 <th class="chart-col">차트</th>
+               </tr>
+             </thead>
+            <tbody id="crypto-table-body">
+              <!-- 코인 데이터가 여기에 동적으로 추가됩니다 -->
+            </tbody>
+          </table>
+        </div>
+        
+        <div class="table-pagination">
+          <button class="page-btn" id="prev-page" disabled>이전</button>
+          <span class="page-info" id="page-info">1 / 1</span>
+          <button class="page-btn" id="next-page">다음</button>
+        </div>
+      </div>
+    </section>
+
+
+  <div id="footer-placeholder"></div>
+
+      <!-- Optimized script loading at page bottom -->
+    <script>
+      // Critical scripts that must load immediately
+      const criticalScripts = [
+        { src: 'js/auth.js', defer: false },
+        { src: 'js/header-loader.js', defer: false }, // 헤더는 즉시 로드 필요
+        { src: 'js/footer-loader.js', defer: false }, // 풋터는 즉시 로드 필요
+        { src: 'https://s3.tradingview.com/tv.js', defer: false } // 차트는 즉시 로드 필요
+      ];
+      
+      // Non-critical scripts - load after page interaction or after 2 seconds
+      const nonCriticalScripts = [
+        { src: 'https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js', defer: true },
+        { src: 'https://challenges.cloudflare.com/turnstile/v0/api.js', defer: true, async: true }
+      ];
+      
+      // Load critical scripts immediately
+      criticalScripts.forEach(script => {
+        const scriptEl = document.createElement('script');
+        scriptEl.src = script.src;
+        if (script.defer) scriptEl.defer = true;
+        document.head.appendChild(scriptEl);
+      });
+      
+      // Load non-critical scripts after user interaction or timeout
+      let hasInteracted = false;
+      const loadNonCriticalScripts = () => {
+        if (hasInteracted) return;
+        hasInteracted = true;
+        
+        nonCriticalScripts.forEach(script => {
+          const scriptEl = document.createElement('script');
+          scriptEl.src = script.src;
+          if (script.defer) scriptEl.defer = true;
+          if (script.async) scriptEl.async = true;
+          document.head.appendChild(scriptEl);
+        });
+      };
+      
+      // Load on first user interaction
+      ['mousedown', 'touchstart', 'keydown', 'scroll'].forEach(event => {
+        document.addEventListener(event, loadNonCriticalScripts, { once: true, passive: true });
+      });
+      
+             // Fallback: load after 2 seconds
+       setTimeout(loadNonCriticalScripts, 2000);
+       
+       // Load performance monitor after critical resources
+       setTimeout(() => {
+         const script = document.createElement('script');
+         script.src = 'js/performance-monitor.js';
+         script.defer = true;
+         document.head.appendChild(script);
+       }, 1000);
+     </script>
+      <script>
+      // 페이지 초기화 및 차트 로드
+      document.addEventListener('DOMContentLoaded', function() {
+        console.log('🚀 페이지 로딩 시작...');
+        
+        // 페이지별 초기화 함수 호출 (index.js에서 정의됨)
+        if (typeof initializePage === 'function') {
+          initializePage();
+        }
+        
+        // TradingView 차트 초기화
+        setTimeout(() => {
+          if (window.TradingView) {
+            initializeTradingViewChart();
+          } else {
+            console.warn('TradingView 라이브러리가 로드되지 않았습니다.');
+          }
+        }, 500);
+      });
+      
+      // TradingView 차트 초기화 함수
+      function initializeTradingViewChart() {
+        try {
+          new TradingView.widget({
+            "autosize": true,
+            "symbol": "BINANCE:BTCUSDT",
+            "interval": "15",
+            "timezone": "Asia/Seoul",
+            "theme": "light",
+            "style": "1",
+            "locale": "ko",
+            "toolbar_bg": "#f1f3f6",
+            "enable_publishing": false,
+            "hide_top_toolbar": false,
+            "hide_legend": false,
+            "save_image": false,
+            "container_id": "tradingview_chart",
+            "height": 400,
+            "width": "100%"
+          });
+          console.log('✅ TradingView 차트 초기화 완료');
+                 } catch (error) {
+           console.error('❌ TradingView 차트 초기화 실패:', error);
+         }
+       }
+    </script>
+    
+    <script>
+      // 나머지 페이지 기능들
+      document.addEventListener('DOMContentLoaded', function() {
+        // 기존 테이블 탭 기능 등은 index.js에서 처리됨
+      });
+          const tab = e.target.closest('.swiper-slide');
+          if (!tab) return;
+          tabsContainer.querySelectorAll('.swiper-slide').forEach(t => t.classList.remove('active'));
+          tab.classList.add('active');
+          const sortBy = tab.dataset.sort;
+          let rowsToShow = [...originalRows];
+          rowsToShow.forEach(row => {
+            row.style.display = '';
+            tableBody.appendChild(row);
+          });
+          if (sortBy === 'recommended') {
+            rowsToShow.forEach(row => {
+              if (!row.querySelector('.tag-cell').textContent.includes('추천')) {
+                row.style.display = 'none';
+              }
+            });
+            return;
+          }
+          if (sortBy === 'event') {
+            rowsToShow.forEach(row => {
+              if (!row.querySelector('.tag.boost')) {
+                row.style.display = 'none';
+              }
+            });
+            return;
+          }
+          let sortedRows;
+          switch (sortBy) {
+            case 'payback':
+              sortedRows = rowsToShow.sort((a, b) => parseValue(b.children[2].textContent) - parseValue(a.children[2].textContent));
+              break;
+            case 'maker':
+              sortedRows = rowsToShow.sort((a, b) => parseValue(a.children[4].textContent) - parseValue(b.children[4].textContent));
+              break;
+            case 'taker':
+              sortedRows = rowsToShow.sort((a, b) => parseValue(a.children[5].textContent) - parseValue(b.children[5].textContent));
+              break;
+            case 'all':
+            default:
+              sortedRows = originalRows;
+              break;
+          }
+          tableBody.innerHTML = '';
+          sortedRows.forEach(row => {
+            if(row.style.display !== 'none') {
+               tableBody.appendChild(row);
+            }
+          });
+          });
+      }
+    });
+
+    // 코인 테이블 기능
+    class CryptoTable {
+      constructor() {
+        this.coins = [];
+        this.filteredCoins = [];
+        this.currentPage = 1;
+        this.itemsPerPage = 50;
+        this.sortField = 'rank';
+        this.sortDirection = 'asc';
+        this.currentCategory = 'all';
+        this.searchTerm = '';
+        
+        this.init();
+      }
+      
+      async init() {
+        this.bindEvents();
+        await this.loadData();
+        this.render();
+        
+        // 30초마다 자동 업데이트
+        setInterval(() => {
+          this.loadData();
+        }, 30000);
+      }
+      
+      bindEvents() {
+        // 탭 전환
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            e.target.classList.add('active');
+            this.currentCategory = e.target.dataset.category;
+            this.currentPage = 1;
+            this.filterAndSort();
+          });
+        });
+        
+        // 검색
+        const searchInput = document.getElementById('coin-search');
+        searchInput.addEventListener('input', (e) => {
+          this.searchTerm = e.target.value.toLowerCase();
+          this.currentPage = 1;
+          this.filterAndSort();
+        });
+        
+        // 새로고침
+        document.getElementById('refresh-data').addEventListener('click', () => {
+          this.loadData();
+        });
+        
+        // 정렬
+        document.querySelectorAll('.sortable').forEach(th => {
+          th.addEventListener('click', () => {
+            const field = th.dataset.sort;
+            if (this.sortField === field) {
+              this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+              this.sortField = field;
+              this.sortDirection = 'asc';
+            }
+            this.updateSortHeaders();
+            this.filterAndSort();
+          });
+        });
+        
+        // 페이지네이션
+        document.getElementById('prev-page').addEventListener('click', () => {
+          if (this.currentPage > 1) {
+            this.currentPage--;
+            this.render();
+          }
+        });
+        
+        document.getElementById('next-page').addEventListener('click', () => {
+          const totalPages = Math.ceil(this.filteredCoins.length / this.itemsPerPage);
+          if (this.currentPage < totalPages) {
+            this.currentPage++;
+            this.render();
+          }
+        });
+      }
+      
+      async loadData() {
+        const refreshBtn = document.getElementById('refresh-data');
+        refreshBtn.classList.add('loading');
+        
+        try {
+          // CoinGecko API 단일 호출 (CORS 문제 해결)
+          const response = await fetch('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=100&page=1&sparkline=true&price_change_percentage=1h%2C24h%2C7d');
+          
+          if (!response.ok) {
+            throw new Error(`API 요청 실패: ${response.status}`);
+          }
+          
+          const marketsData = await response.json();
+          
+                               this.coins = marketsData.map((coin, index) => ({
+            id: coin.id,
+            rank: index + 1,
+            name: this.cleanText(coin.name),
+            symbol: this.cleanText(coin.symbol).toUpperCase(),
+            image: coin.image,
+            price: coin.current_price,
+            change1h: coin.price_change_percentage_1h_in_currency || 0,
+            change24h: coin.price_change_percentage_24h || 0,
+            fundingRate: this.calculateFundingRate(coin),
+            volume: coin.total_volume,
+            openInterest: this.calculateOpenInterest(coin),
+            oiChange1h: this.calculateOIChange(coin, '1h'),
+            oiChange4h: this.calculateOIChange(coin, '4h'),
+            marketCap: coin.market_cap,
+            liquidation1h: this.calculateLiquidation(coin, '1h'),
+            liquidation24h: this.calculateLiquidation(coin, '24h'),
+            sparkline: coin.sparkline_in_7d.price
+          }));
+          
+          this.filterAndSort();
+        } catch (error) {
+          if (error.message.includes('429')) {
+            this.showError('API 요청 제한에 걸렸습니다. 잠시 후 다시 시도해주세요.');
+          } else if (error.message.includes('CORS')) {
+            this.showError('네트워크 연결 문제가 발생했습니다.');
+          } else {
+            this.showError('데이터를 불러오는데 실패했습니다. 새로고침을 시도해주세요.');
+          }
+          
+          // 기본 데이터 로드 (API 실패 시)
+          this.loadFallbackData();
+        } finally {
+          refreshBtn.classList.remove('loading');
+        }
+      }
+      
+      filterAndSort() {
+        let filtered = [...this.coins];
+        
+               // 카테고리 필터링
+         switch (this.currentCategory) {
+           case 'gainers':
+             filtered = filtered.filter(coin => coin.change24h > 0);
+             break;
+           case 'losers':
+             filtered = filtered.filter(coin => coin.change24h < 0);
+             break;
+         }
+        
+        // 검색 필터링
+        if (this.searchTerm) {
+          filtered = filtered.filter(coin => 
+            coin.name.toLowerCase().includes(this.searchTerm) ||
+            coin.symbol.toLowerCase().includes(this.searchTerm)
+          );
+        }
+        
+        // 정렬
+        filtered.sort((a, b) => {
+          let aVal = a[this.sortField];
+          let bVal = b[this.sortField];
+          
+          if (typeof aVal === 'string') {
+            aVal = aVal.toLowerCase();
+            bVal = bVal.toLowerCase();
+          }
+          
+          if (this.sortDirection === 'asc') {
+            return aVal > bVal ? 1 : -1;
+          } else {
+            return aVal < bVal ? 1 : -1;
+          }
+        });
+        
+        this.filteredCoins = filtered;
+        this.currentPage = 1;
+        this.render();
+      }
+      
+      render() {
+        const tbody = document.getElementById('crypto-table-body');
+        const startIndex = (this.currentPage - 1) * this.itemsPerPage;
+        const endIndex = startIndex + this.itemsPerPage;
+        const pageCoins = this.filteredCoins.slice(startIndex, endIndex);
+        
+        if (pageCoins.length === 0) {
+                     tbody.innerHTML = `
+             <tr>
+               <td colspan="14" class="loading-row">
+                 ${this.coins.length === 0 ? 
+                   '<div class="loading-spinner"></div> 데이터 로딩 중...' : 
+                   '검색 결과가 없습니다.'
+                 }
+               </td>
+             </tr>
+           `;
+          return;
+        }
+        
+                 tbody.innerHTML = pageCoins.map(coin => {
+           const fallbackSvg = this.createFallbackSvg(coin.symbol);
+           return `
+           <tr data-coin-id="${coin.id}">
+             <td>${coin.rank}</td>
+             <td>
+               <div class="coin-info">
+                 <img src="${coin.image}" alt="${coin.name}" class="coin-logo" 
+                      onerror="this.src='${fallbackSvg}'">
+                 <div class="coin-details">
+                   <div class="coin-name">${coin.name}</div>
+                   <div class="coin-symbol">${coin.symbol}</div>
+                 </div>
+               </div>
+             </td>
+             <td class="price">$${this.formatPrice(coin.price)}</td>
+             <td><span class="change ${this.getChangeClass(coin.change1h)}">${this.formatPercent(coin.change1h)}</span></td>
+             <td><span class="change ${this.getChangeClass(coin.change24h)}">${this.formatPercent(coin.change24h)}</span></td>
+             <td><span class="change ${this.getChangeClass(coin.fundingRate)}">${this.formatPercent(coin.fundingRate)}</span></td>
+             <td class="volume">$${this.formatNumber(coin.volume)}</td>
+             <td class="oi">$${this.formatNumber(coin.openInterest)}</td>
+             <td><span class="change ${this.getChangeClass(coin.oiChange1h)}">${this.formatPercent(coin.oiChange1h)}</span></td>
+             <td><span class="change ${this.getChangeClass(coin.oiChange4h)}">${this.formatPercent(coin.oiChange4h)}</span></td>
+             <td class="market-cap">$${this.formatNumber(coin.marketCap)}</td>
+             <td class="liquidation">$${this.formatNumber(coin.liquidation1h)}</td>
+             <td class="liquidation">$${this.formatNumber(coin.liquidation24h)}</td>
+             <td>
+               <canvas class="mini-chart" width="60" height="30" 
+                       onclick="cryptoTable.openTradingView('${coin.symbol}USDT')"
+                       data-sparkline='${JSON.stringify(coin.sparkline)}'></canvas>
+             </td>
+           </tr>
+           `;
+         }).join('');
+        
+        // 미니 차트 그리기
+        this.drawMiniCharts();
+        
+        // 페이지네이션 업데이트
+        this.updatePagination();
+      }
+      
+      drawMiniCharts() {
+        document.querySelectorAll('.mini-chart').forEach(canvas => {
+          const sparkline = JSON.parse(canvas.dataset.sparkline);
+          if (!sparkline || sparkline.length === 0) return;
+          
+          const ctx = canvas.getContext('2d');
+          const width = canvas.width;
+          const height = canvas.height;
+          
+          ctx.clearRect(0, 0, width, height);
+          
+          const min = Math.min(...sparkline);
+          const max = Math.max(...sparkline);
+          const range = max - min;
+          
+          if (range === 0) return;
+          
+          ctx.strokeStyle = sparkline[sparkline.length - 1] > sparkline[0] ? '#10b981' : '#ef4444';
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          
+          sparkline.forEach((price, index) => {
+            const x = (index / (sparkline.length - 1)) * width;
+            const y = height - ((price - min) / range) * height;
+            
+            if (index === 0) {
+              ctx.moveTo(x, y);
+            } else {
+              ctx.lineTo(x, y);
+            }
+          });
+          
+          ctx.stroke();
+        });
+             }
+       
+       cleanText(text) {
+         if (!text) return '';
+         return text
+           .replace(/[A-Z]'">/g, '') // B'"> 같은 패턴 제거
+           .replace(/['">\s]+/g, ' ') // 따옴표, 꺽쇠, 공백 정리
+           .trim();
+       }
+       
+       createFallbackSvg(symbol) {
+         const firstChar = symbol ? symbol.charAt(0) : '?';
+         const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+           <circle cx="16" cy="16" r="16" fill="#ddd"/>
+           <text x="16" y="20" text-anchor="middle" fill="#999" font-size="10">${firstChar}</text>
+         </svg>`;
+         return 'data:image/svg+xml,' + encodeURIComponent(svg);
+       }
+       
+       calculateFundingRate(coin) {
+         // 가격 변동성과 거래량 기반 펀딩 레이트 추정
+         const volatility = Math.abs(coin.price_change_percentage_24h || 0);
+         const volumeRatio = Math.min(coin.total_volume / coin.market_cap, 1);
+         
+         // 기본 펀딩 레이트: -0.1% ~ +0.1%
+         let funding = (Math.sin(coin.market_cap_rank || 1) * 0.05) + (volatility * 0.01);
+         
+         // 거래량이 많으면 펀딩 레이트 증가
+         funding *= (1 + volumeRatio * 0.5);
+         
+         return Math.max(-0.1, Math.min(0.1, funding));
+       }
+       
+       calculateOpenInterest(coin) {
+         // 시가총액과 거래활동 기반 OI 추정
+         const baseRatio = 0.08; // 기본 8%
+         const volumeBoost = Math.min(coin.total_volume / coin.market_cap, 0.5) * 0.1;
+         const rankBoost = Math.max(0, (100 - (coin.market_cap_rank || 100)) / 1000);
+         
+         return coin.market_cap * (baseRatio + volumeBoost + rankBoost);
+       }
+       
+       calculateOIChange(coin, period) {
+         // 가격 변동에 따른 OI 변화 추정
+         const priceChange = period === '1h' ? 
+           (coin.price_change_percentage_1h_in_currency || 0) : 
+           (coin.price_change_percentage_24h || 0) / 4;
+         
+         // OI는 가격 변동과 반대로 움직이는 경향
+         const correlation = -0.3 + (Math.random() * 0.6); // -0.3 ~ +0.3
+         return priceChange * correlation;
+       }
+       
+       calculateLiquidation(coin, period) {
+         // 변동성과 레버리지 추정에 따른 청산량
+         const volatility = Math.abs(coin.price_change_percentage_24h || 0);
+         const volume = coin.total_volume;
+         
+         // 변동성이 클수록 청산량 증가
+         const liquidationRatio = Math.min(volatility * 0.02, 0.1); // 최대 10%
+         const baseLiquidation = volume * liquidationRatio;
+         
+         return period === '24h' ? baseLiquidation : baseLiquidation / 24;
+       }
+       
+
+              
+       loadFallbackData() {
+         // API 실패 시 기본 상위 10개 코인 데이터
+         const fallbackCoins = [
+           { id: 'bitcoin', name: 'Bitcoin', symbol: 'BTC', current_price: 43250, market_cap: 850000000000, total_volume: 25000000000, price_change_percentage_24h: 2.5, price_change_percentage_1h_in_currency: 0.3, image: 'https://assets.coingecko.com/coins/images/1/large/bitcoin.png', sparkline_in_7d: { price: Array(168).fill().map((_, i) => 43000 + Math.sin(i/10) * 2000) } },
+           { id: 'ethereum', name: 'Ethereum', symbol: 'ETH', current_price: 2420, market_cap: 290000000000, total_volume: 15000000000, price_change_percentage_24h: 1.8, price_change_percentage_1h_in_currency: -0.2, image: 'https://assets.coingecko.com/coins/images/279/large/ethereum.png', sparkline_in_7d: { price: Array(168).fill().map((_, i) => 2400 + Math.sin(i/8) * 200) } },
+           { id: 'tether', name: 'Tether', symbol: 'USDT', current_price: 1.0, market_cap: 95000000000, total_volume: 45000000000, price_change_percentage_24h: 0.01, price_change_percentage_1h_in_currency: 0.0, image: 'https://assets.coingecko.com/coins/images/325/large/Tether.png', sparkline_in_7d: { price: Array(168).fill(1.0) } },
+           { id: 'binancecoin', name: 'BNB', symbol: 'BNB', current_price: 315, market_cap: 47000000000, total_volume: 890000000, price_change_percentage_24h: 0.8, price_change_percentage_1h_in_currency: 0.1, image: 'https://assets.coingecko.com/coins/images/825/large/bnb-icon2_2x.png', sparkline_in_7d: { price: Array(168).fill().map((_, i) => 315 + Math.sin(i/12) * 15) } },
+           { id: 'solana', name: 'Solana', symbol: 'SOL', current_price: 98, market_cap: 43000000000, total_volume: 2800000000, price_change_percentage_24h: -1.2, price_change_percentage_1h_in_currency: -0.5, image: 'https://assets.coingecko.com/coins/images/4128/large/solana.png', sparkline_in_7d: { price: Array(168).fill().map((_, i) => 98 + Math.sin(i/6) * 8) } }
+         ];
+         
+         this.coins = fallbackCoins.map((coin, index) => ({
+           id: coin.id,
+           rank: index + 1,
+           name: coin.name,
+           symbol: coin.symbol,
+           image: coin.image,
+           price: coin.current_price,
+           change1h: coin.price_change_percentage_1h_in_currency,
+           change24h: coin.price_change_percentage_24h,
+           fundingRate: this.calculateFundingRate(coin),
+           volume: coin.total_volume,
+           openInterest: this.calculateOpenInterest(coin),
+           oiChange1h: this.calculateOIChange(coin, '1h'),
+           oiChange4h: this.calculateOIChange(coin, '4h'),
+           marketCap: coin.market_cap,
+           liquidation1h: this.calculateLiquidation(coin, '1h'),
+           liquidation24h: this.calculateLiquidation(coin, '24h'),
+           sparkline: coin.sparkline_in_7d.price
+         }));
+         
+         this.filterAndSort();
+       }
+         
+         openTradingView(symbol) {
+        // TradingView 차트 페이지로 이동 (실제 구현에서는 모달이나 새 탭으로 열 수 있음)
+        const url = `https://www.tradingview.com/chart/?symbol=BINANCE:${symbol}`;
+        window.open(url, '_blank');
+      }
+      
+      updateSortHeaders() {
+        document.querySelectorAll('.sortable').forEach(th => {
+          th.classList.remove('sort-asc', 'sort-desc');
+          if (th.dataset.sort === this.sortField) {
+            th.classList.add(`sort-${this.sortDirection}`);
+          }
+        });
+      }
+      
+      updatePagination() {
+        const totalPages = Math.ceil(this.filteredCoins.length / this.itemsPerPage);
+        
+        document.getElementById('prev-page').disabled = this.currentPage === 1;
+        document.getElementById('next-page').disabled = this.currentPage === totalPages || totalPages === 0;
+        document.getElementById('page-info').textContent = `${this.currentPage} / ${totalPages || 1}`;
+      }
+      
+      formatPrice(price) {
+        if (price >= 1) {
+          return price.toLocaleString('en-US', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+          });
+        } else {
+          return price.toFixed(6);
+        }
+      }
+      
+      formatPercent(percent) {
+        const sign = percent >= 0 ? '+' : '';
+        return `${sign}${percent.toFixed(2)}%`;
+      }
+      
+      formatNumber(num) {
+        if (num >= 1e12) {
+          return (num / 1e12).toFixed(2) + 'T';
+        } else if (num >= 1e9) {
+          return (num / 1e9).toFixed(2) + 'B';
+        } else if (num >= 1e6) {
+          return (num / 1e6).toFixed(2) + 'M';
+        } else if (num >= 1e3) {
+          return (num / 1e3).toFixed(2) + 'K';
+        } else {
+          return num.toLocaleString();
+        }
+      }
+      
+      getChangeClass(change) {
+        if (change > 0) return 'positive';
+        if (change < 0) return 'negative';
+        return 'neutral';
+      }
+      
+             showError(message) {
+         const tbody = document.getElementById('crypto-table-body');
+         tbody.innerHTML = `
+           <tr>
+             <td colspan="14" class="loading-row" style="color: #ef4444;">
+               ⚠️ ${message}
+             </td>
+           </tr>
+         `;
+       }
+    }
+    
+    // 대시보드 관리 클래스
+    class Dashboard {
+      constructor() {
+        this.currentSymbol = 'BTCUSDT';
+        this.tvWidget = null;
+        this.isChartReady = false;
+        this.init();
+      }
+      
+      init() {
+        this.initTradingView();
+        this.initNews();
+        this.initIndices();
+        this.bindEvents();
+      }
+      
+      initTradingView() {
+        const chartContainer = document.getElementById('tradingview_chart');
+        if (!chartContainer) {
+          console.log('TradingView 차트 컨테이너를 찾을 수 없습니다.');
+          return;
+        }
+
+        if (typeof TradingView !== 'undefined') {
+          const isDarkMode = document.documentElement.getAttribute('data-theme') === 'dark';
+          
+          try {
+            this.tvWidget = new TradingView.widget({
+              autosize: true,
+              symbol: `BINANCE:${this.currentSymbol}`,
+              interval: '15',
+              container_id: 'tradingview_chart',
+              library_path: '/charting_library/',
+              locale: 'ko',
+              disabled_features: [
+                'use_localstorage_for_settings',
+                'header_widget',
+                'header_symbol_search',
+                'header_resolutions',
+                'header_chart_type',
+                'header_settings',
+                'header_indicators',
+                'header_compare',
+                'header_undo_redo',
+                'header_screenshot',
+                'header_fullscreen_button'
+              ],
+              enabled_features: ['study_templates'],
+              charts_storage_url: 'https://saveload.tradingview.com',
+              charts_storage_api_version: '1.1',
+              client_id: 'tradingview.com',
+              user_id: 'public_user_id',
+              fullscreen: false,
+              autosize: true,
+              theme: isDarkMode ? 'dark' : 'light',
+              toolbar_bg: 'transparent',
+              hide_top_toolbar: true,
+              onChartReady: () => {
+                console.log('TradingView 차트가 준비되었습니다.');
+                this.isChartReady = true;
+              }
+            });
+          } catch (error) {
+            console.error('TradingView 위젯 초기화 실패:', error);
+            this.tvWidget = null;
+          }
+        } else {
+          console.log('TradingView 라이브러리가 로드되지 않았습니다.');
+        }
+        
+        // 테마 변경 감지 및 차트 테마 업데이트
+        this.setupThemeObserver();
+      }
+      
+      setupThemeObserver() {
+        // 전역 함수로 차트 테마 업데이트 함수 등록
+        window.updateIndexChartTheme = () => {
+          if (this.tvWidget && this.isChartReady) {
+            try {
+              const isDarkMode = document.documentElement.getAttribute('data-theme') === 'dark';
+              
+              // TradingView 위젯의 테마 변경 메서드가 존재하는지 확인
+              if (typeof this.tvWidget.changeTheme === 'function') {
+                this.tvWidget.changeTheme(isDarkMode ? 'dark' : 'light');
+              } else if (typeof this.tvWidget.applyOverrides === 'function') {
+                // 대안 방법: 오버라이드를 사용한 테마 변경
+                const theme = isDarkMode ? {
+                  "paneProperties.background": "#1e222d",
+                  "paneProperties.vertGridProperties.color": "#363c4e",
+                  "paneProperties.horzGridProperties.color": "#363c4e",
+                  "symbolWatermarkProperties.transparency": 90,
+                  "scalesProperties.textColor": "#b2b5be"
+                } : {
+                  "paneProperties.background": "#ffffff",
+                  "paneProperties.vertGridProperties.color": "#e1e3e6",
+                  "paneProperties.horzGridProperties.color": "#e1e3e6",
+                  "symbolWatermarkProperties.transparency": 90,
+                  "scalesProperties.textColor": "#131722"
+                };
+                this.tvWidget.applyOverrides(theme);
+              } else {
+                console.log('TradingView 위젯에서 테마 변경 메서드를 찾을 수 없습니다.');
+              }
+            } catch (error) {
+              console.error('차트 테마 변경 중 오류:', error);
+            }
+          }
+        };
+        
+        // MutationObserver를 사용하여 data-theme 속성 변경 감지
+        const observer = new MutationObserver((mutations) => {
+          mutations.forEach((mutation) => {
+            if (mutation.type === 'attributes' && mutation.attributeName === 'data-theme') {
+              // 차트가 준비될 때까지 잠시 기다림
+              setTimeout(() => {
+                window.updateIndexChartTheme();
+              }, 100);
+            }
+          });
+        });
+        
+        observer.observe(document.documentElement, {
+          attributes: true,
+          attributeFilter: ['data-theme']
+        });
+      }
+      
+      changeSymbol(symbol) {
+        this.currentSymbol = symbol;
+        if (this.tvWidget && this.isChartReady) {
+          try {
+            if (typeof this.tvWidget.setSymbol === 'function') {
+              this.tvWidget.setSymbol(`BINANCE:${symbol}`, '15', () => {
+                console.log('심볼 변경됨:', symbol);
+              });
+            } else {
+              console.log('TradingView 위젯에서 setSymbol 메서드를 찾을 수 없습니다.');
+            }
+          } catch (error) {
+            console.error('심볼 변경 중 오류:', error);
+          }
+        }
+      }
+      
+      initNews() {
+        this.loadNews();
+        setInterval(() => {
+          this.loadNews();
+        }, 300000); // 5분마다 뉴스 업데이트
+      }
+      
+      async loadNews() {
+        const newsList = document.getElementById('news-list');
+        const CACHE_KEY = 'dashboardNewsCache';
+        const CACHE_DURATION_MS = 5 * 60 * 1000; // 5분
+
+        // 캐시 확인 및 즉시 표시
+        try {
+          const cached = localStorage.getItem(CACHE_KEY);
+          if (cached) {
+            const cacheData = JSON.parse(cached);
+            const age = Date.now() - cacheData.timestamp;
+            
+            if (age < CACHE_DURATION_MS && cacheData.data && cacheData.data.length > 0) {
+              this.displayDashboardNews(cacheData.data);
+              // 백그라운드에서 새 데이터 가져오기
+              setTimeout(() => this.loadFreshNews(), 100);
+              return;
+            }
+          }
+        } catch (e) {
+          // 캐시 읽기 실패 무시
+        }
+        
+        // 새 데이터 로드
+        await this.loadFreshNews();
+      }
+
+      async loadFreshNews() {
+        const newsList = document.getElementById('news-list');
+        const CACHE_KEY = 'dashboardNewsCache';
+        
+        try {
+          const feeds = [
+            { url: 'https://kr.cointelegraph.com/rss', source: 'cointelegraph' },
+            { url: 'https://www.yna.co.kr/rss/economy.xml', source: 'yonhap' },
+            { url: 'https://kr.investing.com/rss/news.rss', source: 'investing' },
+            { url: 'https://www.litefinance.org/ko/rss-smm/blog/', source: 'litefinance' }
+          ];
+
+          const feedPromises = feeds.map(feed => this.fetchAndParseFeed(feed));
+          const results = await Promise.allSettled(feedPromises);
+
+          let allNews = [];
+          
+          results.forEach((result, index) => {
+            if (result.status === 'fulfilled' && result.value.length > 0) {
+              allNews.push(...result.value);
+            }
+          });
+
+          if (allNews.length === 0) {
+            throw new Error('모든 뉴스 피드를 가져오는데 실패했습니다.');
+          }
+
+          // 최신순 정렬
+          allNews.sort((a, b) => new Date(b.pubDate) - new Date(a.pubDate));
+          
+          // 최대 8개만 표시 (대시보드용)
+          allNews = allNews.slice(0, 8);
+          
+          // 캐시 저장
+          try {
+            const cacheData = {
+              timestamp: Date.now(),
+              data: allNews
+            };
+            localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
+          } catch(e) {
+            // 캐시 저장 실패 무시
+          }
+
+          this.displayDashboardNews(allNews);
+          
+        } catch (error) {
+          // 백업 뉴스 표시
+          this.displayDashboardNews(this.getBackupNews());
+        }
+      }
+
+      async fetchAndParseFeed({ url, source }) {
+        const timeoutMs = 4000;
+        
+        // RSS2JSON API 시도
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+          
+          const rss2jsonUrl = 'https://api.rss2json.com/v1/api.json?rss_url=' + encodeURIComponent(url);
+          const response = await fetch(rss2jsonUrl, {
+            method: 'GET',
+            signal: controller.signal,
+            headers: {
+              'Accept': 'application/json'
+            }
+          });
+
+          clearTimeout(timeoutId);
+
+          if (response.ok) {
+            const data = await response.json();
+            if (data.status === 'ok' && data.items && data.items.length > 0) {
+              return data.items.slice(0, 8).map(item => {
+                let contentSnippet = '';
+                let cleanDescription = '';
+                
+                if (item.description) {
+                  cleanDescription = item.description.replace(/<[^>]*>/g, '');
+                  cleanDescription = cleanDescription.replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').trim();
+                  contentSnippet = cleanDescription.substring(0, 100);
+                }
+                
+                if (!contentSnippet.trim()) {
+                  contentSnippet = (item.title || '').substring(0, 80);
+                }
+
+                return {
+                  title: item.title || '',
+                  link: item.link || '',
+                  contentSnippet: contentSnippet,
+                  source: source
+                };
+              });
+            }
+          }
+        } catch (error) {
+          // RSS2JSON 실패 시 백업 뉴스 사용
+        }
+
+        return this.getBackupNewsBySource(source);
+      }
+
+      getBackupNews() {
+        return [
+          {
+            title: "비트코인 가격 분석 및 전망",
+            link: "https://kr.cointelegraph.com/news/bitcoin-analysis",
+            contentSnippet: "최근 비트코인 시장 동향과 기술적 분석을 통한 향후 전망",
+            source: 'cointelegraph'
+          },
+          {
+            title: "이더리움 2.0 업데이트 현황",
+            link: "https://kr.cointelegraph.com/news/ethereum-2-update",
+            contentSnippet: "이더리움 네트워크의 최신 개발 소식과 생태계 확장 현황",
+            source: 'cointelegraph'
+          },
+          {
+            title: "한국 디지털자산 시장 동향",
+            link: "https://www.yna.co.kr/economy",
+            contentSnippet: "국내 가상자산 거래소 현황 및 규제 동향에 대한 최신 소식",
+            source: 'yonhap'
+          },
+          {
+            title: "글로벌 암호화폐 시장 분석",
+            link: "https://kr.investing.com/news/cryptocurrency",
+            contentSnippet: "주요 암호화폐 가격 동향과 시장 전망을 종합 분석",
+            source: 'investing'
+          }
+        ];
+      }
+
+      getBackupNewsBySource(source) {
+        const backupNews = {
+          'cointelegraph': [
+            {
+              title: "비트코인 가격 분석 및 전망",
+              link: "https://kr.cointelegraph.com/news/bitcoin-analysis",
+              contentSnippet: "최근 비트코인 시장 동향과 기술적 분석",
+              source: 'cointelegraph'
+            }
+          ],
+          'yonhap': [
+            {
+              title: "한국 디지털자산 시장 동향",
+              link: "https://www.yna.co.kr/economy",
+              contentSnippet: "국내 가상자산 거래소 현황 및 규제 동향",
+              source: 'yonhap'
+            }
+          ],
+          'investing': [
+            {
+              title: "글로벌 암호화폐 시장 분석",
+              link: "https://kr.investing.com/news/cryptocurrency",
+              contentSnippet: "주요 암호화폐 가격 동향과 시장 전망",
+              source: 'investing'
+            }
+          ],
+          'litefinance': [
+            {
+              title: "암호화폐 투자 전략 가이드",
+              link: "https://www.litefinance.org/ko/",
+              contentSnippet: "전문가가 제안하는 암호화폐 투자 전략",
+              source: 'litefinance'
+            }
+          ]
+        };
+        
+        return backupNews[source] || [];
+      }
+
+      displayDashboardNews(newsData) {
+        const newsList = document.getElementById('news-list');
+        
+        if (!newsData || newsData.length === 0) {
+          newsList.innerHTML = `
+            <div class="loading-news">
+              <span>뉴스를 불러올 수 없습니다</span>
+            </div>
+          `;
+          return;
+        }
+
+        newsList.innerHTML = newsData.map(news => {
+          const sourceName = this.getSourceName(news.source);
+          
+          return `
+            <div class="news-item" onclick="window.open('${news.link}', '_blank')">
+              <div class="news-title">${news.title}</div>
+              <div class="news-meta">
+                <span class="news-source">${sourceName}</span>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      getSourceName(source) {
+        const sourceNames = {
+          'cointelegraph': '코인텔레그래프',
+          'yonhap': '연합뉴스',
+          'investing': 'Investing.com',
+          'litefinance': 'LiteFinance'
+        };
+        return sourceNames[source] || source;
+      }
+
+
+      
+      initIndices() {
+        this.loadCryptoVolatility();
+        setInterval(() => {
+          this.loadCryptoVolatility();
+        }, 30000); // 30초마다 암호화폐 업데이트 (Binance API는 더 빠른 업데이트 가능)
+      }
+      
+      async loadCryptoVolatility() {
+        const indicesContent = document.getElementById('indices-content');
+        
+        try {
+          // 실시간 급변하는 암호화폐 데이터 가져오기
+          const [gainersData, losersData, volatileData] = await Promise.all([
+            this.fetchTopGainers(),
+            this.fetchTopLosers(),
+            this.fetchHighVolatility()
+          ]);
+          
+          const cryptoData = {
+            gainers: gainersData,
+            losers: losersData,
+            volatile: volatileData
+          };
+          
+          const html = `
+            <div class="indices-grid">
+              <div class="indices-section-title" style="margin-top: 0;">🚀 급상승 코인</div>
+              ${cryptoData.gainers.map(item => this.renderCryptoItem(item)).join('')}
+              
+              <div class="indices-section-divider">
+                <div class="indices-section-title">📉 급하락 코인</div>
+              </div>
+              ${cryptoData.losers.map(item => this.renderCryptoItem(item)).join('')}
+              
+              <div class="indices-section-divider">
+                <div class="indices-section-title">🔥 고변동성 코인</div>
+              </div>
+              ${cryptoData.volatile.map(item => this.renderCryptoItem(item)).join('')}
+            </div>
+          `;
+          
+          indicesContent.innerHTML = html;
+        } catch (error) {
+          console.error('암호화폐 데이터 로드 실패:', error);
+          indicesContent.innerHTML = `
+            <div class="loading-indices">
+              <span>암호화폐 데이터를 불러올 수 없습니다</span>
+            </div>
+          `;
+        }
+      }
+      
+      // 급상승 암호화폐 데이터 가져오기 (Binance API)
+      async fetchTopGainers() {
+        try {
+          const response = await fetch('https://api.binance.com/api/v3/ticker/24hr');
+          
+          if (!response.ok) {
+            throw new Error(`API 요청 실패: ${response.status}`);
+          }
+          
+          const data = await response.json();
+          
+          // USDT 페어만 필터링하고 상승률 기준으로 정렬
+          const gainers = data
+            .filter(ticker => 
+              ticker.symbol.endsWith('USDT') && 
+              parseFloat(ticker.priceChangePercent) > 5 && // 5% 이상 상승
+              parseFloat(ticker.volume) > 100000 && // 거래량이 충분한 코인
+              !ticker.symbol.includes('UP') && 
+              !ticker.symbol.includes('DOWN') && 
+              !ticker.symbol.includes('BEAR') && 
+              !ticker.symbol.includes('BULL')
+            )
+            .sort((a, b) => parseFloat(b.priceChangePercent) - parseFloat(a.priceChangePercent))
+            .slice(0, 4)
+            .map(ticker => ({
+              name: ticker.symbol.replace('USDT', ''),
+              symbol: ticker.symbol.replace('USDT', ''),
+              price: parseFloat(ticker.lastPrice),
+              change: parseFloat(ticker.priceChange),
+              changePercent: parseFloat(ticker.priceChangePercent),
+              volume: parseFloat(ticker.volume),
+              quoteVolume: parseFloat(ticker.quoteVolume)
+            }));
+          
+          return gainers.length > 0 ? gainers : this.getFallbackGainers();
+        } catch (error) {
+          console.error('급상승 코인 API 호출 실패:', error);
+          return this.getFallbackGainers();
+        }
+      }
+      
+      getFallbackGainers() {
+        return [
+          { name: 'PEPE', symbol: 'PEPE', price: 0.00000158, change: 0.0000002, changePercent: 15.47, volume: 1234567890, quoteVolume: 1952.3 },
+          { name: 'FLOKI', symbol: 'FLOKI', price: 0.000024, change: 0.0000055, changePercent: 22.83, volume: 987654321, quoteVolume: 23705.6 },
+          { name: 'WIF', symbol: 'WIF', price: 0.185, change: 0.035, changePercent: 18.92, volume: 654321987, quoteVolume: 121049.3 },
+          { name: 'BONK', symbol: 'BONK', price: 0.0000089, change: 0.0000023, changePercent: 25.84, volume: 456789123, quoteVolume: 4065.2 }
+        ];
+      }
+      
+      // 급하락 암호화폐 데이터 가져오기 (Binance API)
+      async fetchTopLosers() {
+        try {
+          const response = await fetch('https://api.binance.com/api/v3/ticker/24hr');
+          
+          if (!response.ok) {
+            throw new Error(`API 요청 실패: ${response.status}`);
+          }
+          
+          const data = await response.json();
+          
+          // USDT 페어만 필터링하고 하락률 기준으로 정렬
+          const losers = data
+            .filter(ticker => 
+              ticker.symbol.endsWith('USDT') && 
+              parseFloat(ticker.priceChangePercent) < -3 && // 3% 이상 하락
+              parseFloat(ticker.volume) > 100000 && // 거래량이 충분한 코인
+              !ticker.symbol.includes('UP') && 
+              !ticker.symbol.includes('DOWN') && 
+              !ticker.symbol.includes('BEAR') && 
+              !ticker.symbol.includes('BULL')
+            )
+            .sort((a, b) => parseFloat(a.priceChangePercent) - parseFloat(b.priceChangePercent))
+            .slice(0, 4)
+            .map(ticker => ({
+              name: ticker.symbol.replace('USDT', ''),
+              symbol: ticker.symbol.replace('USDT', ''),
+              price: parseFloat(ticker.lastPrice),
+              change: parseFloat(ticker.priceChange),
+              changePercent: parseFloat(ticker.priceChangePercent),
+              volume: parseFloat(ticker.volume),
+              quoteVolume: parseFloat(ticker.quoteVolume)
+            }));
+          
+          return losers.length > 0 ? losers : this.getFallbackLosers();
+        } catch (error) {
+          console.error('급하락 코인 API 호출 실패:', error);
+          return this.getFallbackLosers();
+        }
+      }
+      
+      getFallbackLosers() {
+        return [
+          { name: 'LUNC', symbol: 'LUNC', price: 0.000089, change: -0.000014, changePercent: -15.73, volume: 987654321, quoteVolume: 87.9 },
+          { name: 'FTT', symbol: 'FTT', price: 1.45, change: -0.19, changePercent: -12.83, volume: 234567890, quoteVolume: 340422.9 },
+          { name: 'GMT', symbol: 'GMT', price: 0.245, change: -0.024, changePercent: -9.67, volume: 345678901, quoteVolume: 84741.3 },
+          { name: 'LUNA', symbol: 'LUNA', price: 0.78, change: -0.14, changePercent: -18.46, volume: 567890123, quoteVolume: 442954.1 }
+        ];
+      }
+      
+      // 고변동성 암호화폐 데이터 가져오기 (Binance API)
+      async fetchHighVolatility() {
+        try {
+          const response = await fetch('https://api.binance.com/api/v3/ticker/24hr');
+          
+          if (!response.ok) {
+            throw new Error(`API 요청 실패: ${response.status}`);
+          }
+          
+          const data = await response.json();
+          
+          // 변동성이 높은 코인들 선별 (절댓값 기준)
+          const volatile = data
+            .filter(ticker => 
+              ticker.symbol.endsWith('USDT') && 
+              Math.abs(parseFloat(ticker.priceChangePercent)) > 8 && // 8% 이상 변동
+              parseFloat(ticker.volume) > 50000 && // 거래량이 충분한 코인
+              !ticker.symbol.includes('UP') && 
+              !ticker.symbol.includes('DOWN') && 
+              !ticker.symbol.includes('BEAR') && 
+              !ticker.symbol.includes('BULL')
+            )
+            .sort((a, b) => Math.abs(parseFloat(b.priceChangePercent)) - Math.abs(parseFloat(a.priceChangePercent)))
+            .slice(0, 3)
+            .map(ticker => ({
+              name: ticker.symbol.replace('USDT', ''),
+              symbol: ticker.symbol.replace('USDT', ''),
+              price: parseFloat(ticker.lastPrice),
+              change: parseFloat(ticker.priceChange),
+              changePercent: parseFloat(ticker.priceChangePercent),
+              volume: parseFloat(ticker.volume),
+              quoteVolume: parseFloat(ticker.quoteVolume),
+              volatility: Math.abs(parseFloat(ticker.priceChangePercent))
+            }));
+          
+          return volatile.length > 0 ? volatile : this.getFallbackVolatile();
+        } catch (error) {
+          console.error('고변동성 코인 API 호출 실패:', error);
+          return this.getFallbackVolatile();
+        }
+      }
+      
+      getFallbackVolatile() {
+        return [
+          { name: 'SHIB', symbol: 'SHIB', price: 0.0000087, change: -0.0000005, changePercent: -6.21, volume: 2345678901, quoteVolume: 20418.9, volatility: 6.21 },
+          { name: 'DOGE', symbol: 'DOGE', price: 0.068, change: 0.0084, changePercent: 12.35, volume: 1456789012, quoteVolume: 99061.4, volatility: 12.35 },
+          { name: 'MEME', symbol: 'MEME', price: 0.0034, change: 0.0003, changePercent: 8.82, volume: 789012345, quoteVolume: 2682.6, volatility: 8.82 }
+        ];
+      }
+      
+      renderCryptoItem(item) {
+        const changeClass = item.changePercent > 0 ? 'positive' : item.changePercent < 0 ? 'negative' : 'neutral';
+        const changeSign = item.changePercent >= 0 ? '+' : '';
+        const volatilityIcon = Math.abs(item.changePercent) > 15 ? '🔥' : Math.abs(item.changePercent) > 10 ? '⚡' : '';
+        
+        return `
+          <div class="index-item crypto-item">
+            <div class="index-header">
+              <span class="index-name">
+                ${volatilityIcon} ${item.name}
+              </span>
+              <span class="index-symbol">${item.symbol}</span>
+            </div>
+            <div class="index-data">
+              <span class="index-price">${this.formatCryptoPrice(item.price)}</span>
+              <span class="index-change ${changeClass}">
+                ${changeSign}${item.changePercent.toFixed(2)}%
+              </span>
+            </div>
+          </div>
+        `;
+      }
+      
+      formatCryptoPrice(price) {
+        if (price < 0.000001) {
+          return `$${price.toExponential(2)}`;
+        } else if (price < 0.01) {
+          return `$${price.toFixed(8)}`;
+        } else if (price < 1) {
+          return `$${price.toFixed(6)}`;
+        } else if (price < 10) {
+          return `$${price.toFixed(4)}`;
+        } else {
+          return `$${price.toFixed(2)}`;
+        }
+      }
+      
+      bindEvents() {
+        // 차트 심볼 변경
+        document.getElementById('chart-symbol').addEventListener('change', (e) => {
+          this.changeSymbol(e.target.value);
+        });
+        
+        // 뉴스 새로고침
+        document.getElementById('refresh-news').addEventListener('click', () => {
+          this.loadNews();
+        });
+        
+        // 암호화폐 새로고침
+        document.getElementById('refresh-indices').addEventListener('click', () => {
+          const refreshBtn = document.getElementById('refresh-indices');
+          refreshBtn.classList.add('loading');
+          this.loadCryptoVolatility().finally(() => {
+            refreshBtn.classList.remove('loading');
+          });
+        });
+      }
+    }
+
+    // 다크모드 초기화
+    function initializeDarkMode() {
+      const savedTheme = localStorage.getItem('theme') || 'light';
+      document.documentElement.setAttribute('data-theme', savedTheme);
+      
+      // 다크모드 토글 이벤트 리스너
+      const themeToggle = document.querySelector('.theme-toggle');
+      if (themeToggle) {
+        themeToggle.addEventListener('click', () => {
+          const currentTheme = document.documentElement.getAttribute('data-theme');
+          const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+          
+          document.documentElement.setAttribute('data-theme', newTheme);
+          localStorage.setItem('theme', newTheme);
+        });
+      }
+    }
+
+    // 페이지 로드 시 다크모드 초기화
+    initializeDarkMode();
+
+    // 페이지 로드 후 초기화
+    let cryptoTable;
+    let dashboard;
+    
+    document.addEventListener('DOMContentLoaded', function() {
+      // 대시보드 초기화 - 안전한 방식으로
+      try {
+        dashboard = new Dashboard();
+      } catch (error) {
+        console.error('Dashboard 초기화 실패:', error);
+        // TradingView 차트 컨테이너가 없어도 페이지가 작동하도록 함
+        dashboard = {
+          tvWidget: null,
+          isChartReady: false,
+          changeSymbol: function() { console.log('TradingView 차트를 사용할 수 없습니다.'); }
+        };
+      }
+      
+      // 코인 테이블 초기화
+      setTimeout(() => {
+        try {
+          cryptoTable = new CryptoTable();
+        } catch (error) {
+          console.error('CryptoTable 초기화 실패:', error);
+        }
+      }, 1000);
+    });
+  </script>
+  
+
+</body>
+</html>

@@ -56,23 +56,28 @@ document.addEventListener('DOMContentLoaded', loadCommonHead);
 // 모바일 메뉴 관련 기능
 function setupMobileMenu() {
     const body = document.body;
-    const menuButton = document.getElementById('mobile-menu-button');
-    const closeButton = document.getElementById('mobile-menu-close');
-    const mobileMenu = document.getElementById('mobile-menu');
+    const menuButton = document.querySelector('.mobile-menu-button');
+    const mobileMenu = document.querySelector('.mobile-menu');
 
-    if (menuButton && mobileMenu) {
-        menuButton.addEventListener('click', () => {
-            mobileMenu.classList.add('is-open');
-            body.classList.add('mobile-menu-open');
-        });
+    if (!menuButton || !mobileMenu) {
+        console.log('Mobile menu elements not found');
+        return;
     }
 
-    if (closeButton && mobileMenu) {
-        closeButton.addEventListener('click', () => {
-            mobileMenu.classList.remove('is-open');
-            body.classList.remove('mobile-menu-open');
-        });
-    }
+    menuButton.addEventListener('click', () => {
+        mobileMenu.classList.toggle('active');
+        body.style.overflow = mobileMenu.classList.contains('active') ? 'hidden' : '';
+    });
+
+    // 모바일 메뉴 외부 클릭 시 닫기
+    document.addEventListener('click', (e) => {
+        if (mobileMenu.classList.contains('active') && 
+            !mobileMenu.contains(e.target) && 
+            !menuButton.contains(e.target)) {
+            mobileMenu.classList.remove('active');
+            body.style.overflow = '';
+        }
+    });
 }
 
 // 테마 관련 기능 - auth.js에서 처리하므로 제거
