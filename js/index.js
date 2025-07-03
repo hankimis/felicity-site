@@ -343,11 +343,10 @@ class IndexPageManager {
             console.log('✅ Whale tracker initialized');
           }
           
-          // Initialize Influencer Positions
-          if (typeof window.InfluencerPositions !== 'undefined') {
-            window.influencerPositions = new window.InfluencerPositions();
-            await window.influencerPositions.start();
-            console.log('✅ Influencer positions tracker initialized');
+          // Initialize Compound Calculator
+          if (typeof window.CompoundCalculator !== 'undefined') {
+            window.compoundCalculator = new window.CompoundCalculator();
+            console.log('✅ Compound calculator initialized');
           }
           
           // Setup tracker status indicators
@@ -371,11 +370,11 @@ class IndexPageManager {
       whaleStatus.style.color = '#22c55e';
     }
     
-    // Update influencer positions status
-    const activeCount = document.querySelector('.active-count');
-    if (activeCount && window.influencerPositions) {
-      const positions = window.influencerPositions.getPositions();
-      activeCount.textContent = `활성 포지션: ${positions.length}`;
+    // Update compound calculator status
+    const calculatorStatus = document.querySelector('.calculator-status');
+    if (calculatorStatus && window.compoundCalculator) {
+      calculatorStatus.textContent = '계산기 준비완료';
+      calculatorStatus.style.color = '#22c55e';
     }
     
     // Setup whale settings button
@@ -400,8 +399,8 @@ class IndexPageManager {
     if (window.whaleTracker && typeof window.whaleTracker.stop === 'function') {
       window.whaleTracker.stop();
     }
-    if (window.influencerPositions && typeof window.influencerPositions.stop === 'function') {
-      window.influencerPositions.stop();
+    if (window.compoundCalculator && typeof window.compoundCalculator.destroy === 'function') {
+      window.compoundCalculator.destroy();
     }
     
     // Destroy Swiper instances
