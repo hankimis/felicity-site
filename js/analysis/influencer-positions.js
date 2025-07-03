@@ -21,8 +21,8 @@ export class InfluencerPositions {
                 side: 'short',
                 leverage: 20,
                 positionSize: 5.5,
-                pnl: -182020.01,
-                pnlPercent: -50.00,
+                pnl: -400044.00,  // 5.5 * (105741.40 - 109381.80) * (-1) * 20 = -400044
+                pnlPercent: -3.44,  // (109381.80 - 105741.40) / 105741.40 * (-1) * 100 = -3.44%
                 isOnline: true,
                 entryPrice: 105741.40,
                 currentPrice: 109381.80,
@@ -39,8 +39,8 @@ export class InfluencerPositions {
                 side: 'long',
                 leverage: 15,
                 positionSize: 2.8,
-                pnl: 63932.10,
-                pnlPercent: 30.00,
+                pnl: 89504.49,  // 2.8 * (109381.80 - 107250.73) * 1 * 15 = 89504.49
+                pnlPercent: 1.99,  // (109381.80 - 107250.73) / 107250.73 * 1 * 100 = 1.99%
                 isOnline: true,
                 entryPrice: 107250.73,
                 currentPrice: 109381.80,
@@ -57,8 +57,8 @@ export class InfluencerPositions {
                 side: 'long',
                 leverage: 10,
                 positionSize: 1.88,
-                pnl: 24299.03,
-                pnlPercent: 7.70,
+                pnl: 59330.02,  // 1.88 * (109381.80 - 106226.90) * 1 * 10 = 59330.02
+                pnlPercent: 2.97,  // (109381.80 - 106226.90) / 106226.90 * 1 * 100 = 2.97%
                 isOnline: true,
                 entryPrice: 106226.90,
                 currentPrice: 109381.80,
@@ -75,8 +75,8 @@ export class InfluencerPositions {
                 side: 'long',
                 leverage: 25,
                 positionSize: 38.96,
-                pnl: 15420.50,
-                pnlPercent: 12.30,
+                pnl: 195427.00,  // 38.96 * (4050.80 - 3850.25) * 1 * 25 = 195427
+                pnlPercent: 5.21,  // (4050.80 - 3850.25) / 3850.25 * 1 * 100 = 5.21%
                 isOnline: true,
                 entryPrice: 3850.25,
                 currentPrice: 4050.80,
@@ -93,8 +93,8 @@ export class InfluencerPositions {
                 side: 'short',
                 leverage: 12,
                 positionSize: 539.57,
-                pnl: -8750.25,
-                pnlPercent: -5.20,
+                pnl: 42094.74,  // 539.57 * (185.40 - 178.90) * (-1) * 12 = 42094.74 (short이므로 가격 하락시 수익)
+                pnlPercent: -3.51,  // (178.90 - 185.40) / 185.40 * (-1) * 100 = -3.51%
                 isOnline: false,
                 entryPrice: 185.40,
                 currentPrice: 178.90,
@@ -111,8 +111,8 @@ export class InfluencerPositions {
                 side: 'long',
                 leverage: 18,
                 positionSize: 116279.07,
-                pnl: 45680.75,
-                pnlPercent: 18.90,
+                pnl: 481052.73,  // 116279.07 * (2.380 - 2.150) * 1 * 18 = 481052.73
+                pnlPercent: 10.70,  // (2.380 - 2.150) / 2.150 * 1 * 100 = 10.70%
                 isOnline: true,
                 entryPrice: 2.150,
                 currentPrice: 2.380,
