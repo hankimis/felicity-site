@@ -1,0 +1,628 @@
+/* TradingView 커스텀 스타일 */
+
+/* 🔥 지표 더블클릭 설정 기능을 위한 스타일링 */
+.chart-container [data-name*="study"],
+.chart-container .study,
+.chart-container .pane-legend-item,
+.chart-container .tv-legend-item,
+.chart-container [data-name*="legend-source-item"],
+.chart-container .legend-source-item,
+.chart-container .tv-legend-source-item,
+#tradingview_chart [data-name*="study"],
+#tradingview_chart .study,
+#tradingview_chart .pane-legend-item,
+#tradingview_chart .tv-legend-item,
+#tradingview_chart [data-name*="legend-source-item"],
+#tradingview_chart .legend-source-item,
+#tradingview_chart .tv-legend-source-item,
+#chart-container [data-name*="study"],
+#chart-container .study,
+#chart-container .pane-legend-item,
+#chart-container .tv-legend-item,
+#chart-container [data-name*="legend-source-item"],
+#chart-container .legend-source-item,
+#chart-container .tv-legend-source-item {
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+    padding: 2px 6px !important;
+    border-radius: 4px !important;
+    margin: 1px 2px !important;
+    user-select: none !important;
+    position: relative !important;
+}
+
+/* 더블클릭 힌트 추가 */
+.chart-container [data-name*="study"]:before,
+.chart-container .tv-legend-item:before,
+#tradingview_chart [data-name*="study"]:before,
+#tradingview_chart .tv-legend-item:before,
+#chart-container [data-name*="study"]:before,
+#chart-container .tv-legend-item:before {
+    content: "⚙️" !important;
+    font-size: 10px !important;
+    opacity: 0 !important;
+    transition: opacity 0.2s ease !important;
+    margin-right: 4px !important;
+}
+
+.chart-container [data-name*="study"]:hover,
+.chart-container .study:hover,
+.chart-container .pane-legend-item:hover,
+.chart-container .tv-legend-item:hover,
+.chart-container [data-name*="legend-source-item"]:hover,
+.chart-container .legend-source-item:hover,
+.chart-container .tv-legend-source-item:hover,
+#tradingview_chart [data-name*="study"]:hover,
+#tradingview_chart .study:hover,
+#tradingview_chart .pane-legend-item:hover,
+#tradingview_chart .tv-legend-item:hover,
+#tradingview_chart [data-name*="legend-source-item"]:hover,
+#tradingview_chart .legend-source-item:hover,
+#tradingview_chart .tv-legend-source-item:hover,
+#chart-container [data-name*="study"]:hover,
+#chart-container .study:hover,
+#chart-container .pane-legend-item:hover,
+#chart-container .tv-legend-item:hover,
+#chart-container [data-name*="legend-source-item"]:hover,
+#chart-container .legend-source-item:hover,
+#chart-container .tv-legend-source-item:hover {
+    opacity: 0.9 !important;
+    background-color: rgba(59, 130, 246, 0.15) !important;
+    transform: scale(1.03) !important;
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2) !important;
+}
+
+/* 더블클릭 힌트 표시 */
+.chart-container [data-name*="study"]:hover:before,
+.chart-container .tv-legend-item:hover:before,
+#tradingview_chart [data-name*="study"]:hover:before,
+#tradingview_chart .tv-legend-item:hover:before,
+#chart-container [data-name*="study"]:hover:before,
+#chart-container .tv-legend-item:hover:before {
+    opacity: 0.7 !important;
+}
+
+/* 지표 설정 모달 스타일 */
+#study-settings-modal .auth-modal-content,
+#study-list-modal .auth-modal-content {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+}
+
+.study-list-item:hover {
+    background: var(--hover-bg, rgba(0, 0, 0, 0.05));
+}
+
+/* 지표 설정 입력 필드 스타일 */
+#study-settings-modal input[type="range"] {
+    accent-color: var(--primary-color);
+}
+
+#study-settings-modal input[type="checkbox"] {
+    accent-color: var(--primary-color);
+}
+
+/* ✨ Enhanced 차트 컨테이너 더블클릭 영역 */
+#chart-container, #tradingview_chart {
+    user-select: none;
+}
+
+/* 지표 더블클릭 감지를 위한 추가 스타일 */
+#chart-container iframe,
+#tradingview_chart iframe {
+    pointer-events: auto !important;
+}
+
+/* 🔥 TradingView 내장 지표 설정 다이얼로그 스타일 보정 */
+.tv-dialog,
+.tv-dialog__wrapper,
+.tv-study-properties-dialog,
+.tv-properties-dialog,
+.tv-dialog-modal,
+.tv-modal,
+.tv-study-dialog,
+.tv-indicator-dialog {
+    z-index: 10000 !important;
+    border-radius: 8px !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* 지표 설정 다이얼로그 제목 스타일 */
+.tv-dialog__title,
+.tv-study-properties-dialog__title {
+    font-weight: 600 !important;
+    font-size: 16px !important;
+    color: var(--text-color, #333) !important;
+}
+
+/* 지표 설정 입력 필드 스타일 */
+.tv-dialog input[type="number"],
+.tv-dialog input[type="text"],
+.tv-dialog select,
+.tv-study-properties-dialog input[type="number"],
+.tv-study-properties-dialog input[type="text"],
+.tv-study-properties-dialog select {
+    border-radius: 4px !important;
+    border: 1px solid var(--border-color, #ddd) !important;
+    padding: 6px 8px !important;
+    font-size: 14px !important;
+}
+
+/* 지표 설정 버튼 스타일 */
+.tv-dialog button,
+.tv-study-properties-dialog button {
+    border-radius: 6px !important;
+    padding: 8px 16px !important;
+    font-weight: 500 !important;
+    transition: all 0.2s ease !important;
+}
+
+.tv-dialog button:hover,
+.tv-study-properties-dialog button:hover {
+    transform: translateY(-1px) !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* 🔥 지표 범례 영역 확대 및 가시성 향상 */
+.tv-legend,
+.tv-chart-legend,
+.pane-legend,
+.chart-legend {
+    min-height: 35px !important;
+    padding: 6px 8px !important;
+    background: rgba(255, 255, 255, 0.02) !important;
+    border-radius: 6px !important;
+    margin: 4px !important;
+}
+
+/* 지표 텍스트 클릭 영역 확대 */
+.tv-legend__item,
+.tv-legend-item,
+[data-name*="legend"],
+.legend-source-item {
+    min-height: 28px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    padding: 4px 8px !important;
+    margin: 2px 3px !important;
+    border-radius: 5px !important;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    line-height: 1.2 !important;
+}
+
+/* 지표 더블클릭 안내 툴팁 */
+.tv-legend-item:after,
+[data-name*="legend"]:after {
+    content: "더블클릭하여 설정" !important;
+    position: absolute !important;
+    bottom: -25px !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    background: rgba(0, 0, 0, 0.8) !important;
+    color: white !important;
+    padding: 4px 8px !important;
+    border-radius: 4px !important;
+    font-size: 11px !important;
+    white-space: nowrap !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    transition: opacity 0.3s ease !important;
+    z-index: 1000 !important;
+}
+
+.tv-legend-item:hover:after,
+[data-name*="legend"]:hover:after {
+    opacity: 1 !important;
+}
+
+/* TradingView 범례 아이템 스타일링 */
+.tv-legend-item {
+    cursor: pointer !important;
+    padding: 2px 4px;
+    border-radius: 3px;
+    transition: all 0.2s ease;
+}
+
+.tv-legend-item:hover {
+    background-color: rgba(0, 0, 0, 0.1) !important;
+}
+
+/* 다크모드 지원 */
+.dark-mode .tv-legend-item:hover {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.dark-mode .study-list-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+/* 지표 설정 버튼 스타일 */
+.chart-settings-btn {
+    background: var(--primary-color, #3b82f6);
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s ease;
+}
+
+.chart-settings-btn:hover {
+    background: var(--primary-color-hover, #2563eb);
+    transform: translateY(-1px);
+}
+
+.chart-settings-btn.secondary {
+    background: var(--secondary-color, #6b7280);
+}
+
+.chart-settings-btn.secondary:hover {
+    background: var(--secondary-color-hover, #4b5563);
+}
+
+/* 지표 추가 버튼 애니메이션 */
+.chart-settings-btn[onclick*="addNewStudy"] {
+    background: linear-gradient(135deg, var(--primary-color), var(--accent-color, #8b5cf6));
+}
+
+.chart-settings-btn[onclick*="addNewStudy"]:hover {
+    background: linear-gradient(135deg, var(--primary-color-hover), var(--accent-color-hover, #7c3aed));
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* ✨ Enhanced 모달 스타일 (지표, 차트, 템플릿) */
+.study-modal {
+    display: none;
+    position: fixed;
+    z-index: 9999;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(5px);
+}
+
+.study-modal-content {
+    background: var(--card-bg, #ffffff);
+    margin: 5% auto;
+    padding: 0;
+    border: 1px solid var(--border-color, #e5e7eb);
+    border-radius: 12px;
+    width: 90%;
+    max-width: 600px;
+    max-height: 80vh;
+    overflow: hidden;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+    animation: modalSlideIn 0.3s ease;
+}
+
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-30px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.study-modal-header {
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border-color, #e5e7eb);
+    background: var(--header-bg, #f8fafc);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.study-modal-header h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-color, #1f2937);
+}
+
+.study-modal-header .close {
+    font-size: 24px;
+    font-weight: bold;
+    cursor: pointer;
+    color: var(--text-secondary, #6b7280);
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+}
+
+.study-modal-header .close:hover {
+    background: var(--hover-bg, rgba(0, 0, 0, 0.05));
+    color: var(--text-color, #1f2937);
+}
+
+.study-modal-body {
+    padding: 24px;
+    max-height: 60vh;
+    overflow-y: auto;
+}
+
+/* ✨ 차트 목록 스타일 */
+.chart-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.chart-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px;
+    border: 1px solid var(--border-color, #e5e7eb);
+    border-radius: 8px;
+    background: var(--item-bg, #ffffff);
+    transition: all 0.2s ease;
+}
+
+.chart-item:hover {
+    border-color: var(--primary-color, #3b82f6);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1);
+    transform: translateY(-1px);
+}
+
+.chart-info {
+    flex: 1;
+}
+
+.chart-name {
+    font-weight: 600;
+    color: var(--text-color, #1f2937);
+    margin-bottom: 4px;
+    font-size: 16px;
+}
+
+.chart-details {
+    display: flex;
+    gap: 12px;
+    font-size: 14px;
+    color: var(--text-secondary, #6b7280);
+}
+
+.chart-symbol {
+    background: var(--tag-bg, #f3f4f6);
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-weight: 500;
+}
+
+.chart-interval {
+    background: var(--secondary-tag-bg, #e0f2fe);
+    color: var(--secondary-tag-text, #0277bd);
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-weight: 500;
+}
+
+.chart-date {
+    font-size: 13px;
+    opacity: 0.8;
+}
+
+.chart-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.load-btn, .delete-btn, .apply-btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.load-btn, .apply-btn {
+    background: var(--primary-color, #3b82f6);
+    color: white;
+}
+
+.load-btn:hover, .apply-btn:hover {
+    background: var(--primary-color-hover, #2563eb);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25);
+}
+
+.delete-btn {
+    background: var(--danger-color, #ef4444);
+    color: white;
+}
+
+.delete-btn:hover {
+    background: var(--danger-color-hover, #dc2626);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.25);
+}
+
+/* ✨ 템플릿 관리 스타일 */
+.template-actions {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border-color, #e5e7eb);
+}
+
+.save-template-btn, .load-template-btn {
+    flex: 1;
+    padding: 12px 16px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.save-template-btn {
+    background: linear-gradient(135deg, var(--success-color, #10b981), var(--success-color-light, #34d399));
+    color: white;
+}
+
+.save-template-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(16, 185, 129, 0.25);
+}
+
+.load-template-btn {
+    background: var(--secondary-color, #6b7280);
+    color: white;
+}
+
+.load-template-btn:hover {
+    background: var(--secondary-color-hover, #4b5563);
+    transform: translateY(-1px);
+}
+
+.template-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.template-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 16px;
+    border: 1px solid var(--border-color, #e5e7eb);
+    border-radius: 8px;
+    background: var(--item-bg, #ffffff);
+    transition: all 0.2s ease;
+}
+
+.template-item:hover {
+    border-color: var(--accent-color, #8b5cf6);
+    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.1);
+    transform: translateY(-1px);
+}
+
+.template-info {
+    flex: 1;
+}
+
+.template-name {
+    font-weight: 600;
+    color: var(--text-color, #1f2937);
+    font-size: 15px;
+}
+
+.template-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.no-templates {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-secondary, #6b7280);
+    font-style: italic;
+    background: var(--empty-bg, #f9fafb);
+    border-radius: 8px;
+    border: 2px dashed var(--border-color, #e5e7eb);
+}
+
+/* ✨ 다크모드 지원 */
+.dark-mode .study-modal-content {
+    background: var(--dark-card-bg, #1f2937);
+    border-color: var(--dark-border-color, #374151);
+}
+
+.dark-mode .study-modal-header {
+    background: var(--dark-header-bg, #111827);
+    border-color: var(--dark-border-color, #374151);
+}
+
+.dark-mode .study-modal-header h3 {
+    color: var(--dark-text-color, #f9fafb);
+}
+
+.dark-mode .study-modal-header .close {
+    color: var(--dark-text-secondary, #9ca3af);
+}
+
+.dark-mode .study-modal-header .close:hover {
+    background: var(--dark-hover-bg, rgba(255, 255, 255, 0.05));
+    color: var(--dark-text-color, #f9fafb);
+}
+
+.dark-mode .chart-item,
+.dark-mode .template-item {
+    background: var(--dark-item-bg, #374151);
+    border-color: var(--dark-border-color, #4b5563);
+}
+
+.dark-mode .chart-name,
+.dark-mode .template-name {
+    color: var(--dark-text-color, #f9fafb);
+}
+
+.dark-mode .chart-details {
+    color: var(--dark-text-secondary, #9ca3af);
+}
+
+.dark-mode .chart-symbol {
+    background: var(--dark-tag-bg, #4b5563);
+    color: var(--dark-text-color, #f9fafb);
+}
+
+.dark-mode .chart-interval {
+    background: var(--dark-secondary-tag-bg, #1e40af);
+    color: var(--dark-secondary-tag-text, #93c5fd);
+}
+
+.dark-mode .no-templates {
+    background: var(--dark-empty-bg, #111827);
+    border-color: var(--dark-border-color, #374151);
+    color: var(--dark-text-secondary, #9ca3af);
+}
+
+.dark-mode .template-actions {
+    border-color: var(--dark-border-color, #374151);
+}
+
+/* ✨ 반응형 디자인 */
+@media (max-width: 768px) {
+    .study-modal-content {
+        width: 95%;
+        margin: 2% auto;
+        max-height: 95vh;
+    }
+    
+    .chart-item, .template-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+    
+    .chart-actions, .template-actions {
+        width: 100%;
+        justify-content: flex-end;
+    }
+    
+    .template-actions {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .chart-details {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+} 

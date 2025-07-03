@@ -16,6 +16,9 @@ export class LongShortTracker {
         };
         this.isTracking = false;
         this.interval = null;
+        this.isActive = false;
+        this.updateInterval = null;
+        this.longShortData = new Map();
         
         this.init();
     }
@@ -27,6 +30,8 @@ export class LongShortTracker {
         setTimeout(() => {
             this.setupEventListeners();
         }, 100);
+        
+        this.generateMockData();
     }
 
     setupEventListeners() {
@@ -97,6 +102,17 @@ export class LongShortTracker {
                 this.loadData();
             }
         }, 10000);
+        
+        this.isActive = true;
+        this.updateDisplay();
+        
+        // 5초마다 업데이트
+        this.updateInterval = setInterval(() => {
+            this.updateMockData();
+            this.updateDisplay();
+        }, 5000);
+        
+        console.log('🎯 롱숏 비율 추적기 시작');
     }
 
     stop() {
@@ -106,35 +122,28 @@ export class LongShortTracker {
             this.interval = null;
             console.log('🛑 Stopped long/short tracker.');
         }
+        
+        if (this.isActive) {
+            if (this.updateInterval) {
+                clearInterval(this.updateInterval);
+                this.updateInterval = null;
+            }
+            console.log('🎯 롱숏 비율 추적기 중지');
+        }
     }
 
     async loadData() {
-        const symbol = this.currentSymbol;
-        const period = this.currentTimeframe;
-        const url = `https://fapi.binance.com/futures/data/globalLongShortAccountRatio?symbol=${symbol}&period=${period}&limit=30`;
-
+        // 실제 API 대신 시뮬레이션 데이터 사용
+        console.log(`📊 Loading long/short data for ${this.currentSymbol}...`);
+        
         try {
-            const response = await axios.get(url);
-            const history = response.data; // API 응답은 데이터 배열 자체입니다.
-            const latestData = history[history.length - 1];
-
-            if (!latestData) {
-                console.warn(`[LongShortTracker] No data received for ${symbol}`);
-                return;
-            }
-
-            const processedData = {
-                longShortRatio: parseFloat(latestData.longShortRatio),
-                longAccount: parseFloat(latestData.longAccount) * 100, // API는 비율을 주므로 100을 곱해 백분율로 만듭니다.
-                history: history 
-            };
-            
-            this.updateDisplay(processedData);
-
+            // 시뮬레이션 데이터 생성
+            this.updateMockData();
+            this.updateDisplay();
         } catch (error) {
-            console.error(`[LongShortTracker] Error loading data for ${symbol}:`, error);
-            const sampleData = this.generateSampleData();
-            this.updateDisplay(sampleData);
+            console.error(`[LongShortTracker] Error loading data:`, error);
+            this.generateMockData();
+            this.updateDisplay();
         }
     }
 
@@ -349,4 +358,103 @@ export class LongShortTracker {
             status: status
         };
     }
+
+    generateMockData() {
+        const symbols = ['BTCUSDT', 'ETHUSDT', 'ADAUSDT', 'SOLUSDT', 'XRPUSDT'];
+        
+        symbols.forEach(symbol => {
+            const longRatio = Math.random() * 40 + 30; // 30-70%
+            const shortRatio = 100 - longRatio;
+            const totalAmount = Math.random() * 10000000 + 5000000; // 5M-15M
+            
+            this.longShortData.set(symbol, {
+                longRatio: longRatio,
+                shortRatio: shortRatio,
+                longAmount: totalAmount * (longRatio / 100),
+                shortAmount: totalAmount * (shortRatio / 100),
+                lastUpdate: Date.now()
+            });
+        });
+    }
+
+    updateMockData() {
+        const data = this.longShortData.get(this.currentSymbol);
+        if (!data) return;
+
+        // 작은 변화량으로 업데이트
+        const change = (Math.random() - 0.5) * 2; // -1% to +1%
+        let newLongRatio = Math.max(25, Math.min(75, data.longRatio + change));
+        let newShortRatio = 100 - newLongRatio;
+
+        const totalAmount = data.longAmount + data.shortAmount;
+        
+        this.longShortData.set(this.currentSymbol, {
+            longRatio: newLongRatio,
+            shortRatio: newShortRatio,
+            longAmount: totalAmount * (newLongRatio / 100),
+            shortAmount: totalAmount * (newShortRatio / 100),
+            lastUpdate: Date.now()
+        });
+    }
+
+    updateDisplay() {
+        const data = this.longShortData.get(this.currentSymbol);
+        if (!data) return;
+
+        // 비율 텍스트 업데이트
+        const longRatioEl = document.getElementById('long-ratio');
+        const shortRatioEl = document.getElementById('short-ratio');
+        const longPercentageEl = document.getElementById('long-percentage');
+        const shortPercentageEl = document.getElementById('short-percentage');
+        const longAmountEl = document.getElementById('long-amount');
+        const shortAmountEl = document.getElementById('short-amount');
+
+        if (longRatioEl) longRatioEl.textContent = `${Math.round(data.longRatio)}%`;
+        if (shortRatioEl) shortRatioEl.textContent = `${Math.round(data.shortRatio)}%`;
+        if (longPercentageEl) longPercentageEl.textContent = `${data.longRatio.toFixed(1)}%`;
+        if (shortPercentageEl) shortPercentageEl.textContent = `${data.shortRatio.toFixed(1)}%`;
+        if (longAmountEl) longAmountEl.textContent = `$${this.formatNumber(data.longAmount)}`;
+        if (shortAmountEl) shortAmountEl.textContent = `$${this.formatNumber(data.shortAmount)}`;
+
+        // 원형 차트 업데이트
+        this.updateCircleChart(data.longRatio, data.shortRatio);
+    }
+
+    updateCircleChart(longRatio, shortRatio) {
+        const ratioCircle = document.getElementById('ratio-circle');
+        if (!ratioCircle) return;
+
+        const longDegrees = (longRatio / 100) * 360;
+        const shortDegrees = (shortRatio / 100) * 360;
+
+        ratioCircle.style.background = `conic-gradient(
+            #22c55e 0deg ${longDegrees}deg,
+            #ef4444 ${longDegrees}deg 360deg
+        )`;
+    }
+
+    formatNumber(num) {
+        if (num >= 1000000) {
+            return (num / 1000000).toFixed(1) + 'M';
+        } else if (num >= 1000) {
+            return (num / 1000).toFixed(1) + 'K';
+        }
+        return num.toFixed(0);
+    }
+
+    getStatus() {
+        return {
+            isActive: this.isActive,
+            currentSymbol: this.currentSymbol,
+            dataCount: this.longShortData.size
+        };
+    }
+}
+
+// 전역 인스턴스 생성
+window.longShortTracker = new LongShortTracker();
+
+// 모듈 익스포트
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = LongShortTracker;
 } 

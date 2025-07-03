@@ -152,9 +152,28 @@ class AnalysisChat {
     // 채팅 폼 설정
     setupChatForm() {
         if (this.messageForm && !this.isChatFormInitialized) {
-            this.messageForm.addEventListener('submit', async (e) => {
+            // 전송 중 상태 플래그 추가
+            this.isSubmitting = false;
+            
+            const submitHandler = async (e) => {
                 e.preventDefault();
+                e.stopPropagation();
+                
+                // 이미 전송 중이면 무시
+                if (this.isSubmitting) {
+                    console.log('이미 메시지 전송 중입니다.');
+                    return;
+                }
+                
                 if (!this.messageInput.value.trim()) return;
+
+                // 전송 시작
+                this.isSubmitting = true;
+                const originalText = this.messageInput.value.trim();
+                
+                // 즉시 입력창 비우기 (중복 전송 방지)
+                this.messageInput.value = '';
+                this.messageInput.disabled = true;
 
                 try {
                     // 게스트 번호 처리
@@ -165,21 +184,33 @@ class AnalysisChat {
                     }
 
                     const messageData = {
-                        text: this.messageInput.value.trim(),
+                        text: originalText,
                         timestamp: firebase.firestore.FieldValue.serverTimestamp(),
                         uid: window.currentUser ? window.currentUser.uid : 'guest-' + guestNumber,
                         displayName: window.currentUser ? (window.currentUser.displayName || window.currentUser.email) : '게스트' + guestNumber,
                         photoURL: window.currentUser ? window.currentUser.photoURL : null
                     };
 
-                    if (window.db) await window.db.collection('community-chat').add(messageData);
-                    this.messageInput.value = '';
+                    if (window.db) {
+                        await window.db.collection('community-chat').add(messageData);
+                        console.log('분석 채팅 메시지 전송 성공');
+                    }
                 } catch (error) {
                     console.error('메시지 전송 실패:', error);
-                    // 대시보드에서는 조용한 에러 처리
+                    // 분석 대시보드에서는 조용한 에러 처리
+                    this.messageInput.value = originalText; // 실패 시 텍스트 복원
+                } finally {
+                    // 전송 완료 후 상태 복원
+                    this.isSubmitting = false;
+                    this.messageInput.disabled = false;
+                    this.messageInput.focus();
                 }
-            });
+            };
+            
+            this.messageForm.addEventListener('submit', submitHandler);
             this.isChatFormInitialized = true;
+            
+            console.log('✅ 분석 채팅 폼 이벤트 리스너 등록 완료');
         }
     }
 

@@ -588,20 +588,31 @@ async function initializeTradingViewChart() {
             'control_bar',
             'timeframes_toolbar',
             
+            // 🔥 지표 더블클릭 설정 기능 활성화
+            'legend_widget',  // 범례 위젯 (지표 이름 표시)
+            'study_dialog_search_control',  // 지표 검색 기능
+            'study_templates',  // 지표 템플릿 기능
+            'property_pages',  // 속성 페이지 (지표 설정 창)
+            'show_chart_property_page',  // 차트 속성 페이지
+            'study_buttons_in_legend',  // 범례에 지표 버튼 표시
+            'legend_context_menu',  // 범례 컨텍스트 메뉴
+            'show_hide_button_in_legend',  // 범례에 숨기기/보이기 버튼
+            'edit_buttons_in_legend',  // 범례에 편집 버튼
+            'delete_button_in_legend',  // 범례에 삭제 버튼
+            'legend_inplace_edit',  // 범례에서 즉석 편집
+            'studies_access',  // 지표 접근 권한
+            
             // 기타 유용한 기능
             'volume_force_overlay',  // 거래량 오버레이
             'create_volume_indicator_by_default',  // 기본 볼륨 지표
-            'legend_widget',  // 범례 위젯
             'left_toolbar',  // 왼쪽 도구바
             'hide_left_toolbar_by_default',  // 기본적으로 왼쪽 도구바 숨김
             'constraint_dialogs_movement',  // 대화상자 이동 제한
             'charting_library_debug_mode'  // TradingView 디버그 모드
         ],
         disabled_features: [
-            'study_templates',  // 연구 템플릿 비활성화
-            'drawing_templates',  // 그리기 템플릿 비활성화
-            'property_pages',  // 속성 페이지 일부 제한
-            'show_chart_property_page'  // 차트 속성 페이지 제한
+            // 🔥 지표 더블클릭 설정 기능을 위해 최소한의 기능만 비활성화
+            'drawing_templates'  // 그리기 템플릿만 비활성화
         ],
         
         // 커스텀 설정
@@ -635,6 +646,9 @@ async function initializeTradingViewChart() {
             }
             
             setupChartEventListeners();
+            
+            // 🔥 지표 더블클릭 설정 기능 활성화
+            setupIndicatorDoubleClickEvents();
             
             // TradingView 공식 API로 툴바에 AI 버튼들 추가
             widget.headerReady().then(() => {
@@ -972,6 +986,162 @@ function setupChartEventListeners() {
     // 분봉 버튼 제거됨 - TradingView 내장 기능만 사용
 
     // 코인 검색 모달 제거됨 (TradingView 내장 기능 사용)
+}
+
+// 🔥 지표 더블클릭 설정 기능 활성화 함수
+function setupIndicatorDoubleClickEvents() {
+    if (!widget || !widget.chart) {
+        console.warn('TradingView 위젯이 준비되지 않았습니다.');
+        return;
+    }
+
+    try {
+        console.log('🔥 지표 더블클릭 이벤트 설정 시작');
+
+        // 차트 컨테이너 확인
+        const chartContainer = document.getElementById('chart-container');
+        if (!chartContainer) {
+            console.error('차트 컨테이너를 찾을 수 없습니다.');
+            return;
+        }
+
+        // TradingView iframe 내부의 범례 영역 감지를 위한 MutationObserver 설정
+        const observeForLegend = () => {
+            const iframe = chartContainer.querySelector('iframe');
+            if (!iframe) {
+                console.log('TradingView iframe을 찾을 수 없습니다. 재시도 중...');
+                setTimeout(observeForLegend, 1000);
+                return;
+            }
+
+            try {
+                // iframe 내부 접근 시도 (same-origin 정책에 따라 제한될 수 있음)
+                const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+                if (!iframeDoc) {
+                    console.log('iframe 내부 문서에 접근할 수 없습니다. CSS 이벤트 방식 사용');
+                    setupCSSBasedIndicatorEvents();
+                    return;
+                }
+
+                // 범례 영역 감지 및 이벤트 설정
+                const setupLegendEvents = () => {
+                    const legendElements = iframeDoc.querySelectorAll(
+                        '.tv-legend-item, .legend-source-item, [data-name*="legend"], [data-name*="study"]'
+                    );
+
+                    legendElements.forEach(element => {
+                        // 더블클릭 이벤트 추가
+                        element.addEventListener('dblclick', (event) => {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            
+                            console.log('🔥 지표 더블클릭 감지:', element);
+                            
+                            // TradingView 내장 지표 설정 다이얼로그 트리거
+                            const studyName = element.textContent || element.innerText;
+                            console.log('지표 설정 열기:', studyName);
+                            
+                            // TradingView API를 통한 지표 설정 다이얼로그 열기
+                            if (widget && widget.chart) {
+                                try {
+                                    // 현재 차트의 모든 지표 가져오기
+                                    const chart = widget.chart();
+                                    const studies = chart.getAllStudies();
+                                    
+                                    // 클릭된 지표 찾기 및 설정 다이얼로그 열기
+                                    studies.forEach(study => {
+                                        if (study.name && studyName.includes(study.name)) {
+                                            // 지표 설정 다이얼로그 열기
+                                            chart.getStudyById(study.id).editStudy();
+                                            console.log('✅ 지표 설정 다이얼로그 열림:', study.name);
+                                        }
+                                    });
+                                } catch (apiError) {
+                                    console.error('TradingView API 지표 설정 실패:', apiError);
+                                }
+                            }
+                        });
+
+                        // 호버 효과 추가
+                        element.style.cursor = 'pointer';
+                        element.title = '더블클릭하여 지표 설정 열기';
+                    });
+
+                    console.log(`✅ ${legendElements.length}개 지표에 더블클릭 이벤트 추가됨`);
+                };
+
+                // 초기 설정
+                setupLegendEvents();
+
+                // 동적으로 추가되는 지표를 위한 MutationObserver
+                const observer = new MutationObserver((mutations) => {
+                    let shouldUpdate = false;
+                    mutations.forEach((mutation) => {
+                        if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+                            shouldUpdate = true;
+                        }
+                    });
+                    
+                    if (shouldUpdate) {
+                        setTimeout(setupLegendEvents, 100);
+                    }
+                });
+
+                // 범례 영역 감시 시작
+                const legendContainer = iframeDoc.querySelector('.tv-legend, .chart-legend') || iframeDoc.body;
+                observer.observe(legendContainer, {
+                    childList: true,
+                    subtree: true
+                });
+
+                console.log('✅ 지표 더블클릭 이벤트 설정 완료');
+
+            } catch (crossOriginError) {
+                console.log('Cross-origin 제한으로 CSS 기반 이벤트 방식 사용');
+                setupCSSBasedIndicatorEvents();
+            }
+        };
+
+        // 차트 로딩 완료 후 범례 감지 시작
+        setTimeout(observeForLegend, 2000);
+
+    } catch (error) {
+        console.error('지표 더블클릭 이벤트 설정 실패:', error);
+        setupCSSBasedIndicatorEvents();
+    }
+}
+
+// CSS 기반 지표 이벤트 설정 (fallback)
+function setupCSSBasedIndicatorEvents() {
+    console.log('🔥 CSS 기반 지표 이벤트 설정');
+    
+    // 차트 컨테이너에 전역 더블클릭 이벤트 추가
+    const chartContainer = document.getElementById('chart-container');
+    if (!chartContainer) return;
+
+    chartContainer.addEventListener('dblclick', (event) => {
+        // 클릭된 요소가 지표 관련 요소인지 확인
+        const target = event.target;
+        const isIndicatorElement = target.closest('[data-name*="legend"]') || 
+                                 target.closest('[data-name*="study"]') ||
+                                 target.classList.contains('tv-legend-item') ||
+                                 target.classList.contains('legend-source-item');
+
+        if (isIndicatorElement) {
+            console.log('🔥 CSS 기반 지표 더블클릭 감지');
+            
+            // TradingView 내장 컨텍스트 메뉴 트리거
+            const rightClickEvent = new MouseEvent('contextmenu', {
+                bubbles: true,
+                cancelable: true,
+                clientX: event.clientX,
+                clientY: event.clientY
+            });
+            target.dispatchEvent(rightClickEvent);
+        }
+    });
+
+    console.log('✅ CSS 기반 지표 더블클릭 이벤트 설정 완료');
 }
 
 // TradingView 공식 API로 툴바에 AI 버튼들 추가
@@ -3641,193 +3811,8 @@ function showNotification(message, type = 'info') {
     }, 5000);
 }
 
-// 채팅 관련 전역 변수
-let messagesUnsubscribe = null;
-let isChatFormInitialized = false;
-const MESSAGES_PER_PAGE = 50;
-
-// 메시지 객체로부터 HTML 문자열을 생성하여 반환
-function renderMessage(msg) {
-    const profileImg = msg.data.photoThumbURL || msg.data.photoURL || 'assets/@default-profile.png';
-    
-    let isMyMessage = false;
-    if (window.currentUser && msg.data.uid === window.currentUser.uid) {
-        isMyMessage = true;
-    } else if (!window.currentUser) {
-        const guestNumber = localStorage.getItem('guestNumber');
-        if (guestNumber && msg.data.uid === 'guest-' + guestNumber) {
-            isMyMessage = true;
-        }
-    }
-    const myMessageClass = isMyMessage ? 'my-message' : '';
-
-    return `
-        <div class="message-item ${myMessageClass}" id="${msg.id}" data-uid="${msg.data.uid}">
-            <div class="chat-profile-pic-wrap">
-                <img class="chat-profile-pic" src="${profileImg}" alt="프로필" loading="lazy" />
-            </div>
-            <div class="message-content">
-                <div class="message-sender">
-                    <strong>${msg.data.displayName}</strong>
-                </div>
-                <div class="message-text">${msg.data.text.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</div>
-            </div>
-        </div>
-    `;
-}
-
-// 메시지 로드 함수
-async function loadMessages() {
-    try {
-        console.log('Loading messages...');
-        if (!window.db) throw new Error('Firestore (window.db) not initialized');
-        const messagesQuery = window.db.collection('community-chat')
-            .orderBy('timestamp', 'desc')
-            .limit(MESSAGES_PER_PAGE);
-        
-        const snapshot = await messagesQuery.get();
-        const messages = [];
-        snapshot.forEach((doc) => {
-            messages.push({ id: doc.id, data: doc.data() });
-        });
-        messages.reverse(); // 시간순으로 표시하기 위해 배열을 뒤집음
-        
-        const messagesContainer = document.getElementById('chat-messages');
-        if (messagesContainer) {
-            // 모든 메시지의 HTML을 한 번에 생성하여 innerHTML로 설정
-            const messagesHTML = messages.map(msg => renderMessage(msg)).join('');
-            messagesContainer.innerHTML = messagesHTML;
-            
-            setTimeout(() => {
-                if (window.innerWidth > 768) {
-                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
-                } else {
-                    messagesContainer.scrollTop = 0;
-                }
-            }, 100);
-        }
-        
-        setupRealtimeListener();
-        console.log(`${messages.length} messages loaded successfully`);
-    } catch (error) {
-        console.error('메시지 로드 실패:', error);
-        const messagesContainer = document.getElementById('chat-messages');
-        if (messagesContainer) {
-            messagesContainer.innerHTML = '<div class="chat-notice">메시지를 불러올 수 없습니다.</div>';
-        }
-    }
-}
-
-// 실시간 리스너 설정
-function setupRealtimeListener() {
-    if (messagesUnsubscribe) {
-        messagesUnsubscribe();
-    }
-    // 실시간 리스너는 현재 시간 이후의 새 메시지만 가져오도록 설정
-    if (!window.db) return; // Firestore not ready
-    const messagesQuery = window.db.collection('community-chat')
-        .where('timestamp', '>', new Date());
-    
-    messagesUnsubscribe = messagesQuery.onSnapshot((snapshot) => {
-        const messagesContainer = document.getElementById('chat-messages');
-        if (!messagesContainer) return;
-
-        snapshot.docChanges().forEach((change) => {
-            if (change.type === 'added') {
-                const msg = { id: change.doc.id, data: change.doc.data() };
-                if (!document.getElementById(msg.id)) {
-                    // 새 메시지를 HTML로 렌더링하여 추가
-                    const messageHTML = renderMessage(msg);
-                    messagesContainer.insertAdjacentHTML('beforeend', messageHTML);
-                }
-            }
-        });
-        
-        // 새 메시지 수신 시 스크롤 조정
-        const isScrolledToBottom = messagesContainer.scrollHeight - messagesContainer.clientHeight <= messagesContainer.scrollTop + 100;
-        if (isScrolledToBottom && window.innerWidth > 768) {
-            messagesContainer.scrollTop = messagesContainer.scrollHeight;
-        }
-    }, (error) => {
-        console.error('실시간 메시지 리스너 오류:', error);
-    });
-}
-
-// 사용자가 로그인되면 기존 메시지의 스타일을 업데이트하는 함수
-function updateUserMessageStyles() {
-    const messagesContainer = document.getElementById('chat-messages');
-    if (!messagesContainer) return;
-
-    const messages = messagesContainer.querySelectorAll('.message-item');
-    const guestNumber = localStorage.getItem('guestNumber');
-
-    messages.forEach(msgElement => {
-        const msgUid = msgElement.dataset.uid;
-        let isMyMessage = false;
-
-        if (window.currentUser && msgUid === window.currentUser.uid) {
-            isMyMessage = true;
-        } else if (!window.currentUser && guestNumber && msgUid === 'guest-' + guestNumber) {
-            isMyMessage = true;
-        }
-
-        if (isMyMessage) {
-            msgElement.classList.add('my-message');
-        } else {
-            msgElement.classList.remove('my-message');
-        }
-    });
-}
-
-// 채팅 폼 설정
-function setupChatForm() {
-    const messageForm = document.getElementById('chat-form');
-    const messageInput = document.getElementById('message-input');
-    
-    if (messageForm && !isChatFormInitialized) {
-        messageForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            if (!messageInput.value.trim()) return;
-
-            try {
-                // 게스트 번호 처리 - 한 번만 생성하고 저장
-                let guestNumber = localStorage.getItem('guestNumber');
-                if (!guestNumber) {
-                    guestNumber = Math.floor(Math.random() * 10000).toString();
-                    localStorage.setItem('guestNumber', guestNumber);
-                }
-
-                const messageData = {
-                    text: messageInput.value.trim(),
-                    timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-                    uid: window.currentUser ? window.currentUser.uid : 'guest-' + guestNumber,
-                    displayName: window.currentUser ? (window.currentUser.displayName || window.currentUser.email) : '게스트' + guestNumber,
-                    photoURL: window.currentUser ? window.currentUser.photoURL : null
-                };
-
-                if (window.db) await window.db.collection('community-chat').add(messageData);
-                messageInput.value = '';
-            } catch (error) {
-                console.error('메시지 전송 실패:', error);
-                showNotification('메시지 전송에 실패했습니다.', 'error');
-            }
-        });
-        isChatFormInitialized = true;
-    }
-}
-
-// 채팅 기능 초기화
-function initializeChat() {
-    console.log('채팅 시스템 초기화 중...');
-    
-    // 메시지 로드
-    loadMessages();
-    
-    // 채팅 폼 설정
-    setupChatForm();
-    
-    console.log('채팅 시스템 초기화 완료');
-}
+// 채팅 관련 코드는 CommunityChat 클래스로 이동됨
+// 중복 초기화 방지를 위해 제거됨
 
 // 모달 닫기 이벤트 리스너
 function setupModalListeners() {
@@ -3854,7 +3839,10 @@ function onAuthStateChanged(user) {
     window.currentUser = user;
     if (user) {
         console.log('사용자 로그인:', user.uid);
-        updateUserMessageStyles(); // 로그인 시 메시지 스타일 업데이트
+        // 메시지 스타일 업데이트는 CommunityChat 클래스에서 처리
+        if (window.communityChat) {
+            window.communityChat.updateUserMessageStyles();
+        }
         
         // 로그인 후 차트 저장/불러오기 기능 활성화 및 자동 복원
         if (widget && widget.onChartReady) {
@@ -3932,7 +3920,10 @@ function onAuthStateChanged(user) {
         }
     } else {
         console.log('사용자 로그아웃');
-        updateUserMessageStyles(); // 로그아웃 시 메시지 스타일 업데이트
+        // 메시지 스타일 업데이트는 CommunityChat 클래스에서 처리
+        if (window.communityChat) {
+            window.communityChat.updateUserMessageStyles();
+        }
         
         // 로그아웃 시 차트 저장/불러오기 기능 비활성화
         if (widget) {
@@ -3963,8 +3954,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // AI 기능 초기화
     initializeAIFeatures();
     
-    // 채팅 초기화
-    initializeChat();
+    // 채팅 기능은 CommunityChat 클래스에서 자동 초기화됨
     
     // 모달 리스너 설정
     setupModalListeners();

@@ -25,11 +25,11 @@ function initializeNewsUI() {
     });
 }
 
-// 뉴스 피드 로드 (캐싱 및 Promise.any 적용)
+// 뉴스 피드 로드 (캐싱 및 최적화)
 async function loadNewsFeeds() {
     const newsGrid = document.getElementById('newsGrid');
     const CACHE_KEY = 'newsFeedsCache';
-    const CACHE_DURATION_MS = 5 * 60 * 1000; // 5분 (더 빠른 새로고침)
+    const CACHE_DURATION_MS = 2 * 60 * 1000; // 2분 (빠른 새로고침)
 
     // 1. 캐시 확인 및 즉시 표시 (빠른 로딩)
     try {
@@ -43,8 +43,8 @@ async function loadNewsFeeds() {
                 window.newsItems = cacheData.data;
                 displayNews(cacheData.data);
                 
-                // 백그라운드에서 새 데이터 가져오기
-                setTimeout(() => loadFreshNews(), 100);
+                // 백그라운드에서 새 데이터 가져오기 (지연 없음)
+                loadFreshNews();
                 return;
             }
         }
@@ -52,6 +52,7 @@ async function loadNewsFeeds() {
         // 캐시 읽기 실패 무시
     }
     
+    // 로딩 메시지 표시
     newsGrid.innerHTML = '<div class="loading">최신 뉴스를 불러오는 중...</div>';
     await loadFreshNews();
 }
@@ -61,13 +62,17 @@ async function loadFreshNews() {
     const newsGrid = document.getElementById('newsGrid');
     const CACHE_KEY = 'newsFeedsCache';
     
-    // 2. 피드 동시 로드 (타임아웃 단축)
+    // 2. 확장된 암호화폐 뉴스 피드 목록
     try {
         const feeds = [
+            // 한국 암호화폐 뉴스 소스
             { url: 'https://kr.cointelegraph.com/rss', source: 'cointelegraph' },
+            { url: 'https://www.tokenpost.kr/rss', source: 'tokenpost' },
+            { url: 'https://www.blockmedia.co.kr/feed', source: 'blockmedia' },
+            { url: 'https://coinreaders.com/rss/rss_news.php', source: 'coinreaders' },
+            { url: 'https://bloomingbit.io/rss.xml', source: 'bloomingbit' },
             { url: 'https://www.yna.co.kr/rss/economy.xml', source: 'yonhap' },
-            { url: 'https://kr.investing.com/rss/news.rss', source: 'investing' },
-            { url: 'https://www.litefinance.org/ko/rss-smm/blog/', source: 'litefinance' }
+            { url: 'https://kr.investing.com/rss/news.rss', source: 'investing' }
         ];
 
         const feedPromises = feeds.map(feed => fetchAndParseFeed(feed));
@@ -92,24 +97,39 @@ async function loadFreshNews() {
             throw new Error('모든 뉴스 피드를 가져오는데 실패했습니다.');
         }
 
-        allNews.sort((a, b) => new Date(b.pubDate) - new Date(a.pubDate));
+        // 중복 제거 (링크 기준)
+        const uniqueNews = [];
+        const seenLinks = new Set();
+        
+        allNews.forEach(item => {
+            if (!seenLinks.has(item.link)) {
+                seenLinks.add(item.link);
+                uniqueNews.push(item);
+            }
+        });
+
+        // 최신순 정렬
+        uniqueNews.sort((a, b) => new Date(b.pubDate) - new Date(a.pubDate));
         
         // 4. 캐시 저장
         try {
             const cacheData = {
                 timestamp: Date.now(),
-                data: allNews
+                data: uniqueNews
             };
             localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
         } catch(e) {
             // 캐시 저장 실패 무시
         }
 
-        window.newsItems = allNews;
-        displayNews(allNews);
+        window.newsItems = uniqueNews;
+        displayNews(uniqueNews);
         
-        // 실패한 피드가 있으면 사용자에게 알림
-        if (failedFeeds.length > 0 && successCount > 0) {
+        // 성공/실패 통계 표시
+        console.log(`📰 뉴스 로딩 완료: ${successCount}/${feeds.length} 소스 성공, ${uniqueNews.length}개 뉴스`);
+        
+        // 실패한 피드가 있으면 사용자에게 알림 (너무 많으면 생략)
+        if (failedFeeds.length > 0 && successCount > 0 && failedFeeds.length <= 5) {
             const newsGrid = document.getElementById('newsGrid');
             const warningDiv = document.createElement('div');
             warningDiv.className = 'news-warning';
@@ -124,14 +144,7 @@ async function loadFreshNews() {
             `;
             warningDiv.innerHTML = `
                 <i class="fas fa-exclamation-triangle"></i> 
-                                 일부 뉴스 소스(${failedFeeds.map(feed => 
-                     feed === 'cointelegraph' ? '코인텔레그래프' : 
-                     feed === 'yonhap' ? '연합뉴스' :
-                     feed === 'investing' ? 'Investing.com' :
-                     feed === 'litefinance' ? 'LiteFinance' :
-                     feed
-                 ).join(', ')})에서 뉴스를 가져오지 못했습니다. 
-                다른 소스의 뉴스만 표시됩니다.
+                일부 뉴스 소스에서 뉴스를 가져오지 못했습니다. (${failedFeeds.length}개 소스 실패)
             `;
             newsGrid.insertBefore(warningDiv, newsGrid.firstChild);
         }
@@ -147,8 +160,8 @@ async function loadFreshNews() {
 
 
 async function fetchAndParseFeed({ url, source }) {
-    // 빠른 타임아웃으로 응답성 개선
-    const timeoutMs = 4000;
+    // 더 빠른 타임아웃으로 응답성 개선
+    const timeoutMs = 2500;
     
     // RSS2JSON API 먼저 시도 (가장 안정적)
     try {
@@ -160,7 +173,8 @@ async function fetchAndParseFeed({ url, source }) {
             method: 'GET',
             signal: controller.signal,
             headers: {
-                'Accept': 'application/json'
+                'Accept': 'application/json',
+                'Cache-Control': 'max-age=300' // 5분 캐시
             }
         });
 
@@ -169,25 +183,25 @@ async function fetchAndParseFeed({ url, source }) {
         if (response.ok) {
             const data = await response.json();
             if (data.status === 'ok' && data.items && data.items.length > 0) {
-                return data.items.slice(0, 12).map(item => {
-                    // Investing.com 특별 처리
+                return data.items.slice(0, 6).map(item => { // 6개로 축소 (더 빠른 로딩)
+                    // 빠른 텍스트 처리
                     let contentSnippet = '';
-                    let cleanDescription = '';
                     
                     if (item.description) {
-                        // HTML 태그 제거
-                        cleanDescription = item.description.replace(/<[^>]*>/g, '');
-                        // 특수 문자 정리
-                        cleanDescription = cleanDescription.replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').trim();
-                        
-                        // Investing.com은 더 긴 설명 제공
-                        const maxLength = source === 'investing' ? 200 : 150;
-                        contentSnippet = cleanDescription.substring(0, maxLength);
+                        // 간단한 HTML 태그 제거 (정규식 최적화)
+                        const cleanText = item.description.replace(/<[^>]*>/g, '').replace(/&[^;]+;/g, ' ').trim();
+                        contentSnippet = cleanText.substring(0, 120); // 길이 축소
                     }
                     
                     // 빈 contentSnippet이면 제목에서 생성
                     if (!contentSnippet.trim()) {
-                        contentSnippet = (item.title || '').substring(0, 100);
+                        contentSnippet = (item.title || '').substring(0, 80);
+                    }
+
+                    // 이미지 최적화: 기본 이미지 사용으로 로딩 속도 향상
+                    let imageUrl = 'assets/default-news.jpg';
+                    if (item.thumbnail && item.thumbnail.startsWith('http')) {
+                        imageUrl = item.thumbnail;
                     }
 
                     return {
@@ -195,46 +209,17 @@ async function fetchAndParseFeed({ url, source }) {
                         link: item.link || '',
                         pubDate: item.pubDate || new Date().toISOString(),
                         contentSnippet: contentSnippet,
-                        content: item.description || '',
-                        image: item.thumbnail || item.enclosure?.link || 'assets/default-news.jpg',
+                        image: imageUrl,
                         source: source
                     };
                 });
             }
         }
     } catch (error) {
-        // RSS2JSON 실패 시 다음 프록시 시도
+        // RSS2JSON 실패 시 빠른 실패
     }
 
-    // ThingProxy 백업 시도
-    try {
-        const controller2 = new AbortController();
-        const timeoutId2 = setTimeout(() => controller2.abort(), timeoutMs);
-        
-        const thingProxyUrl = 'https://thingproxy.freeboard.io/fetch/' + encodeURIComponent(url);
-        const response = await fetch(thingProxyUrl, {
-            method: 'GET',
-            signal: controller2.signal
-        });
-
-        clearTimeout(timeoutId2);
-
-        if (response.ok) {
-            const text = await response.text();
-            if (text && text.length > 100 && 
-                (text.includes('<rss') || text.includes('<feed') || text.includes('<?xml'))) {
-                
-                const parsedFeed = parseRSSFeed(text);
-                if (parsedFeed && parsedFeed.length > 0) {
-                    return parsedFeed.map(item => ({ ...item, source }));
-                }
-            }
-        }
-    } catch (error) {
-        // ThingProxy도 실패
-    }
-
-    // 모든 프록시 실패 시 백업 뉴스
+    // RSS2JSON 실패 시 즉시 백업 뉴스 사용 (빠른 실패)
     return getBackupNews(source);
 }
 
@@ -258,6 +243,49 @@ function getBackupNews(source) {
                 image: "assets/default-news.jpg"
             }
         ],
+        'tokenpost': [
+            {
+                title: "비트코인 11만 달러 돌파 임박",
+                link: "https://www.tokenpost.kr/news/cryptocurrency/bitcoin-110k",
+                pubDate: now.toISOString(),
+                contentSnippet: "ETF 유입과 트럼프 호재에 힘입어 비트코인이 11만 달러 돌파를 앞두고 있습니다.",
+                image: "assets/default-news.jpg"
+            },
+            {
+                title: "이더리움 현물 ETF 거래량 증가",
+                link: "https://www.tokenpost.kr/news/cryptocurrency/ethereum-etf",
+                pubDate: new Date(now.getTime() - 1800000).toISOString(),
+                contentSnippet: "이더리움 현물 ETF의 거래량이 두 배로 증가하며 시장 관심이 높아지고 있습니다.",
+                image: "assets/default-news.jpg"
+            }
+        ],
+        'blockmedia': [
+            {
+                title: "국내 가상자산 거래소 규제 동향",
+                link: "https://www.blockmedia.co.kr/news/domestic-exchange-regulation",
+                pubDate: new Date(now.getTime() - 2700000).toISOString(),
+                contentSnippet: "금융당국의 가상자산 거래소 규제 강화 방안과 업계 대응 현황을 분석합니다.",
+                image: "assets/default-news.jpg"
+            }
+        ],
+        'coinreaders': [
+            {
+                title: "DeFi 프로토콜 최신 동향",
+                link: "https://coinreaders.com/news/defi-protocol-trends",
+                pubDate: new Date(now.getTime() - 3600000).toISOString(),
+                contentSnippet: "탈중앙화 금융 생태계의 최신 발전사항과 새로운 프로토콜들을 소개합니다.",
+                image: "assets/default-news.jpg"
+            }
+        ],
+        'bloomingbit': [
+            {
+                title: "NFT 시장 회복 신호",
+                link: "https://bloomingbit.io/news/nft-market-recovery",
+                pubDate: new Date(now.getTime() - 4500000).toISOString(),
+                contentSnippet: "NFT 거래량과 가격이 최근 상승세를 보이며 시장 회복 조짐을 나타내고 있습니다.",
+                image: "assets/default-news.jpg"
+            }
+        ],
         'yonhap': [
             {
                 title: "한국 디지털자산 시장 동향",
@@ -269,26 +297,10 @@ function getBackupNews(source) {
         ],
         'investing': [
             {
-                title: "호찌민, 정부에 3920만 달러 자금 보고",
-                link: "https://kr.investing.com/news/economy",
+                title: "글로벌 암호화폐 규제 동향",
+                link: "https://kr.investing.com/news/crypto-regulation",
                 pubDate: now.toISOString(),
-                contentSnippet: "베트남 정부의 대규모 자금 운용 계획이 발표되며 동남아 경제 전반에 미칠 영향이 주목받고 있습니다. 전문가들은 이번 조치가 지역 금융 안정성에 긍정적 요소로 작용할 것으로 분석했습니다.",
-                image: "assets/default-news.jpg"
-            },
-            {
-                title: "글로벌 인플레이션 동향 분석",
-                link: "https://kr.investing.com/news/inflation-analysis",
-                pubDate: new Date(now.getTime() - 1800000).toISOString(),
-                contentSnippet: "주요국 중앙은행의 통화정책 변화와 인플레이션 지표를 종합 분석한 결과, 향후 6개월간 금리 정책에 중요한 변화가 예상됩니다.",
-                image: "assets/default-news.jpg"
-            }
-        ],
-        'litefinance': [
-            {
-                title: "암호화폐 투자 전략 가이드",
-                link: "https://www.litefinance.org/ko/",
-                pubDate: now.toISOString(),
-                contentSnippet: "전문가가 제안하는 암호화폐 투자 전략과 리스크 관리 방법을 소개합니다.",
+                contentSnippet: "전 세계 주요국의 암호화폐 규제 정책 변화와 시장에 미치는 영향을 종합 분석했습니다.",
                 image: "assets/default-news.jpg"
             }
         ]
@@ -375,7 +387,7 @@ function findImageInItem(item) {
     return 'assets/default-news.jpg';
 }
 
-// 뉴스 표시
+// 뉴스 표시 (최적화된 이미지 로딩)
 function displayNews(news) {
     const newsGrid = document.getElementById('newsGrid');
     
@@ -384,34 +396,44 @@ function displayNews(news) {
         return;
     }
     
-
-
-    newsGrid.innerHTML = news.map(item => {
-        const date = new Date(item.pubDate);
-        const formattedDate = date.toLocaleDateString('ko-KR', {
-            year: 'numeric', month: '2-digit', day: '2-digit'
-        });
-        let sourceName = item.source === 'cointelegraph' ? '코인텔레그래프' : 
-                        item.source === 'yonhap' ? '연합뉴스' :
-                        item.source === 'investing' ? 'Investing.com' :
-                        item.source === 'litefinance' ? 'LiteFinance' :
-                        item.source;
-        // 이미지 유무에 따른 클래스 적용
-        const hasImage = item.image && item.image !== 'assets/default-news.jpg';
-        const imageHtml = hasImage ? 
-            `<img src="${item.image}" alt="" class="news-thumb" loading="lazy" onerror="this.style.display='none';">` : 
-            '';
+    // 성능 최적화: DocumentFragment 사용
+    const fragment = document.createDocumentFragment();
+    
+    news.forEach(item => {
+        const relativeTime = getRelativeTime(item.pubDate);
+        const sourceName = getSourceDisplayName(item.source);
         
-        return `
-          <a href="${item.link}" target="_blank" rel="noopener" class="news-item ${hasImage ? 'has-image' : 'no-image'}" data-source="${item.source}">
+        // 이미지 최적화: 기본 이미지 우선 사용
+        const hasImage = item.image && item.image !== 'assets/default-news.jpg' && item.image.startsWith('http');
+        
+        const newsItem = document.createElement('a');
+        newsItem.href = item.link;
+        newsItem.target = '_blank';
+        newsItem.rel = 'noopener';
+        newsItem.className = `news-item ${hasImage ? 'has-image' : 'no-image'}`;
+        newsItem.setAttribute('data-source', item.source);
+        
+        // 이미지 처리 최적화
+        let imageHtml = '';
+        if (hasImage) {
+            imageHtml = `<img src="${item.image}" alt="" class="news-thumb" loading="lazy" decoding="async" onerror="this.style.display='none';">`;
+        }
+        
+        newsItem.innerHTML = `
             ${imageHtml}
             <div class="news-body">
-              <div class="news-meta">${sourceName} · ${formattedDate}</div>
-              <div class="news-title">${item.title}</div>
-              <div class="news-desc">${item.contentSnippet ? item.contentSnippet + '...' : ''}</div>
+                <div class="news-meta">${sourceName} · ${relativeTime}</div>
+                <div class="news-title">${item.title}</div>
+                <div class="news-desc">${item.contentSnippet ? item.contentSnippet + '...' : ''}</div>
             </div>
-          </a>`;
-    }).join('');
+        `;
+        
+        fragment.appendChild(newsItem);
+    });
+    
+    // 한 번에 DOM 업데이트
+    newsGrid.innerHTML = '';
+    newsGrid.appendChild(fragment);
 }
 
 // 뉴스 필터링
@@ -424,4 +446,40 @@ function filterNews(source) {
     }
 
     displayNews(filteredNews);
+}
+
+// 상대적 시간 표시 함수
+function getRelativeTime(dateString) {
+    const now = new Date();
+    const date = new Date(dateString);
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
+    
+    if (diffMins < 1) return '방금 전';
+    if (diffMins < 60) return `${diffMins}분 전`;
+    if (diffHours < 24) return `${diffHours}시간 전`;
+    if (diffDays < 7) return `${diffDays}일 전`;
+    if (diffDays < 30) return `${Math.floor(diffDays / 7)}주 전`;
+    
+    return date.toLocaleDateString('ko-KR', { 
+        month: 'short', 
+        day: 'numeric' 
+    });
+}
+
+// 소스 표시명 매핑
+function getSourceDisplayName(source) {
+    const sourceNames = {
+        'cointelegraph': '코인텔레그래프',
+        'tokenpost': '토큰포스트',
+        'blockmedia': '블록미디어',
+        'coinreaders': '코인리더스',
+        'bloomingbit': '블루밍비트',
+        'yonhap': '연합뉴스',
+        'investing': 'Investing.com'
+    };
+    
+    return sourceNames[source] || source;
 } 

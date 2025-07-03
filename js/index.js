@@ -27,6 +27,9 @@ class IndexPageManager {
     // Initialize Swiper only when needed
     this.setupIntersectionObserver();
     
+    // Initialize real-time trackers
+    this.initializeRealTimeTrackers();
+    
     // Mark as initialized
     this.initialized = true;
     
@@ -320,9 +323,86 @@ class IndexPageManager {
     };
   }
   
+  async initializeRealTimeTrackers() {
+    try {
+      console.log('🔄 Initializing real-time trackers...');
+      
+      // Load and initialize trackers with delay to ensure modules are loaded
+      setTimeout(async () => {
+        try {
+          // Initialize LongShort Tracker
+          if (typeof window.longShortTracker !== 'undefined') {
+            await window.longShortTracker.start();
+            console.log('✅ LongShort tracker initialized');
+          }
+          
+          // Initialize Whale Tracker
+          if (typeof window.WhaleTracker !== 'undefined') {
+            window.whaleTracker = new window.WhaleTracker();
+            await window.whaleTracker.start();
+            console.log('✅ Whale tracker initialized');
+          }
+          
+          // Initialize Influencer Positions
+          if (typeof window.InfluencerPositions !== 'undefined') {
+            window.influencerPositions = new window.InfluencerPositions();
+            await window.influencerPositions.start();
+            console.log('✅ Influencer positions tracker initialized');
+          }
+          
+          // Setup tracker status indicators
+          this.setupTrackerStatusIndicators();
+          
+        } catch (error) {
+          console.error('❌ Error initializing real-time trackers:', error);
+        }
+      }, 1000); // 1초 지연
+      
+    } catch (error) {
+      console.error('❌ Error setting up real-time trackers:', error);
+    }
+  }
+  
+  setupTrackerStatusIndicators() {
+    // Update whale tracker status
+    const whaleStatus = document.querySelector('.whale-status');
+    if (whaleStatus && window.whaleTracker) {
+      whaleStatus.textContent = '연결됨';
+      whaleStatus.style.color = '#22c55e';
+    }
+    
+    // Update influencer positions status
+    const activeCount = document.querySelector('.active-count');
+    if (activeCount && window.influencerPositions) {
+      const positions = window.influencerPositions.getPositions();
+      activeCount.textContent = `활성 포지션: ${positions.length}`;
+    }
+    
+    // Setup whale settings button
+    const whaleSettingsBtn = document.getElementById('whale-settings-btn');
+    if (whaleSettingsBtn && window.whaleTracker) {
+      whaleSettingsBtn.addEventListener('click', () => {
+        if (typeof window.whaleTracker.openSettingsModal === 'function') {
+          window.whaleTracker.openSettingsModal();
+        }
+      });
+    }
+  }
+  
   // Cleanup method for proper memory management
   destroy() {
     console.log('🧹 Cleaning up IndexPageManager...');
+    
+    // Stop real-time trackers
+    if (window.longShortTracker && typeof window.longShortTracker.stop === 'function') {
+      window.longShortTracker.stop();
+    }
+    if (window.whaleTracker && typeof window.whaleTracker.stop === 'function') {
+      window.whaleTracker.stop();
+    }
+    if (window.influencerPositions && typeof window.influencerPositions.stop === 'function') {
+      window.influencerPositions.stop();
+    }
     
     // Destroy Swiper instances
     this.swiperInstances.forEach(swiper => {

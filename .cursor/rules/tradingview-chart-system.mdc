@@ -1,0 +1,487 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# TradingView Chart System Development Rules
+
+## CRITICAL ERROR PREVENTION GUIDELINES
+
+### 1. Function Reference and Scope Management
+**❌ NEVER DO:**
+- Reference functions before they are defined or available in scope
+- Use functions like `debouncedAutoSave()` without ensuring they exist in the current context
+- Assume global function availability without proper checks
+
+**✅ ALWAYS DO:**
+```javascript
+// Check function existence before usage
+if (typeof debouncedAutoSave === 'function') {
+    debouncedAutoSave();
+} else if (window.debouncedAutoSave) {
+    window.debouncedAutoSave();
+}
+
+// Expose critical functions to global scope when needed
+window.debouncedAutoSave = debouncedAutoSave;
+```
+
+### 2. TradingView API Integration Safety
+**❌ CRITICAL MISTAKES TO AVOID:**
+- Calling TradingView API methods without existence checks
+- Assuming all TradingView events are available across different versions
+- Not handling API method failures gracefully
+
+**✅ SAFE API INTEGRATION PATTERN:**
+```javascript
+// Multi-level fallback system
+const studyMethods = ['showPropertiesDialog', 'openPropertiesDialog', 'showSettingsDialog'];
+for (const method of studyMethods) {
+    try {
+        if (study[method] && typeof study[method] === 'function') {
+            study[method]();
+            return; // Success - exit early
+        }
+    } catch (methodError) {
+        console.warn(`API method ${method} failed:`, methodError);
+        // Continue to next method
+    }
+}
+// Fallback to custom implementation
+```
+
+### 3. Event Subscription and Memory Management
+**❌ MEMORY LEAK RISKS:**
+- Creating multiple MutationObservers without proper cleanup
+- Setting up intervals without storing references for cleanup
+- Not disconnecting event listeners when components unmount
+
+**✅ PROPER EVENT MANAGEMENT:**
+```javascript
+// Store observer references for cleanup
+let dialogObserver = null;
+let intervalId = null;
+
+// Cleanup function
+const cleanup = () => {
+    if (dialogObserver) {
+        dialogObserver.disconnect();
+        dialogObserver = null;
+    }
+    if (intervalId) {
+        clearInterval(intervalId);
+        intervalId = null;
+    }
+};
+
+// Set timeout for automatic cleanup
+setTimeout(cleanup, 30000);
+```
+
+## TRADINGVIEW-SPECIFIC BEST PRACTICES
+
+### 4. Chart Data Collection and Serialization
+**❌ DATA COLLECTION ERRORS:**
+- Not handling missing API methods gracefully
+- Assuming all studies have the same available methods
+- JSON serialization without error handling
+
+**✅ ROBUST DATA COLLECTION:**
+```javascript
+const collectStudySettings = (study) => {
+    const settings = {
+        inputs: {},
+        styles: {},
+        properties: {},
+        plotColors: [],
+        lineStyles: []
+    };
+    
+    // Safe data collection with fallbacks
+    try {
+        if (study.getInputsInfo) settings.inputs = study.getInputsInfo();
+    } catch (e) { console.warn('Failed to get inputs:', e); }
+    
+    try {
+        if (study.getStylesInfo) settings.styles = study.getStylesInfo();
+    } catch (e) { console.warn('Failed to get styles:', e); }
+    
+    // Color/style collection
+    try {
+        if (study.getAllPlots) {
+            const plots = study.getAllPlots();
+            plots.forEach((plot, index) => {
+                try {
+                    if (plot.getColor) settings.plotColors.push({index, color: plot.getColor()});
+                } catch (plotError) { /* Silent fail for individual plots */ }
+            });
+        }
+    } catch (e) { console.warn('Failed to get plot data:', e); }
+    
+    return settings;
+};
+```
+
+### 5. Dialog Detection and Monitoring
+**❌ DIALOG DETECTION FAILURES:**
+- Using only one detection method
+- Not implementing proper cleanup for observers
+- Missing timeout mechanisms
+
+**✅ COMPREHENSIVE DIALOG DETECTION:**
+```javascript
+const setupDialogMonitoring = (chart, study) => {
+    const originalSettings = collectStudySettings(study);
+    let isMonitoring = true;
+    
+    // Method 1: MutationObserver
+    const observer = new MutationObserver((mutations) => {
+        if (!isMonitoring) return;
+        // Dialog detection logic
+    });
+    
+    // Method 2: Periodic checking
+    let checkCount = 0;
+    const intervalCheck = setInterval(() => {
+        if (!isMonitoring || checkCount++ > 20) {
+            clearInterval(intervalCheck);
+            return;
+        }
+        // Periodic dialog check
+    }, 500);
+    
+    // Cleanup mechanism
+    const cleanup = () => {
+        isMonitoring = false;
+        observer.disconnect();
+        clearInterval(intervalCheck);
+    };
+    
+    // Auto-cleanup after timeout
+    setTimeout(cleanup, 30000);
+    
+    return cleanup;
+};
+```
+
+## FIREBASE INTEGRATION RULES
+
+### 6. Data Persistence and Error Handling
+**❌ FIREBASE ERRORS:**
+- Not checking user authentication before database operations
+- Missing error handling for network failures
+- Not validating data before serialization
+
+**✅ SAFE FIREBASE OPERATIONS:**
+```javascript
+const saveChartData = async (layoutData) => {
+    // Authentication check
+    if (!window.currentUser) {
+        console.warn('User not authenticated - skipping save');
+        return false;
+    }
+    
+    try {
+        // Data validation
+        if (!layoutData || typeof layoutData !== 'object') {
+            throw new Error('Invalid layout data');
+        }
+        
+        // Safe serialization
+        const serializedData = JSON.stringify(layoutData);
+        
+        // Database operation with error handling
+        await window.db.collection('chartStates')
+            .doc(window.currentUser.uid)
+            .set({
+                content: serializedData,
+                timestamp: new Date(),
+                userId: window.currentUser.uid
+            });
+            
+        return true;
+    } catch (error) {
+        console.error('Chart save failed:', error);
+        showNotification('차트 저장 실패', 'error');
+        return false;
+    }
+};
+```
+
+### 7. Chart Restoration Logic
+**❌ RESTORATION FAILURES:**
+- Not implementing fallback restoration methods
+- Missing JSON parsing error handling
+- Not preventing duplicate restoration attempts
+
+**✅ ROBUST CHART RESTORATION:**
+```javascript
+let chartRestored = false;
+
+const restoreChart = async () => {
+    if (chartRestored || !window.currentUser) return;
+    
+    try {
+        // Primary restoration attempt
+        const chartDoc = await window.db.collection('chartStates')
+            .doc(window.currentUser.uid).get();
+            
+        if (chartDoc.exists && chartDoc.data().content) {
+            const layoutData = typeof chartDoc.data().content === 'string' 
+                ? JSON.parse(chartDoc.data().content) 
+                : chartDoc.data().content;
+                
+            widget.load(layoutData);
+            chartRestored = true;
+            return;
+        }
+        
+        // Fallback restoration from manual saves
+        const layoutSnapshot = await window.db.collection('chartLayouts')
+            .where('userId', '==', window.currentUser.uid)
+            .orderBy('timestamp', 'desc')
+            .limit(1)
+            .get();
+            
+        if (!layoutSnapshot.empty) {
+            // Process fallback restoration
+        }
+    } catch (error) {
+        console.error('Chart restoration failed:', error);
+        // Don't show error to user - this is background operation
+    }
+};
+```
+
+## UI/UX AND NOTIFICATION RULES
+
+### 8. User Feedback and Notifications
+**❌ POOR USER EXPERIENCE:**
+- Not providing feedback for background operations
+- Showing technical error messages to users
+- Missing loading states for async operations
+
+**✅ PROPER USER COMMUNICATION:**
+```javascript
+// Provide clear, user-friendly feedback
+const performAsyncOperation = async (operation, userMessage, successMessage) => {
+    try {
+        showNotification(`${userMessage}...`, 'info');
+        const result = await operation();
+        showNotification(successMessage, 'success');
+        return result;
+    } catch (error) {
+        console.error('Operation failed:', error);
+        showNotification('작업이 실패했습니다. 다시 시도해주세요.', 'error');
+        throw error;
+    }
+};
+
+// Usage
+await performAsyncOperation(
+    () => saveChartData(layoutData),
+    '차트를 저장하는 중',
+    '차트가 성공적으로 저장되었습니다'
+);
+```
+
+### 9. Modal and Dialog Management
+**❌ MODAL MANAGEMENT ISSUES:**
+- Not preventing multiple modal instances
+- Missing escape key handling
+- Not cleaning up event listeners
+
+**✅ ROBUST MODAL SYSTEM:**
+```javascript
+let activeModal = null;
+
+const showModal = (modalId, setupFunction) => {
+    // Prevent multiple modals
+    if (activeModal) {
+        closeModal(activeModal);
+    }
+    
+    const modal = document.getElementById(modalId);
+    if (!modal) return;
+    
+    // Setup modal content
+    if (setupFunction) setupFunction(modal);
+    
+    // Show modal
+    modal.style.display = 'block';
+    activeModal = modalId;
+    
+    // Escape key handler
+    const escapeHandler = (e) => {
+        if (e.key === 'Escape') {
+            closeModal(modalId);
+            document.removeEventListener('keydown', escapeHandler);
+        }
+    };
+    document.addEventListener('keydown', escapeHandler);
+    
+    // Click outside to close
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            closeModal(modalId);
+        }
+    });
+};
+```
+
+## PERFORMANCE AND OPTIMIZATION RULES
+
+### 10. Debouncing and Rate Limiting
+**❌ PERFORMANCE ISSUES:**
+- Not debouncing frequent operations
+- Creating multiple timeouts without cleanup
+- Not optimizing detection intervals
+
+**✅ EFFICIENT OPERATION PATTERNS:**
+```javascript
+// Debounced operations with proper cleanup
+let saveTimeout = null;
+const debouncedAutoSave = (delay = 2000) => {
+    if (saveTimeout) {
+        clearTimeout(saveTimeout);
+    }
+    
+    saveTimeout = setTimeout(() => {
+        if (!window.currentUser) return;
+        
+        widget.save((layoutData) => {
+            if (layoutData) {
+                saveChartLayout(layoutData);
+            }
+        });
+        saveTimeout = null;
+    }, delay);
+};
+
+// Optimized detection intervals
+setInterval(checkStudyChanges, 1500); // Not too frequent, not too slow
+```
+
+### 11. Memory Management and Cleanup
+**❌ MEMORY LEAKS:**
+- Not cleaning up observers and intervals
+- Storing unnecessary references to DOM elements
+- Not removing event listeners
+
+**✅ PROPER CLEANUP PATTERNS:**
+```javascript
+class ChartManager {
+    constructor() {
+        this.observers = [];
+        this.intervals = [];
+        this.eventListeners = [];
+    }
+    
+    addObserver(observer) {
+        this.observers.push(observer);
+        return observer;
+    }
+    
+    addInterval(intervalId) {
+        this.intervals.push(intervalId);
+        return intervalId;
+    }
+    
+    cleanup() {
+        // Clean up all observers
+        this.observers.forEach(observer => observer.disconnect());
+        this.observers = [];
+        
+        // Clear all intervals
+        this.intervals.forEach(id => clearInterval(id));
+        this.intervals = [];
+        
+        // Remove event listeners
+        this.eventListeners.forEach(({element, event, handler}) => {
+            element.removeEventListener(event, handler);
+        });
+        this.eventListeners = [];
+    }
+}
+```
+
+## DEVELOPMENT WORKFLOW RULES
+
+### 12. Testing and Debugging
+**✅ DEBUGGING BEST PRACTICES:**
+```javascript
+// Comprehensive logging with context
+const logWithContext = (message, data, level = 'info') => {
+    const timestamp = new Date().toISOString();
+    const prefix = {
+        info: 'ℹ️',
+        success: '✅',
+        warning: '⚠️',
+        error: '❌'
+    }[level] || 'ℹ️';
+    
+    console[level](mdc:`${prefix} [${timestamp}] ${message}`, data);
+};
+
+// Usage
+logWithContext('Chart settings detected', {
+    studyName: study.name,
+    settingsChanged: hasChanges,
+    userId: window.currentUser?.uid
+}, 'success');
+```
+
+### 13. Code Organization and Modularity
+**✅ MODULAR FUNCTION DESIGN:**
+```javascript
+// Single responsibility functions
+const validateStudyData = (study) => { /* validation only */ };
+const collectStudySettings = (study) => { /* data collection only */ };
+const saveStudySettings = (settings) => { /* saving only */ };
+const notifyUser = (message, type) => { /* notification only */ };
+
+// Compose them for complex operations
+const handleStudyChange = async (study) => {
+    if (!validateStudyData(study)) return;
+    
+    const settings = collectStudySettings(study);
+    const success = await saveStudySettings(settings);
+    
+    if (success) {
+        notifyUser('설정이 저장되었습니다', 'success');
+    } else {
+        notifyUser('저장에 실패했습니다', 'error');
+    }
+};
+```
+
+## COMPATIBILITY AND BROWSER SUPPORT
+
+### 14. Cross-Browser Compatibility
+**✅ SAFE BROWSER API USAGE:**
+```javascript
+// Check for API availability
+const setupAdvancedFeatures = () => {
+    // MutationObserver support
+    if (typeof MutationObserver !== 'undefined') {
+        setupMutationObserver();
+    } else {
+        // Fallback to polling
+        setupPollingFallback();
+    }
+    
+    // IntersectionObserver support
+    if (typeof IntersectionObserver !== 'undefined') {
+        setupIntersectionObserver();
+    }
+    
+    // Modern array methods
+    if (Array.prototype.includes) {
+        // Use modern methods
+    } else {
+        // Provide polyfills or fallbacks
+    }
+};
+```
+
+These rules should be strictly followed when working with the TradingView chart system in [js/community.js](mdc:js/community.js) to prevent the critical errors we encountered during development and ensure robust, maintainable code.

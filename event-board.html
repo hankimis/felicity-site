@@ -5,6 +5,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>Onbit</title>
     
+    <!-- 🚀 성능 최적화 메타 태그 -->
+    <meta name="format-detection" content="telephone=no">
+    <meta name="theme-color" content="#ffffff">
+    <meta name="color-scheme" content="light dark">
+    
+    <!-- 🚀 리소스 힌트 -->
+    <link rel="preconnect" href="https://firebasestorage.googleapis.com">
+    <link rel="dns-prefetch" href="https://firebasestorage.googleapis.com">
+    <link rel="preload" href="/assets/default-event-image.svg" as="image">
+    
+    <!-- 🚀 이미지 최적화를 위한 Service Worker 등록 -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/image-cache-sw.js').catch(console.error);
+      }
+    </script>
+    
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
@@ -389,11 +406,136 @@
       }
       .preview-container {
         margin-top: 12px;
+        position: relative;
       }
       .preview-image {
         max-width: 100%;
         border-radius: 10px;
         box-shadow: 0 2px 8px var(--shadow-color);
+      }
+      
+      /* 🔥 이미지 업로드 관련 스타일 */
+      .image-upload-container {
+        margin-bottom: 12px;
+      }
+      .upload-btn {
+        background: var(--primary-color);
+        color: white;
+        border: none;
+        padding: 12px 20px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 1em;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        transition: background 0.2s;
+        width: 100%;
+        justify-content: center;
+      }
+      .upload-btn:hover {
+        background: var(--primary-color-dark);
+      }
+      .upload-btn:disabled {
+        background: #ccc;
+        cursor: not-allowed;
+      }
+      .upload-info {
+        margin-top: 8px;
+        text-align: center;
+      }
+      .upload-info small {
+        color: var(--text-secondary);
+        font-size: 0.9em;
+      }
+      
+      /* 업로드 진행률 표시 */
+      .upload-progress {
+        margin-top: 12px;
+        padding: 8px;
+        background: var(--bg-secondary-color);
+        border-radius: 8px;
+        border: 1px solid var(--border-color);
+      }
+      .progress-bar {
+        width: 100%;
+        height: 8px;
+        background: var(--border-color);
+        border-radius: 4px;
+        overflow: hidden;
+        margin-bottom: 8px;
+      }
+      .progress-fill {
+        height: 100%;
+        background: var(--primary-color);
+        transition: width 0.3s ease;
+        width: 0%;
+      }
+      .progress-text {
+        font-size: 0.9em;
+        color: var(--text-color);
+        font-weight: 600;
+        display: block;
+        text-align: center;
+      }
+      
+      /* 이미지 제거 버튼 */
+      .remove-image-btn {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        background: rgba(239, 83, 80, 0.9);
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 32px;
+        height: 32px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.9em;
+        transition: background 0.2s;
+      }
+      .remove-image-btn:hover {
+        background: rgba(239, 83, 80, 1);
+      }
+      
+      /* URL 입력 토글 */
+      .url-input-toggle {
+        margin-top: 12px;
+        text-align: center;
+      }
+      .toggle-btn {
+        background: transparent;
+        color: var(--text-secondary);
+        border: 1px solid var(--border-color);
+        padding: 8px 16px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 0.9em;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin: 0 auto;
+        transition: all 0.2s;
+      }
+      .toggle-btn:hover {
+        background: var(--bg-secondary-color);
+        color: var(--text-color);
+      }
+      .url-input-container {
+        margin-top: 12px;
+      }
+      .url-input-container input {
+        width: 100%;
+        padding: 12px;
+        border: 2px solid var(--border-color);
+        border-radius: 8px;
+        background: var(--bg-secondary-color);
+        color: var(--text-color);
+        font-size: 1em;
       }
       .form-message {
         margin-top: 12px;
@@ -431,6 +573,119 @@
           min-height: 80px;
         }
       }
+      
+      /* 🚀 이미지 최적화 스타일 */
+      .lazy-image {
+        opacity: 0;
+        transition: opacity 0.3s ease-in-out;
+        background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+        background-size: 200% 100%;
+        animation: loading-shimmer 1.5s infinite;
+      }
+      
+      .lazy-image.loading {
+        opacity: 0.7;
+        animation: loading-shimmer 1.5s infinite;
+      }
+      
+      .lazy-image.loaded {
+        opacity: 1;
+        animation: none;
+        background: none;
+      }
+      
+      .lazy-image.error {
+        opacity: 0.5;
+        background: #f5f5f5;
+        animation: none;
+        position: relative;
+      }
+      
+      .lazy-image.error::after {
+        content: "🖼️";
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 24px;
+        opacity: 0.6;
+      }
+      
+      @keyframes loading-shimmer {
+        0% {
+          background-position: -200% 0;
+        }
+        100% {
+          background-position: 200% 0;
+        }
+      }
+      
+      /* 다크 모드에서의 로딩 스타일 */
+      [data-theme="dark"] .lazy-image {
+        background: linear-gradient(90deg, #2a2a2a 25%, #3a3a3a 50%, #2a2a2a 75%);
+        background-size: 200% 100%;
+      }
+      
+      [data-theme="dark"] .lazy-image.error {
+        background: #2a2a2a;
+      }
+      
+      /* 이미지 호버 효과 개선 */
+      .event-card-img {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+      }
+      
+      .event-card:hover .event-card-img {
+        transform: scale(1.05);
+        box-shadow: 0 4px 16px var(--shadow-color);
+      }
+      
+      .event-card-exchange-logo {
+        transition: transform 0.2s ease;
+      }
+      
+      .event-card:hover .event-card-exchange-logo {
+        transform: scale(1.1);
+      }
+      
+      /* 이미지 로딩 인디케이터 */
+      .image-loading-indicator {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 24px;
+        height: 24px;
+        border: 2px solid #f3f3f3;
+        border-top: 2px solid #3498db;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        z-index: 1;
+      }
+      
+      @keyframes spin {
+        0% { transform: translate(-50%, -50%) rotate(0deg); }
+        100% { transform: translate(-50%, -50%) rotate(360deg); }
+      }
+      
+      /* 성능 최적화를 위한 GPU 가속 */
+      .event-card-img,
+      .event-card-exchange-logo {
+        will-change: transform;
+        backface-visibility: hidden;
+        -webkit-backface-visibility: hidden;
+      }
+      
+      /* 프리로드 힌트 추가 */
+      .event-card-img[data-src] {
+        content-visibility: auto;
+        contain-intrinsic-size: 120px 120px;
+      }
+      
+      .event-card-exchange-logo[data-src] {
+        content-visibility: auto;
+        contain-intrinsic-size: 28px 28px;
+      }
     </style>
   </head>
   <body>
@@ -446,6 +701,8 @@
     <button id="write-event-btn" class="floating-write-btn" style="display:none;">
       <i class="fas fa-plus"></i> 이벤트 작성
     </button>
+    
+
 
     <!-- 이벤트 작성 모달 -->
     <div id="event-modal" class="auth-modal" style="display:none;">
@@ -489,10 +746,38 @@
             <input type="url" id="custom-logo-url" placeholder="거래소 로고 URL을 입력하세요" />
           </div>
           <div class="input-group">
-            <label for="event-img">이벤트 이미지 URL</label>
-            <input type="url" id="event-img" placeholder="이벤트 이미지 URL을 입력하세요" required />
+            <label for="event-img">이벤트 이미지</label>
+            <div class="image-upload-container">
+              <input type="file" id="event-img-file" accept="image/*" style="display: none;" />
+              <button type="button" id="upload-image-btn" class="upload-btn">
+                <i class="fas fa-upload"></i>
+                이미지 업로드
+              </button>
+              <div class="upload-info">
+                <small>JPG, PNG, GIF 파일만 업로드 가능 (최대 5MB)</small>
+              </div>
+              <div class="upload-progress" id="upload-progress" style="display: none;">
+                <div class="progress-bar">
+                  <div class="progress-fill" id="progress-fill"></div>
+                </div>
+                <span class="progress-text" id="progress-text">0%</span>
+              </div>
+            </div>
             <div class="preview-container">
               <img id="preview-event-img" class="preview-image" style="display:none;" />
+              <button type="button" id="remove-image-btn" class="remove-image-btn" style="display:none;">
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
+            <!-- URL 입력 옵션 (기존 기능 유지) -->
+            <div class="url-input-toggle">
+              <button type="button" id="toggle-url-input" class="toggle-btn">
+                <i class="fas fa-link"></i>
+                URL로 입력하기
+              </button>
+            </div>
+            <div class="url-input-container" id="url-input-container" style="display: none;">
+              <input type="url" id="event-img-url" placeholder="이벤트 이미지 URL을 입력하세요" />
             </div>
           </div>
           <div class="input-group">

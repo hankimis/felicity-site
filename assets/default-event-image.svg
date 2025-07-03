@@ -1,0 +1,7 @@
+<svg width="240" height="240" viewBox="0 0 240 240" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="240" height="240" fill="#f5f5f5"/>
+  <rect x="60" y="80" width="120" height="80" rx="8" fill="#e0e0e0"/>
+  <circle cx="90" cy="110" r="12" fill="#c0c0c0"/>
+  <path d="M105 125L135 95L165 125L135 155L105 125Z" fill="#c0c0c0"/>
+  <text x="120" y="190" text-anchor="middle" fill="#999" font-family="Arial, sans-serif" font-size="14">이벤트 이미지</text>
+</svg> 
