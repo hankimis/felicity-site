@@ -254,7 +254,7 @@
 }
 
 /* 메뉴 아이콘 추가 */
-.mobile-menu-nav a[href="affiliated.html"]::after {
+.mobile-menu-nav a[href="/affiliated/"]::after {
     content: '🏢';
     margin-left: auto;
     font-size: 1.2rem;

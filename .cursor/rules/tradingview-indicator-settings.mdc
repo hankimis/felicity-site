@@ -3,3 +3,253 @@ description:
 globs:
 alwaysApply: false
 ---
+# TradingView Indicator Double-Click Settings System
+
+## 🎯 MISSION CRITICAL: Interactive Indicator Configuration
+**ABSOLUTE REQUIREMENT**: Every TradingView chart MUST support double-click indicator settings with native API integration.
+
+## 🔥 CORE ARCHITECTURE PATTERNS
+
+### 1. TradingView Widget Configuration Protocol
+```javascript
+// ✅ MANDATORY: Enable ALL indicator interaction features
+enabled_features: [
+    // 🔥 CRITICAL: Indicator settings infrastructure
+    'legend_widget',                    // Display indicator names
+    'study_dialog_search_control',      // Search functionality
+    'study_templates',                  // Template system
+    'property_pages',                   // Settings dialogs
+    'show_chart_property_page',         // Chart properties
+    'study_buttons_in_legend',          // Interactive buttons
+    'legend_context_menu',              // Right-click menu
+    'show_hide_button_in_legend',       // Visibility controls
+    'edit_buttons_in_legend',           // Edit controls
+    'delete_button_in_legend',          // Delete controls
+    'legend_inplace_edit',              // Inline editing
+    'studies_access'                    // Full indicator access
+]
+
+// ❌ PROHIBITED: Never disable these features
+disabled_features: [
+    // Only disable non-essential features
+    'drawing_templates'  // Keep indicator functionality intact
+]
+```
+
+### 2. Double-Click Event Handler Architecture
+```javascript
+// 🎯 PRIMARY METHOD: Direct iframe access
+function setupIndicatorDoubleClickEvents() {
+    const observeForLegend = () => {
+        try {
+            const iframeDoc = iframe.contentDocument;
+            const legendElements = iframeDoc.querySelectorAll(
+                '.tv-legend-item, .legend-source-item, [data-name*="legend"]'
+            );
+            
+            legendElements.forEach(element => {
+                element.addEventListener('dblclick', (event) => {
+                    // 🔥 CRITICAL: Use TradingView native API
+                    const chart = widget.chart();
+                    const studies = chart.getAllStudies();
+                    const studyName = element.textContent;
+                    
+                    studies.forEach(study => {
+                        if (study.name && studyName.includes(study.name)) {
+                            chart.getStudyById(study.id).editStudy();
+                        }
+                    });
+                });
+            });
+        } catch (crossOriginError) {
+            // 🛡️ FALLBACK: CSS-based detection
+            setupCSSBasedIndicatorEvents();
+        }
+    };
+}
+```
+
+### 3. CSS-Based Fallback System
+```css
+/* 🎯 VISUAL INDICATOR INTERACTION */
+.chart-container [data-name*="study"],
+.tv-legend-item {
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+    padding: 2px 6px !important;
+    border-radius: 4px !important;
+    user-select: none !important;
+    position: relative !important;
+}
+
+/* 🔥 HOVER FEEDBACK WITH SETTINGS ICON */
+.tv-legend-item:before {
+    content: "⚙️" !important;
+    opacity: 0 !important;
+    transition: opacity 0.2s ease !important;
+}
+
+.tv-legend-item:hover:before {
+    opacity: 0.7 !important;
+}
+```
+
+## 🚀 IMPLEMENTATION CHECKLIST
+
+### Phase 1: Widget Configuration
+- [ ] Enable ALL indicator-related features in `enabled_features`
+- [ ] Remove indicator restrictions from `disabled_features`
+- [ ] Verify legend widget is visible and interactive
+- [ ] Test indicator addition/removal functionality
+
+### Phase 2: Event System Setup
+- [ ] Implement `setupIndicatorDoubleClickEvents()` function
+- [ ] Add iframe access with cross-origin handling
+- [ ] Create MutationObserver for dynamic indicators
+- [ ] Implement CSS-based fallback system
+
+### Phase 3: User Experience Enhancement
+- [ ] Add visual hover effects with settings icon
+- [ ] Implement tooltip guidance ("더블클릭하여 설정")
+- [ ] Style TradingView native dialogs
+- [ ] Test across different themes and browsers
+
+### Phase 4: Error Handling & Fallbacks
+- [ ] Handle cross-origin iframe restrictions
+- [ ] Implement graceful degradation
+- [ ] Add console logging for debugging
+- [ ] Test with various indicator types
+
+## ⚡ PERFORMANCE OPTIMIZATION RULES
+
+### 1. Event Delegation Strategy
+```javascript
+// ✅ EFFICIENT: Single container listener
+chartContainer.addEventListener('dblclick', (event) => {
+    const isIndicatorElement = event.target.closest('[data-name*="legend"]');
+    if (isIndicatorElement) {
+        handleIndicatorSettings(event.target);
+    }
+});
+```
+
+### 2. Debounced Observer Pattern
+```javascript
+// ✅ OPTIMIZED: Prevent excessive updates
+const observer = new MutationObserver(debounce((mutations) => {
+    if (mutations.some(m => m.addedNodes.length > 0)) {
+        setupLegendEvents();
+    }
+}, 100));
+```
+
+## 🛡️ ERROR PREVENTION PROTOCOLS
+
+### Critical Error Patterns to AVOID:
+1. **❌ NEVER** disable `property_pages` or `study_templates`
+2. **❌ NEVER** block TradingView's native dialog system
+3. **❌ NEVER** use synchronous iframe access without try-catch
+4. **❌ NEVER** forget cross-origin fallback mechanisms
+
+### Required Error Handling:
+```javascript
+try {
+    // Primary method: Direct API access
+    chart.getStudyById(study.id).editStudy();
+} catch (apiError) {
+    // Fallback: Context menu trigger
+    element.dispatchEvent(new MouseEvent('contextmenu', {
+        bubbles: true,
+        clientX: event.clientX,
+        clientY: event.clientY
+    }));
+}
+```
+
+## 📋 DEBUGGING TOOLKIT
+
+### Console Commands for Testing:
+```javascript
+// Test widget readiness
+console.log('Widget ready:', !!widget && !!widget.chart);
+
+// List all studies
+widget.chart().getAllStudies().forEach(s => console.log(s.name, s.id));
+
+// Test legend elements
+document.querySelectorAll('[data-name*="legend"]').length;
+```
+
+### Visual Debug Indicators:
+```css
+/* Debug mode: Highlight all interactive elements */
+[data-name*="legend"] {
+    outline: 2px dashed lime !important;
+}
+```
+
+## 🎨 UI/UX ENHANCEMENT STANDARDS
+
+### Visual Feedback Requirements:
+1. **Hover State**: Scale transform + background color change
+2. **Settings Icon**: Animated gear icon on hover
+3. **Tooltip**: "Double-click to open settings" guidance
+4. **Active State**: Clear indication when settings dialog is open
+
+### Accessibility Standards:
+- Keyboard navigation support
+- Screen reader compatibility
+- High contrast mode support
+- Touch device optimization
+
+## 🔧 INTEGRATION POINTS
+
+### File References:
+- Main implementation: [js/community.js](mdc:js/community.js)
+- Styling: [css/tradingview-custom.css](mdc:css/tradingview-custom.css)
+- Chart container: [community.html](mdc:community.html)
+
+### Key Functions:
+- `initializeTradingViewChart()` - Widget setup
+- `setupIndicatorDoubleClickEvents()` - Event handling
+- `setupCSSBasedIndicatorEvents()` - Fallback system
+
+## 🚨 EMERGENCY PROTOCOLS
+
+### If Double-Click Stops Working:
+1. Check `enabled_features` configuration
+2. Verify iframe accessibility
+3. Test CSS fallback activation
+4. Inspect console for cross-origin errors
+5. Validate TradingView API availability
+
+### Quick Fix Commands:
+```javascript
+// Reinitialize indicator events
+setupIndicatorDoubleClickEvents();
+
+// Force CSS fallback
+setupCSSBasedIndicatorEvents();
+
+// Reset widget configuration
+widget.remove();
+initializeTradingViewChart();
+```
+
+## 📈 SUCCESS METRICS
+
+### Functional Requirements:
+- ✅ Double-click opens native TradingView settings dialog
+- ✅ Works with all indicator types (technical, custom, etc.)
+- ✅ Maintains functionality across page reloads
+- ✅ Graceful fallback when iframe access fails
+
+### Performance Targets:
+- Event response time: < 100ms
+- Memory overhead: < 5MB additional
+- Cross-browser compatibility: 95%+
+- Mobile device support: Full touch interaction
+
+---
+
+**🎯 REMEMBER**: This system leverages TradingView's native functionality rather than creating custom dialogs. Always prioritize the official API methods over workarounds.

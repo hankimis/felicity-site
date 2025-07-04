@@ -3,3 +3,490 @@ description:
 globs:
 alwaysApply: false
 ---
+# Felicity UI/UX Design Guidelines
+
+## 🎨 DESIGN SYSTEM FOUNDATIONS
+
+### Color Palette (STRICTLY ENFORCED)
+```css
+/* PRIMARY COLORS - Never modify these values */
+--primary-color: #3182f6;        /* Brand Blue - MANDATORY for all CTAs */
+--positive-color: #059669;       /* Success/Profit Green */
+--negative-color: #dc2626;       /* Error/Loss Red */
+--warning-color: #f59e0b;        /* Warning Orange */
+
+/* SEMANTIC COLORS - Financial Context */
+--positive-bg: #d1fae5;          /* Profit background */
+--positive-text: #059669;        /* Profit text */
+--negative-bg: #fee2e2;          /* Loss background */
+--negative-text: #dc2626;        /* Loss text */
+```
+
+### Typography Hierarchy (NON-NEGOTIABLE)
+```css
+/* FONT FAMILY - Pretendard is MANDATORY */
+font-family: 'Pretendard', sans-serif;
+
+/* FONT SCALE - Use these exact sizes */
+--font-size-xs: 0.75rem;    /* 12px - Metadata, timestamps */
+--font-size-sm: 0.875rem;   /* 14px - Secondary text */
+--font-size-base: 1rem;     /* 16px - Body text */
+--font-size-lg: 1.125rem;   /* 18px - Subheadings */
+--font-size-xl: 1.25rem;    /* 20px - Card titles */
+--font-size-2xl: 1.5rem;    /* 24px - Section headers */
+--font-size-3xl: 1.875rem;  /* 30px - Page titles */
+```
+
+### Spacing System (MANDATORY GRID)
+```css
+/* 4px BASE UNIT - All spacing must be multiples of 4px */
+--spacing-xs: 0.25rem;   /* 4px */
+--spacing-sm: 0.5rem;    /* 8px */
+--spacing-md: 0.75rem;   /* 12px */
+--spacing-lg: 1rem;      /* 16px */
+--spacing-xl: 1.5rem;    /* 24px */
+--spacing-2xl: 2rem;     /* 32px */
+--spacing-3xl: 3rem;     /* 48px */
+```
+
+## 🧩 COMPONENT DESIGN PATTERNS
+
+### Card Components (REQUIRED STRUCTURE)
+```html
+<!-- ✅ CORRECT - Standard Card Pattern -->
+<article class="analysis-card">
+  <header class="card-header">
+    <h2 class="card-title">고래 추적</h2>
+    <button class="card-refresh-btn" aria-label="새로고침">
+      <i class="fas fa-sync-alt"></i>
+    </button>
+  </header>
+  
+  <div class="card-content">
+    <div class="card-data">
+      <!-- Main content -->
+    </div>
+  </div>
+  
+  <footer class="card-footer">
+    <span class="card-timestamp">마지막 업데이트: 2분 전</span>
+  </footer>
+</article>
+
+<!-- ❌ FORBIDDEN - Inconsistent structure -->
+<div class="card">
+  <div class="title">고래 추적</div>
+  <div class="data">...</div>
+</div>
+```
+
+### Button Hierarchy (CRITICAL CONSISTENCY)
+```html
+<!-- ✅ PRIMARY ACTIONS - Use sparingly, max 1 per section -->
+<button class="btn btn-primary">거래 시작</button>
+
+<!-- ✅ SECONDARY ACTIONS - Most common button type -->
+<button class="btn btn-secondary">자세히 보기</button>
+
+<!-- ✅ GHOST BUTTONS - For less important actions -->
+<button class="btn btn-ghost">취소</button>
+
+<!-- ✅ ICON BUTTONS - For compact interfaces -->
+<button class="btn-icon" aria-label="새로고침">
+  <i class="fas fa-sync-alt"></i>
+</button>
+
+<!-- ❌ FORBIDDEN - Custom button styles -->
+<button style="background: red;">버튼</button>
+<div class="custom-button">버튼</div>
+```
+
+### Form Components (ACCESSIBILITY REQUIRED)
+```html
+<!-- ✅ CORRECT - Accessible form structure -->
+<div class="form-group">
+  <label for="whale-threshold" class="form-label">
+    고래 거래 임계값 (BTC)
+    <span class="form-help">50 BTC 이상의 거래를 추적합니다</span>
+  </label>
+  <input 
+    type="number" 
+    id="whale-threshold" 
+    class="form-control"
+    min="1" 
+    max="1000"
+    value="50"
+    aria-describedby="whale-threshold-help"
+  />
+  <div id="whale-threshold-help" class="form-feedback">
+    1-1000 사이의 값을 입력하세요
+  </div>
+</div>
+
+<!-- ❌ FORBIDDEN - No accessibility -->
+<input type="text" placeholder="값 입력">
+```
+
+## 📱 RESPONSIVE DESIGN RULES
+
+### Breakpoint Strategy (MOBILE-FIRST MANDATORY)
+```css
+/* ✅ CORRECT - Mobile First Approach */
+.analysis-grid {
+  display: grid;
+  grid-template-columns: 1fr;        /* Mobile: Single column */
+  gap: var(--spacing-lg);
+}
+
+@media (min-width: 769px) {
+  .analysis-grid {
+    grid-template-columns: 1fr 1fr;   /* Tablet: Two columns */
+  }
+}
+
+@media (min-width: 1025px) {
+  .analysis-grid {
+    grid-template-columns: 2fr 1fr;   /* Desktop: Sidebar layout */
+  }
+}
+
+/* ❌ FORBIDDEN - Desktop First */
+.analysis-grid {
+  grid-template-columns: 2fr 1fr;     /* Don't start with desktop */
+}
+```
+
+### Touch Target Requirements (ACCESSIBILITY CRITICAL)
+```css
+/* ✅ MINIMUM 44px touch targets for mobile */
+@media (max-width: 768px) {
+  .btn, .btn-icon, .form-control {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* ✅ Prevent iOS zoom on form inputs */
+  input, textarea, select {
+    font-size: 16px;
+  }
+}
+
+/* ❌ FORBIDDEN - Small touch targets */
+.mobile-btn {
+  height: 32px;    /* Too small for touch */
+  width: 32px;
+}
+```
+
+## 🎯 USER EXPERIENCE PATTERNS
+
+### Loading States (MANDATORY IMPLEMENTATION)
+```html
+<!-- ✅ SKELETON LOADING - For data cards -->
+<div class="card loading" aria-label="데이터 로딩 중">
+  <div class="skeleton-header">
+    <div class="skeleton-title"></div>
+    <div class="skeleton-icon"></div>
+  </div>
+  <div class="skeleton-content">
+    <div class="skeleton-line"></div>
+    <div class="skeleton-line short"></div>
+  </div>
+</div>
+
+<!-- ✅ SPINNER LOADING - For actions -->
+<button class="btn btn-primary loading" disabled>
+  <span class="spinner" aria-hidden="true"></span>
+  처리 중...
+</button>
+
+<!-- ❌ FORBIDDEN - No loading feedback -->
+<button class="btn" onclick="longOperation()">처리</button>
+```
+
+### Error States (REQUIRED UX PATTERN)
+```html
+<!-- ✅ INLINE ERROR - Form validation -->
+<div class="form-group error">
+  <label for="amount">거래 금액</label>
+  <input type="number" id="amount" class="form-control error" />
+  <div class="form-error">
+    <i class="fas fa-exclamation-triangle"></i>
+    올바른 금액을 입력하세요
+  </div>
+</div>
+
+<!-- ✅ CARD ERROR STATE - Data loading failure -->
+<div class="card error-state">
+  <div class="error-content">
+    <i class="fas fa-exclamation-circle error-icon"></i>
+    <h3>데이터를 불러올 수 없습니다</h3>
+    <p>네트워크 연결을 확인하고 다시 시도해주세요</p>
+    <button class="btn btn-secondary retry-btn">다시 시도</button>
+  </div>
+</div>
+
+<!-- ❌ FORBIDDEN - Silent failures -->
+<div class="card">
+  <!-- Empty card with no error indication -->
+</div>
+```
+
+### Toast Notifications (STANDARDIZED MESSAGING)
+```javascript
+// ✅ CORRECT - Consistent toast implementation
+this.showToast('거래가 성공적으로 완료되었습니다', 'success');
+this.showToast('네트워크 오류가 발생했습니다', 'error');
+this.showToast('데이터를 업데이트하는 중입니다', 'info');
+this.showToast('주의: 높은 변동성이 감지되었습니다', 'warning');
+
+// ❌ FORBIDDEN - Inconsistent messaging
+alert('완료');
+console.log('Error occurred');
+```
+
+## 🌙 THEME SYSTEM RULES
+
+### Dark/Light Mode Implementation (CRITICAL)
+```css
+/* ✅ CORRECT - CSS Custom Properties */
+:root {
+  --bg-primary: #ffffff;
+  --text-primary: #1f2937;
+  --card-bg: #ffffff;
+}
+
+:root.dark-mode {
+  --bg-primary: #1a1a1a;
+  --text-primary: #ffffff;
+  --card-bg: #2a2a2a;
+}
+
+/* ✅ Use variables consistently */
+.card {
+  background: var(--card-bg);
+  color: var(--text-primary);
+}
+
+/* ❌ FORBIDDEN - Hardcoded colors */
+.card {
+  background: #ffffff;  /* Won't work in dark mode */
+  color: #000000;
+}
+```
+
+### Theme Switching UX (MANDATORY BEHAVIOR)
+```javascript
+// ✅ CORRECT - Smooth theme transition
+function toggleTheme() {
+  const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+  
+  // Apply transition class
+  document.body.classList.add('theme-transitioning');
+  
+  // Update theme
+  document.documentElement.setAttribute('data-theme', newTheme);
+  localStorage.setItem('theme', newTheme);
+  
+  // Update all theme-dependent components
+  updateChartTheme(newTheme);
+  updateLogos(newTheme);
+  
+  // Remove transition class after animation
+  setTimeout(() => {
+    document.body.classList.remove('theme-transitioning');
+  }, 300);
+}
+
+// ❌ FORBIDDEN - Jarring theme switch
+function badToggleTheme() {
+  document.body.className = 'dark-mode'; // Instant, jarring change
+}
+```
+
+## 📊 DATA VISUALIZATION STANDARDS
+
+### Chart Component Requirements (FINANCIAL DATA)
+```javascript
+// ✅ CORRECT - Consistent chart configuration
+const chartConfig = {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: {
+      position: 'top',
+      labels: {
+        usePointStyle: true,
+        font: { family: 'Pretendard' }
+      }
+    },
+    tooltip: {
+      backgroundColor: 'var(--card-bg)',
+      titleColor: 'var(--text-primary)',
+      bodyColor: 'var(--text-secondary)',
+      borderColor: 'var(--border-color)',
+      borderWidth: 1
+    }
+  },
+  scales: {
+    y: {
+      beginAtZero: false,
+      grid: { color: 'var(--border-light)' },
+      ticks: { color: 'var(--text-secondary)' }
+    }
+  }
+};
+
+// ❌ FORBIDDEN - Inconsistent chart styling
+const badChartConfig = {
+  plugins: {
+    legend: { display: false },  // No legend
+    tooltip: { enabled: false }  // No tooltips
+  }
+};
+```
+
+### Financial Data Formatting (STANDARDIZED)
+```javascript
+// ✅ CORRECT - Consistent number formatting
+const formatCurrency = (amount, currency = 'USD') => {
+  return new Intl.NumberFormat('ko-KR', {
+    style: 'currency',
+    currency: currency,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 8
+  }).format(amount);
+};
+
+const formatPercentage = (value) => {
+  const formatted = (value * 100).toFixed(2);
+  const className = value >= 0 ? 'positive' : 'negative';
+  return `<span class="${className}">${formatted}%</span>`;
+};
+
+// ❌ FORBIDDEN - Inconsistent formatting
+const badFormat = (amount) => amount.toString(); // No formatting
+```
+
+## 🔍 ACCESSIBILITY REQUIREMENTS (WCAG 2.1 AA)
+
+### Mandatory Accessibility Features
+```html
+<!-- ✅ CORRECT - Semantic HTML with ARIA -->
+<main role="main" aria-label="실시간 분석 대시보드">
+  <section aria-labelledby="whale-tracker-title">
+    <h2 id="whale-tracker-title">고래 추적</h2>
+    
+    <table role="table" aria-label="고래 거래 내역">
+      <thead>
+        <tr>
+          <th scope="col">시간</th>
+          <th scope="col">금액</th>
+          <th scope="col">방향</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>14:23:15</td>
+          <td>
+            <span class="positive" aria-label="상승">+125.5 BTC</span>
+          </td>
+          <td>매수</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+</main>
+
+<!-- ❌ FORBIDDEN - No semantic structure -->
+<div class="main">
+  <div class="section">
+    <div class="title">고래 추적</div>
+    <div class="data">...</div>
+  </div>
+</div>
+```
+
+### Keyboard Navigation (MANDATORY)
+```css
+/* ✅ CORRECT - Visible focus indicators */
+.btn:focus,
+.form-control:focus,
+.card:focus {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
+/* ✅ Skip links for keyboard users */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 6px;
+  background: var(--primary-color);
+  color: white;
+  padding: 8px;
+  text-decoration: none;
+  border-radius: 4px;
+}
+
+.skip-link:focus {
+  top: 6px;
+}
+
+/* ❌ FORBIDDEN - Removing focus indicators */
+button:focus { outline: none; }  /* Never do this */
+```
+
+## 🚀 PERFORMANCE UX GUIDELINES
+
+### Progressive Enhancement (REQUIRED APPROACH)
+```html
+<!-- ✅ CORRECT - Works without JavaScript -->
+<form action="/api/settings" method="POST" class="settings-form">
+  <input type="number" name="whale-threshold" value="50" required />
+  <button type="submit">저장</button>
+</form>
+
+<script>
+  // Enhanced with JavaScript
+  document.querySelector('.settings-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    await saveSettingsAjax(new FormData(e.target));
+  });
+</script>
+
+<!-- ❌ FORBIDDEN - JavaScript-dependent -->
+<div class="settings-form">
+  <input type="number" id="threshold" />
+  <button onclick="saveSettings()">저장</button>
+</div>
+```
+
+### Image Optimization (MANDATORY)
+```html
+<!-- ✅ CORRECT - Responsive images with fallbacks -->
+<picture>
+  <source 
+    srcset="assets/chart-dark.webp" 
+    media="(prefers-color-scheme: dark)" 
+    type="image/webp"
+  />
+  <source 
+    srcset="assets/chart-light.webp" 
+    media="(prefers-color-scheme: light)" 
+    type="image/webp"
+  />
+  <img 
+    src="assets/chart-light.jpg" 
+    alt="비트코인 가격 차트" 
+    loading="lazy"
+    width="800" 
+    height="400"
+  />
+</picture>
+
+<!-- ❌ FORBIDDEN - Unoptimized images -->
+<img src="large-image.png" />
+```
+
+These UI/UX guidelines ensure a consistent, accessible, and performant user experience across the Felicity cryptocurrency analysis platform. **COMPLIANCE WITH THESE STANDARDS IS MANDATORY FOR ALL INTERFACE DEVELOPMENT.**

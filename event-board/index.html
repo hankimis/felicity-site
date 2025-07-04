@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Onbit</title>
+    
+    <!-- 🚀 성능 최적화 메타 태그 -->
+    <meta name="format-detection" content="telephone=no">
+    <meta name="theme-color" content="#ffffff">
+    <meta name="color-scheme" content="light dark">
+    
+    <!-- 🚀 리소스 힌트 -->
+    <link rel="preconnect" href="https://firebasestorage.googleapis.com">
+    <link rel="dns-prefetch" href="https://firebasestorage.googleapis.com">
+    <link rel="preload" href="/assets/default-event-image.svg" as="image">
+    
+    <!-- 🚀 이미지 최적화를 위한 Service Worker 등록 -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/image-cache-sw.js').catch(console.error);
+      }
+    </script>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="css/style.css"/>
+    <link rel="stylesheet" href="auth.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" />
+    <link rel="icon" type="image/png" href="/onbit/favicon-96x96.png" sizes="96x96" />
+    <link rel="icon" type="image/svg+xml" href="/onbit/favicon.svg" />
+    <link rel="shortcut icon" href="/onbit/favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/onbit/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-title" content="Onbit" />
+    <link rel="manifest" href="/onbit/site.webmanifest" />
+    
+    <!-- Common Scripts -->
+    <script src="js/auth.js"></script>
+    <!-- <script src="js/level-system.js"></script> -->
+    <!-- Cloudflare Turnstile -->
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+    <!-- Unified Header Loader -->
+    <script src="js/header-loader.js" defer></script>
+    
+    <style>
+      .event-board-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 40px 0 40px 0;
+      }
+      .event-board-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin-bottom: 36px;
+        color: var(--text-color);
+        letter-spacing: -1px;
+      }
+      .event-card-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 32px;
+        width: 100%;
+      }
+      .event-card {
+        background: var(--card-bg);
+        border-radius: 18px;
+        box-shadow: 0 4px 24px var(--shadow-color);
+        border: 1px solid var(--border-color);
+        overflow: hidden;
+        padding: 0;
+        transition: box-shadow 0.2s;
+        min-height: 200px;
+        display: flex;
+        align-items: stretch;
+        height: 100%;
+        position: relative;
+      }
+      .event-card-delete {
+        position: absolute;
+        top: 18px;
+        right: 18px;
+        margin: 0;
+        color: #ef5350;
+        background: none;
+        border: none;
+        font-size: 1.25em;
+        cursor: pointer;
+        transition: color 0.2s;
+        z-index: 2;
+      }
+      .event-card-delete:hover {
+        color: #b71c1c;
+      }
+      .event-card-edit {
+        position: absolute;
+        top: 18px;
+        right: 48px;
+        margin: 0;
+        color: #1976d2;
+        background: none;
+        border: none;
+        font-size: 1.15em;
+        cursor: pointer;
+        transition: color 0.2s;
+        z-index: 2;
+      }
+      .event-card-edit:hover {
+        color: #0d47a1;
+      }
+      .event-card-btn {
+        width: 100%;
+        background: none;
+        border: none;
+        padding: 0;
+        text-align: left;
+        cursor: pointer;
+        display: block;
+        height: 100%;
+      }
+      .event-card-inner {
+        display: flex;
+        flex-direction: row;
+        align-items: stretch;
+        width: 100%;
+        height: 100%;
+        min-height: 200px;
+      }
+      .event-card-left {
+        flex: 1 1 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        padding: 32px 0 32px 32px;
+        min-width: 0;
+      }
+      .event-card-timer {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: #8b94a9;
+        font-size: 1.08em;
+        font-weight: 600;
+        margin-bottom: 18px;
+        white-space: nowrap;
+      }
+      .event-card-title {
+        font-size: 1.18em;
+        font-weight: 800;
+        color: var(--text-color);
+        margin-bottom: 8px;
+        letter-spacing: -0.5px;
+        line-height: 1.3;
+        word-break: break-all;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        min-height: 2.6em;
+      }
+      .event-card-desc {
+        color: var(--text-color-secondary);
+        font-size: 1.01em;
+        margin-bottom: 18px;
+        line-height: 1.5;
+        word-break: break-all;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        min-height: 2.2em;
+      }
+      .event-card-exchange-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-top: 8px;
+      }
+      .event-card-exchange-logo {
+        width: 28px;
+        height: 28px;
+        border-radius: 100px;
+        object-fit: contain;
+        background: #fff;
+      }
+      .event-card-exchange-name {
+        font-weight: 700;
+        color: var(--text-color-secondary);
+        font-size: 1.08em;
+      }
+      .event-card-img-wrap {
+        flex: none;
+        display: flex;
+        align-items: flex-end;
+        justify-content: flex-end;
+        padding: 0 32px 32px 32px;
+        min-width: 140px;
+      }
+      .event-card-img {
+        width: 120px;
+        height: 120px;
+        border-radius: 12px;
+        object-fit: cover;
+        background: var(--bg-secondary-color);
+        box-shadow: 0 2px 8px var(--shadow-color);
+      }
+      @media (max-width: 1200px) {
+        .event-card-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+      }
+      @media (max-width: 700px) {
+        .event-board-container {
+          padding: 18px 8px 32px 8px;
+        }
+        .event-card-grid {
+          grid-template-columns: 1fr;
+          gap: 22px;
+        }
+        .event-card {
+          border-radius: 16px;
+          box-shadow: 0 2px 12px rgba(30,40,80,0.10);
+          border: 1.5px solid var(--border-color);
+          min-height: 0;
+          margin: 0 2px;
+        }
+        .event-card-inner {
+          flex-direction: column;
+          min-height: 0;
+          padding: 0;
+        }
+        .event-card-img-wrap {
+          padding: 0 0 14px 0;
+          justify-content: flex-start;
+          align-items: flex-start;
+          min-width: 0;
+        }
+        .event-card-img {
+          width: 100%;
+          height: 90px;
+          border-radius: 10px;
+        }
+        .event-card-left {
+          padding: 16px 12px 8px 12px;
+        }
+        .event-card-timer {
+          font-size: 1em;
+          margin-bottom: 12px;
+        }
+        .event-card-title {
+          font-size: 1.05em;
+          margin-bottom: 14px;
+        }
+        .event-card-desc {
+          font-size: 0.90em;
+          min-height: 1.7em;
+          margin-bottom: 10px;
+        }
+        .event-card-exchange-row {
+          gap: 8px;
+          margin-top: 6px;
+        }
+        .event-card-exchange-logo {
+          width: 22px;
+          height: 22px;
+        }
+        .event-card-exchange-name {
+          font-size: 0.98em;
+        }
+        .event-card-delete {
+          top: 8px;
+          right: 8px;
+          font-size: 1.15em;
+          padding: 4px;
+        }
+        .event-card-edit { top: 8px; right: 38px; font-size: 1em; }
+      }
+      .floating-write-btn {
+        position: fixed;
+        right: 32px;
+        bottom: 32px;
+        z-index: 1200;
+        background: var(--primary-color);
+        color: #fff;
+        border: none;
+        border-radius: 50px;
+        padding: 16px 28px;
+        font-size: 1.15em;
+        font-weight: 700;
+        box-shadow: 0 4px 16px rgba(49,130,246,0.13);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        transition: background 0.2s;
+      }
+      .floating-write-btn:hover {
+        background: var(--primary-color-dark);
+      }
+      .event-modal-content {
+        max-width: 480px;
+        width: 95vw;
+        padding: 40px 32px 32px 32px;
+        border-radius: 20px;
+        background: var(--card-bg);
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+      }
+      .event-form h2 {
+        font-size: 1.4em;
+        font-weight: 700;
+        margin-bottom: 32px;
+        color: var(--text-color);
+        text-align: center;
+        letter-spacing: -0.5px;
+      }
+      .event-form .input-group {
+        margin-bottom: 24px;
+      }
+      .event-form label {
+        font-size: 1em;
+        font-weight: 600;
+        margin-bottom: 10px;
+        color: var(--text-color);
+        display: block;
+        letter-spacing: -0.3px;
+      }
+      .event-form input, .event-form textarea, .event-form select {
+        font-size: 1.02em;
+        margin-bottom: 0;
+        border-radius: 12px;
+        padding: 16px 14px;
+        background: var(--bg-secondary-color);
+        border: 2px solid var(--border-color);
+        color: var(--text-color);
+        width: 100%;
+        box-sizing: border-box;
+        transition: border-color 0.2s, box-shadow 0.2s;
+        font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+      }
+      .event-form input:focus, .event-form textarea:focus, .event-form select:focus {
+        outline: none;
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+      }
+      .event-form select {
+        cursor: pointer;
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+        background-position: right 12px center;
+        background-repeat: no-repeat;
+        background-size: 16px;
+        padding-right: 40px;
+      }
+      .event-form textarea {
+        min-height: 100px;
+        resize: vertical;
+        line-height: 1.5;
+      }
+      .event-form .submit-btn {
+        width: 100%;
+        padding: 16px;
+        font-size: 1.1em;
+        font-weight: 700;
+        border-radius: 12px;
+        background: var(--primary-color);
+        color: white;
+        border: none;
+        cursor: pointer;
+        transition: background 0.2s, transform 0.1s;
+        margin-top: 8px;
+        letter-spacing: -0.3px;
+      }
+      .event-form .submit-btn:hover {
+        background: var(--primary-color-dark);
+        transform: translateY(-1px);
+      }
+      .exchange-preview {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-top: 12px;
+        padding: 12px;
+        background: var(--bg-secondary-color);
+        border-radius: 10px;
+        border: 1px solid var(--border-color);
+      }
+      .exchange-preview-logo {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        object-fit: contain;
+        background: #fff;
+      }
+      .exchange-preview-name {
+        font-weight: 600;
+        color: var(--text-color);
+        font-size: 1.05em;
+      }
+      .preview-container {
+        margin-top: 12px;
+        position: relative;
+      }
+      .preview-image {
+        max-width: 100%;
+        border-radius: 10px;
+        box-shadow: 0 2px 8px var(--shadow-color);
+      }
+      
+      /* 🔥 이미지 업로드 관련 스타일 */
+      .image-upload-container {
+        margin-bottom: 12px;
+      }
+      .upload-btn {
+        background: var(--primary-color);
+        color: white;
+        border: none;
+        padding: 12px 20px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 1em;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        transition: background 0.2s;
+        width: 100%;
+        justify-content: center;
+      }
+      .upload-btn:hover {
+        background: var(--primary-color-dark);
+      }
+      .upload-btn:disabled {
+        background: #ccc;
+        cursor: not-allowed;
+      }
+      .upload-info {
+        margin-top: 8px;
+        text-align: center;
+      }
+      .upload-info small {
+        color: var(--text-secondary);
+        font-size: 0.9em;
+      }
+      
+      /* 업로드 진행률 표시 */
+      .upload-progress {
+        margin-top: 12px;
+        padding: 8px;
+        background: var(--bg-secondary-color);
+        border-radius: 8px;
+        border: 1px solid var(--border-color);
+      }
+      .progress-bar {
+        width: 100%;
+        height: 8px;
+        background: var(--border-color);
+        border-radius: 4px;
+        overflow: hidden;
+        margin-bottom: 8px;
+      }
+      .progress-fill {
+        height: 100%;
+        background: var(--primary-color);
+        transition: width 0.3s ease;
+        width: 0%;
+      }
+      .progress-text {
+        font-size: 0.9em;
+        color: var(--text-color);
+        font-weight: 600;
+        display: block;
+        text-align: center;
+      }
+      
+      /* 이미지 제거 버튼 */
+      .remove-image-btn {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        background: rgba(239, 83, 80, 0.9);
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 32px;
+        height: 32px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.9em;
+        transition: background 0.2s;
+      }
+      .remove-image-btn:hover {
+        background: rgba(239, 83, 80, 1);
+      }
+      
+      /* URL 입력 토글 */
+      .url-input-toggle {
+        margin-top: 12px;
+        text-align: center;
+      }
+      .toggle-btn {
+        background: transparent;
+        color: var(--text-secondary);
+        border: 1px solid var(--border-color);
+        padding: 8px 16px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 0.9em;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin: 0 auto;
+        transition: all 0.2s;
+      }
+      .toggle-btn:hover {
+        background: var(--bg-secondary-color);
+        color: var(--text-color);
+      }
+      .url-input-container {
+        margin-top: 12px;
+      }
+      .url-input-container input {
+        width: 100%;
+        padding: 12px;
+        border: 2px solid var(--border-color);
+        border-radius: 8px;
+        background: var(--bg-secondary-color);
+        color: var(--text-color);
+        font-size: 1em;
+      }
+      .form-message {
+        margin-top: 12px;
+        color: #ef5350;
+        font-size: 0.98em;
+        min-height: 20px;
+        text-align: center;
+        font-weight: 500;
+      }
+      @media (max-width: 700px) {
+        .floating-write-btn {
+          right: 16px;
+          bottom: 16px;
+          padding: 14px 20px;
+          font-size: 1em;
+        }
+        .event-modal-content {
+          padding: 28px 20px 24px 20px;
+          max-width: none;
+          width: calc(100vw - 32px);
+          margin: 16px;
+        }
+        .event-form h2 {
+          font-size: 1.3em;
+          margin-bottom: 28px;
+        }
+        .event-form .input-group {
+          margin-bottom: 20px;
+        }
+        .event-form input, .event-form textarea, .event-form select {
+          font-size: 1em;
+          padding: 14px 12px;
+        }
+        .event-form textarea {
+          min-height: 80px;
+        }
+      }
+      
+      /* 🚀 이미지 최적화 스타일 */
+      .lazy-image {
+        opacity: 0;
+        transition: opacity 0.3s ease-in-out;
+        background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+        background-size: 200% 100%;
+        animation: loading-shimmer 1.5s infinite;
+      }
+      
+      .lazy-image.loading {
+        opacity: 0.7;
+        animation: loading-shimmer 1.5s infinite;
+      }
+      
+      .lazy-image.loaded {
+        opacity: 1;
+        animation: none;
+        background: none;
+      }
+      
+      .lazy-image.error {
+        opacity: 0.5;
+        background: #f5f5f5;
+        animation: none;
+        position: relative;
+      }
+      
+      .lazy-image.error::after {
+        content: "🖼️";
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 24px;
+        opacity: 0.6;
+      }
+      
+      @keyframes loading-shimmer {
+        0% {
+          background-position: -200% 0;
+        }
+        100% {
+          background-position: 200% 0;
+        }
+      }
+      
+      /* 다크 모드에서의 로딩 스타일 */
+      [data-theme="dark"] .lazy-image {
+        background: linear-gradient(90deg, #2a2a2a 25%, #3a3a3a 50%, #2a2a2a 75%);
+        background-size: 200% 100%;
+      }
+      
+      [data-theme="dark"] .lazy-image.error {
+        background: #2a2a2a;
+      }
+      
+      /* 이미지 호버 효과 개선 */
+      .event-card-img {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+      }
+      
+      .event-card:hover .event-card-img {
+        transform: scale(1.05);
+        box-shadow: 0 4px 16px var(--shadow-color);
+      }
+      
+      .event-card-exchange-logo {
+        transition: transform 0.2s ease;
+      }
+      
+      .event-card:hover .event-card-exchange-logo {
+        transform: scale(1.1);
+      }
+      
+      /* 이미지 로딩 인디케이터 */
+      .image-loading-indicator {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 24px;
+        height: 24px;
+        border: 2px solid #f3f3f3;
+        border-top: 2px solid #3498db;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        z-index: 1;
+      }
+      
+      @keyframes spin {
+        0% { transform: translate(-50%, -50%) rotate(0deg); }
+        100% { transform: translate(-50%, -50%) rotate(360deg); }
+      }
+      
+      /* 성능 최적화를 위한 GPU 가속 */
+      .event-card-img,
+      .event-card-exchange-logo {
+        will-change: transform;
+        backface-visibility: hidden;
+        -webkit-backface-visibility: hidden;
+      }
+      
+      /* 프리로드 힌트 추가 */
+      .event-card-img[data-src] {
+        content-visibility: auto;
+        contain-intrinsic-size: 120px 120px;
+      }
+      
+      .event-card-exchange-logo[data-src] {
+        content-visibility: auto;
+        contain-intrinsic-size: 28px 28px;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="main-container">
+    <div class="event-board-container">
+      <h1 class="event-board-title">이벤트</h1>
+      <div class="event-card-grid" id="event-list">
+        <!-- 기존 하드코딩 카드 삭제, JS로 렌더링 -->
+      </div>
+    </div>
+
+    <!-- 플로팅 이벤트 작성 버튼 -->
+    <button id="write-event-btn" class="floating-write-btn" style="display:none;">
+      <i class="fas fa-plus"></i> 이벤트 작성
+    </button>
+    
+
+
+    <!-- 이벤트 작성 모달 -->
+    <div id="event-modal" class="auth-modal" style="display:none;">
+      <div class="auth-modal-content event-modal-content">
+        <span class="auth-modal-close" id="close-event-modal">&times;</span>
+        <form id="event-form" class="auth-form event-form">
+          <h2>이벤트 작성</h2>
+          <div class="input-group">
+            <label for="event-title">제목</label>
+            <input type="text" id="event-title" placeholder="이벤트 제목을 입력하세요" required maxlength="40" />
+          </div>
+          <div class="input-group">
+            <label for="event-desc">설명</label>
+            <textarea id="event-desc" placeholder="이벤트 설명을 입력하세요&#10;(최대 120자, 줄바꿈 가능)" required maxlength="120"></textarea>
+          </div>
+          <div class="input-group">
+            <label for="event-period">기간</label>
+            <input type="text" id="event-period" placeholder="예: 25.06.01 ~ 25.06.30" required maxlength="30" />
+          </div>
+          <div class="input-group">
+            <label for="event-exchange">거래소 선택</label>
+            <select id="event-exchange" required>
+              <option value="">거래소를 선택하세요</option>
+              <option value="Bitmex" data-logo="assets/tradelogo/Bitmexlogo.png">Bitmex</option>
+              <option value="Bitget" data-logo="assets/tradelogo/bitgetlogo.png">Bitget</option>
+              <option value="Blofin" data-logo="assets/tradelogo/blofinlogo.png">Blofin</option>
+              <option value="LBank" data-logo="assets/tradelogo/lbanklogo.png">LBank</option>
+              <option value="기타" data-logo="">기타 (직접 입력)</option>
+            </select>
+            <div id="exchange-preview" class="exchange-preview" style="display:none;">
+              <img id="exchange-preview-logo" class="exchange-preview-logo" src="" alt="" />
+              <span id="exchange-preview-name" class="exchange-preview-name"></span>
+            </div>
+          </div>
+          <div class="input-group" id="custom-exchange-group" style="display:none;">
+            <label for="custom-exchange-name">거래소명 (직접 입력)</label>
+            <input type="text" id="custom-exchange-name" placeholder="거래소명을 입력하세요" maxlength="20" />
+          </div>
+          <div class="input-group" id="custom-logo-group" style="display:none;">
+            <label for="custom-logo-url">거래소 로고 URL</label>
+            <input type="url" id="custom-logo-url" placeholder="거래소 로고 URL을 입력하세요" />
+          </div>
+          <div class="input-group">
+            <label for="event-img">이벤트 이미지</label>
+            <div class="image-upload-container">
+              <input type="file" id="event-img-file" accept="image/*" style="display: none;" />
+              <button type="button" id="upload-image-btn" class="upload-btn">
+                <i class="fas fa-upload"></i>
+                이미지 업로드
+              </button>
+              <div class="upload-info">
+                <small>JPG, PNG, GIF 파일만 업로드 가능 (최대 5MB)</small>
+              </div>
+              <div class="upload-progress" id="upload-progress" style="display: none;">
+                <div class="progress-bar">
+                  <div class="progress-fill" id="progress-fill"></div>
+                </div>
+                <span class="progress-text" id="progress-text">0%</span>
+              </div>
+            </div>
+            <div class="preview-container">
+              <img id="preview-event-img" class="preview-image" style="display:none;" />
+              <button type="button" id="remove-image-btn" class="remove-image-btn" style="display:none;">
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
+            <!-- URL 입력 옵션 (기존 기능 유지) -->
+            <div class="url-input-toggle">
+              <button type="button" id="toggle-url-input" class="toggle-btn">
+                <i class="fas fa-link"></i>
+                URL로 입력하기
+              </button>
+            </div>
+            <div class="url-input-container" id="url-input-container" style="display: none;">
+              <input type="url" id="event-img-url" placeholder="이벤트 이미지 URL을 입력하세요" />
+            </div>
+          </div>
+          <div class="input-group">
+            <label for="event-link">이벤트 링크 (URL)</label>
+            <input type="url" id="event-link" placeholder="이벤트 상세 페이지 링크를 입력하세요" required />
+          </div>
+          <button type="submit" class="submit-btn">등록</button>
+          <div id="event-form-message" class="form-message"></div>
+        </form>
+      </div>
+    </div>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+    <!-- Auth Modals & Scripts (attendance.html 방식) -->
+    <div id="auth-modals"></div>
+    <script type="module" src="js/auth.js"></script>
+    <script type="module" src="event-board.js"></script>
+
+    <!-- 로그인/회원가입 모달 직접 추가 -->
+    <div id="login-modal" class="auth-modal">
+      <div class="auth-modal-content">
+          <span class="auth-modal-close" data-action="close-modal">&times;</span>
+          <form id="login-form" class="auth-form">
+              <h2>로그인</h2>
+              <p id="login-error-message" class="error-message"></p>
+              <div class="input-group">
+                  <i class="fas fa-envelope"></i>
+                  <input type="email" name="login-email" placeholder="이메일" required>
+              </div>
+              <div class="input-group">
+                  <i class="fas fa-lock"></i>
+                  <input type="password" name="login-password" placeholder="비밀번호" required>
+              </div>
+              <button type="submit" class="submit-btn">로그인</button>
+              <p class="auth-form-switch">계정이 없으신가요? <a href="#" id="show-signup" data-action="show-signup">회원가입</a></p>
+              <p class="find-links" style="text-align:center; margin-top:12px;">
+                <a href="#" id="find-id-link">아이디(이메일) 찾기</a> | <a href="#" id="find-password-link">비밀번호 찾기</a>
+              </p>
+          </form>
+      </div>
+    </div>
+    <div id="signup-modal" class="auth-modal">
+      <div class="auth-modal-content">
+          <span class="auth-modal-close" data-action="close-modal">&times;</span>
+          <form id="signup-form" class="auth-form">
+              <h2>회원가입</h2>
+              <p id="signup-error-message" class="error-message"></p>
+              <div class="input-group">
+                  <i class="fas fa-user"></i>
+                  <input type="text" name="signup-name" placeholder="닉네임" required>
+              </div>
+              <div class="input-group">
+                  <i class="fas fa-envelope"></i>
+                  <input type="email" name="signup-email" placeholder="이메일" required>
+              </div>
+              <div class="input-group">
+                  <i class="fas fa-lock"></i>
+                  <input type="password" name="signup-password" placeholder="비밀번호" required>
+              </div>
+              <div class="input-group">
+                  <i class="fas fa-check-circle"></i>
+                  <input type="password" name="signup-confirm-password" placeholder="비밀번호 확인" required>
+              </div>
+              <button type="submit" class="submit-btn">회원가입</button>
+              <p class="auth-form-switch">이미 계정이 있으신가요? <a href="#" id="show-login" data-action="show-login">로그인</a></p>
+          </form>
+      </div>
+    </div>
+    </main>
+
+    <!-- Footer -->
+    <div id="footer-placeholder"></div>
+
+    <script src="js/footer-loader.js" defer></script>
+  </body>
+</html> 

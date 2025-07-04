@@ -1,0 +1,4291 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>커뮤니티 - 셀퍼럴</title>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="../css/style.css" />
+    <link rel="stylesheet" href="../auth.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" />
+    <link rel="icon" type="image/png" href="/onbit/favicon-96x96.png" sizes="96x96" />
+    <link rel="icon" type="image/svg+xml" href="/onbit/favicon.svg" />
+    <link rel="shortcut icon" href="/onbit/favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/onbit/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-title" content="Onbit" />
+    <link rel="manifest" href="/onbit/site.webmanifest" />
+    <!-- Turnstile은 필요할 때만 로드 -->
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+    
+    <!-- Common Scripts -->
+    <script src="../js/auth.js"></script>
+    <script src="../js/websocket-manager.js"></script>
+    <!-- Unified Header Loader -->
+    <script src="../js/header-loader.js" defer></script>
+    
+    <!-- Firebase 설정 -->
+    <script>
+        // Firebase 설정이 auth.js에서 로드되기를 기다림
+        document.addEventListener('DOMContentLoaded', function() {
+            // Firebase Database 초기화 확인
+            if (window.firebase && !window.database) {
+                window.database = window.firebase.database();
+                console.log('Community: Firebase Database 초기화됨');
+            }
+        });
+    </script>
+    
+    <style>
+        :root {
+            --primary-color: #3182f6;
+            --text-color: #1a1a1a;
+            --text-color-secondary: #666;
+            --bg-color: #f8f9fa;
+            --bg-secondary-color: #f1f3f5;
+            --card-bg: #ffffff;
+            --border-color: #e9ecef;
+            --shadow-color: rgba(0, 0, 0, 0.1);
+            --success-color: #22c55e;
+            --error-color: #ef4444;
+            --warning-color: #f59e0b;
+        }
+
+        :root.dark-mode {
+            --text-color: #e9ecef;
+            --text-color-secondary: #adb5bd;
+            --bg-color: #1a1a1a;
+            --bg-secondary-color: #2d2d2d;
+            --card-bg: #2d2d2d;
+            --border-color: #404040;
+            --shadow-color: rgba(0, 0, 0, 0.3);
+        }
+
+        body {
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        .main-container {
+            width: 100vw !important;
+            max-width: none !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            box-sizing: border-box;
+        }
+
+        .community-layout {
+            display: flex;
+            height: calc(100vh - 80px); /* Adjust based on header height */
+        }
+
+        .community-layout-inner {
+            display: flex;
+            width: 100%;
+        }
+
+        .chart-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            min-height: 600px; /* 최소 높이 설정 */
+        }
+
+        .chat-section {
+            flex: 0 0 350px;
+            width: 350px;
+            border-left: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        @media (max-width: 1024px) {
+            .community-layout {
+                flex-direction: column;
+                height: auto;
+            }
+            .chat-section {
+                width: 100%;
+                border-left: none;
+                border-top: 1px solid var(--border-color);
+                flex: 0 0 400px; /* 모바일에서 채팅 영역 고정 높이 */
+            }
+            .chart-section {
+                min-height: 500px; /* 모바일에서 차트 최소 높이 */
+            }
+        }
+
+
+
+        /* 분봉 선택 버튼 스타일 */
+        .interval-selector {
+            display: flex;
+            gap: 4px;
+            align-items: center;
+            background: var(--bg-secondary-color);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 3px;
+        }
+
+        .interval-button {
+            background: transparent;
+            border: none;
+            color: var(--text-color);
+            font-size: 11px;
+            font-weight: 500;
+            padding: 6px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            min-width: 35px;
+            white-space: nowrap;
+        }
+
+        .interval-button:hover {
+            background: rgba(var(--primary-color-rgb, 59, 130, 246), 0.1);
+            color: var(--primary-color);
+        }
+
+        .interval-button.active {
+            background: var(--primary-color);
+            color: white;
+            font-weight: 600;
+        }
+
+        /* 모바일에서 분봉 버튼 조정 */
+        @media (max-width: 768px) {
+            .interval-selector {
+                gap: 2px;
+                padding: 2px;
+            }
+            
+            .interval-button {
+                font-size: 10px;
+                padding: 4px 6px;
+                min-width: 28px;
+            }
+        }
+        
+        #chart-container-wrapper {
+            flex: 1;
+            position: relative;
+            min-height: 0; /* flexbox에서 중요 */
+        }
+        
+        #chart-container {
+            width: 100%;
+            height: 100%;
+            min-height: 500px; /* 차트 최소 높이 */
+        }
+
+        /* 차트 로딩 인디케이터 */
+        .chart-loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            z-index: 10;
+            display: none;
+        }
+
+        .chart-loading.show {
+            display: block;
+        }
+
+        /* 차트 컨테이너 개선 */
+        #chart-container-wrapper {
+            position: relative;
+            background: var(--card-bg);
+        }
+
+
+
+        /* 차트 스크롤바 스타일링 */
+        .tv-lightweight-charts {
+            scrollbar-width: thin;
+            scrollbar-color: var(--border-color) transparent;
+        }
+
+        .tv-lightweight-charts::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        .tv-lightweight-charts::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .tv-lightweight-charts::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 4px;
+        }
+
+        .tv-lightweight-charts::-webkit-scrollbar-thumb:hover {
+            background: var(--text-color-secondary);
+        }
+
+        /* AI 분석 결과 상세 스타일 */
+        .technical-details {
+            margin-top: 16px;
+            padding: 12px;
+            background: var(--bg-secondary-color);
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+
+        .technical-details h4, .technical-details h5 {
+            margin: 0 0 12px 0;
+            font-size: 14px;
+            color: var(--text-color);
+        }
+
+        .detail-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .detail-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 8px;
+            background: var(--card-bg);
+            border-radius: 4px;
+            font-size: 12px;
+        }
+
+        .detail-label {
+            color: var(--text-color-secondary);
+            font-weight: 500;
+        }
+
+        .detail-value {
+            color: var(--text-color);
+            font-weight: 600;
+        }
+
+        .patterns-detected {
+            margin-top: 12px;
+        }
+
+        .pattern-item {
+            padding: 8px;
+            margin: 4px 0;
+            background: var(--card-bg);
+            border-radius: 4px;
+            border-left: 3px solid var(--primary-color);
+            font-size: 12px;
+        }
+
+        .pattern-item small {
+            color: var(--text-color-secondary);
+            font-size: 11px;
+        }
+
+        /* 방향/감정/액션별 색상 스타일 */
+        .direction-상승, .sentiment-긍정적, .action-매수 {
+            color: var(--success-color);
+            font-weight: 600;
+        }
+
+        .direction-하락, .sentiment-부정적, .action-매도 {
+            color: var(--error-color);
+            font-weight: 600;
+        }
+
+        .direction-횡보, .sentiment-중립적, .action-관망 {
+            color: var(--warning-color);
+            font-weight: 600;
+        }
+
+        .risk-낮음 {
+            color: var(--success-color);
+            font-weight: 600;
+        }
+
+        .risk-중간 {
+            color: var(--warning-color);
+            font-weight: 600;
+        }
+
+        .risk-높음 {
+            color: var(--error-color);
+            font-weight: 600;
+        }
+
+        /* 신뢰도 바 개선 */
+        .confidence-bar {
+            width: 100%;
+            height: 6px;
+            background: var(--bg-secondary-color);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 4px;
+        }
+
+        .confidence-fill {
+            height: 100%;
+            background: var(--primary-color);
+            border-radius: 3px;
+            transition: width 0.3s ease;
+        }
+
+        /* 신호 분석 스타일 */
+        .signal-summary {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .signal-item {
+            flex: 1;
+            padding: 8px 12px;
+            border-radius: 6px;
+            text-align: center;
+            font-size: 12px;
+        }
+
+        .signal-item.bullish {
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid var(--success-color);
+        }
+
+        .signal-item.bearish {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid var(--error-color);
+        }
+
+        .signal-label {
+            display: block;
+            color: var(--text-color-secondary);
+            font-size: 11px;
+        }
+
+        .signal-value {
+            display: block;
+            font-weight: 600;
+            font-size: 14px;
+            margin-top: 2px;
+        }
+
+        .signal-strength {
+            margin: 8px 0;
+        }
+
+        .strength-item {
+            padding: 4px 8px;
+            margin: 2px 0;
+            background: var(--card-bg);
+            border-radius: 4px;
+            border-left: 3px solid var(--primary-color);
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        .pattern-confidence {
+            float: right;
+            background: var(--primary-color);
+            color: white;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 10px;
+            font-weight: 600;
+        }
+
+        .pattern-details {
+            margin-top: 12px;
+            padding: 8px;
+            background: var(--bg-secondary-color);
+            border-radius: 4px;
+            border-left: 3px solid var(--warning-color);
+        }
+
+        .pattern-details p {
+            margin: 0;
+            font-size: 12px;
+            color: var(--text-color);
+        }
+
+        /* 깔끔한 AI 모달 스타일 */
+        .ai-modal-content {
+            background: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid var(--border-color);
+            max-width: 900px;
+            width: 95vw;
+            max-height: 90vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .ai-modal-header {
+            background: var(--card-bg);
+            color: var(--text-color);
+            padding: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .ai-modal-title {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .ai-icon {
+            font-size: 32px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .ai-modal-title h2 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .ai-modal-title p {
+            margin: 4px 0 0 0;
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .ai-modal-close {
+            background: var(--bg-secondary-color);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            width: 40px;
+            height: 40px;
+            color: var(--text-color);
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .ai-modal-close:hover {
+            background: var(--border-color);
+        }
+
+        .ai-modal-body {
+            flex: 1;
+            padding: 24px;
+            overflow-y: auto;
+        }
+
+        .ai-section {
+            margin-bottom: 32px;
+        }
+
+        .ai-section-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+            font-weight: 600;
+            color: var(--text-color);
+            font-size: 16px;
+        }
+
+        .ai-section-header i {
+            color: var(--primary-color);
+            font-size: 18px;
+        }
+
+        .analysis-timestamp {
+            margin-left: auto;
+            font-size: 12px;
+            color: var(--text-color-secondary);
+            font-weight: normal;
+        }
+
+        .ai-coin-selector {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+        }
+
+        .ai-select {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            background: var(--card-bg);
+            color: var(--text-color);
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .ai-select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(var(--primary-color-rgb), 0.1);
+        }
+
+        .coin-info {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 4px;
+        }
+
+        .coin-price {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-color);
+        }
+
+        .coin-change {
+            font-size: 12px;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 12px;
+        }
+
+        .coin-change.positive {
+            background: rgba(34, 197, 94, 0.1);
+            color: var(--success-color);
+        }
+
+        .coin-change.negative {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--error-color);
+        }
+
+        .ai-analysis-types {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+        }
+
+        .analysis-card {
+            background: var(--bg-secondary-color);
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .analysis-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--primary-color);
+            transform: scaleX(0);
+            transition: transform 0.3s;
+        }
+
+        .analysis-card:hover::before,
+        .analysis-card.active::before {
+            transform: scaleX(1);
+        }
+
+        .analysis-card:hover {
+            border-color: var(--primary-color);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(var(--primary-color-rgb), 0.1);
+        }
+
+        .analysis-card.active {
+            border-color: var(--primary-color);
+            background: rgba(var(--primary-color-rgb), 0.05);
+        }
+
+        .analysis-icon {
+            font-size: 24px;
+            margin-bottom: 12px;
+        }
+
+        .analysis-info h4 {
+            margin: 0 0 8px 0;
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-color);
+        }
+
+        .analysis-info p {
+            margin: 0;
+            font-size: 13px;
+            color: var(--text-color-secondary);
+            line-height: 1.4;
+        }
+
+        .analysis-badge {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: var(--primary-color);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .ai-result-container {
+            background: var(--bg-secondary-color);
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .ai-loading {
+            text-align: center;
+            padding: 40px 20px;
+        }
+
+        .loading-animation {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        .loading-brain {
+            font-size: 40px;
+            animation: bounce 1.5s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .loading-dots {
+            display: flex;
+            gap: 4px;
+        }
+
+        .loading-dots span {
+            width: 8px;
+            height: 8px;
+            background: var(--primary-color);
+            border-radius: 50%;
+            animation: wave 1.4s infinite ease-in-out;
+        }
+
+        .loading-dots span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .loading-dots span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes wave {
+            0%, 60%, 100% { transform: scale(1); opacity: 0.5; }
+            30% { transform: scale(1.3); opacity: 1; }
+        }
+
+        .loading-progress {
+            width: 200px;
+            height: 4px;
+            background: var(--border-color);
+            border-radius: 2px;
+            margin: 20px auto 0;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: var(--primary-color);
+            border-radius: 2px;
+            animation: progress 3s infinite;
+        }
+
+        @keyframes progress {
+            0% { width: 0%; }
+            50% { width: 70%; }
+            100% { width: 100%; }
+        }
+
+        .ai-result-content {
+            animation: fadeInUp 0.5s ease-out;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .ai-modal-footer {
+            background: var(--bg-secondary-color);
+            padding: 20px 24px;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+        }
+
+        .ai-disclaimer {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            color: var(--text-color-secondary);
+            flex: 1;
+        }
+
+        .ai-disclaimer i {
+            color: var(--warning-color);
+        }
+
+        .ai-modal-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .ai-btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .ai-btn.primary {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .ai-btn.primary:hover {
+            background: #2563eb;
+        }
+
+        .ai-btn.secondary {
+            background: var(--card-bg);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+        }
+
+        .ai-btn.secondary:hover {
+            background: var(--bg-secondary-color);
+        }
+
+        @media (max-width: 768px) {
+            .ai-modal-content {
+                width: 98vw;
+                max-height: 95vh;
+            }
+
+            .ai-modal-header {
+                padding: 20px;
+            }
+
+            .ai-modal-title h2 {
+                font-size: 20px;
+            }
+
+            .ai-modal-body {
+                padding: 20px;
+            }
+
+            .ai-analysis-types {
+                grid-template-columns: 1fr;
+            }
+
+            .ai-coin-selector {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .coin-info {
+                align-items: flex-start;
+            }
+
+            .ai-modal-footer {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 12px;
+            }
+
+            .ai-modal-actions {
+                justify-content: stretch;
+            }
+
+            .ai-btn {
+                flex: 1;
+                justify-content: center;
+            }
+        }
+
+        /* 깔끔한 AI 분석 결과 스타일 */
+        .analysis-summary {
+            background: var(--primary-color);
+            color: white;
+            padding: 24px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+        }
+
+        .summary-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .summary-header h3 {
+            margin: 0;
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .overall-signal, .prediction-trend, .sentiment-score, .recommendation-grade {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 700;
+            font-size: 14px;
+            text-transform: uppercase;
+        }
+
+        .overall-signal.bullish, .prediction-trend.bullish, .recommendation-grade.buy {
+            background: rgba(34, 197, 94, 0.9);
+        }
+
+        .overall-signal.bearish, .prediction-trend.bearish, .recommendation-grade.sell {
+            background: rgba(239, 68, 68, 0.9);
+        }
+
+        .signal-counts, .prediction-timeline {
+            display: flex;
+            gap: 16px;
+            justify-content: space-around;
+        }
+
+        .signal-count, .prediction-item {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 16px;
+            border-radius: 12px;
+            flex: 1;
+        }
+
+        .signal-count .count, .prediction-item .price-prediction {
+            display: block;
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .signal-count .label, .prediction-item .time-label {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+
+        .prediction-item .change-percent {
+            font-size: 12px;
+            margin-top: 4px;
+            opacity: 0.9;
+        }
+
+        .sentiment-breakdown {
+            margin-top: 20px;
+        }
+
+        .sentiment-bar {
+            height: 8px;
+            border-radius: 4px;
+            overflow: hidden;
+            display: flex;
+            margin-bottom: 12px;
+        }
+
+        .positive-bar {
+            background: #22c55e;
+        }
+
+        .neutral-bar {
+            background: #6b7280;
+        }
+
+        .negative-bar {
+            background: #ef4444;
+        }
+
+        .sentiment-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+        }
+
+        .risk-reward {
+            display: flex;
+            gap: 24px;
+        }
+
+        .risk-item {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .risk-bar, .reward-bar {
+            flex: 1;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .risk-fill {
+            height: 100%;
+            background: #ef4444;
+        }
+
+        .reward-fill {
+            height: 100%;
+            background: #22c55e;
+        }
+
+        .analysis-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+
+        .analysis-card-result {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .analysis-card-result.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .card-header h4 {
+            margin: 0;
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-color);
+        }
+
+        .confidence-badge {
+            background: var(--primary-color);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .pattern-list, .indicators-grid, .factors-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .pattern-item, .indicator-item, .factor-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px;
+            background: var(--bg-secondary-color);
+            border-radius: 8px;
+            border-left: 3px solid var(--border-color);
+        }
+
+        .pattern-item.bullish, .indicator-item .indicator-signal.강세 {
+            border-left-color: var(--success-color);
+        }
+
+        .pattern-item.bearish, .indicator-item .indicator-signal.약세 {
+            border-left-color: var(--error-color);
+        }
+
+        .indicator-name, .factor-name {
+            font-weight: 600;
+            color: var(--text-color);
+        }
+
+        .indicator-value, .factor-impact {
+            font-weight: 500;
+        }
+
+        .indicator-signal {
+            font-size: 12px;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-weight: 600;
+        }
+
+        .factor-impact.high {
+            color: var(--error-color);
+        }
+
+        .factor-impact.medium {
+            color: var(--warning-color);
+        }
+
+        .factor-impact.low {
+            color: var(--success-color);
+        }
+
+        .trading-signals, .model-details, .strategy-details, .trading-points {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+        }
+
+        .signal-item, .model-item, .strategy-item, .point-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            padding: 12px;
+            background: var(--bg-secondary-color);
+            border-radius: 8px;
+        }
+
+        .signal-label, .model-label, .strategy-label, .point-label {
+            font-size: 12px;
+            color: var(--text-color-secondary);
+            font-weight: 500;
+        }
+
+        .signal-value, .model-value, .strategy-value, .point-value {
+            font-weight: 600;
+            color: var(--text-color);
+        }
+
+        .point-item.entry {
+            border-left: 3px solid var(--primary-color);
+        }
+
+        .point-item.stop {
+            border-left: 3px solid var(--error-color);
+        }
+
+        .point-item.target {
+            border-left: 3px solid var(--success-color);
+        }
+
+        .keyword-cloud {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .keyword-tag {
+            padding: 6px 12px;
+            border-radius: 16px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .keyword-tag.positive {
+            background: rgba(34, 197, 94, 0.1);
+            color: var(--success-color);
+        }
+
+        .keyword-tag.negative {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--error-color);
+        }
+
+        .keyword-tag.neutral {
+            background: var(--bg-secondary-color);
+            color: var(--text-color);
+        }
+
+        .sentiment-trend, .market-metrics, .timeframe-analysis {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .trend-item, .metric-item, .timeframe-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .trend-item:last-child, .metric-item:last-child, .timeframe-item:last-child {
+            border-bottom: none;
+        }
+
+        .trend-value.positive, .timeframe-signal.bullish {
+            color: var(--success-color);
+        }
+
+        .trend-value.negative, .timeframe-signal.bearish {
+            color: var(--error-color);
+        }
+
+        .news-summary, .recommendation-reasoning {
+            line-height: 1.6;
+        }
+
+        .reason-item {
+            margin-bottom: 16px;
+        }
+
+        .reason-item h5 {
+            margin: 0 0 8px 0;
+            font-size: 14px;
+            color: var(--text-color);
+        }
+
+        .reason-item p {
+            margin: 0;
+            font-size: 13px;
+            color: var(--text-color-secondary);
+        }
+
+        .error-message {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--error-color);
+        }
+
+        .error-message i {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.7;
+        }
+
+        .error-message h4 {
+            margin: 0 0 12px 0;
+            font-size: 18px;
+        }
+
+        .retry-btn {
+            margin-top: 16px;
+            padding: 8px 16px;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        @media (max-width: 768px) {
+            .analysis-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .signal-counts, .prediction-timeline {
+                flex-direction: column;
+                gap: 12px;
+            }
+
+            .risk-reward {
+                flex-direction: column;
+                gap: 16px;
+            }
+
+            .trading-signals, .model-details, .strategy-details, .trading-points {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .chat-section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 16px;
+            height: 45px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .chat-section-header h2 {
+            font-size: 14px;
+            margin: 0;
+        }
+        
+        .chat-users-count {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .chat-wrapper {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 16px;
+            overflow: hidden;
+        }
+
+        #chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0px;
+            scroll-behavior: smooth;
+        }
+
+        /* 채팅 스크롤바 스타일 */
+        #chat-messages::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        #chat-messages::-webkit-scrollbar-track {
+            background: var(--bg-secondary-color);
+            border-radius: 3px;
+        }
+
+        #chat-messages::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 3px;
+        }
+
+        #chat-messages::-webkit-scrollbar-thumb:hover {
+            background: var(--text-color-secondary);
+        }
+        
+        .chat-input-form {
+            display: flex;
+            gap: 8px;
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid var(--border-color);
+        }
+        
+        #message-input {
+            flex: 1;
+            padding: 12px 16px;
+            border-radius: 20px;
+            border: 1px solid var(--border-color);
+            background: var(--card-bg);
+            color: var(--text-color);
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        #message-input:focus {
+            border-color: var(--primary-color);
+        }
+
+        #message-input::placeholder {
+            color: var(--text-color-secondary);
+        }
+        
+        #chat-form button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 20px;
+            background-color: var(--primary-color);
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+            min-width: 60px;
+        }
+
+        #chat-form button:hover {
+            background-color: #2563eb;
+            transform: translateY(-1px);
+        }
+
+        #chat-form button:active {
+            transform: translateY(0);
+        }
+        
+        /* 채팅 메시지 스타일 */
+        .message {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 12px;
+            max-width: 95%;
+        }
+
+        .message-item {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 12px;
+            padding: 8px 12px;
+            border-radius: 12px;
+            max-width: 85%;
+            word-wrap: break-word;
+        }
+
+        .message-item.my-message {
+            align-self: flex-end;
+            flex-direction: row-reverse;
+        }
+
+        .message-item:not(.my-message) {
+            align-self: flex-start;
+        }
+
+        .chat-profile-pic-wrap {
+            margin: 0 8px;
+            flex-shrink: 0;
+        }
+
+        .chat-profile-pic {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid var(--border-color);
+        }
+
+        .message-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .message-sender {
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 4px;
+            color: var(--text-color-secondary);
+        }
+
+        .my-message .message-sender {
+            color: var(--text-color-secondary);
+        }
+
+        .message-text {
+            font-size: 14px;
+            line-height: 1.4;
+            word-break: break-word;
+        }
+
+        .message-header {
+            font-size: 13px;
+            color: var(--text-color-secondary);
+            margin-bottom: 4px;
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+        
+        .message-header .username {
+            font-weight: 600;
+            color: var(--text-color);
+        }
+        
+        .message.sent {
+            align-self: flex-end;
+            align-items: flex-end;
+        }
+        
+        .message.sent .message-content {
+            background-color: var(--primary-color);
+            color: white;
+            border-bottom-right-radius: 4px;
+            padding: 10px 14px;
+            border-radius: 18px;
+        }
+        
+        .message.received {
+            align-self: flex-start;
+            align-items: flex-start;
+        }
+        
+        .message.received .message-content {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-bottom-left-radius: 4px;
+            padding: 10px 14px;
+            border-radius: 18px;
+        }
+
+        /* 채팅 알림 스타일 */
+        .chat-notice {
+            text-align: center;
+            padding: 20px;
+            color: var(--text-color-secondary);
+            font-size: 14px;
+            background: var(--bg-secondary-color);
+            border-radius: 8px;
+            margin: 10px;
+        }
+
+        /* 코인 선택 모달 UI 개선 */
+        .coin-search-modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            background: rgba(0,0,0,0.45);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        .coin-search-modal.show {
+            display: flex !important;
+        }
+        .coin-search-content {
+            background: var(--card-bg, #fff);
+            border-radius: 18px;
+            width: 92vw;
+            max-width: 420px;
+            max-height: 80vh;
+            overflow: hidden;
+            box-shadow: 0 8px 40px rgba(0,0,0,0.18);
+            display: flex;
+            flex-direction: column;
+            padding: 0;
+        }
+        .coin-search-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px 24px 12px 24px;
+            border-bottom: 1px solid var(--border-color);
+            background: var(--card-bg, #fff);
+        }
+        .coin-search-header h3 {
+            font-size: 1.15em;
+            font-weight: 700;
+            margin: 0;
+            color: var(--text-color);
+        }
+        .coin-search-close {
+            background: none;
+            border: none;
+            font-size: 1.7em;
+            color: var(--text-color-secondary);
+            cursor: pointer;
+            padding: 0 4px;
+            border-radius: 6px;
+            transition: background 0.15s;
+        }
+        .coin-search-close:hover {
+            background: var(--bg-secondary-color);
+        }
+        .coin-search-input-wrapper {
+            padding: 16px 24px 8px 24px;
+            border-bottom: 1px solid var(--border-color);
+            background: var(--card-bg, #fff);
+        }
+        .coin-search-input {
+            width: 100%;
+            height: 40px;
+            padding: 0 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background: var(--bg-secondary-color);
+            color: var(--text-color);
+            font-size: 15px;
+            outline: none;
+            box-sizing: border-box;
+        }
+        .coin-search-input:focus {
+            border-color: var(--primary-color);
+            background: var(--card-bg);
+        }
+        .coin-search-tabs {
+            display: flex;
+            padding: 0 24px;
+            border-bottom: 1px solid var(--border-color);
+            background: var(--card-bg, #fff);
+        }
+        .coin-search-tab {
+            flex: 1;
+            padding: 12px 0;
+            border: none;
+            background: none;
+            color: var(--text-color-secondary);
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: color 0.15s, border-bottom 0.15s;
+        }
+        .coin-search-tab.active {
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--primary-color);
+        }
+        .coin-search-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px 0;
+            background: var(--card-bg, #fff);
+        }
+        .coin-search-item {
+            display: flex;
+            align-items: center;
+            padding: 14px 24px;
+            cursor: pointer;
+            transition: background 0.18s;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .coin-search-item:last-child {
+            border-bottom: none;
+        }
+        .coin-search-item:hover {
+            background: var(--bg-secondary-color);
+        }
+        .coin-search-item-icon {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            margin-right: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 15px;
+            color: white;
+            font-weight: bold;
+        }
+        .coin-search-item-info {
+            flex: 1;
+        }
+        .coin-search-item-symbol {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-color);
+        }
+        .coin-search-item-name {
+            font-size: 13px;
+            color: var(--text-color-secondary);
+        }
+        .coin-search-item-price {
+            text-align: right;
+        }
+        .coin-search-item-price-value {
+            font-size: 15px;
+            font-weight: 500;
+            color: var(--text-color);
+        }
+        .coin-search-item-price-change {
+            font-size: 13px;
+            font-weight: 500;
+        }
+        .coin-search-item-price-change.positive {
+            color: #22c55e;
+        }
+        .coin-search-item-price-change.negative {
+            color: #ef4444;
+        }
+        @media (max-width: 600px) {
+            .coin-search-content {
+                max-width: 98vw;
+                width: 98vw;
+                border-radius: 10px;
+                padding: 0;
+            }
+            .coin-search-header, .coin-search-input-wrapper, .coin-search-tabs {
+                padding-left: 10px;
+                padding-right: 10px;
+            }
+            .coin-search-item {
+                padding: 12px 10px;
+            }
+        }
+
+        /* AI 기능 버튼 스타일 */
+        .ai-controls {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .ai-btn {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 8px 12px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+            position: relative;
+            min-width: 40px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .ai-btn:hover {
+            background: #2563eb;
+            transform: translateY(-1px);
+        }
+
+        .ai-btn.active {
+            background: #dc2626;
+        }
+
+        .ai-btn i {
+            font-size: 14px;
+        }
+
+        @media (max-width: 768px) {
+            .ai-controls {
+                order: 3;
+                width: 100%;
+                justify-content: center;
+            }
+            
+            .ai-btn {
+                flex: 1;
+                max-width: 100px;
+            }
+        }
+
+        /* AI 분석 버튼 스타일 */
+        .ai-analysis-btn {
+            background: var(--bg-secondary-color);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 8px 16px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+
+        .ai-analysis-btn:hover {
+            background: var(--border-color);
+        }
+
+        .ai-analysis-btn.active {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        /* 알림 배지 */
+        .notification-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #dc2626;
+            color: white;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            font-size: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        /* AI 분석 결과 스타일 */
+        .ai-result-item {
+            margin-bottom: 15px;
+            padding: 12px;
+            background: var(--card-bg);
+            border-radius: 8px;
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .ai-result-title {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--text-color);
+        }
+
+        .ai-result-content {
+            font-size: 13px;
+            line-height: 1.5;
+            color: var(--text-color-secondary);
+        }
+
+        .ai-result-confidence {
+            margin-top: 8px;
+            font-size: 12px;
+            color: var(--text-color-secondary);
+        }
+
+        .confidence-bar {
+            width: 100%;
+            height: 4px;
+            background: var(--bg-secondary-color);
+            border-radius: 2px;
+            margin-top: 4px;
+            overflow: hidden;
+        }
+
+        .confidence-fill {
+            height: 100%;
+            background: var(--primary-color);
+            transition: width 0.3s;
+        }
+
+        /* 알림 토스트 */
+        .notification-toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            z-index: 10000;
+            max-width: 300px;
+            transform: translateX(100%);
+            transition: transform 0.3s;
+        }
+
+        .notification-toast.show {
+            transform: translateX(0);
+        }
+
+        .notification-toast.success {
+            border-left: 4px solid var(--success-color);
+        }
+
+        .notification-toast.warning {
+            border-left: 4px solid var(--warning-color);
+        }
+
+        .notification-toast.error {
+            border-left: 4px solid var(--error-color);
+        }
+
+        .notification-title {
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: var(--text-color);
+        }
+
+        .notification-message {
+            font-size: 13px;
+            color: var(--text-color-secondary);
+        }
+
+        @media (max-width: 600px) {
+            .coin-search-content {
+                max-width: 98vw;
+                width: 98vw;
+                border-radius: 10px;
+                padding: 0;
+            }
+            .coin-search-header, .coin-search-input-wrapper, .coin-search-tabs {
+                padding-left: 10px;
+                padding-right: 10px;
+            }
+            .coin-search-item {
+                padding: 12px 10px;
+            }
+        }
+
+        /* ===== AI 분석 모달 컴팩트 스타일 ===== */
+        .compact-analysis-header {
+            background: var(--primary-color);
+            border-radius: 12px 12px 0 0;
+            padding: 16px 20px;
+            color: white;
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .analysis-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .analysis-title h3 {
+            margin: 0;
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .analysis-icon {
+            font-size: 20px;
+        }
+
+        .signal-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 12px;
+        }
+
+        .signal-badge.bullish {
+            background-color: rgba(34, 197, 94, 0.2);
+            color: #22c55e;
+            border: 1px solid rgba(34, 197, 94, 0.3);
+        }
+
+        .signal-badge.bearish {
+            background-color: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .signal-badge.neutral {
+            background-color: rgba(251, 191, 36, 0.2);
+            color: #fbbf24;
+            border: 1px solid rgba(251, 191, 36, 0.3);
+        }
+
+        .confidence-compact {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .confidence-text {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+
+        .confidence-bar-mini {
+            width: 60px;
+            height: 4px;
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .confidence-fill-mini {
+            height: 100%;
+            background: var(--primary-color);
+            border-radius: 2px;
+            transition: width 0.3s ease;
+        }
+
+        .compact-analysis-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 16px;
+            padding: 20px;
+        }
+
+        .compact-card {
+            background: white;
+            border-radius: 8px;
+            padding: 16px;
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .compact-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .compact-card h4 {
+            margin: 0 0 12px 0;
+            font-size: 14px;
+            font-weight: 600;
+            color: #374151;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* 신호 요약 카드 */
+        .signals-compact {
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+        }
+
+        .signal-item-compact {
+            text-align: center;
+            padding: 8px;
+            border-radius: 6px;
+            flex: 1;
+        }
+
+        .signal-item-compact.bullish {
+            background-color: rgba(34, 197, 94, 0.1);
+            border: 1px solid rgba(34, 197, 94, 0.2);
+        }
+
+        .signal-item-compact.bearish {
+            background-color: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+
+        .signal-item-compact.neutral {
+            background-color: rgba(156, 163, 175, 0.1);
+            border: 1px solid rgba(156, 163, 175, 0.2);
+        }
+
+        .signal-item-compact .count {
+            display: block;
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 2px;
+        }
+
+        .signal-item-compact.bullish .count {
+            color: #16a34a;
+        }
+
+        .signal-item-compact.bearish .count {
+            color: #dc2626;
+        }
+
+        .signal-item-compact.neutral .count {
+            color: #6b7280;
+        }
+
+        .signal-item-compact .label {
+            font-size: 11px;
+            color: #6b7280;
+            font-weight: 500;
+        }
+
+        /* 지표 카드 */
+        .indicators-compact {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .indicator-compact {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 8px;
+            background-color: #f9fafb;
+            border-radius: 4px;
+            border-left: 3px solid #e5e7eb;
+        }
+
+        .indicator-compact.bullish {
+            border-left-color: #22c55e;
+        }
+
+        .indicator-compact.bearish {
+            border-left-color: #ef4444;
+        }
+
+        .indicator-compact .name {
+            font-size: 12px;
+            font-weight: 500;
+            color: #374151;
+        }
+
+        .indicator-compact .value {
+            font-size: 11px;
+            color: #6b7280;
+        }
+
+        .signal-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-left: 4px;
+        }
+
+        .signal-dot.bullish {
+            background-color: #22c55e;
+        }
+
+        .signal-dot.bearish {
+            background-color: #ef4444;
+        }
+
+        .signal-dot.neutral {
+            background-color: #9ca3af;
+        }
+
+        /* 패턴 카드 */
+        .patterns-compact {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .pattern-compact {
+            padding: 8px;
+            border-radius: 6px;
+            border: 1px solid #e5e7eb;
+        }
+
+        .pattern-compact.bullish {
+            background-color: rgba(34, 197, 94, 0.05);
+            border-color: rgba(34, 197, 94, 0.2);
+        }
+
+        .pattern-compact.bearish {
+            background-color: rgba(239, 68, 68, 0.05);
+            border-color: rgba(239, 68, 68, 0.2);
+        }
+
+        .pattern-name-compact {
+            font-size: 12px;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 2px;
+        }
+
+        .pattern-confidence-compact {
+            font-size: 10px;
+            color: #6b7280;
+            margin-bottom: 4px;
+        }
+
+        .pattern-target-compact {
+            font-size: 11px;
+            color: #059669;
+            font-weight: 500;
+        }
+
+        .no-patterns-compact {
+            text-align: center;
+            color: #9ca3af;
+            font-size: 12px;
+            padding: 12px;
+        }
+
+        /* 추천 카드 */
+        .recommendation-compact {
+            text-align: center;
+        }
+
+        .action-compact {
+            font-size: 14px;
+            font-weight: 600;
+            padding: 8px 12px;
+            border-radius: 6px;
+            margin-bottom: 8px;
+        }
+
+        .action-compact.buy {
+            background-color: rgba(34, 197, 94, 0.1);
+            color: #16a34a;
+            border: 1px solid rgba(34, 197, 94, 0.2);
+        }
+
+        .action-compact.sell {
+            background-color: rgba(239, 68, 68, 0.1);
+            color: #dc2626;
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+
+        .action-compact.hold {
+            background-color: rgba(156, 163, 175, 0.1);
+            color: #6b7280;
+            border: 1px solid rgba(156, 163, 175, 0.2);
+        }
+
+        .targets-compact {
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .target-item {
+            font-size: 11px;
+            color: #6b7280;
+            padding: 4px 6px;
+            background-color: #f3f4f6;
+            border-radius: 4px;
+            flex: 1;
+        }
+
+        .risk-compact {
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            display: inline-block;
+        }
+
+        .risk-compact.risk-low {
+            background-color: rgba(34, 197, 94, 0.1);
+            color: #16a34a;
+        }
+
+        .risk-compact.risk-medium {
+            background-color: rgba(251, 191, 36, 0.1);
+            color: #d97706;
+        }
+
+        .risk-compact.risk-high {
+            background-color: rgba(239, 68, 68, 0.1);
+            color: #dc2626;
+        }
+
+        /* 상세 분석 */
+        .detailed-analysis-compact {
+            margin: 16px 20px 20px 20px;
+        }
+
+        .detailed-analysis-compact h4 {
+            margin: 0 0 12px 0;
+            font-size: 14px;
+            font-weight: 600;
+            color: #374151;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .detailed-content-compact {
+            background-color: #f9fafb;
+            border-radius: 6px;
+            padding: 12px;
+            font-size: 13px;
+            line-height: 1.5;
+            color: #4b5563;
+            border: 1px solid #e5e7eb;
+        }
+
+        /* 반응형 디자인 */
+        @media (max-width: 768px) {
+            .compact-analysis-grid {
+                grid-template-columns: 1fr;
+                padding: 16px;
+                gap: 12px;
+            }
+
+            .header-content {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+            }
+
+            .confidence-compact {
+                align-self: flex-end;
+            }
+
+            .signals-compact {
+                flex-direction: column;
+                gap: 6px;
+            }
+
+            .targets-compact {
+                flex-direction: column;
+                gap: 4px;
+            }
+        }
+
+        /* 애니메이션 효과 */
+        .compact-card {
+            animation: fadeInUp 0.3s ease-out;
+        }
+
+        .compact-card:nth-child(1) { animation-delay: 0.1s; }
+        .compact-card:nth-child(2) { animation-delay: 0.2s; }
+        .compact-card:nth-child(3) { animation-delay: 0.3s; }
+        .compact-card:nth-child(4) { animation-delay: 0.4s; }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* 로딩 상태 */
+        .analysis-loading-compact {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 20px;
+            text-align: center;
+        }
+
+        .loading-spinner-compact {
+            width: 32px;
+            height: 32px;
+            border: 3px solid #e5e7eb;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 12px;
+        }
+
+        .loading-text-compact {
+            color: #6b7280;
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+
+        .loading-subtext-compact {
+            color: #9ca3af;
+            font-size: 12px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* 기존 스타일과의 호환성 */
+        .analysis-summary,
+        .analysis-grid,
+        .analysis-card-result {
+            /* 기존 스타일 유지하되 컴팩트 버전이 우선 적용되도록 */
+        }
+
+        /* 라이트 모드 기본 (다크 모드 제거) */
+        .compact-card {
+            background: #ffffff;
+            border-color: #e5e7eb;
+            color: #111827;
+        }
+
+        .compact-card h4 {
+            color: #374151;
+        }
+
+        .indicator-compact {
+            background-color: #f9fafb;
+        }
+
+        .detailed-content-compact {
+            background-color: #f9fafb;
+            border-color: #e5e7eb;
+            color: #4b5563;
+        }
+
+        /* 라이트 모드에서 더 밝은 색상 */
+        .compact-analysis-header {
+            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+        }
+
+        .signal-badge.bullish {
+            background-color: rgba(34, 197, 94, 0.15);
+            color: #16a34a;
+        }
+
+        .signal-badge.bearish {
+            background-color: rgba(239, 68, 68, 0.15);
+            color: #dc2626;
+        }
+
+        .signal-badge.neutral {
+            background-color: rgba(251, 191, 36, 0.15);
+            color: #d97706;
+        }
+
+        /* 차트 헤더 코인 선택기 스타일 */
+        .coin-selector {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 8px 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            min-width: 120px;
+        }
+
+        .coin-selector:hover {
+            background: var(--bg-secondary-color);
+            border-color: var(--primary-color);
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .coin-selector .coin-icon {
+            font-size: 16px;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        .coin-selector #selected-coin-text {
+            font-weight: 600;
+            font-size: 14px;
+            color: var(--text-color);
+        }
+
+        .coin-selector .fa-chevron-down {
+            font-size: 12px;
+            color: var(--text-color-secondary);
+            transition: transform 0.2s ease;
+        }
+
+        .coin-selector:hover .fa-chevron-down {
+            transform: rotate(180deg);
+        }
+
+        /* 코인 가격 표시 개선 */
+        .coin-price-display {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 2px;
+        }
+
+        .coin-price {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text-color);
+            transition: all 0.3s ease;
+        }
+
+        .coin-change-container {
+            display: flex;
+            gap: 4px;
+            align-items: center;
+        }
+
+        .coin-change, .coin-change-percent {
+            font-size: 12px;
+            font-weight: 600;
+            transition: color 0.3s ease;
+        }
+
+        .coin-change.positive, .coin-change-percent.positive {
+            color: var(--success-color);
+        }
+
+        .coin-change.negative, .coin-change-percent.negative {
+            color: var(--error-color);
+        }
+
+        /* 모바일에서 코인 선택기 조정 */
+        @media (max-width: 768px) {
+            .coin-selector {
+                min-width: 100px;
+                padding: 6px 10px;
+                gap: 6px;
+            }
+            
+            .coin-selector #selected-coin-text {
+                font-size: 13px;
+            }
+            
+            .coin-price-display {
+                align-items: flex-start;
+            }
+            
+            .coin-price {
+                font-size: 14px;
+            }
+            
+            .coin-change, .coin-change-percent {
+                font-size: 11px;
+            }
+        }
+
+        .ai-coin-selector {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+        }
+
+        .ai-select {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            background: var(--card-bg);
+            color: var(--text-color);
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .ai-select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .coin-info {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 4px;
+        }
+
+        .coin-price {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-color);
+        }
+
+        .coin-change {
+            font-size: 12px;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 12px;
+        }
+
+        .coin-change.positive {
+            background: rgba(34, 197, 94, 0.1);
+            color: var(--success-color);
+        }
+
+        .coin-change.negative {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--error-color);
+        }
+
+        .ai-analysis-types {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+        }
+
+        .analysis-card {
+            background: var(--bg-secondary-color);
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .analysis-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            transform: scaleX(0);
+            transition: transform 0.3s;
+        }
+
+        .analysis-card:hover::before,
+        .analysis-card.active::before {
+            transform: scaleX(1);
+        }
+
+        .analysis-card:hover {
+            border-color: #667eea;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.15);
+        }
+
+        .analysis-card.active {
+            border-color: #667eea;
+            background: rgba(102, 126, 234, 0.05);
+        }
+
+        .analysis-icon {
+            font-size: 24px;
+            margin-bottom: 12px;
+        }
+
+        .analysis-info h4 {
+            margin: 0 0 8px 0;
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-color);
+        }
+
+        .analysis-info p {
+            margin: 0;
+            font-size: 13px;
+            color: var(--text-color-secondary);
+            line-height: 1.4;
+        }
+
+        .analysis-badge {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .ai-result-container {
+            background: var(--bg-secondary-color);
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .ai-loading {
+            text-align: center;
+            padding: 40px 20px;
+        }
+
+        .loading-animation {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        .loading-brain {
+            font-size: 40px;
+            animation: bounce 1.5s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .loading-dots {
+            display: flex;
+            gap: 4px;
+        }
+
+        .loading-dots span {
+            width: 8px;
+            height: 8px;
+            background: #667eea;
+            border-radius: 50%;
+            animation: wave 1.4s infinite ease-in-out;
+        }
+
+        .loading-dots span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .loading-dots span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes wave {
+            0%, 60%, 100% { transform: scale(1); opacity: 0.5; }
+            30% { transform: scale(1.3); opacity: 1; }
+        }
+
+        .loading-progress {
+            width: 200px;
+            height: 4px;
+            background: var(--border-color);
+            border-radius: 2px;
+            margin: 20px auto 0;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            border-radius: 2px;
+            animation: progress 3s infinite;
+        }
+
+        @keyframes progress {
+            0% { width: 0%; }
+            50% { width: 70%; }
+            100% { width: 100%; }
+        }
+
+        .ai-result-content {
+            animation: fadeInUp 0.5s ease-out;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .ai-modal-footer {
+            background: var(--bg-secondary-color);
+            padding: 20px 24px;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+        }
+
+        .ai-disclaimer {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            color: var(--text-color-secondary);
+            flex: 1;
+        }
+
+        .ai-disclaimer i {
+            color: var(--warning-color);
+        }
+
+        .ai-modal-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .ai-btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .ai-btn.primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .ai-btn.primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        .ai-btn.secondary {
+            background: var(--card-bg);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+        }
+
+        .ai-btn.secondary:hover {
+            background: var(--bg-secondary-color);
+        }
+
+        @media (max-width: 768px) {
+            .ai-modal-content {
+                width: 98vw;
+                max-height: 95vh;
+            }
+
+            .ai-modal-header {
+                padding: 20px;
+            }
+
+            .ai-modal-title h2 {
+                font-size: 20px;
+            }
+
+            .ai-modal-body {
+                padding: 20px;
+            }
+
+            .ai-analysis-types {
+                grid-template-columns: 1fr;
+            }
+
+            .ai-coin-selector {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .coin-info {
+                align-items: flex-start;
+            }
+
+            .ai-modal-footer {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 12px;
+            }
+
+            .ai-modal-actions {
+                justify-content: stretch;
+            }
+
+            .ai-btn {
+                flex: 1;
+                justify-content: center;
+            }
+        }
+
+        /* 고도화된 AI 분석 결과 스타일 */
+        .analysis-summary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 24px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+        }
+
+        .summary-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .summary-header h3 {
+            margin: 0;
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .overall-signal, .prediction-trend, .sentiment-score, .recommendation-grade {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 700;
+            font-size: 14px;
+            text-transform: uppercase;
+        }
+
+        .overall-signal.bullish, .prediction-trend.bullish, .recommendation-grade.buy {
+            background: rgba(34, 197, 94, 0.9);
+        }
+
+        .overall-signal.bearish, .prediction-trend.bearish, .recommendation-grade.sell {
+            background: rgba(239, 68, 68, 0.9);
+        }
+
+        .signal-counts, .prediction-timeline {
+            display: flex;
+            gap: 16px;
+            justify-content: space-around;
+        }
+
+        .signal-count, .prediction-item {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 16px;
+            border-radius: 12px;
+            flex: 1;
+        }
+
+        .signal-count .count, .prediction-item .price-prediction {
+            display: block;
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .signal-count .label, .prediction-item .time-label {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+
+        .prediction-item .change-percent {
+            font-size: 12px;
+            margin-top: 4px;
+            opacity: 0.9;
+        }
+
+        .sentiment-breakdown {
+            margin-top: 20px;
+        }
+
+        .sentiment-bar {
+            height: 8px;
+            border-radius: 4px;
+            overflow: hidden;
+            display: flex;
+            margin-bottom: 12px;
+        }
+
+        .positive-bar {
+            background: #22c55e;
+        }
+
+        .neutral-bar {
+            background: #6b7280;
+        }
+
+        .negative-bar {
+            background: #ef4444;
+        }
+
+        .sentiment-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+        }
+
+        .risk-reward {
+            display: flex;
+            gap: 24px;
+        }
+
+        .risk-item {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .risk-bar, .reward-bar {
+            flex: 1;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .risk-fill {
+            height: 100%;
+            background: #ef4444;
+        }
+
+        .reward-fill {
+            height: 100%;
+            background: #22c55e;
+        }
+
+        .analysis-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+
+        .analysis-card-result {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .analysis-card-result.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .card-header h4 {
+            margin: 0;
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-color);
+        }
+
+        .confidence-badge {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .pattern-list, .indicators-grid, .factors-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .pattern-item, .indicator-item, .factor-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px;
+            background: var(--bg-secondary-color);
+            border-radius: 8px;
+            border-left: 3px solid var(--border-color);
+        }
+
+        .pattern-item.bullish, .indicator-item .indicator-signal.강세 {
+            border-left-color: var(--success-color);
+        }
+
+        .pattern-item.bearish, .indicator-item .indicator-signal.약세 {
+            border-left-color: var(--error-color);
+        }
+
+        .indicator-name, .factor-name {
+            font-weight: 600;
+            color: var(--text-color);
+        }
+
+        .indicator-value, .factor-impact {
+            font-weight: 500;
+        }
+
+        .indicator-signal {
+            font-size: 12px;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-weight: 600;
+        }
+
+        .factor-impact.high {
+            color: var(--error-color);
+        }
+
+        .factor-impact.medium {
+            color: var(--warning-color);
+        }
+
+        .factor-impact.low {
+            color: var(--success-color);
+        }
+
+        .trading-signals, .model-details, .strategy-details, .trading-points {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+        }
+
+        .signal-item, .model-item, .strategy-item, .point-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            padding: 12px;
+            background: var(--bg-secondary-color);
+            border-radius: 8px;
+        }
+
+        .signal-label, .model-label, .strategy-label, .point-label {
+            font-size: 12px;
+            color: var(--text-color-secondary);
+            font-weight: 500;
+        }
+
+        .signal-value, .model-value, .strategy-value, .point-value {
+            font-weight: 600;
+            color: var(--text-color);
+        }
+
+        .point-item.entry {
+            border-left: 3px solid var(--primary-color);
+        }
+
+        .point-item.stop {
+            border-left: 3px solid var(--error-color);
+        }
+
+        .point-item.target {
+            border-left: 3px solid var(--success-color);
+        }
+
+        .keyword-cloud {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .keyword-tag {
+            padding: 6px 12px;
+            border-radius: 16px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .keyword-tag.positive {
+            background: rgba(34, 197, 94, 0.1);
+            color: var(--success-color);
+        }
+
+        .keyword-tag.negative {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--error-color);
+        }
+
+        .keyword-tag.neutral {
+            background: var(--bg-secondary-color);
+            color: var(--text-color);
+        }
+
+        .sentiment-trend, .market-metrics, .timeframe-analysis {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .trend-item, .metric-item, .timeframe-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .trend-item:last-child, .metric-item:last-child, .timeframe-item:last-child {
+            border-bottom: none;
+        }
+
+        .trend-value.positive, .timeframe-signal.bullish {
+            color: var(--success-color);
+        }
+
+        .trend-value.negative, .timeframe-signal.bearish {
+            color: var(--error-color);
+        }
+
+        .news-summary, .recommendation-reasoning {
+            line-height: 1.6;
+        }
+
+        .reason-item {
+            margin-bottom: 16px;
+        }
+
+        .reason-item h5 {
+            margin: 0 0 8px 0;
+            font-size: 14px;
+            color: var(--text-color);
+        }
+
+        .reason-item p {
+            margin: 0;
+            font-size: 13px;
+            color: var(--text-color-secondary);
+        }
+
+        .error-message {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--error-color);
+        }
+
+        .error-message i {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.7;
+        }
+
+        .error-message h4 {
+            margin: 0 0 12px 0;
+            font-size: 18px;
+        }
+
+        .retry-btn {
+            margin-top: 16px;
+            padding: 8px 16px;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        @media (max-width: 768px) {
+            .analysis-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .signal-counts, .prediction-timeline {
+                flex-direction: column;
+                gap: 12px;
+            }
+
+            .risk-reward {
+                flex-direction: column;
+                gap: 16px;
+            }
+
+            .trading-signals, .model-details, .strategy-details, .trading-points {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .chat-section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 16px;
+            height: 45px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .chat-section-header h2 {
+            font-size: 14px;
+            margin: 0;
+        }
+        
+        .chat-users-count {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .chat-wrapper {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 0px;
+            overflow: hidden;
+        }
+
+        #chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1px;
+            scroll-behavior: smooth;
+        }
+
+        /* 채팅 스크롤바 스타일 */
+        #chat-messages::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        #chat-messages::-webkit-scrollbar-track {
+            background: var(--bg-secondary-color);
+            border-radius: 3px;
+        }
+
+        #chat-messages::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 3px;
+        }
+
+        #chat-messages::-webkit-scrollbar-thumb:hover {
+            background: var(--text-color-secondary);
+        }
+        
+        .chat-input-form {
+            display: flex;
+            gap: 8px;
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid var(--border-color);
+        }
+        
+        #message-input {
+            flex: 1;
+            padding: 12px 16px;
+            border-radius: 20px;
+            border: 1px solid var(--border-color);
+            background: var(--card-bg);
+            color: var(--text-color);
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        #message-input:focus {
+            border-color: var(--primary-color);
+        }
+
+        #message-input::placeholder {
+            color: var(--text-color-secondary);
+        }
+        
+        #chat-form button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 20px;
+            background-color: var(--primary-color);
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+            min-width: 60px;
+        }
+
+        #chat-form button:hover {
+            background-color: #2563eb;
+            transform: translateY(-1px);
+        }
+
+        #chat-form button:active {
+            transform: translateY(0);
+        }
+        
+        /* 채팅 메시지 스타일 */
+        .message {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 12px;
+            max-width: 95%;
+        }
+
+        .message-item {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 12px;
+            padding: 0px 5px;
+            border-radius: 12px;
+            max-width: 85%;
+            word-wrap: break-word;
+        }
+
+        .message-item.my-message {
+            align-self: flex-end;
+            flex-direction: row-reverse;
+        }
+
+        .message-item:not(.my-message) {
+            align-self: flex-start;
+        }
+
+        .chat-profile-pic-wrap {
+            margin: 0 8px;
+            flex-shrink: 0;
+        }
+
+        .chat-profile-pic {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid var(--border-color);
+        }
+
+        .message-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .message-sender {
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 4px;
+            color: var(--text-color-secondary);
+        }
+
+        .my-message .message-sender {
+            color: var(--text-color-secondary);
+        }
+
+        .message-text {
+            font-size: 14px;
+            line-height: 1.4;
+            word-break: break-word;
+        }
+
+        .message-header {
+            font-size: 13px;
+            color: var(--text-color-secondary);
+            margin-bottom: 4px;
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+        
+        .message-header .username {
+            font-weight: 600;
+            color: var(--text-color);
+        }
+        
+        .message.sent {
+            align-self: flex-end;
+            align-items: flex-end;
+        }
+        
+        .message.sent .message-content {
+            background-color: var(--primary-color);
+            color: white;
+            border-bottom-right-radius: 4px;
+            padding: 10px 14px;
+            border-radius: 18px;
+        }
+        
+        .message.received {
+            align-self: flex-start;
+            align-items: flex-start;
+        }
+        
+        .message.received .message-content {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-bottom-left-radius: 4px;
+            padding: 10px 14px;
+            border-radius: 18px;
+        }
+
+        /* 채팅 알림 스타일 */
+        .chat-notice {
+            text-align: center;
+            padding: 20px;
+            color: var(--text-color-secondary);
+            font-size: 14px;
+            background: var(--bg-secondary-color);
+            border-radius: 8px;
+            margin: 10px;
+        }
+
+        /* 코인 선택 모달 UI 개선 */
+        .coin-search-modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            background: rgba(0,0,0,0.45);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        .coin-search-modal.show {
+            display: flex !important;
+        }
+        .coin-search-content {
+            background: var(--card-bg, #fff);
+            border-radius: 18px;
+            width: 92vw;
+            max-width: 420px;
+            max-height: 80vh;
+            overflow: hidden;
+            box-shadow: 0 8px 40px rgba(0,0,0,0.18);
+            display: flex;
+            flex-direction: column;
+            padding: 0;
+        }
+        .coin-search-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px 24px 12px 24px;
+            border-bottom: 1px solid var(--border-color);
+            background: var(--card-bg, #fff);
+        }
+        .coin-search-header h3 {
+            font-size: 1.15em;
+            font-weight: 700;
+            margin: 0;
+            color: var(--text-color);
+        }
+        .coin-search-close {
+            background: none;
+            border: none;
+            font-size: 1.7em;
+            color: var(--text-color-secondary);
+            cursor: pointer;
+            padding: 0 4px;
+            border-radius: 6px;
+            transition: background 0.15s;
+        }
+        .coin-search-close:hover {
+            background: var(--bg-secondary-color);
+        }
+        .coin-search-input-wrapper {
+            padding: 16px 24px 8px 24px;
+            border-bottom: 1px solid var(--border-color);
+            background: var(--card-bg, #fff);
+        }
+        .coin-search-input {
+            width: 100%;
+            height: 40px;
+            padding: 0 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background: var(--bg-secondary-color);
+            color: var(--text-color);
+            font-size: 15px;
+            outline: none;
+            box-sizing: border-box;
+        }
+        .coin-search-input:focus {
+            border-color: var(--primary-color);
+            background: var(--card-bg);
+        }
+        .coin-search-tabs {
+            display: flex;
+            padding: 0 24px;
+            border-bottom: 1px solid var(--border-color);
+            background: var(--card-bg, #fff);
+        }
+        .coin-search-tab {
+            flex: 1;
+            padding: 12px 0;
+            border: none;
+            background: none;
+            color: var(--text-color-secondary);
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: color 0.15s, border-bottom 0.15s;
+        }
+        .coin-search-tab.active {
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--primary-color);
+        }
+        .coin-search-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px 0;
+            background: var(--card-bg, #fff);
+        }
+        .coin-search-item {
+            display: flex;
+            align-items: center;
+            padding: 14px 24px;
+            cursor: pointer;
+            transition: background 0.18s;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .coin-search-item:last-child {
+            border-bottom: none;
+        }
+        .coin-search-item:hover {
+            background: var(--bg-secondary-color);
+        }
+        .coin-search-item-icon {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            margin-right: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 15px;
+            color: white;
+            font-weight: bold;
+        }
+        .coin-search-item-info {
+            flex: 1;
+        }
+        .coin-search-item-symbol {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-color);
+        }
+        .coin-search-item-name {
+            font-size: 13px;
+            color: var(--text-color-secondary);
+        }
+        .coin-search-item-price {
+            text-align: right;
+        }
+        .coin-search-item-price-value {
+            font-size: 15px;
+            font-weight: 500;
+            color: var(--text-color);
+        }
+        .coin-search-item-price-change {
+            font-size: 13px;
+            font-weight: 500;
+        }
+        .coin-search-item-price-change.positive {
+            color: #22c55e;
+        }
+        .coin-search-item-price-change.negative {
+            color: #ef4444;
+        }
+        @media (max-width: 600px) {
+            .coin-search-content {
+                max-width: 98vw;
+                width: 98vw;
+                border-radius: 10px;
+                padding: 0;
+            }
+            .coin-search-header, .coin-search-input-wrapper, .coin-search-tabs {
+                padding-left: 10px;
+                padding-right: 10px;
+            }
+            .coin-search-item {
+                padding: 12px 10px;
+            }
+        }
+
+        /* AI 기능 버튼 스타일 */
+        .ai-controls {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .ai-btn {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 8px 12px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+            position: relative;
+            min-width: 40px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .ai-btn:hover {
+            background: #2563eb;
+            transform: translateY(-1px);
+        }
+
+        .ai-btn.active {
+            background: #dc2626;
+        }
+
+        .ai-btn i {
+            font-size: 14px;
+        }
+
+        @media (max-width: 768px) {
+            .ai-controls {
+                order: 3;
+                width: 100%;
+                justify-content: center;
+            }
+            
+            .ai-btn {
+                flex: 1;
+                max-width: 100px;
+            }
+        }
+
+        /* AI 분석 버튼 스타일 */
+        .ai-analysis-btn {
+            background: var(--bg-secondary-color);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 8px 16px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+
+        .ai-analysis-btn:hover {
+            background: var(--border-color);
+        }
+
+        .ai-analysis-btn.active {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        /* 알림 배지 */
+        .notification-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #dc2626;
+            color: white;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            font-size: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        /* AI 분석 결과 스타일 */
+        .ai-result-item {
+            margin-bottom: 15px;
+            padding: 12px;
+            background: var(--card-bg);
+            border-radius: 8px;
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .ai-result-title {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--text-color);
+        }
+
+        .ai-result-content {
+            font-size: 13px;
+            line-height: 1.5;
+            color: var(--text-color-secondary);
+        }
+
+        .ai-result-confidence {
+            margin-top: 8px;
+            font-size: 12px;
+            color: var(--text-color-secondary);
+        }
+
+        .confidence-bar {
+            width: 100%;
+            height: 4px;
+            background: var(--bg-secondary-color);
+            border-radius: 2px;
+            margin-top: 4px;
+            overflow: hidden;
+        }
+
+        .confidence-fill {
+            height: 100%;
+            background: var(--primary-color);
+            transition: width 0.3s;
+        }
+
+        /* 알림 토스트 */
+        .notification-toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            z-index: 10000;
+            max-width: 300px;
+            transform: translateX(100%);
+            transition: transform 0.3s;
+        }
+
+        .notification-toast.show {
+            transform: translateX(0);
+        }
+
+        .notification-toast.success {
+            border-left: 4px solid var(--success-color);
+        }
+
+        .notification-toast.warning {
+            border-left: 4px solid var(--warning-color);
+        }
+
+        .notification-toast.error {
+            border-left: 4px solid var(--error-color);
+        }
+
+        .notification-title {
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: var(--text-color);
+        }
+
+        .notification-message {
+            font-size: 13px;
+            color: var(--text-color-secondary);
+        }
+
+        @media (max-width: 600px) {
+            .coin-search-content {
+                max-width: 98vw;
+                width: 98vw;
+                border-radius: 10px;
+                padding: 0;
+            }
+            .coin-search-header, .coin-search-input-wrapper, .coin-search-tabs {
+                padding-left: 10px;
+                padding-right: 10px;
+            }
+            .coin-search-item {
+                padding: 12px 10px;
+            }
+        }
+
+        /* ===== AI 분석 모달 컴팩트 스타일 ===== */
+        .compact-analysis-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 12px 12px 0 0;
+            padding: 16px 20px;
+            color: white;
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .analysis-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .analysis-title h3 {
+            margin: 0;
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .analysis-icon {
+            font-size: 20px;
+        }
+
+        .signal-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 12px;
+        }
+
+        .signal-badge.bullish {
+            background-color: rgba(34, 197, 94, 0.2);
+            color: #22c55e;
+            border: 1px solid rgba(34, 197, 94, 0.3);
+        }
+
+        .signal-badge.bearish {
+            background-color: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .signal-badge.neutral {
+            background-color: rgba(251, 191, 36, 0.2);
+            color: #fbbf24;
+            border: 1px solid rgba(251, 191, 36, 0.3);
+        }
+
+        .confidence-compact {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .confidence-text {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+
+        .confidence-bar-mini {
+            width: 60px;
+            height: 4px;
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .confidence-fill-mini {
+            height: 100%;
+            background: linear-gradient(90deg, #22c55e, #16a34a);
+            border-radius: 2px;
+            transition: width 0.3s ease;
+        }
+
+        .compact-analysis-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 16px;
+            padding: 20px;
+        }
+
+        .compact-card {
+            background: white;
+            border-radius: 8px;
+            padding: 16px;
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+    </style>
+</head>
+<body>
+    <header class="navbar">
+        <a href="../index.html" class="logo">
+            <img id="main-logo" src="../assets/lightlogo.png" alt="Onbit Logo" height="40"/>
+        </a>
+        <nav>
+            <ul>
+                <li><a href="../affiliated/">제휴 거래소</a></li>
+                <li><a href="../community/">실시간 채팅</a></li>
+                <li class="dropdown">
+                    <a href="#" class="dropdown-toggle">커뮤니티 <i class="fas fa-caret-down"></i></a>
+                    <ul class="dropdown-menu">
+                        <li><a href="../community-board.html">자유 게시판</a></li>
+                        <li><a href="../attendance.html">출석체크</a></li>
+                        <li><a href="../event-board.html">이벤트</a></li>
+                    </ul>
+                </li>
+                <li><a href="../notice-board.html">공지사항</a></li>
+            </ul>
+        </nav>
+        <div class="header-right">
+            <aside class="auth-buttons">
+                <a href="#" class="login" data-action="open-login">로그인</a>
+                <a href="#" class="signup" data-action="open-signup">회원가입</a>
+            </aside>
+            <div class="user-info" id="user-profile" style="display: none;">
+                <span id="user-display-name"></span>
+                <span id="user-level"></span>
+                <a href="../admin.html" id="admin-page-link" style="display: none;" title="관리자 페이지">
+                    <i class="fas fa-shield-alt"></i>
+                </a>
+                <button id="logout-btn" data-action="logout"><i class="fas fa-sign-out-alt"></i></button>
+            </div>
+            <a href="../my-account.html" id="my-page-link" class="icon-button" data-action="my-page" aria-label="마이페이지"><i class="fas fa-user-circle"></i></a>
+            <button class="theme-button" id="theme-toggle" data-action="toggle-theme"><i class="fas fa-sun"></i></button>
+        </div>
+        <button class="mobile-menu-button" id="mobile-menu-button" data-action="open-mobile-menu" aria-label="메뉴 열기">
+            <i class="fas fa-bars"></i>
+        </button>
+    </header>
+
+    <main class="main-container">
+        <div class="community-layout">
+            <div class="community-layout-inner">
+                <section class="chart-section">
+                    <div id="chart-container-wrapper">
+                        <div id="chart-container"></div>
+                        <div class="chart-loading" id="chart-loading">데이터 로딩 중...</div>
+                    </div>
+                </section>
+                <section class="chat-section">
+                    <div class="chat-section-header">
+                        <h2>실시간 채팅</h2>
+                        <div class="chat-users-count">
+                            <i class="fas fa-user"></i>
+                            <span id="chat-users-count">0</span>
+                        </div>
+                    </div>
+                    <div class="chat-wrapper">
+                        <div id="chat-messages"></div>
+                        <form id="chat-form" class="chat-input-form">
+                            <input type="text" id="message-input" placeholder="메시지를 입력하세요..." autocomplete="off">
+                            <button type="submit">전송</button>
+                        </form>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modals -->
+    <div id="login-modal" class="auth-modal">
+        <div class="auth-modal-content">
+            <span class="auth-modal-close" data-action="close-modal">&times;</span>
+            <form id="login-form" class="auth-form">
+                <h2>로그인</h2>
+                <p id="login-error-message" class="error-message"></p>
+                <div class="input-group">
+                    <i class="fas fa-envelope"></i>
+                    <input type="email" name="login-email" placeholder="이메일" required>
+                </div>
+                <div class="input-group">
+                    <i class="fas fa-lock"></i>
+                    <input type="password" name="login-password" placeholder="비밀번호" required>
+                </div>
+                <button type="submit" class="submit-btn">로그인</button>
+                <p class="auth-form-switch">계정이 없으신가요? <a href="#" id="show-signup">회원가입</a></p>
+            </form>
+            <p class="find-links" style="text-align:center; margin-top:12px;">
+                <a href="#" id="find-id-link">아이디(이메일) 찾기</a> | <a href="#" id="find-password-link">비밀번호 찾기</a>
+            </p>
+        </div>
+    </div>
+
+    <!-- Signup Modal -->
+    <div id="signup-modal" class="auth-modal">
+        <div class="auth-modal-content">
+            <span class="auth-modal-close" data-action="close-modal">&times;</span>
+            <form id="signup-form" class="auth-form">
+                <h2>회원가입</h2>
+                <p id="signup-error-message" class="error-message"></p>
+                <div class="input-group">
+                    <i class="fas fa-user"></i>
+                    <input type="text" name="signup-name" placeholder="닉네임" required>
+                </div>
+                <div class="input-group">
+                    <i class="fas fa-envelope"></i>
+                    <input type="email" name="signup-email" placeholder="이메일" required>
+                </div>
+                <div class="input-group">
+                    <i class="fas fa-lock"></i>
+                    <input type="password" name="signup-password" placeholder="비밀번호" required>
+                </div>
+                <div class="input-group">
+                    <i class="fas fa-check-circle"></i>
+                    <input type="password" name="signup-confirm-password" placeholder="비밀번호 확인" required>
+                </div>
+                <button type="submit" class="submit-btn">회원가입</button>
+                <p class="auth-form-switch">이미 계정이 있으신가요? <a href="#" id="show-login">로그인</a></p>
+            </form>
+        </div>
+    </div>
+
+    <!-- 비밀번호 재설정 모달 -->
+    <div id="reset-password-modal" class="auth-modal">
+        <div class="auth-modal-content">
+            <span class="auth-modal-close" data-action="close-modal">&times;</span>
+            <form id="reset-password-form" class="auth-form">
+                <h2>비밀번호 재설정</h2>
+                <div class="input-group">
+                    <input type="email" id="reset-password-email" placeholder="가입한 이메일을 입력하세요" required>
+                </div>
+                <button type="submit" class="submit-btn">재설정 메일 보내기</button>
+                <p id="reset-password-message" class="form-message"></p>
+            </form>
+        </div>
+    </div>
+
+    <!-- 아이디(이메일) 찾기 모달 -->
+    <div id="find-id-modal" class="auth-modal">
+        <div class="auth-modal-content">
+            <span class="auth-modal-close" data-action="close-modal">&times;</span>
+            <form id="find-id-form" class="auth-form">
+                <h2>아이디(이메일) 찾기</h2>
+                <div class="input-group">
+                    <input type="text" id="find-id-nickname" placeholder="닉네임을 입력하세요" required>
+                </div>
+                <button type="submit" class="submit-btn">이메일 찾기</button>
+                <p id="find-id-message" class="form-message"></p>
+            </form>
+        </div>
+    </div>
+
+    <!-- 차트 설정 모달 -->
+    <div id="chart-settings-modal" class="auth-modal">
+        <div class="auth-modal-content" style="max-width: 500px;">
+            <span class="auth-modal-close" data-action="close-modal">&times;</span>
+            <div style="padding: 20px;">
+                <h2 style="margin: 0 0 20px 0; font-size: 18px;">차트 설정</h2>
+                
+                <div style="margin-bottom: 20px;">
+                    <h3 style="margin: 0 0 10px 0; font-size: 14px; color: var(--text-color);">차트 스타일</h3>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="chart-style-btn active" data-style="candle">캔들</button>
+                        <button class="chart-style-btn" data-style="line">라인</button>
+                        <button class="chart-style-btn" data-style="area">영역</button>
+                    </div>
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <h3 style="margin: 0 0 10px 0; font-size: 14px; color: var(--text-color);">색상 설정</h3>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <label style="font-size: 12px;">상승:</label>
+                        <input type="color" id="up-color" value="#26a69a" style="width: 40px; height: 30px; border: none; border-radius: 4px;">
+                        <label style="font-size: 12px;">하락:</label>
+                        <input type="color" id="down-color" value="#ef5350" style="width: 40px; height: 30px; border: none; border-radius: 4px;">
+                    </div>
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <h3 style="margin: 0 0 10px 0; font-size: 14px; color: var(--text-color);">그리드 설정</h3>
+                    <label style="display: flex; align-items: center; gap: 8px; font-size: 12px;">
+                        <input type="checkbox" id="show-grid" checked>
+                        그리드 표시
+                    </label>
+                </div>
+                
+                <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 30px;">
+                    <button class="chart-settings-btn" id="apply-settings">적용</button>
+                    <button class="chart-settings-btn secondary" data-action="close-modal">취소</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Coin Search Modal -->
+    <div id="coin-search-modal" class="coin-search-modal">
+        <div class="coin-search-content">
+            <div class="coin-search-header">
+                <h3>코인 선택</h3>
+                <button id="coin-search-close" class="coin-search-close">&times;</button>
+            </div>
+            <div class="coin-search-input-wrapper">
+                <input type="text" id="coin-search-input" class="coin-search-input" placeholder="코인 검색...">
+            </div>
+            <div class="coin-search-tabs">
+                <button class="coin-search-tab active" data-tab="all">전체</button>
+                <button class="coin-search-tab" data-tab="spot">현물</button>
+                <button class="coin-search-tab" data-tab="futures">선물</button>
+            </div>
+            <div id="coin-search-list" class="coin-search-list"></div>
+        </div>
+    </div>
+
+    <!-- 거래량 알람 모달 -->
+    <div id="volume-alert-modal" class="auth-modal">
+        <div class="auth-modal-content" style="max-width: 600px;">
+            <span class="auth-modal-close" data-action="close-modal">&times;</span>
+            <div style="padding: 20px;">
+                <h2 style="margin: 0 0 20px 0; font-size: 18px;">거래량 알람 설정</h2>
+                
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 8px; font-size: 14px; color: var(--text-color);">코인 선택</label>
+                    <select id="alert-coin-select" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--card-bg); color: var(--text-color);">
+                        <option value="BTCUSDT">BTCUSDT</option>
+                        <option value="ETHUSDT">ETHUSDT</option>
+                        <option value="BNBUSDT">BNBUSDT</option>
+                        <option value="ADAUSDT">ADAUSDT</option>
+                        <option value="SOLUSDT">SOLUSDT</option>
+                    </select>
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 8px; font-size: 14px; color: var(--text-color);">거래량 임계값 (24시간 평균 대비)</label>
+                    <input type="number" id="alert-volume-threshold" min="1" max="10" step="0.1" value="2" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--card-bg); color: var(--text-color);">
+                    <small style="color: var(--text-color-secondary); font-size: 12px;">예: 2.0 = 24시간 평균 거래량의 2배</small>
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 8px; font-size: 14px; color: var(--text-color);">알림 방법</label>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <label style="display: flex; align-items: center; gap: 6px; font-size: 13px;">
+                            <input type="checkbox" id="alert-browser" checked>
+                            브라우저 알림
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 6px; font-size: 13px;">
+                            <input type="checkbox" id="alert-sound" checked>
+                            소리 알림
+                        </label>
+                    </div>
+                </div>
+                
+                <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 30px;">
+                    <button class="chart-settings-btn" id="save-volume-alert">저장</button>
+                    <button class="chart-settings-btn secondary" data-action="close-modal">취소</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI 분석 모달 -->
+    <div id="ai-analysis-modal" class="auth-modal">
+        <div class="ai-modal-content">
+            <div class="ai-modal-header">
+                <div class="ai-modal-title">
+                    <div class="ai-icon">🤖</div>
+                    <div>
+                        <h2>AI 차트 분석</h2>
+                        <p>첨단 AI 기술로 정밀한 시장 분석을 제공합니다</p>
+                    </div>
+                </div>
+                <button class="ai-modal-close" data-action="close-modal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <div class="ai-modal-body">
+                <!-- 코인 선택 섹션 -->
+                <div class="ai-section">
+                    <div class="ai-section-header">
+                        <i class="fas fa-coins"></i>
+                        <span>분석 대상</span>
+                    </div>
+                    <div class="ai-coin-selector">
+                        <select id="ai-coin-select" class="ai-select">
+                            <option value="BTCUSDT">Bitcoin (BTC/USDT)</option>
+                            <option value="ETHUSDT">Ethereum (ETH/USDT)</option>
+                            <option value="BNBUSDT">Binance Coin (BNB/USDT)</option>
+                            <option value="ADAUSDT">Cardano (ADA/USDT)</option>
+                            <option value="SOLUSDT">Solana (SOL/USDT)</option>
+                        </select>
+                        <div class="coin-info" id="coin-info">
+                            <div class="coin-price">$0.00</div>
+                            <div class="coin-change">0.00%</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 분석 유형 선택 -->
+                <div class="ai-section">
+                    <div class="ai-section-header">
+                        <i class="fas fa-brain"></i>
+                        <span>분석 유형</span>
+                    </div>
+                    <div class="ai-analysis-types">
+                        <div class="analysis-card active" data-type="pattern">
+                            <div class="analysis-icon">📊</div>
+                            <div class="analysis-info">
+                                <h4>패턴 분석</h4>
+                                <p>차트 패턴과 기술적 지표 종합 분석</p>
+                            </div>
+                            <div class="analysis-badge">추천</div>
+                        </div>
+                        <div class="analysis-card" data-type="prediction">
+                            <div class="analysis-icon">🎯</div>
+                            <div class="analysis-info">
+                                <h4>가격 예측</h4>
+                                <p>AI 모델 기반 단기 가격 예측</p>
+                            </div>
+                        </div>
+                        <div class="analysis-card" data-type="sentiment">
+                            <div class="analysis-icon">📰</div>
+                            <div class="analysis-info">
+                                <h4>뉴스 감정</h4>
+                                <p>시장 뉴스와 감정 지수 분석</p>
+                            </div>
+                        </div>
+                        <div class="analysis-card" data-type="recommendation">
+                            <div class="analysis-icon">💡</div>
+                            <div class="analysis-info">
+                                <h4>투자 추천</h4>
+                                <p>개인화된 매매 신호 및 전략</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 분석 결과 -->
+                <div id="ai-analysis-result" class="ai-result-container" style="display: none;">
+                    <div class="ai-section-header">
+                        <i class="fas fa-chart-line"></i>
+                        <span>분석 결과</span>
+                        <div class="analysis-timestamp" id="analysis-timestamp"></div>
+                    </div>
+                    
+                    <div id="ai-loading" class="ai-loading">
+                        <div class="loading-animation">
+                            <div class="loading-brain">🧠</div>
+                            <div class="loading-dots">
+                                <span></span><span></span><span></span>
+                            </div>
+                        </div>
+                        <p>AI가 시장 데이터를 분석하고 있습니다...</p>
+                        <div class="loading-progress">
+                            <div class="progress-bar"></div>
+                        </div>
+                    </div>
+                    
+                    <div id="ai-result-content" class="ai-result-content"></div>
+                </div>
+            </div>
+
+            <div class="ai-modal-footer">
+                <div class="ai-disclaimer">
+                    <i class="fas fa-info-circle"></i>
+                    <span>AI 분석 결과는 참고용이며, 투자 결정의 책임은 본인에게 있습니다.</span>
+                </div>
+                <div class="ai-modal-actions">
+                    <button class="ai-btn secondary" data-action="close-modal">
+                        <i class="fas fa-times"></i>
+                        닫기
+                    </button>
+                    <button class="ai-btn primary" id="start-ai-analysis">
+                        <i class="fas fa-play"></i>
+                        분석 시작
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 알림 설정 모달 -->
+    <div id="notification-settings-modal" class="auth-modal">
+        <div class="auth-modal-content" style="max-width: 500px;">
+            <span class="auth-modal-close" data-action="close-modal">&times;</span>
+            <div style="padding: 20px;">
+                <h2 style="margin: 0 0 20px 0; font-size: 18px;">알림 설정</h2>
+                
+                <div style="margin-bottom: 20px;">
+                    <h3 style="margin: 0 0 10px 0; font-size: 14px; color: var(--text-color);">알림 유형</h3>
+                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                        <label style="display: flex; align-items: center; gap: 8px; font-size: 13px;">
+                            <input type="checkbox" id="notify-volume" checked>
+                            거래량 급증 알림
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px; font-size: 13px;">
+                            <input type="checkbox" id="notify-price" checked>
+                            가격 변동 알림
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px; font-size: 13px;">
+                            <input type="checkbox" id="notify-ai" checked>
+                            AI 분석 결과 알림
+                        </label>
+                    </div>
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <h3 style="margin: 0 0 10px 0; font-size: 14px; color: var(--text-color);">알림 빈도</h3>
+                    <select id="notification-frequency" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--card-bg); color: var(--text-color);">
+                        <option value="immediate">즉시</option>
+                        <option value="5min">5분 후</option>
+                        <option value="15min">15분 후</option>
+                        <option value="1hour">1시간 후</option>
+                    </select>
+                </div>
+                
+                <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 30px;">
+                    <button class="chart-settings-btn" id="save-notification-settings">저장</button>
+                    <button class="chart-settings-btn secondary" data-action="close-modal">취소</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- html2canvas for screenshots -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    
+    <!-- TradingView Advanced Charts -->
+    <script src="../charting_library-master/charting_library/charting_library.standalone.js"></script>
+    <script src="../charting_library-master/datafeeds/udf/dist/bundle.js"></script>
+    
+    <!-- Custom Scripts -->
+    <script src="../js/community.js"></script>
+    <script src="../js/community-chat.js"></script>
+    <script>
+      document.addEventListener('DOMContentLoaded', () => {
+        const body = document.body;
+        const menuButton = document.getElementById('mobile-menu-button');
+        const closeButton = document.getElementById('mobile-menu-close');
+        const mobileMenu = document.getElementById('mobile-menu');
+
+        if (menuButton && mobileMenu) {
+            menuButton.addEventListener('click', () => {
+                mobileMenu.classList.add('is-open');
+                body.classList.add('mobile-menu-open');
+            });
+        }
+
+        if (closeButton && mobileMenu) {
+            closeButton.addEventListener('click', () => {
+                mobileMenu.classList.remove('is-open');
+                body.classList.remove('mobile-menu-open');
+            });
+        }
+      });
+    </script>
+    <div id="rocket-overlay" style="display:none; position:fixed; left:0; top:0; width:100vw; height:100vh; pointer-events:none; z-index:2000;"></div>
+</body>
+</html> 

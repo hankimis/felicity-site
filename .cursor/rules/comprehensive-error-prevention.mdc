@@ -3,3 +3,379 @@ description:
 globs:
 alwaysApply: false
 ---
+# 🛡️ Comprehensive Error Prevention & Best Practices Rules
+
+## 📋 Table of Contents
+1. [API Integration & Proxy Server Errors](#api-integration--proxy-server-errors)
+2. [DOM Manipulation & JavaScript Errors](#dom-manipulation--javascript-errors)
+3. [Data Loading & Performance Optimization](#data-loading--performance-optimization)
+4. [Express.js & Node.js Backend Errors](#expressjs--nodejs-backend-errors)
+5. [User Experience & UI Consistency](#user-experience--ui-consistency)
+
+---
+
+## 🔗 API Integration & Proxy Server Errors
+
+### ❌ Critical Error Patterns Identified:
+- **CORS Policy Violations**: Direct API calls to external services without proper proxy
+- **Rate Limit Mismanagement**: Simultaneous requests causing 429 errors
+- **Dependency Version Conflicts**: Express routing patterns incompatible with newer versions
+
+### ✅ MUST DO Rules:
+
+#### API Request Management
+```javascript
+// ✅ CORRECT: Sequential requests with proper delays
+for (let page = 1; page <= maxPages; page++) {
+  await new Promise(resolve => setTimeout(resolve, 2000));
+  const response = await fetch(`/api/proxy/endpoint?page=${page}`);
+}
+
+// ❌ WRONG: Simultaneous requests causing rate limits
+const promises = pages.map(page => fetch(`/api/endpoint?page=${page}`));
+```
+
+#### Proxy Server Configuration
+```javascript
+// ✅ CORRECT: Simple middleware without complex routing
+app.use('/api/proxy', async (req, res) => {
+  // Handle all sub-routes here
+});
+
+// ❌ WRONG: Complex regex patterns in Express 5+
+app.get('/api/proxy/:path(*)', handler); // Causes path-to-regexp errors
+```
+
+#### Rate Limiting Implementation
+```javascript
+// ✅ CORRECT: Centralized rate limiting with state management
+const rateLimitState = {
+  lastRequest: 0,
+  requestCount: 0,
+  resetTime: Date.now()
+};
+
+function checkRateLimit() {
+  const now = Date.now();
+  if (now - rateLimitState.resetTime > 60000) {
+    rateLimitState.requestCount = 0;
+    rateLimitState.resetTime = now;
+  }
+  return rateLimitState.requestCount < MAX_REQUESTS_PER_MINUTE;
+}
+```
+
+---
+
+## 🎯 DOM Manipulation & JavaScript Errors
+
+### ❌ Critical Error Patterns Identified:
+- **getComputedStyle Parameter Errors**: Passing non-Element objects to DOM APIs
+- **Premature DOM Access**: Initializing before DOM is fully loaded
+- **Memory Leaks**: Not properly cleaning up event listeners and intervals
+
+### ✅ MUST DO Rules:
+
+#### DOM Element Validation
+```javascript
+// ✅ CORRECT: Comprehensive element validation
+function isValidDOMElement(element) {
+  return element && 
+         element instanceof Element && 
+         element.isConnected && 
+         element.getBoundingClientRect().width > 0;
+}
+
+// ✅ CORRECT: Safe DOM initialization
+function initializeComponent() {
+  if (document.readyState !== 'complete') {
+    setTimeout(() => initializeComponent(), 100);
+    return;
+  }
+  // Proceed with initialization
+}
+
+// ❌ WRONG: Direct DOM access without validation
+const element = document.querySelector('.selector');
+new SomeLibrary(element); // May fail if element is null
+```
+
+#### Memory Management
+```javascript
+// ✅ CORRECT: Proper cleanup patterns
+class ComponentManager {
+  constructor() {
+    this.intervals = new Set();
+    this.eventListeners = new Map();
+  }
+  
+  addInterval(intervalId) {
+    this.intervals.add(intervalId);
+  }
+  
+  destroy() {
+    this.intervals.forEach(id => clearInterval(id));
+    this.eventListeners.forEach((handler, element) => {
+      element.removeEventListener('event', handler);
+    });
+  }
+}
+```
+
+#### Third-Party Library Integration
+```javascript
+// ✅ CORRECT: Safe library initialization with error handling
+function initializeSwiper(element) {
+  if (!isValidDOMElement(element)) {
+    console.warn('Invalid element for Swiper initialization');
+    return null;
+  }
+  
+  try {
+    return new Swiper(element, config);
+  } catch (error) {
+    console.error('Swiper initialization failed:', error);
+    return null;
+  }
+}
+```
+
+---
+
+## 📊 Data Loading & Performance Optimization
+
+### ❌ Critical Error Patterns Identified:
+- **Blocking UI with Slow Loading**: Loading all data before showing anything
+- **Inconsistent Pagination**: UI showing incorrect total counts during loading
+- **Excessive API Calls**: Not implementing proper caching strategies
+
+### ✅ MUST DO Rules:
+
+#### Progressive Data Loading
+```javascript
+// ✅ CORRECT: Progressive loading with immediate UI updates
+async function loadDataProgressively() {
+  // 1. Load first page immediately
+  const firstPageData = await loadPage(1);
+  updateUI(firstPageData);
+  
+  // 2. Load additional pages in background
+  loadAdditionalPagesInBackground();
+}
+
+// ❌ WRONG: Loading everything before showing UI
+async function loadAllDataFirst() {
+  const allData = await Promise.all([loadPage(1), loadPage(2), loadPage(3)]);
+  updateUI(allData.flat());
+}
+```
+
+#### UI State Management
+```javascript
+// ✅ CORRECT: Fixed pagination with loading states
+function updatePagination() {
+  const FIXED_TOTAL_ITEMS = 300;
+  const totalPages = Math.ceil(FIXED_TOTAL_ITEMS / itemsPerPage);
+  
+  // Show consistent pagination regardless of loading state
+  pageInfo.textContent = `${startItem}-${endItem} / ${FIXED_TOTAL_ITEMS} (Page ${currentPage}/${totalPages})`;
+}
+
+// ❌ WRONG: Dynamic pagination causing UI jumps
+function updatePaginationDynamic() {
+  const totalPages = Math.ceil(currentData.length / itemsPerPage); // Changes as data loads
+}
+```
+
+#### Caching Strategy
+```javascript
+// ✅ CORRECT: Implement proper caching headers
+res.set({
+  'Cache-Control': 'public, max-age=120', // 2 minutes cache
+  'ETag': generateETag(data),
+  'Last-Modified': new Date().toUTCString()
+});
+```
+
+---
+
+## 🚀 Express.js & Node.js Backend Errors
+
+### ❌ Critical Error Patterns Identified:
+- **Version Compatibility Issues**: Using deprecated routing patterns
+- **Dependency Management**: Missing or incorrect package versions
+- **Error Handling**: Not implementing proper fallback mechanisms
+
+### ✅ MUST DO Rules:
+
+#### Express.js Best Practices
+```javascript
+// ✅ CORRECT: Version-agnostic routing
+app.use('/api/proxy', (req, res, next) => {
+  const apiPath = req.path.substring(1); // Remove leading slash
+  const queryString = req.url.split('?')[1] || '';
+  // Handle routing logic here
+});
+
+// ❌ WRONG: Version-specific regex patterns
+app.get('/api/proxy/:path(*)', handler); // Breaks in Express 5+
+```
+
+#### Dependency Management
+```javascript
+// ✅ CORRECT: Package.json with specific versions
+{
+  "dependencies": {
+    "express": "^5.1.0",
+    "node-fetch": "^2.7.0", // Specify exact major version
+    "cors": "^2.8.5"
+  }
+}
+
+// ✅ CORRECT: Install commands with version specification
+npm install node-fetch@2.7.0 // Avoid version conflicts
+```
+
+#### Error Handling & Recovery
+```javascript
+// ✅ CORRECT: Comprehensive error handling
+app.use('/api/endpoint', async (req, res) => {
+  try {
+    const data = await fetchExternalAPI();
+    res.json(data);
+  } catch (error) {
+    console.error('API Error:', error.message);
+    
+    // Provide specific error responses
+    if (error.message.includes('429')) {
+      res.status(429).json({ 
+        error: 'Rate limit exceeded',
+        retryAfter: 60,
+        message: 'Please try again in 1 minute'
+      });
+    } else {
+      res.status(500).json({ 
+        error: 'Internal server error',
+        message: 'Service temporarily unavailable'
+      });
+    }
+  }
+});
+```
+
+---
+
+## 🎨 User Experience & UI Consistency
+
+### ❌ Critical Error Patterns Identified:
+- **UI State Inconsistency**: Showing wrong information during loading
+- **Poor Loading Feedback**: Users not knowing what's happening
+- **Abrupt UI Changes**: Sudden jumps in pagination or content
+
+### ✅ MUST DO Rules:
+
+#### Consistent UI States
+```javascript
+// ✅ CORRECT: Maintain UI consistency during loading
+class UIStateManager {
+  constructor() {
+    this.isLoading = false;
+    this.loadedDataCount = 0;
+    this.expectedTotalCount = 300;
+  }
+  
+  updateLoadingState(newData) {
+    this.loadedDataCount = newData.length;
+    this.renderWithConsistentUI();
+  }
+  
+  renderWithConsistentUI() {
+    // Always show expected total, not current loaded count
+    this.updatePagination(this.expectedTotalCount);
+    
+    // Show loading states for missing data
+    this.renderLoadingPlaceholders();
+  }
+}
+```
+
+#### Progressive Enhancement
+```javascript
+// ✅ CORRECT: Show immediate value, enhance progressively
+function initializeTable() {
+  // 1. Show basic structure immediately
+  renderTableStructure();
+  
+  // 2. Load and show first batch
+  loadFirstBatch().then(data => {
+    renderData(data);
+    
+    // 3. Enhance with additional data in background
+    loadAdditionalData();
+  });
+}
+```
+
+#### User Feedback Patterns
+```javascript
+// ✅ CORRECT: Clear loading states
+function showLoadingState(type) {
+  const messages = {
+    initial: 'Loading cryptocurrency data...',
+    additional: 'Loading more data in background...',
+    error: 'Connection issue. Retrying...'
+  };
+  
+  updateStatusMessage(messages[type]);
+}
+```
+
+---
+
+## 🔧 Implementation Checklist
+
+### Before Starting Any Feature:
+- [ ] **Validate all external dependencies** and their versions
+- [ ] **Plan progressive loading strategy** for better UX
+- [ ] **Design error handling** for each potential failure point
+- [ ] **Consider rate limiting** for any external API calls
+
+### During Development:
+- [ ] **Test DOM element existence** before manipulation
+- [ ] **Implement proper cleanup** for all event listeners and intervals
+- [ ] **Use consistent UI states** regardless of loading progress
+- [ ] **Add comprehensive error logging** with actionable messages
+
+### Before Deployment:
+- [ ] **Test with slow network conditions** to verify loading states
+- [ ] **Verify all error scenarios** have appropriate user feedback
+- [ ] **Check memory usage** and cleanup on page navigation
+- [ ] **Validate API rate limiting** under high load conditions
+
+---
+
+## 🎯 Prompt Engineering Techniques Applied
+
+### Specificity Principle
+- **Specific Error Patterns**: Each rule targets exact error scenarios encountered
+- **Concrete Code Examples**: All rules include working code samples
+- **Measurable Outcomes**: Clear success/failure criteria for each rule
+
+### Context Awareness
+- **Project-Specific Rules**: Tailored to cryptocurrency data loading and real-time updates
+- **Technology Stack Focused**: Express.js, Node.js, vanilla JavaScript specific guidance
+- **User Experience Centered**: Rules prioritize user experience consistency
+
+### Actionable Instructions
+- **Clear Do/Don't Patterns**: Explicit ✅/❌ examples for every rule
+- **Implementation Checklists**: Step-by-step verification processes
+- **Immediate Application**: Rules can be applied to current and future development
+
+### Error Prevention Focus
+- **Root Cause Analysis**: Each rule addresses underlying causes, not just symptoms
+- **Proactive Measures**: Prevention strategies rather than reactive fixes
+- **Comprehensive Coverage**: Multiple layers of error prevention (validation, fallbacks, recovery)
+
+---
+
+*This ruleset is designed to prevent the specific categories of errors encountered during the Felicity-Site cryptocurrency dashboard development, using advanced prompt engineering techniques for maximum clarity and actionability.*

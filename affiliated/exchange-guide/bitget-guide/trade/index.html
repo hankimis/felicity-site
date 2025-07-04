@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Bitget 거래 가이드 - ONBit</title>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="../../../../css/style.css"/>
+    <link rel="stylesheet" href="../../../../auth.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" />
+    <link rel="icon" type="image/png" href="/onbit/favicon-96x96.png" sizes="96x96" />
+    <link rel="icon" type="image/svg+xml" href="/onbit/favicon.svg" />
+    <link rel="shortcut icon" href="/onbit/favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/onbit/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-title" content="Onbit" />
+    <link rel="manifest" href="/onbit/site.webmanifest" />
+    
+    <!-- Common Scripts -->
+    <script src="../../../../js/auth.js"></script>
+    <!-- Unified Header Loader -->
+    <script src="../../../../js/header-loader.js" defer></script>
+    
+    <style>
+        .guide-container {
+            max-width: 700px;
+            margin: 40px auto;
+            padding: 0 16px 60px 16px;
+            padding-bottom: 48px;
+        }
+        .guide-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        .guide-title {
+            font-size: 2em;
+            font-weight: 700;
+            margin-bottom: 12px;
+            color: var(--text-color);
+        }
+        .guide-subtitle {
+            font-size: 1.1em;
+            color: var(--text-color-secondary);
+        }
+        .guide-steps {
+            display: flex;
+            flex-direction: column;
+            gap: 32px;
+        }
+        .guide-step {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 24px;
+        }
+        .step-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+        .step-number {
+            width: 32px;
+            height: 32px;
+            background: var(--primary-color);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+        }
+        .step-title {
+            font-size: 1.2em;
+            font-weight: 600;
+            color: var(--text-color);
+        }
+        .step-content {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        .step-image {
+            width: 100%;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+        }
+        .step-description {
+            color: var(--text-color-secondary);
+            line-height: 1.6;
+        }
+        .navigation-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            margin-top: 40px;
+            margin-bottom: 48px;
+        }
+        .nav-btn {
+            flex: 1;
+            padding: 16px;
+            border-radius: 12px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+            text-decoration: none;
+        }
+        .back-btn {
+            background: var(--bg-secondary-color);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+        }
+        .next-btn {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+        }
+        .back-btn:hover {
+            background: var(--border-color);
+        }
+        .next-btn:hover {
+            background: var(--primary-color-dark);
+        }
+        @media (max-width: 768px) {
+            .guide-container {
+                margin: 20px auto;
+                padding-bottom: 32px;
+            }
+            .guide-step {
+                padding: 16px;
+            }
+            .navigation-buttons {
+                flex-direction: column;
+                margin-bottom: 32px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header will be loaded here by header-loader.js -->
+    <div id="header-placeholder"></div>
+
+    <main class="guide-container">
+        <div class="guide-header">
+            <h1 class="guide-title">Bitget 거래 가이드</h1>
+            <p class="guide-subtitle">거래소 이용방법을 자세히 알려드릴게요</p>
+        </div>
+
+        <div class="guide-steps">
+            <div class="guide-step">
+                <div class="step-header">
+                    <div class="step-number">1</div>
+                    <h2 class="step-title">거래소 접속 및 로그인</h2>
+                </div>
+                <div class="step-content">
+                    <img src="../../../../assets/bitget/reigi/step1.png" alt="Bitget Step 1" class="step-image">
+                    <p class="step-description">
+                        Bitget 공식 사이트에 접속하여 로그인합니다. 가입이 안 되어 있다면 먼저 회원가입을 진행해주세요.
+                    </p>
+                </div>
+            </div>
+
+            <div class="guide-step">
+                <div class="step-header">
+                    <div class="step-number">2</div>
+                    <h2 class="step-title">입금하기</h2>
+                </div>
+                <div class="step-content">
+                    <img src="../../../../assets/bitget/reigi/step2.png" alt="Bitget Step 2" class="step-image">
+                    <p class="step-description">
+                        거래를 위해 먼저 자금을 입금해야 합니다. 상단 메뉴에서 'Deposit'을 클릭하여 원하는 암호화폐를 입금하세요.
+                    </p>
+                </div>
+            </div>
+
+            <div class="guide-step">
+                <div class="step-header">
+                    <div class="step-number">3</div>
+                    <h2 class="step-title">거래 시작하기</h2>
+                </div>
+                <div class="step-content">
+                    <img src="../../../../assets/bitget/reigi/step3.png" alt="Bitget Step 3" class="step-image">
+                    <p class="step-description">
+                        'Trade' 메뉴에서 원하는 거래 쌍을 선택하고, 매수/매도 주문을 넣어 거래를 시작할 수 있습니다.
+                    </p>
+                </div>
+            </div>
+
+            <div class="guide-step">
+                <div class="step-header">
+                    <div class="step-number">4</div>
+                    <h2 class="step-title">카피트레이딩 이용하기</h2>
+                </div>
+                <div class="step-content">
+                    <img src="../../../../assets/bitget/reigi/step4.png" alt="Bitget Step 4" class="step-image">
+                    <p class="step-description">
+                        Bitget의 대표 기능인 카피트레이딩을 이용하여 전문 트레이더의 거래를 따라할 수 있습니다.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="navigation-buttons">
+            <a href="../" class="nav-btn back-btn">이전으로</a>
+            <a href="../../../bitget/" class="nav-btn next-btn">거래소 가입하기</a>
+        </div>
+    </main>
+
+    <!-- 인증 모달 -->
+    <div id="login-modal" class="auth-modal">
+        <div class="auth-modal-content">
+            <span class="auth-modal-close" data-action="close-modal">&times;</span>
+            <form id="login-form" class="auth-form">
+                <h2>로그인</h2>
+                <p id="login-error-message" class="error-message"></p>
+                <div class="input-group">
+                    <i class="fas fa-envelope"></i>
+                    <input type="email" name="login-email" placeholder="이메일" required>
+                </div>
+                <div class="input-group">
+                    <i class="fas fa-lock"></i>
+                    <input type="password" name="login-password" placeholder="비밀번호" required>
+                </div>
+                <button type="submit" class="submit-btn">로그인</button>
+                <p class="auth-form-switch">계정이 없으신가요? <a href="#" id="show-signup" data-action="show-signup">회원가입</a></p>
+            </form>
+            <p class="find-links" style="text-align:center; margin-top:12px;">
+                <a href="#" id="find-id-link">아이디(이메일) 찾기</a> | <a href="#" id="find-password-link">비밀번호 찾기</a>
+            </p>
+        </div>
+    </div>
+
+    <div id="signup-modal" class="auth-modal">
+        <div class="auth-modal-content">
+            <span class="auth-modal-close" data-action="close-modal">&times;</span>
+            <form id="signup-form" class="auth-form">
+                <h2>회원가입</h2>
+                <p id="signup-error-message" class="error-message"></p>
+                <div class="input-group">
+                    <i class="fas fa-user"></i>
+                    <input type="text" name="signup-name" placeholder="닉네임" required>
+                </div>
+                <div class="input-group">
+                    <i class="fas fa-envelope"></i>
+                    <input type="email" name="signup-email" placeholder="이메일" required>
+                </div>
+                <div class="input-group">
+                    <i class="fas fa-lock"></i>
+                    <input type="password" name="signup-password" placeholder="비밀번호" required>
+                </div>
+                <div class="input-group">
+                    <i class="fas fa-check-circle"></i>
+                    <input type="password" name="signup-confirm-password" placeholder="비밀번호 확인" required>
+                </div>
+                <button type="submit" class="submit-btn">회원가입</button>
+                <p class="auth-form-switch">이미 계정이 있으신가요? <a href="#" id="show-login" data-action="show-login">로그인</a></p>
+            </form>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div id="footer-placeholder"></div>
+
+    <script src="../../../../js/footer-loader.js" defer></script>
+</body>
+</html> 

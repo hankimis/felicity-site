@@ -3,3 +3,217 @@ description:
 globs:
 alwaysApply: false
 ---
+# Chat System Architecture & Duplication Prevention Rules
+
+## CRITICAL: Single Instance Architecture Pattern
+
+### 🚫 NEVER CREATE MULTIPLE CHAT INSTANCES
+**ABSOLUTE RULE**: Each chat system MUST have exactly ONE instance per page.
+
+**Chat Instance Management:**
+- [js/community-chat.js](mdc:js/community-chat.js) - Contains ONLY the `CommunityChat` class definition
+- [js/analysis-chat.js](mdc:js/analysis-chat.js) - Contains ONLY the `AnalysisChat` class definition
+- [js/community.js](mdc:js/community.js) - Creates and manages the community chat instance
+- [analysis.html](mdc:analysis.html) - Loads analysis chat scripts
+
+**Instance Creation Pattern:**
+```javascript
+// ✅ CORRECT: Single instance with duplication check
+function initializeChat() {
+    if (!window.communityChat) {
+        console.log('Creating CommunityChat instance');
+        window.communityChat = new CommunityChat();
+    } else {
+        console.log('CommunityChat instance already exists');
+    }
+}
+
+// ❌ WRONG: Direct instantiation without checks
+window.communityChat = new CommunityChat();
+```
+
+## Event Listener Duplication Prevention Protocol
+
+### 🔒 Form Event Handler Safety Pattern
+
+**MANDATORY Implementation for ALL chat forms:**
+
+1. **Instance State Tracking:**
+   ```javascript
+   this.isChatFormInitialized = false;
+   this._sending = false;
+   ```
+
+2. **Form Element Replacement Method:**
+   ```javascript
+   // Clone and replace form to remove ALL existing listeners
+   const newForm = this.messageForm.cloneNode(true);
+   this.messageForm.parentNode.replaceChild(newForm, this.messageForm);
+   this.messageForm = newForm;
+   this.messageInput = this.messageForm.querySelector('#message-input');
+   ```
+
+3. **Submission Lock Mechanism:**
+   ```javascript
+   if (this._sending) {
+       console.log('Already sending, ignoring duplicate submission');
+       return;
+   }
+   this._sending = true;
+   // ... submission logic ...
+   finally {
+       this._sending = false;
+   }
+   ```
+
+### 🎯 Event Listener Registration Rules
+
+**Before ANY event listener registration:**
+1. Check initialization state: `if (this.isChatFormInitialized) return;`
+2. Replace form element completely (see pattern above)
+3. Set sending lock: `this._sending = false;`
+4. Register SINGLE event listener
+5. Mark as initialized: `this.isChatFormInitialized = true;`
+
+## Script Loading & Execution Order
+
+### 📋 Dependency Chain Requirements
+
+**For Community Pages:**
+1. Load [js/community-chat.js](mdc:js/community-chat.js) (class definition only)
+2. Load [js/community.js](mdc:js/community.js) (creates instance)
+3. NEVER instantiate in both files
+
+**For Analysis Pages:**
+1. Load [js/analysis-chat.js](mdc:js/analysis-chat.js) (auto-instantiates safely)
+2. No additional instantiation required
+
+### 🚨 Anti-Pattern Detection Checklist
+
+**FORBIDDEN Patterns:**
+- Multiple `new CommunityChat()` calls across files
+- Direct event listener addition without duplication checks
+- Form submission without lock mechanism
+- Missing initialization state tracking
+
+**REQUIRED Verification Steps:**
+1. Search codebase for `new CommunityChat` - should appear only once per page type
+2. Check for `addEventListener('submit')` - must include duplication prevention
+3. Verify `isChatFormInitialized` flag usage
+4. Confirm `_sending` lock implementation
+
+## Firebase Integration Safety
+
+### 🔥 Database Operation Guidelines
+
+**Message Transmission Protocol:**
+```javascript
+// ✅ CORRECT: With logging and error handling
+console.log('Message transmission attempt:', messageData);
+if (window.db) {
+    await window.db.collection('community-chat').add(messageData);
+    console.log('Message transmitted successfully');
+}
+
+// ❌ WRONG: Silent operation without verification
+await window.db.collection('community-chat').add(messageData);
+```
+
+**Real-time Listener Management:**
+- Always check for existing listeners: `if (this.messagesUnsubscribe) this.messagesUnsubscribe();`
+- Use unique listener instances per chat class
+- Implement proper cleanup in `cleanup()` methods
+
+## Debugging & Monitoring Requirements
+
+### 📊 Mandatory Logging Pattern
+
+**Every chat operation MUST include:**
+1. Operation initiation log
+2. State verification log
+3. Success/failure confirmation log
+4. Error context (if applicable)
+
+**Example Implementation:**
+```javascript
+console.log('Chat form setup:', {
+    messageForm: !!this.messageForm,
+    messageInput: !!this.messageInput,
+    initialized: this.isChatFormInitialized
+});
+```
+
+### 🔍 Runtime Validation Checks
+
+**Implement these checks in development:**
+- Count active event listeners on chat forms
+- Monitor Firebase operation frequency
+- Track instance creation events
+- Verify single-instance principle
+
+## Class Architecture Standards
+
+### 🏗️ Chat Class Structure Template
+
+**Required Properties:**
+```javascript
+constructor() {
+    this.messagesContainer = document.getElementById('chat-messages');
+    this.messageForm = document.getElementById('chat-form');
+    this.messageInput = document.getElementById('message-input');
+    this.messagesUnsubscribe = null;
+    this.isChatFormInitialized = false;
+    this._sending = false;
+}
+```
+
+**Required Methods:**
+- `init()` - Firebase dependency checking
+- `setupChatForm()` - Event listener management with duplication prevention
+- `loadMessages()` - Initial message loading
+- `setupRealtimeListener()` - Firebase real-time updates
+- `cleanup()` - Resource cleanup and listener removal
+
+### 🛡️ Error Recovery Mechanisms
+
+**Implement graceful degradation:**
+1. Firebase connection failure handling
+2. DOM element missing scenarios
+3. Permission denied error recovery
+4. Network interruption tolerance
+
+## Testing & Validation Protocol
+
+### ✅ Pre-deployment Checklist
+
+**MUST verify before any chat-related deployment:**
+1. Single message transmission per user action
+2. No duplicate event listeners in browser dev tools
+3. Proper cleanup on page navigation
+4. Firebase operation logging visibility
+5. Error handling responsiveness
+
+**Performance Monitoring:**
+- Message latency tracking
+- Memory leak detection (listener cleanup verification)
+- Real-time synchronization accuracy
+- Cross-browser compatibility validation
+
+## Emergency Rollback Procedures
+
+### 🚨 If Duplication Issues Reoccur
+
+**Immediate Actions:**
+1. Check browser console for multiple initialization logs
+2. Verify single instance creation in [js/community.js](mdc:js/community.js)
+3. Confirm event listener count using browser dev tools
+4. Review recent changes to chat-related files
+
+**Diagnostic Commands:**
+```javascript
+// Console debugging commands
+console.log('Active chat instances:', window.communityChat);
+console.log('Form listeners:', getEventListeners(document.getElementById('chat-form')));
+```
+
+This rule set ensures robust, maintainable, and duplicate-free chat functionality across the entire application.

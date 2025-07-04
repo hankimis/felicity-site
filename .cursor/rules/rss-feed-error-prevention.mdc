@@ -3,3 +3,426 @@ description:
 globs:
 alwaysApply: false
 ---
+# RSS Feed Error Prevention & Recovery Rules
+
+## 🚨 CRITICAL RSS FEED SAFETY PROTOCOLS
+
+### Feed URL Validation Rules
+```javascript
+// ✅ ALWAYS validate RSS feed URLs before adding
+const APPROVED_KOREAN_FEEDS = {
+    'cointelegraph': 'https://kr.cointelegraph.com/rss',
+    'tokenpost': 'https://www.tokenpost.kr/rss',
+    'blockmedia': 'https://www.blockmedia.co.kr/feed',
+    'coinreaders': 'https://coinreaders.com/rss/rss_news.php',
+    'bloomingbit': 'https://bloomingbit.io/rss.xml',
+    'yonhap': 'https://www.yna.co.kr/rss/economy.xml',
+    'investing': 'https://kr.investing.com/rss/news.rss'
+};
+
+// ✅ ALWAYS test feed accessibility before deployment
+async function validateFeedUrl(url, source) {
+    const testUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(url)}`;
+    
+    try {
+        const response = await fetch(testUrl);
+        const data = await response.json();
+        
+        if (data.status !== 'ok') {
+            console.error(`❌ Feed validation failed for ${source}: ${data.message}`);
+            return false;
+        }
+        
+        console.log(`✅ Feed validated successfully for ${source}`);
+        return true;
+    } catch (error) {
+        console.error(`❌ Feed validation error for ${source}:`, error);
+        return false;
+    }
+}
+```
+
+### Error Code Handling Matrix
+```javascript
+// ✅ ALWAYS handle specific HTTP error codes
+const RSS_ERROR_HANDLERS = {
+    422: 'Unprocessable Content - Invalid RSS URL or format',
+    403: 'Forbidden - Access denied by server',
+    404: 'Not Found - RSS feed URL does not exist',
+    429: 'Too Many Requests - Rate limited',
+    500: 'Internal Server Error - RSS service unavailable',
+    503: 'Service Unavailable - Temporary server issue'
+};
+
+function handleRSSError(status, source, url) {
+    const errorMessage = RSS_ERROR_HANDLERS[status] || 'Unknown error';
+    
+    console.warn(`🚨 RSS Error [${status}] for ${source}: ${errorMessage}`);
+    console.warn(`🔗 Failed URL: ${url}`);
+    
+    // Log for monitoring
+    if (window.analytics) {
+        window.analytics.track('RSS_Feed_Error', {
+            source,
+            status,
+            url,
+            timestamp: new Date().toISOString()
+        });
+    }
+    
+    return getBackupNews(source);
+}
+```
+
+## 🔍 FEED RELIABILITY MONITORING
+
+### Feed Health Check System
+```javascript
+// ✅ ALWAYS implement feed health monitoring
+class FeedHealthMonitor {
+    constructor() {
+        this.feedStats = new Map();
+        this.healthThreshold = 0.7; // 70% success rate minimum
+    }
+    
+    recordFeedResult(source, success, responseTime) {
+        if (!this.feedStats.has(source)) {
+            this.feedStats.set(source, {
+                attempts: 0,
+                successes: 0,
+                avgResponseTime: 0,
+                lastSuccess: null,
+                consecutiveFailures: 0
+            });
+        }
+        
+        const stats = this.feedStats.get(source);
+        stats.attempts++;
+        
+        if (success) {
+            stats.successes++;
+            stats.lastSuccess = Date.now();
+            stats.consecutiveFailures = 0;
+            stats.avgResponseTime = (stats.avgResponseTime + responseTime) / 2;
+        } else {
+            stats.consecutiveFailures++;
+        }
+        
+        // Auto-disable feeds with poor health
+        if (stats.consecutiveFailures >= 5) {
+            console.error(`🚨 Auto-disabling unreliable feed: ${source}`);
+            this.disableFeed(source);
+        }
+    }
+    
+    getFeedHealth(source) {
+        const stats = this.feedStats.get(source);
+        if (!stats || stats.attempts === 0) return 1;
+        
+        return stats.successes / stats.attempts;
+    }
+    
+    disableFeed(source) {
+        // Remove from active feeds temporarily
+        const disabledUntil = Date.now() + (30 * 60 * 1000); // 30 minutes
+        localStorage.setItem(`feed_disabled_${source}`, disabledUntil.toString());
+    }
+}
+
+// Global instance
+window.feedHealthMonitor = new FeedHealthMonitor();
+```
+
+### Korean News Source Validation
+```javascript
+// ✅ ALWAYS verify Korean news sources are working
+const KOREAN_SOURCE_TESTS = {
+    async testTokenPost() {
+        // Test TokenPost RSS specifically
+        const url = 'https://www.tokenpost.kr/rss';
+        return await this.validateKoreanFeed(url, 'tokenpost');
+    },
+    
+    async testBlockMedia() {
+        // Test BlockMedia RSS specifically  
+        const url = 'https://www.blockmedia.co.kr/feed';
+        return await this.validateKoreanFeed(url, 'blockmedia');
+    },
+    
+    async validateKoreanFeed(url, source) {
+        try {
+            const response = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(url)}`);
+            const data = await response.json();
+            
+            // Check for Korean content
+            const hasKoreanContent = data.items?.some(item => 
+                /[가-힣]/.test(item.title) || /[가-힣]/.test(item.description)
+            );
+            
+            if (!hasKoreanContent) {
+                console.warn(`⚠️ ${source} feed may not contain Korean content`);
+            }
+            
+            return data.status === 'ok' && data.items?.length > 0;
+        } catch (error) {
+            console.error(`❌ Korean feed validation failed for ${source}:`, error);
+            return false;
+        }
+    }
+};
+```
+
+## 🛡️ BACKUP STRATEGY IMPLEMENTATION
+
+### Multi-Level Backup System
+```javascript
+// ✅ ALWAYS implement comprehensive backup strategy
+const BACKUP_STRATEGIES = {
+    // Level 1: Backup news data (immediate)
+    getBackupNews(source) {
+        const backupData = KOREAN_BACKUP_NEWS[source];
+        if (!backupData) {
+            console.warn(`⚠️ No backup news available for ${source}`);
+            return [];
+        }
+        return backupData.map(item => ({ ...item, source, isBackup: true }));
+    },
+    
+    // Level 2: Alternative RSS URLs (if available)
+    getAlternativeFeedUrl(source) {
+        const alternatives = {
+            'cointelegraph': ['https://cointelegraph.com/rss'],
+            'investing': ['https://www.investing.com/rss/news.rss']
+        };
+        
+        return alternatives[source] || [];
+    },
+    
+    // Level 3: Cross-source content filling
+    fillWithCrossSourceContent(failedSources, successfulNews) {
+        if (successfulNews.length < 10 && failedSources.length > 0) {
+            // Use successful sources to fill content gaps
+            const extraNews = successfulNews.slice(0, 5).map(item => ({
+                ...item,
+                title: `[대체 뉴스] ${item.title}`,
+                isFallback: true
+            }));
+            
+            return [...successfulNews, ...extraNews];
+        }
+        
+        return successfulNews;
+    }
+};
+```
+
+## 🔧 ERROR RECOVERY PROTOCOLS
+
+### Automatic Recovery System
+```javascript
+// ✅ ALWAYS implement automatic error recovery
+class RSSErrorRecovery {
+    constructor() {
+        this.retryAttempts = new Map();
+        this.maxRetries = 2;
+        this.retryDelay = 5000; // 5 seconds
+    }
+    
+    async attemptRecovery(source, url, originalError) {
+        const attempts = this.retryAttempts.get(source) || 0;
+        
+        if (attempts >= this.maxRetries) {
+            console.error(`🚨 Max retries exceeded for ${source}, using backup`);
+            return getBackupNews(source);
+        }
+        
+        console.log(`🔄 Attempting recovery for ${source} (attempt ${attempts + 1})`);
+        this.retryAttempts.set(source, attempts + 1);
+        
+        // Wait before retry
+        await new Promise(resolve => setTimeout(resolve, this.retryDelay));
+        
+        try {
+            // Try alternative approach or URL
+            const result = await this.tryAlternativeMethod(source, url);
+            
+            // Reset retry count on success
+            this.retryAttempts.delete(source);
+            return result;
+            
+        } catch (retryError) {
+            console.warn(`⚠️ Retry failed for ${source}:`, retryError);
+            return this.attemptRecovery(source, url, retryError);
+        }
+    }
+    
+    async tryAlternativeMethod(source, url) {
+        // Try different RSS proxy or direct access
+        const alternatives = [
+            `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,
+            `https://cors-anywhere.herokuapp.com/${url}`
+        ];
+        
+        for (const altUrl of alternatives) {
+            try {
+                const response = await fetch(altUrl);
+                if (response.ok) {
+                    const data = await response.text();
+                    return parseRSSFeed(data);
+                }
+            } catch (error) {
+                continue; // Try next alternative
+            }
+        }
+        
+        throw new Error('All alternative methods failed');
+    }
+}
+```
+
+## 📊 MONITORING & ALERTS
+
+### Real-time Feed Monitoring
+```javascript
+// ✅ ALWAYS monitor feed performance in real-time
+const FEED_MONITORING = {
+    startTime: Date.now(),
+    
+    logFeedPerformance(source, success, responseTime, error = null) {
+        const logEntry = {
+            timestamp: new Date().toISOString(),
+            source,
+            success,
+            responseTime,
+            error: error?.message || null
+        };
+        
+        // Store in session for debugging
+        const logs = JSON.parse(sessionStorage.getItem('feed_logs') || '[]');
+        logs.push(logEntry);
+        
+        // Keep only last 50 entries
+        if (logs.length > 50) logs.shift();
+        
+        sessionStorage.setItem('feed_logs', JSON.stringify(logs));
+        
+        // Alert on critical issues
+        if (!success && error?.status >= 400) {
+            this.alertCriticalError(source, error);
+        }
+    },
+    
+    alertCriticalError(source, error) {
+        console.error(`🚨 CRITICAL RSS ERROR for ${source}:`, error);
+        
+        // Show user notification for critical failures
+        if (window.showToast) {
+            window.showToast(`뉴스 소스 ${source}에서 오류가 발생했습니다.`, 'error');
+        }
+    },
+    
+    generateHealthReport() {
+        const logs = JSON.parse(sessionStorage.getItem('feed_logs') || '[]');
+        const report = {};
+        
+        logs.forEach(log => {
+            if (!report[log.source]) {
+                report[log.source] = { total: 0, success: 0, avgTime: 0 };
+            }
+            
+            report[log.source].total++;
+            if (log.success) {
+                report[log.source].success++;
+                report[log.source].avgTime += log.responseTime;
+            }
+        });
+        
+        // Calculate averages
+        Object.keys(report).forEach(source => {
+            const stats = report[source];
+            stats.successRate = (stats.success / stats.total * 100).toFixed(1);
+            stats.avgTime = stats.success > 0 ? (stats.avgTime / stats.success).toFixed(0) : 0;
+        });
+        
+        console.table(report);
+        return report;
+    }
+};
+```
+
+## 🚫 CRITICAL PREVENTION RULES
+
+### What to NEVER Do
+```javascript
+// ❌ NEVER add untested RSS feeds
+const FORBIDDEN_PRACTICES = {
+    // Don't add feeds without validation
+    addUntested: false,
+    
+    // Don't ignore 422/403 errors
+    ignoreHttpErrors: false,
+    
+    // Don't use unreliable proxy services
+    useUnstableProxies: false,
+    
+    // Don't exceed timeout limits
+    longTimeouts: false,
+    
+    // Don't skip backup news implementation
+    skipBackups: false
+};
+
+// ✅ ALWAYS validate before adding new feeds
+async function addNewRSSFeed(url, source) {
+    // MANDATORY validation steps
+    const isValid = await validateFeedUrl(url, source);
+    if (!isValid) {
+        throw new Error(`Cannot add invalid RSS feed for ${source}`);
+    }
+    
+    // MANDATORY backup news check
+    if (!KOREAN_BACKUP_NEWS[source]) {
+        throw new Error(`No backup news defined for ${source}`);
+    }
+    
+    // MANDATORY health monitoring setup
+    window.feedHealthMonitor.recordFeedResult(source, true, 0);
+    
+    console.log(`✅ RSS feed added successfully: ${source}`);
+}
+```
+
+## 🔧 DEBUGGING TOOLKIT
+
+### Emergency Debugging Commands
+```javascript
+// Debug feed health
+window.feedHealthMonitor.generateHealthReport();
+
+// Test specific feed
+await KOREAN_SOURCE_TESTS.testTokenPost();
+
+// Clear all feed caches
+localStorage.removeItem('newsFeedsCache');
+Object.keys(localStorage).forEach(key => {
+    if (key.startsWith('feed_disabled_')) {
+        localStorage.removeItem(key);
+    }
+});
+
+// View feed logs
+console.table(JSON.parse(sessionStorage.getItem('feed_logs') || '[]'));
+
+// Force backup mode
+window.FORCE_BACKUP_MODE = true;
+```
+
+## 🎯 SUCCESS METRICS
+
+- **Feed Reliability**: >90% success rate per source
+- **Error Recovery**: <3 seconds recovery time
+- **User Experience**: No blank news pages
+- **Korean Content**: >80% Korean language content
+- **Backup Coverage**: 100% sources have backup news
+
+Reference files: [js/news.js](mdc:js/news.js), [news.html](mdc:news.html)

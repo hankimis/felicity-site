@@ -3,3 +3,335 @@ description:
 globs:
 alwaysApply: false
 ---
+# Felicity Coding Standards & Best Practices
+
+## 🎯 NAMING CONVENTIONS (STRICTLY ENFORCED)
+
+### JavaScript Naming Rules
+```javascript
+// ✅ CORRECT
+const currentUser = null;                    // camelCase for variables
+const MAX_RETRY_ATTEMPTS = 5;               // UPPER_SNAKE_CASE for constants
+class WhaleTracker { }                      // PascalCase for classes
+function updateAuthUI(user) { }             // camelCase for functions
+const analysisController = new AnalysisController(); // camelCase for instances
+
+// ❌ FORBIDDEN
+const current_user = null;                  // snake_case
+const maxretryattempts = 5;                // lowercase constants
+class whaleTracker { }                     // lowercase classes
+function UpdateAuthUI(user) { }            // PascalCase functions
+```
+
+### CSS Naming Standards
+```css
+/* ✅ CORRECT - BEM Methodology */
+.navbar { }                                /* Block */
+.navbar__logo { }                         /* Element */
+.navbar--dark { }                         /* Modifier */
+
+.message-item { }                         /* Component */
+.message-item.my-message { }              /* State modifier */
+.message-item__content { }                /* Element */
+
+/* ❌ FORBIDDEN */
+.navBar { }                              /* camelCase in CSS */
+.navbar_logo { }                         /* snake_case */
+.navbarDark { }                          /* No separation */
+```
+
+### File Naming Convention
+```
+✅ CORRECT:
+- analysis-controller.js                  /* kebab-case */
+- whale-tracker.js                       /* kebab-case */
+- _variables.css                         /* underscore prefix for partials */
+- bitget-guide.html                      /* kebab-case */
+
+❌ FORBIDDEN:
+- analysisController.js                  /* camelCase */
+- whale_tracker.js                       /* snake_case */
+- WhaleTracker.js                        /* PascalCase */
+```
+
+## 📝 CODE FORMATTING RULES
+
+### Indentation & Spacing (NON-NEGOTIABLE)
+```javascript
+// ✅ CORRECT - 2 spaces indentation
+if (condition) {
+  const result = await someFunction();
+  if (result) {
+    processResult(result);
+  }
+}
+
+// Object formatting
+const config = {
+  apiKey: "value",
+  authDomain: "domain.com",
+  projectId: "project-id"
+};
+
+// Array formatting
+const modules = [
+  'whaleTracker',
+  'liquidationPredictor',
+  'technicalIndicators'
+];
+```
+
+### Function Declaration Standards
+```javascript
+// ✅ CORRECT - Async/Await Pattern
+async function initializeFirebase() {
+  try {
+    const app = firebase.initializeApp(config);
+    console.log('✅ Firebase initialized successfully');
+    return app;
+  } catch (error) {
+    console.error('❌ Firebase initialization failed:', error);
+    throw error;
+  }
+}
+
+// ✅ CORRECT - Arrow Functions for Callbacks
+const handleClick = (event) => {
+  event.preventDefault();
+  processClick(event.target);
+};
+
+// ✅ CORRECT - Class Methods
+class AnalysisController {
+  async init() {
+    this.loadSettings();
+    await this.initializeModules();
+    this.setupEventListeners();
+  }
+  
+  showToast(message, type = 'info') {
+    // Implementation
+  }
+}
+```
+
+## 🚫 FORBIDDEN PATTERNS
+
+### JavaScript Anti-Patterns
+```javascript
+// ❌ NEVER DO THIS
+var globalVariable;                      // Use const/let only
+eval(userInput);                        // Security risk
+document.write();                       // Deprecated
+setTimeout("code", 1000);               // String execution
+
+// ❌ AVOID THESE PATTERNS
+callback(function(err, data) {          // Use async/await instead
+  if (err) throw err;
+  processData(data);
+});
+
+// ❌ DON'T IGNORE ERRORS
+fetch('/api/data');                     // Always handle promises
+someAsyncFunction();                    // Always await or catch
+
+// ❌ AVOID DIRECT DOM MANIPULATION WITHOUT CHECKS
+document.getElementById('element').click(); // Check if element exists first
+```
+
+### CSS Anti-Patterns
+```css
+/* ❌ FORBIDDEN */
+.red { color: red; }                    /* Non-semantic naming */
+div { margin: 10px !important; }        /* Overuse of !important */
+.navbar .logo .img { }                  /* Over-specific selectors */
+
+/* ❌ AVOID INLINE STYLES */
+<div style="color: red;">               <!-- Use CSS classes -->
+
+/* ❌ DON'T BREAK RESPONSIVE DESIGN */
+.container { width: 1200px; }          /* Use max-width instead */
+```
+
+## ✅ MANDATORY BEST PRACTICES
+
+### Error Handling (REQUIRED)
+```javascript
+// ✅ ALWAYS implement proper error handling
+async function loadUserData(userId) {
+  try {
+    const userData = await fetchUserData(userId);
+    return userData;
+  } catch (error) {
+    console.error(`❌ Failed to load user data for ${userId}:`, error);
+    
+    // Show user-friendly message
+    this.showToast('사용자 데이터를 불러올 수 없습니다', 'error');
+    
+    // Return fallback data
+    return getDefaultUserData();
+  }
+}
+
+// ✅ ALWAYS validate inputs
+function updateUserLevel(level) {
+  if (typeof level !== 'number' || level < 1 || level > 100) {
+    throw new Error('Invalid level: must be number between 1-100');
+  }
+  // Process valid level
+}
+```
+
+### Performance Optimization (CRITICAL)
+```javascript
+// ✅ DEBOUNCE expensive operations
+const debouncedSearch = debounce((query) => {
+  performSearch(query);
+}, 300);
+
+// ✅ CACHE DOM queries
+class ComponentManager {
+  constructor() {
+    this.elements = {
+      modal: document.getElementById('modal'),
+      form: document.getElementById('form'),
+      button: document.getElementById('submit-btn')
+    };
+  }
+}
+
+// ✅ USE event delegation
+document.body.addEventListener('click', (e) => {
+  if (e.target.matches('.btn-primary')) {
+    handlePrimaryButton(e);
+  }
+});
+```
+
+### Security Requirements (NON-NEGOTIABLE)
+```javascript
+// ✅ ALWAYS sanitize user inputs
+function sanitizeInput(input) {
+  return input
+    .replace(/[<>]/g, '') // Remove HTML tags
+    .trim()
+    .substring(0, 1000); // Limit length
+}
+
+// ✅ VALIDATE authentication before sensitive operations
+async function performSensitiveOperation() {
+  if (!window.currentUser) {
+    throw new Error('Authentication required');
+  }
+  
+  if (!await validateUserPermissions(window.currentUser)) {
+    throw new Error('Insufficient permissions');
+  }
+  
+  // Proceed with operation
+}
+
+// ✅ NEVER expose sensitive data
+const config = {
+  apiKey: process.env.FIREBASE_API_KEY, // Use environment variables
+  // Never hardcode secrets
+};
+```
+
+## 📚 DOCUMENTATION STANDARDS
+
+### Comment Requirements
+```javascript
+/**
+ * Analysis Dashboard Controller
+ * Manages all financial analysis modules and real-time data
+ * 
+ * @class AnalysisController
+ * @requires WhaleTracker
+ * @requires TechnicalIndicators
+ */
+class AnalysisController {
+  /**
+   * Initialize the analysis dashboard
+   * Sets up modules, event listeners, and starts real-time tracking
+   * 
+   * @async
+   * @returns {Promise<void>}
+   * @throws {Error} When module initialization fails
+   */
+  async init() {
+    // Implementation
+  }
+}
+
+// ✅ INLINE comments for complex logic
+const processWhaleTransaction = (transaction) => {
+  // Convert satoshis to BTC for threshold comparison
+  const btcAmount = transaction.value / 100000000;
+  
+  // Only process if above whale threshold (50 BTC default)
+  if (btcAmount >= this.settings.whaleBtcThreshold) {
+    this.notifyWhaleActivity(transaction);
+  }
+};
+```
+
+### HTML Semantic Standards
+```html
+<!-- ✅ CORRECT - Semantic HTML5 -->
+<main class="main-container">
+  <section class="analysis-dashboard">
+    <header class="dashboard-header">
+      <h1>실시간 분석 대시보드</h1>
+    </header>
+    
+    <article class="whale-tracker-card">
+      <h2>고래 추적</h2>
+      <div class="whale-data">
+        <!-- Content -->
+      </div>
+    </article>
+  </section>
+</main>
+
+<!-- ❌ FORBIDDEN - Non-semantic -->
+<div class="main">
+  <div class="section">
+    <div class="header">
+      <div class="title">실시간 분석 대시보드</div>
+    </div>
+  </div>
+</div>
+```
+
+## 🔍 CODE REVIEW CHECKLIST
+
+### Before Committing (MANDATORY CHECKS)
+- [ ] **No console.log statements** in production code
+- [ ] **All async operations** have proper error handling
+- [ ] **CSS follows ITCSS** import order in [css/style.css](mdc:css/style.css)
+- [ ] **Responsive design** tested on mobile/tablet/desktop
+- [ ] **Theme switching** works correctly
+- [ ] **Authentication flows** are not bypassed
+- [ ] **Performance impact** is minimal
+- [ ] **Security vulnerabilities** are addressed
+- [ ] **Code follows naming conventions**
+- [ ] **Documentation is updated** if needed
+
+### Testing Requirements
+```javascript
+// ✅ ALWAYS test error scenarios
+try {
+  await riskyOperation();
+} catch (error) {
+  // Verify error handling works correctly
+  expect(error.message).toContain('Expected error message');
+}
+
+// ✅ TEST responsive behavior
+// Verify layout works on different screen sizes
+// Test touch interactions on mobile devices
+// Ensure theme switching affects all components
+```
+
+This coding standard ensures consistency, maintainability, and security across the Felicity cryptocurrency analysis platform. **ALL TEAM MEMBERS MUST FOLLOW THESE RULES WITHOUT EXCEPTION.**

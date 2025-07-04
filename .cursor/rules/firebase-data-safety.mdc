@@ -3,3 +3,682 @@ description:
 globs:
 alwaysApply: false
 ---
+# Firebase Integration and Data Safety Rules
+
+## CRITICAL FIREBASE SAFETY GUIDELINES
+
+### 1. Authentication State Management
+**❌ NEVER DO:**
+- Perform database operations without checking authentication state
+- Assume user authentication persists across page reloads
+- Store sensitive data without proper user validation
+
+**✅ ALWAYS DO:**
+```javascript
+// Robust authentication check pattern
+const requireAuth = (operation, fallback = null) => {
+    if (!window.currentUser || !window.currentUser.uid) {
+        console.warn('Operation requires authentication');
+        if (typeof fallback === 'function') {
+            return fallback();
+        }
+        return Promise.reject(new Error('User not authenticated'));
+    }
+    return operation(window.currentUser);
+};
+
+// Usage pattern
+const saveUserData = async (data) => {
+    return requireAuth(
+        async (user) => {
+            return await window.db.collection('userData')
+                .doc(user.uid)
+                .set(data);
+        },
+        () => {
+            showNotification('로그인이 필요합니다', 'warning');
+            return false;
+        }
+    );
+};
+```
+
+### 2. Data Validation and Sanitization
+**❌ DATA INTEGRITY RISKS:**
+- Saving data without validation
+- Not sanitizing user input before storage
+- Missing data type checks
+
+**✅ SAFE DATA HANDLING:**
+```javascript
+class DataValidator {
+    static validateChartData(data) {
+        const schema = {
+            content: { type: 'string', required: true, maxLength: 50000 },
+            timestamp: { type: 'object', required: true },
+            userId: { type: 'string', required: true, pattern: /^[a-zA-Z0-9]+$/ },
+            name: { type: 'string', required: false, maxLength: 100 }
+        };
+        
+        return this.validate(data, schema);
+    }
+    
+    static validate(data, schema) {
+        const errors = [];
+        
+        for (const [field, rules] of Object.entries(schema)) {
+            const value = data[field];
+            
+            // Required field check
+            if (rules.required && (value === undefined || value === null)) {
+                errors.push(`${field} is required`);
+                continue;
+            }
+            
+            // Skip further validation if field is optional and empty
+            if (!rules.required && (value === undefined || value === null)) {
+                continue;
+            }
+            
+            // Type validation
+            if (rules.type && typeof value !== rules.type) {
+                errors.push(`${field} must be of type ${rules.type}`);
+            }
+            
+            // String-specific validations
+            if (rules.type === 'string' && typeof value === 'string') {
+                if (rules.maxLength && value.length > rules.maxLength) {
+                    errors.push(`${field} exceeds maximum length of ${rules.maxLength}`);
+                }
+                
+                if (rules.pattern && !rules.pattern.test(value)) {
+                    errors.push(`${field} does not match required pattern`);
+                }
+            }
+        }
+        
+        return {
+            isValid: errors.length === 0,
+            errors,
+            sanitizedData: this.sanitize(data, schema)
+        };
+    }
+    
+    static sanitize(data, schema) {
+        const sanitized = {};
+        
+        for (const [field, rules] of Object.entries(schema)) {
+            const value = data[field];
+            
+            if (value !== undefined && value !== null) {
+                switch (rules.type) {
+                    case 'string':
+                        sanitized[field] = String(value).trim();
+                        if (rules.maxLength) {
+                            sanitized[field] = sanitized[field].substring(0, rules.maxLength);
+                        }
+                        break;
+                    case 'number':
+                        sanitized[field] = Number(value);
+                        break;
+                    case 'boolean':
+                        sanitized[field] = Boolean(value);
+                        break;
+                    default:
+                        sanitized[field] = value;
+                }
+            }
+        }
+        
+        return sanitized;
+    }
+}
+```
+
+### 3. Error Handling and Retry Logic
+**❌ NETWORK ERROR FAILURES:**
+- Not handling network failures gracefully
+- Missing retry mechanisms for transient errors
+- Poor error messaging to users
+
+**✅ ROBUST ERROR HANDLING:**
+```javascript
+class FirebaseErrorHandler {
+    static async withRetry(operation, maxRetries = 3, baseDelay = 1000) {
+        let lastError;
+        
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
+                return await operation();
+            } catch (error) {
+                lastError = error;
+                
+                // Don't retry on authentication or permission errors
+                if (this.isNonRetryableError(error)) {
+                    throw error;
+                }
+                
+                if (attempt < maxRetries) {
+                    const delay = baseDelay * Math.pow(2, attempt - 1); // Exponential backoff
+                    console.warn(`Attempt ${attempt} failed, retrying in ${delay}ms:`, error.message);
+                    await this.delay(delay);
+                } else {
+                    console.error(`All ${maxRetries} attempts failed:`, lastError);
+                }
+            }
+        }
+        
+        throw lastError;
+    }
+    
+    static isNonRetryableError(error) {
+        const nonRetryableCodes = [
+            'permission-denied',
+            'unauthenticated',
+            'invalid-argument',
+            'not-found'
+        ];
+        
+        return nonRetryableCodes.includes(error.code);
+    }
+    
+    static delay(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+    
+    static getErrorMessage(error) {
+        const errorMessages = {
+            'permission-denied': '접근 권한이 없습니다',
+            'unauthenticated': '로그인이 필요합니다',
+            'not-found': '요청한 데이터를 찾을 수 없습니다',
+            'invalid-argument': '잘못된 요청입니다',
+            'unavailable': '서비스가 일시적으로 이용할 수 없습니다',
+            'deadline-exceeded': '요청 시간이 초과되었습니다'
+        };
+        
+        return errorMessages[error.code] || '알 수 없는 오류가 발생했습니다';
+    }
+}
+```
+
+### 4. Safe Database Operations
+**❌ DATABASE OPERATION RISKS:**
+- Not checking document existence before operations
+- Missing transaction handling for critical operations
+- Inefficient query patterns
+
+**✅ SAFE DATABASE PATTERNS:**
+```javascript
+class SafeFirebaseOperations {
+    static async saveChartData(chartData, options = {}) {
+        return requireAuth(async (user) => {
+            // Validate data
+            const validation = DataValidator.validateChartData({
+                ...chartData,
+                userId: user.uid,
+                timestamp: new Date()
+            });
+            
+            if (!validation.isValid) {
+                throw new Error(`Validation failed: ${validation.errors.join(', ')}`);
+            }
+            
+            const operation = async () => {
+                const docRef = window.db.collection('chartStates').doc(user.uid);
+                
+                if (options.merge) {
+                    // Safe merge operation
+                    const existingDoc = await docRef.get();
+                    if (existingDoc.exists) {
+                        return await docRef.update({
+                            ...validation.sanitizedData,
+                            updatedAt: new Date()
+                        });
+                    }
+                }
+                
+                // Full document write
+                return await docRef.set({
+                    ...validation.sanitizedData,
+                    createdAt: new Date(),
+                    updatedAt: new Date()
+                });
+            };
+            
+            return await FirebaseErrorHandler.withRetry(operation);
+        });
+    }
+    
+    static async loadChartData(userId = null) {
+        return requireAuth(async (user) => {
+            const targetUserId = userId || user.uid;
+            
+            // Security check - users can only access their own data
+            if (targetUserId !== user.uid) {
+                throw new Error('Access denied: Cannot access other user data');
+            }
+            
+            const operation = async () => {
+                const docRef = window.db.collection('chartStates').doc(targetUserId);
+                const doc = await docRef.get();
+                
+                if (!doc.exists) {
+                    return null;
+                }
+                
+                const data = doc.data();
+                
+                // Additional validation on loaded data
+                if (!data.content || !data.userId || data.userId !== targetUserId) {
+                    throw new Error('Invalid document structure');
+                }
+                
+                return data;
+            };
+            
+            return await FirebaseErrorHandler.withRetry(operation);
+        });
+    }
+    
+    static async deleteChartData(documentId) {
+        return requireAuth(async (user) => {
+            const operation = async () => {
+                // Verify ownership before deletion
+                const docRef = window.db.collection('chartLayouts').doc(documentId);
+                const doc = await docRef.get();
+                
+                if (!doc.exists) {
+                    throw new Error('Document not found');
+                }
+                
+                const data = doc.data();
+                if (data.userId !== user.uid) {
+                    throw new Error('Access denied: Cannot delete other user data');
+                }
+                
+                return await docRef.delete();
+            };
+            
+            return await FirebaseErrorHandler.withRetry(operation);
+        });
+    }
+    
+    static async queryUserCharts(limit = 10, orderBy = 'timestamp') {
+        return requireAuth(async (user) => {
+            const operation = async () => {
+                const snapshot = await window.db.collection('chartLayouts')
+                    .where('userId', '==', user.uid)
+                    .orderBy(orderBy, 'desc')
+                    .limit(limit)
+                    .get();
+                
+                return snapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+            };
+            
+            return await FirebaseErrorHandler.withRetry(operation);
+        });
+    }
+}
+```
+
+## DATA SYNCHRONIZATION RULES
+
+### 5. Offline/Online State Management
+**❌ CONNECTIVITY ISSUES:**
+- Not handling offline states
+- Losing data during network interruptions
+- No user feedback for connection status
+
+**✅ ROBUST CONNECTIVITY HANDLING:**
+```javascript
+class ConnectivityManager {
+    constructor() {
+        this.isOnline = navigator.onLine;
+        this.pendingOperations = [];
+        this.setupEventListeners();
+    }
+    
+    setupEventListeners() {
+        window.addEventListener('online', () => {
+            console.log('🌐 Connection restored');
+            this.isOnline = true;
+            this.processPendingOperations();
+            showNotification('인터넷 연결이 복구되었습니다', 'success');
+        });
+        
+        window.addEventListener('offline', () => {
+            console.log('📵 Connection lost');
+            this.isOnline = false;
+            showNotification('인터넷 연결이 끊어졌습니다', 'warning');
+        });
+    }
+    
+    async performOperation(operation, fallbackData = null) {
+        if (!this.isOnline) {
+            return this.queueOperation(operation, fallbackData);
+        }
+        
+        try {
+            return await operation();
+        } catch (error) {
+            if (this.isNetworkError(error)) {
+                return this.queueOperation(operation, fallbackData);
+            }
+            throw error;
+        }
+    }
+    
+    queueOperation(operation, fallbackData) {
+        this.pendingOperations.push({ operation, fallbackData, timestamp: Date.now() });
+        
+        // Store in localStorage as backup
+        try {
+            localStorage.setItem('pendingOperations', JSON.stringify(this.pendingOperations));
+        } catch (e) {
+            console.warn('Failed to store pending operations:', e);
+        }
+        
+        return fallbackData;
+    }
+    
+    async processPendingOperations() {
+        const operations = [...this.pendingOperations];
+        this.pendingOperations = [];
+        
+        for (const { operation, timestamp } of operations) {
+            try {
+                // Skip operations older than 1 hour
+                if (Date.now() - timestamp > 3600000) {
+                    console.warn('Skipping expired operation');
+                    continue;
+                }
+                
+                await operation();
+                console.log('✅ Pending operation completed');
+            } catch (error) {
+                console.error('❌ Pending operation failed:', error);
+                // Re-queue if it's still a network error
+                if (this.isNetworkError(error)) {
+                    this.pendingOperations.push({ operation, timestamp });
+                }
+            }
+        }
+        
+        // Clear localStorage
+        try {
+            localStorage.removeItem('pendingOperations');
+        } catch (e) {
+            console.warn('Failed to clear pending operations:', e);
+        }
+    }
+    
+    isNetworkError(error) {
+        return error.code === 'unavailable' || 
+               error.message.includes('network') ||
+               error.message.includes('offline');
+    }
+}
+```
+
+### 6. Data Caching and Local Storage
+**❌ CACHING MISTAKES:**
+- Not implementing local fallbacks
+- Storing too much data in localStorage
+- Missing cache invalidation logic
+
+**✅ SMART CACHING STRATEGY:**
+```javascript
+class DataCache {
+    constructor(maxSize = 10) {
+        this.cache = new Map();
+        this.maxSize = maxSize;
+        this.prefix = 'felicity_chart_';
+    }
+    
+    async get(key, fetchFunction) {
+        // Try memory cache first
+        if (this.cache.has(key)) {
+            const cached = this.cache.get(key);
+            if (!this.isExpired(cached)) {
+                return cached.data;
+            }
+            this.cache.delete(key);
+        }
+        
+        // Try localStorage cache
+        const localData = this.getFromStorage(key);
+        if (localData && !this.isExpired(localData)) {
+            this.cache.set(key, localData);
+            return localData.data;
+        }
+        
+        // Fetch fresh data
+        try {
+            const freshData = await fetchFunction();
+            this.set(key, freshData);
+            return freshData;
+        } catch (error) {
+            // Return stale data if available
+            if (localData) {
+                console.warn('Using stale cache data due to fetch error');
+                return localData.data;
+            }
+            throw error;
+        }
+    }
+    
+    set(key, data, ttl = 3600000) { // 1 hour default TTL
+        const cacheItem = {
+            data,
+            timestamp: Date.now(),
+            ttl
+        };
+        
+        // Memory cache with size limit
+        if (this.cache.size >= this.maxSize) {
+            const firstKey = this.cache.keys().next().value;
+            this.cache.delete(firstKey);
+        }
+        this.cache.set(key, cacheItem);
+        
+        // localStorage with error handling
+        try {
+            localStorage.setItem(
+                this.prefix + key, 
+                JSON.stringify(cacheItem)
+            );
+        } catch (error) {
+            console.warn('localStorage cache write failed:', error);
+            // Try to free up space
+            this.cleanupStorage();
+        }
+    }
+    
+    getFromStorage(key) {
+        try {
+            const stored = localStorage.getItem(this.prefix + key);
+            return stored ? JSON.parse(stored) : null;
+        } catch (error) {
+            console.warn('localStorage cache read failed:', error);
+            return null;
+        }
+    }
+    
+    isExpired(cacheItem) {
+        return Date.now() - cacheItem.timestamp > cacheItem.ttl;
+    }
+    
+    cleanupStorage() {
+        try {
+            // Remove expired cache items
+            for (let i = localStorage.length - 1; i >= 0; i--) {
+                const key = localStorage.key(i);
+                if (key?.startsWith(this.prefix)) {
+                    const item = this.getFromStorage(key.replace(this.prefix, ''));
+                    if (item && this.isExpired(item)) {
+                        localStorage.removeItem(key);
+                    }
+                }
+            }
+        } catch (error) {
+            console.warn('Storage cleanup failed:', error);
+        }
+    }
+    
+    clear() {
+        this.cache.clear();
+        try {
+            for (let i = localStorage.length - 1; i >= 0; i--) {
+                const key = localStorage.key(i);
+                if (key?.startsWith(this.prefix)) {
+                    localStorage.removeItem(key);
+                }
+            }
+        } catch (error) {
+            console.warn('Cache clear failed:', error);
+        }
+    }
+}
+```
+
+## SECURITY AND PRIVACY RULES
+
+### 7. Data Privacy and Access Control
+**❌ SECURITY VULNERABILITIES:**
+- Exposing user data in client-side logs
+- Not validating user permissions
+- Storing sensitive data in localStorage
+
+**✅ SECURE DATA HANDLING:**
+```javascript
+class SecureDataHandler {
+    static sanitizeForLogging(data) {
+        const sanitized = { ...data };
+        
+        // Remove sensitive fields
+        const sensitiveFields = ['password', 'token', 'email', 'phoneNumber'];
+        sensitiveFields.forEach(field => {
+            if (sanitized[field]) {
+                sanitized[field] = '***REDACTED***';
+            }
+        });
+        
+        // Truncate large content
+        if (sanitized.content && sanitized.content.length > 100) {
+            sanitized.content = sanitized.content.substring(0, 100) + '...';
+        }
+        
+        return sanitized;
+    }
+    
+    static validateUserPermission(operation, targetUserId, currentUser) {
+        if (!currentUser || !currentUser.uid) {
+            throw new Error('User not authenticated');
+        }
+        
+        // Users can only access their own data
+        if (targetUserId !== currentUser.uid) {
+            console.warn('Access denied:', {
+                operation,
+                targetUser: targetUserId,
+                currentUser: this.sanitizeForLogging(currentUser)
+            });
+            throw new Error('Access denied');
+        }
+        
+        return true;
+    }
+    
+    static encryptSensitiveData(data) {
+        // Simple obfuscation for client-side storage
+        // Note: Real encryption should be done server-side
+        try {
+            const encoded = btoa(JSON.stringify(data));
+            return encoded;
+        } catch (error) {
+            console.warn('Data encoding failed:', error);
+            return data;
+        }
+    }
+    
+    static decryptSensitiveData(encodedData) {
+        try {
+            const decoded = atob(encodedData);
+            return JSON.parse(decoded);
+        } catch (error) {
+            console.warn('Data decoding failed:', error);
+            return encodedData;
+        }
+    }
+}
+```
+
+### 8. Rate Limiting and Abuse Prevention
+**❌ ABUSE VULNERABILITIES:**
+- No limits on save operations
+- Missing request throttling
+- No user behavior monitoring
+
+**✅ RATE LIMITING IMPLEMENTATION:**
+```javascript
+class RateLimiter {
+    constructor() {
+        this.operations = new Map();
+        this.limits = {
+            save: { max: 60, window: 60000 }, // 60 saves per minute
+            load: { max: 120, window: 60000 }, // 120 loads per minute
+            delete: { max: 10, window: 60000 } // 10 deletes per minute
+        };
+    }
+    
+    canPerform(operation, userId) {
+        const key = `${operation}_${userId}`;
+        const now = Date.now();
+        
+        if (!this.operations.has(key)) {
+            this.operations.set(key, []);
+        }
+        
+        const requests = this.operations.get(key);
+        const limit = this.limits[operation];
+        
+        if (!limit) {
+            return { allowed: true };
+        }
+        
+        // Remove old requests outside the window
+        const recentRequests = requests.filter(
+            timestamp => now - timestamp < limit.window
+        );
+        
+        if (recentRequests.length >= limit.max) {
+            return {
+                allowed: false,
+                retryAfter: limit.window - (now - recentRequests[0])
+            };
+        }
+        
+        // Add current request
+        recentRequests.push(now);
+        this.operations.set(key, recentRequests);
+        
+        return { allowed: true };
+    }
+    
+    async performWithLimit(operation, userId, operationFunction) {
+        const check = this.canPerform(operation, userId);
+        
+        if (!check.allowed) {
+            const waitTime = Math.ceil(check.retryAfter / 1000);
+            throw new Error(`Rate limit exceeded. Try again in ${waitTime} seconds.`);
+        }
+        
+        return await operationFunction();
+    }
+}
+```
+
+These Firebase safety rules should be strictly followed when working with database operations in [js/firebase-config.js](mdc:js/firebase-config.js) and [js/community.js](mdc:js/community.js) to ensure secure, reliable, and performant data handling throughout the application.

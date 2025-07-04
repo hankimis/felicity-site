@@ -13,7 +13,7 @@ async function loadFooter() {
             document.body.appendChild(placeholder);
         }
         
-        const response = await fetch('_footer.html');
+        const response = await fetch('/_footer.html');
         if (!response.ok) {
             throw new Error(`풋터 로드 실패: ${response.status}`);
         }

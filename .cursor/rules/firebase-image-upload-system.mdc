@@ -3,3 +3,446 @@ description:
 globs:
 alwaysApply: false
 ---
+# Firebase Storage Image Upload System
+
+## 🎯 MISSION CRITICAL: Secure Admin-Only Image Upload Architecture
+**ABSOLUTE REQUIREMENT**: Every image upload system MUST implement Firebase Storage with role-based access control and comprehensive error handling.
+
+## 🔥 CORE SYSTEM ARCHITECTURE
+
+### 1. Firebase Storage Integration Protocol
+```javascript
+// ✅ MANDATORY: Complete Firebase imports
+import { getStorage, ref, uploadBytesResumable, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+
+// 🔥 CRITICAL: Storage initialization
+const storage = getStorage(app);
+let currentImageFile = null;
+let currentImageUrl = null;
+let uploadTask = null;
+```
+
+### 2. Admin Permission Validation Matrix
+```javascript
+// 🎯 DUAL PERMISSION CHECK: Support both role and isAdmin fields
+onAuthStateChanged(auth, async (user) => {
+  currentUser = user;
+  isAdmin = false;
+  
+  if (user) {
+    try {
+      const userDoc = await getDoc(doc(db, 'users', user.uid));
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        // 🔥 CRITICAL: Check both permission patterns
+        isAdmin = userData.role === 'admin' || userData.isAdmin === true;
+        console.log('User admin status:', isAdmin);
+      }
+    } catch (error) {
+      console.error('Error checking admin status:', error);
+    }
+  }
+});
+```
+
+### 3. Secure File Upload Implementation
+```javascript
+// 🛡️ COMPREHENSIVE FILE VALIDATION
+async function uploadImageFile(file) {
+  return new Promise((resolve, reject) => {
+    // File size validation (5MB limit)
+    if (file.size > 5 * 1024 * 1024) {
+      reject(new Error('파일 크기가 5MB를 초과합니다.'));
+      return;
+    }
+    
+    // File type validation
+    if (!file.type.startsWith('image/')) {
+      reject(new Error('이미지 파일만 업로드 가능합니다.'));
+      return;
+    }
+    
+    // 🔥 CRITICAL: Unique filename generation
+    const timestamp = Date.now();
+    const randomString = Math.random().toString(36).substring(2, 15);
+    const fileName = `events/${timestamp}_${randomString}.${file.name.split('.').pop()}`;
+    
+    // Storage reference with organized path structure
+    const storageRef = ref(storage, fileName);
+    uploadTask = uploadBytesResumable(storageRef, file);
+    
+    // Progress monitoring with UI feedback
+    uploadTask.on('state_changed',
+      (snapshot) => {
+        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+        updateUploadProgress(progress);
+      },
+      (error) => {
+        console.error('Upload error:', error);
+        hideUploadProgress();
+        reject(error);
+      },
+      async () => {
+        try {
+          const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+          hideUploadProgress();
+          resolve(downloadURL);
+        } catch (error) {
+          hideUploadProgress();
+          reject(error);
+        }
+      }
+    );
+  });
+}
+```
+
+### 4. Firebase Storage Security Rules
+```javascript
+// 🛡️ PRODUCTION-READY SECURITY RULES
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Event images with admin-only write access
+    match /events/{imageId} {
+      // Public read access for all users
+      allow read: if true;
+      
+      // Admin-only write/delete with dual permission check
+      allow write, delete: if request.auth != null && 
+        (firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+         firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.isAdmin == true);
+    }
+    
+    // Block all other paths
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
+```
+
+## 🚀 UI/UX IMPLEMENTATION PATTERNS
+
+### 1. Progressive Enhancement Upload Interface
+```html
+<!-- 🎯 DUAL INPUT METHOD: File upload + URL fallback -->
+<div class="input-group">
+  <label for="event-img">이벤트 이미지</label>
+  <div class="image-upload-container">
+    <input type="file" id="event-img-file" accept="image/*" style="display: none;" />
+    <button type="button" id="upload-image-btn" class="upload-btn">
+      <i class="fas fa-upload"></i>
+      이미지 업로드
+    </button>
+    <div class="upload-info">
+      <small>JPG, PNG, GIF 파일만 업로드 가능 (최대 5MB)</small>
+    </div>
+    <!-- Progress indicator -->
+    <div class="upload-progress" id="upload-progress" style="display: none;">
+      <div class="progress-bar">
+        <div class="progress-fill" id="progress-fill"></div>
+      </div>
+      <span class="progress-text" id="progress-text">0%</span>
+    </div>
+  </div>
+  <!-- Image preview with remove option -->
+  <div class="preview-container">
+    <img id="preview-event-img" class="preview-image" style="display:none;" />
+    <button type="button" id="remove-image-btn" class="remove-image-btn" style="display:none;">
+      <i class="fas fa-times"></i>
+    </button>
+  </div>
+  <!-- URL input toggle -->
+  <div class="url-input-toggle">
+    <button type="button" id="toggle-url-input" class="toggle-btn">
+      <i class="fas fa-link"></i>
+      URL로 입력하기
+    </button>
+  </div>
+  <div class="url-input-container" id="url-input-container" style="display: none;">
+    <input type="url" id="event-img-url" placeholder="이벤트 이미지 URL을 입력하세요" />
+  </div>
+</div>
+```
+
+### 2. Responsive CSS Architecture
+```css
+/* 🎨 UPLOAD INTERFACE STYLING */
+.upload-btn {
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1em;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background 0.2s;
+  width: 100%;
+  justify-content: center;
+}
+
+.upload-btn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+/* Progress visualization */
+.upload-progress {
+  margin-top: 12px;
+  padding: 8px;
+  background: var(--bg-secondary-color);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+
+.progress-bar {
+  width: 100%;
+  height: 8px;
+  background: var(--border-color);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.progress-fill {
+  height: 100%;
+  background: var(--primary-color);
+  transition: width 0.3s ease;
+  width: 0%;
+}
+
+/* Image removal interface */
+.remove-image-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(239, 83, 80, 0.9);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+```
+
+## 🛡️ ERROR PREVENTION & RECOVERY PROTOCOLS
+
+### Critical Error Patterns to AVOID:
+1. **❌ NEVER** upload without permission validation
+2. **❌ NEVER** skip file size/type validation
+3. **❌ NEVER** use predictable filenames
+4. **❌ NEVER** forget progress cleanup on errors
+5. **❌ NEVER** ignore Storage security rules
+
+### Required Error Handling Matrix:
+```javascript
+// 🎯 COMPREHENSIVE ERROR MANAGEMENT
+const ERROR_HANDLERS = {
+  'permission_denied': (error) => {
+    console.error('Permission denied:', error);
+    showFormMessage('관리자 권한이 필요합니다.');
+  },
+  
+  'file_too_large': (error) => {
+    console.error('File too large:', error);
+    showFormMessage('파일 크기가 5MB를 초과합니다.');
+  },
+  
+  'invalid_file_type': (error) => {
+    console.error('Invalid file type:', error);
+    showFormMessage('이미지 파일만 업로드 가능합니다.');
+  },
+  
+  'network_error': (error) => {
+    console.error('Network error:', error);
+    showFormMessage('네트워크 오류가 발생했습니다. 다시 시도해주세요.');
+  }
+};
+
+// Pre-upload validation
+if (!currentUser) {
+  showFormMessage('로그인이 필요합니다.');
+  return;
+}
+if (!isAdmin) {
+  showFormMessage('관리자 권한이 필요합니다.');
+  return;
+}
+```
+
+## 📋 DEBUGGING & MONITORING TOOLKIT
+
+### Development Debug Interface:
+```javascript
+// 🔧 ADMIN PERMISSION DEBUGGER
+const debugAuthBtn = document.getElementById('debug-auth-btn');
+if (debugAuthBtn) {
+  debugAuthBtn.addEventListener('click', async () => {
+    if (!currentUser) {
+      alert('로그인되지 않음');
+      return;
+    }
+    
+    try {
+      const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        alert(`사용자 정보:
+UID: ${currentUser.uid}
+Email: ${currentUser.email}
+Role: ${userData.role || 'undefined'}
+isAdmin: ${userData.isAdmin || 'undefined'}
+계산된 isAdmin: ${isAdmin}`);
+      }
+    } catch (error) {
+      alert('오류: ' + error.message);
+    }
+  });
+}
+```
+
+### Console Commands for Testing:
+```javascript
+// Storage upload test
+console.log('🔥 Upload test - User:', currentUser?.uid, 'isAdmin:', isAdmin);
+
+// Permission validation test
+const testPermissions = async () => {
+  const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+  console.log('User permissions:', userDoc.data());
+};
+
+// Storage rules test
+const testStorageAccess = () => {
+  console.log('Testing storage access with current user permissions...');
+};
+```
+
+## ⚡ PERFORMANCE OPTIMIZATION STANDARDS
+
+### 1. File Processing Optimization
+```javascript
+// ✅ EFFICIENT: Lazy loading and cleanup
+function cancelUpload() {
+  if (uploadTask) {
+    uploadTask.cancel();
+    uploadTask = null;
+    hideUploadProgress();
+  }
+}
+
+// Memory management
+function removeImagePreview() {
+  if (previewEventImg && removeImageBtn) {
+    previewEventImg.style.display = 'none';
+    removeImageBtn.style.display = 'none';
+    currentImageUrl = null;
+    currentImageFile = null;
+    
+    // Clear file inputs
+    if (eventImgFile) eventImgFile.value = '';
+    if (eventImgUrl) eventImgUrl.value = '';
+  }
+}
+```
+
+### 2. State Management Patterns
+```javascript
+// ✅ CENTRALIZED STATE: Clean initialization and cleanup
+const initializeImageUpload = () => {
+  currentImageFile = null;
+  currentImageUrl = null;
+  uploadTask = null;
+  hideUploadProgress();
+  removeImagePreview();
+};
+
+// Form submission integration
+const getImageUrl = () => {
+  // Priority: uploaded image > URL input > legacy input
+  return currentImageUrl || 
+         eventImgUrl?.value.trim() || 
+         eventImgInput?.value.trim() || '';
+};
+```
+
+## 🔧 INTEGRATION POINTS
+
+### File References:
+- **Main Implementation**: [event-board.js](mdc:event-board.js)
+- **HTML Interface**: [event-board.html](mdc:event-board.html)
+- **Security Rules**: [storage.rules](mdc:storage.rules)
+- **Firebase Config**: [js/firebase-config.js](mdc:js/firebase-config.js)
+
+### Required Dependencies:
+```html
+<!-- Firebase Storage SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js"></script>
+
+<!-- Font Awesome for icons -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+```
+
+### Key Functions:
+- `uploadImageFile()` - Core upload logic
+- `updateUploadProgress()` - Progress visualization
+- `showImagePreview()` - Preview management
+- `removeImagePreview()` - Cleanup operations
+
+## 🚨 EMERGENCY PROTOCOLS
+
+### If Upload Fails:
+1. **Check User Authentication**: Verify login status
+2. **Validate Admin Permissions**: Confirm role/isAdmin fields
+3. **Test Storage Rules**: Ensure Firebase rules are deployed
+4. **Verify File Constraints**: Check size and type limits
+5. **Monitor Network**: Check console for connection errors
+
+### Quick Recovery Commands:
+```javascript
+// Reset upload state
+initializeImageUpload();
+
+// Force permission refresh
+location.reload();
+
+// Manual admin permission set (Firebase Console)
+// Navigate to Firestore > users > [UID] > Add field:
+// role: "admin" OR isAdmin: true
+```
+
+## 📈 SUCCESS METRICS
+
+### Functional Requirements:
+- ✅ File upload completes within 30 seconds
+- ✅ Progress indicator shows real-time status
+- ✅ Admin-only access enforced at all levels
+- ✅ Graceful error handling with user feedback
+- ✅ Image preview updates immediately
+
+### Security Benchmarks:
+- **Authentication**: 100% admin verification
+- **File Validation**: Size + type checking
+- **Storage Rules**: Server-side permission enforcement
+- **Error Handling**: No sensitive data exposure
+- **Cleanup**: Complete state reset on errors
+
+### Performance Targets:
+- **Upload Speed**: 1MB/second minimum
+- **UI Response**: < 100ms interaction feedback
+- **Memory Usage**: < 10MB additional overhead
+- **Error Recovery**: < 2 seconds cleanup time
+
+---
+
+**🎯 ARCHITECTURAL PRINCIPLE**: Security-first design with progressive enhancement. Every upload operation must pass through multiple validation layers while maintaining excellent user experience.

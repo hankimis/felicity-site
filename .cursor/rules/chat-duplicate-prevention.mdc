@@ -3,3 +3,204 @@ description:
 globs:
 alwaysApply: false
 ---
+# Chat System Duplicate Prevention Rules
+
+## 🚨 CRITICAL: Chat Duplicate Prevention Protocol
+
+### Core Principle: Single Source of Truth
+**NEVER create multiple chat initialization systems.** The codebase must maintain ONE authoritative chat implementation per page type.
+
+### Architecture Rules
+
+#### 1. Chat System Ownership
+- **Community Page**: Use ONLY [js/community-chat.js](mdc:js/community-chat.js) `CommunityChat` class
+- **Analysis Page**: Use ONLY [js/analysis-chat.js](mdc:js/analysis-chat.js) `AnalysisChat` class
+- **FORBIDDEN**: Direct chat functions in [js/community.js](mdc:js/community.js) or other main files
+
+#### 2. Event Listener Prevention Protocol
+```javascript
+// ✅ CORRECT: Always check initialization state
+if (!this.isChatFormInitialized) {
+    // Remove existing listeners first
+    if (this._submitHandler) {
+        this.messageForm.removeEventListener('submit', this._submitHandler);
+        this._submitHandler = null;
+    }
+    // Then add new listener
+    this._submitHandler = async (e) => { /* handler */ };
+    this.messageForm.addEventListener('submit', this._submitHandler);
+    this.isChatFormInitialized = true;
+}
+
+// ❌ FORBIDDEN: Direct addEventListener without checks
+this.messageForm.addEventListener('submit', handler); // DANGEROUS!
+```
+
+#### 3. Submission State Management
+**MANDATORY**: Implement submission locking mechanism:
+```javascript
+// ✅ REQUIRED PATTERN
+this.isSubmitting = false; // Initialize in constructor
+
+const submitHandler = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // CRITICAL: Check submission state
+    if (this.isSubmitting) {
+        console.log('Already submitting message');
+        return;
+    }
+    
+    this.isSubmitting = true;
+    const originalText = this.messageInput.value.trim();
+    
+    // IMMEDIATE: Clear and disable input
+    this.messageInput.value = '';
+    this.messageInput.disabled = true;
+    
+    try {
+        // Perform submission
+        await this.sendMessage(originalText);
+    } catch (error) {
+        // RESTORE on failure
+        this.messageInput.value = originalText;
+    } finally {
+        // ALWAYS restore state
+        this.isSubmitting = false;
+        this.messageInput.disabled = false;
+        this.messageInput.focus();
+    }
+};
+```
+
+### Code Review Checklist
+
+#### Before ANY Chat-Related Changes:
+1. **Initialization Check**: Is there already a chat system for this page?
+2. **Event Listener Audit**: Are we adding listeners to forms that already have them?
+3. **State Management**: Does the new code implement submission locking?
+4. **Error Recovery**: Does the code restore state on failure?
+
+#### Red Flags (IMMEDIATE REVIEW REQUIRED):
+- Multiple `addEventListener('submit')` calls on same form
+- Chat initialization in multiple files for same page
+- Missing `isChatFormInitialized` checks
+- No submission state management
+- Direct DOM manipulation without class-based approach
+
+### Testing Protocol
+
+#### Manual Testing Requirements:
+1. **Rapid Click Test**: Click send button rapidly 5+ times
+2. **Enter Key Spam**: Press Enter key rapidly while typing
+3. **Network Delay Test**: Send message during slow network conditions
+4. **Tab Switch Test**: Switch tabs during message sending
+5. **Page Refresh Test**: Refresh page and immediately try sending
+
+#### Automated Checks:
+```javascript
+// Verify single event listener
+const form = document.getElementById('chat-form');
+const listeners = getEventListeners(form); // DevTools
+console.assert(listeners.submit.length === 1, 'Multiple submit listeners detected!');
+
+// Verify initialization state
+console.assert(window.communityChat?.isChatFormInitialized === true, 'Chat not properly initialized');
+```
+
+### Emergency Debugging Commands
+
+#### When Duplicate Messages Occur:
+```javascript
+// 1. Check event listeners
+getEventListeners(document.getElementById('chat-form'));
+
+// 2. Check initialization states
+console.log('Community Chat:', window.communityChat?.isChatFormInitialized);
+console.log('Analysis Chat:', window.analysisChat?.isChatFormInitialized);
+
+// 3. Check submission states
+console.log('Submitting:', window.communityChat?.isSubmitting);
+
+// 4. Remove all listeners (emergency fix)
+const form = document.getElementById('chat-form');
+const newForm = form.cloneNode(true);
+form.parentNode.replaceChild(newForm, form);
+```
+
+### File Modification Guidelines
+
+#### When Editing [js/community.js](mdc:js/community.js):
+- **NEVER** add chat-related functions
+- **NEVER** call `initializeChat()` or similar
+- Only reference `window.communityChat` for integration
+
+#### When Editing [js/community-chat.js](mdc:js/community-chat.js):
+- Always implement submission locking
+- Always check `isChatFormInitialized`
+- Always clean up existing listeners
+- Use try-catch-finally pattern
+
+#### When Adding New Chat Features:
+1. Extend existing chat classes, don't create new systems
+2. Follow the established pattern in existing chat files
+3. Test duplicate prevention before committing
+4. Document any new state variables
+
+### Performance Considerations
+
+#### Memory Leak Prevention:
+```javascript
+// ✅ REQUIRED: Cleanup in destructor
+cleanup() {
+    if (this._submitHandler) {
+        this.messageForm?.removeEventListener('submit', this._submitHandler);
+        this._submitHandler = null;
+    }
+    if (this.messagesUnsubscribe) {
+        this.messagesUnsubscribe();
+        this.messagesUnsubscribe = null;
+    }
+}
+
+// ✅ REQUIRED: Page unload cleanup
+window.addEventListener('beforeunload', () => {
+    if (window.communityChat) {
+        window.communityChat.cleanup();
+    }
+});
+```
+
+### Integration Rules
+
+#### Firebase Integration:
+- Use single Firestore collection per chat type
+- Implement proper error handling for network failures
+- Add retry mechanisms for failed submissions
+
+#### UI/UX Requirements:
+- Provide visual feedback during submission
+- Disable input during processing
+- Show error messages for failed submissions
+- Restore user input on failure
+
+## 🎯 Success Metrics
+
+A properly implemented chat system should:
+- ✅ Send exactly one message per user action
+- ✅ Handle rapid user interactions gracefully
+- ✅ Recover from network errors without data loss
+- ✅ Maintain responsive UI during all operations
+- ✅ Clean up resources properly on page unload
+
+## 🚨 Emergency Contacts
+
+If duplicate messages are reported:
+1. Immediately check event listener count
+2. Verify initialization flags
+3. Test submission locking mechanism
+4. Review recent changes to chat-related files
+5. Apply emergency listener cleanup if needed
+
+Remember: **Prevention is better than cure.** Always follow these rules to avoid chat duplication issues.

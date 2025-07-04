@@ -515,12 +515,12 @@ function createMobileMenuIfNeeded() {
         </div>
         <nav class="mobile-menu-nav">
           <ul>
-            <li><a href="affiliated.html" data-action="close-mobile-menu"><i class="fas fa-building"></i> 제휴 거래소</a></li>
-            <li><a href="community.html" data-action="close-mobile-menu"><i class="fas fa-comments"></i> 실시간 채팅</a></li>
-            <li><a href="community-board.html" data-action="close-mobile-menu"><i class="fas fa-clipboard-list"></i> 자유 게시판</a></li>
-            <li><a href="attendance.html" data-action="close-mobile-menu"><i class="fas fa-calendar-check"></i> 출석체크</a></li>
-            <li><a href="notice-board.html" data-action="close-mobile-menu"><i class="fas fa-bullhorn"></i> 공지사항</a></li>
-            <li><a href="my-account.html" data-action="close-mobile-menu"><i class="fas fa-user"></i> 마이페이지</a></li>
+                            <li><a href="/affiliated/" data-action="close-mobile-menu"><i class="fas fa-building"></i> 제휴 거래소</a></li>
+            <li><a href="/community.html" data-action="close-mobile-menu"><i class="fas fa-comments"></i> 실시간 채팅</a></li>
+            <li><a href="/community-board.html" data-action="close-mobile-menu"><i class="fas fa-clipboard-list"></i> 자유 게시판</a></li>
+            <li><a href="/attendance.html" data-action="close-mobile-menu"><i class="fas fa-calendar-check"></i> 출석체크</a></li>
+            <li><a href="/notice-board.html" data-action="close-mobile-menu"><i class="fas fa-bullhorn"></i> 공지사항</a></li>
+            <li><a href="/my-account.html" data-action="close-mobile-menu"><i class="fas fa-user"></i> 마이페이지</a></li>
             <li><a href="#" data-action="toggle-theme"><i class="fas fa-adjust"></i> 테마 변경</a></li>
           </ul>
         </nav>

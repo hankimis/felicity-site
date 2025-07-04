@@ -3,3 +3,229 @@ description:
 globs:
 alwaysApply: false
 ---
+# News System Performance Optimization Rules
+
+## 🚀 CRITICAL PERFORMANCE REQUIREMENTS
+
+### RSS Feed Loading Optimization
+```javascript
+// ✅ ALWAYS use these timeout and limit settings
+const TIMEOUT_MS = 2500; // Maximum 2.5 seconds
+const ITEMS_PER_FEED = 6; // Maximum 6 items per source
+const CACHE_DURATION = 2 * 60 * 1000; // 2 minutes cache
+
+// ✅ ALWAYS implement fast-fail strategy
+async function fetchAndParseFeed({ url, source }) {
+    try {
+        // Single RSS2JSON attempt with timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
+        
+        const response = await fetch(rss2jsonUrl, {
+            signal: controller.signal,
+            headers: {
+                'Accept': 'application/json',
+                'Cache-Control': 'max-age=300'
+            }
+        });
+        
+        clearTimeout(timeoutId);
+        // Process immediately, no backup proxy attempts
+    } catch (error) {
+        // IMMEDIATE fallback to backup news - NO secondary attempts
+        return getBackupNews(source);
+    }
+}
+```
+
+### Image Loading Performance Rules
+```javascript
+// ✅ ALWAYS optimize image handling
+function optimizeImageUrl(thumbnail) {
+    // Only load HTTP URLs, use default for everything else
+    if (thumbnail && thumbnail.startsWith('http')) {
+        return thumbnail;
+    }
+    return 'assets/default-news.jpg'; // Fast local fallback
+}
+
+// ✅ ALWAYS use lazy loading attributes
+const imageHtml = `<img 
+    src="${imageUrl}" 
+    alt="" 
+    class="news-thumb" 
+    loading="lazy" 
+    decoding="async" 
+    onerror="this.style.display='none';">`;
+```
+
+### DOM Manipulation Optimization
+```javascript
+// ✅ ALWAYS use DocumentFragment for multiple DOM updates
+function displayNews(news) {
+    const fragment = document.createDocumentFragment();
+    
+    news.forEach(item => {
+        const newsItem = document.createElement('a');
+        // Build element properties
+        newsItem.innerHTML = `...`;
+        fragment.appendChild(newsItem);
+    });
+    
+    // Single DOM update
+    newsGrid.innerHTML = '';
+    newsGrid.appendChild(fragment);
+}
+
+// ❌ NEVER use innerHTML in loops
+// ❌ NEVER use map().join() for large datasets
+```
+
+## 📊 TEXT PROCESSING OPTIMIZATION
+
+### Content Snippet Generation
+```javascript
+// ✅ ALWAYS use optimized regex patterns
+function generateContentSnippet(description, maxLength = 120) {
+    if (!description) return '';
+    
+    // Single-pass cleaning with optimized regex
+    const cleanText = description
+        .replace(/<[^>]*>/g, '') // Remove HTML tags
+        .replace(/&[^;]+;/g, ' ') // Replace entities
+        .trim();
+    
+    return cleanText.substring(0, maxLength);
+}
+
+// ❌ NEVER use multiple replace() calls
+// ❌ NEVER exceed 120 characters for snippets
+```
+
+## 🎯 CACHING STRATEGY RULES
+
+### Cache Management
+```javascript
+// ✅ ALWAYS implement smart caching
+const CACHE_RULES = {
+    duration: 2 * 60 * 1000, // 2 minutes maximum
+    key: 'newsFeedsCache',
+    backgroundUpdate: true // Update cache in background
+};
+
+// ✅ ALWAYS show cached data immediately
+if (cachedData && age < CACHE_DURATION_MS) {
+    displayNews(cachedData.data);
+    loadFreshNews(); // Background update, no delay
+    return;
+}
+```
+
+## 🚫 CRITICAL ERROR PREVENTION
+
+### Network Request Failures
+```javascript
+// ✅ ALWAYS handle network failures gracefully
+try {
+    const results = await Promise.allSettled(feedPromises);
+    
+    results.forEach((result, index) => {
+        if (result.status === 'fulfilled' && result.value.length > 0) {
+            allNews.push(...result.value);
+            successCount++;
+        } else {
+            failedFeeds.push(feeds[index].source);
+        }
+    });
+    
+    // Show results even if some feeds fail
+    if (allNews.length === 0) {
+        throw new Error('All feeds failed');
+    }
+} catch (error) {
+    // Graceful degradation to backup news
+}
+```
+
+### Memory Management
+```javascript
+// ✅ ALWAYS clean up resources
+function cleanup() {
+    // Clear timeouts
+    if (timeoutId) clearTimeout(timeoutId);
+    
+    // Abort ongoing requests
+    if (controller) controller.abort();
+    
+    // Remove event listeners if needed
+}
+```
+
+## 🎨 CSS PERFORMANCE OPTIMIZATION
+
+### Image Loading CSS
+```css
+/* ✅ ALWAYS optimize image rendering */
+.news-thumb {
+    background-color: var(--bg-secondary-color);
+    will-change: transform;
+    transition: opacity 0.3s ease;
+    object-fit: cover;
+}
+
+/* ✅ ALWAYS provide loading states */
+.news-thumb[src="assets/default-news.jpg"] {
+    opacity: 0.7;
+}
+```
+
+## 📋 PERFORMANCE MONITORING
+
+### Required Metrics
+```javascript
+// ✅ ALWAYS log performance metrics
+console.log(`📰 News Loading Complete: 
+    ${successCount}/${feeds.length} sources successful
+    ${uniqueNews.length} total news items
+    Load time: ${Date.now() - startTime}ms`);
+```
+
+## 🔧 DEBUGGING COMMANDS
+
+### Emergency Performance Debugging
+```javascript
+// Clear all caches
+localStorage.removeItem('newsFeedsCache');
+
+// Test individual feed
+await fetchAndParseFeed({ 
+    url: 'https://www.tokenpost.kr/rss', 
+    source: 'tokenpost' 
+});
+
+// Monitor network requests
+console.time('news-load');
+await loadFreshNews();
+console.timeEnd('news-load');
+```
+
+## ⚠️ NEVER DO THIS
+
+1. **NEVER** use multiple backup proxy attempts
+2. **NEVER** set timeouts longer than 2.5 seconds
+3. **NEVER** load more than 6 items per feed
+4. **NEVER** use innerHTML in forEach loops
+5. **NEVER** ignore failed image loading
+6. **NEVER** cache data longer than 2 minutes
+7. **NEVER** block UI thread with synchronous operations
+
+## 🎯 SUCCESS CRITERIA
+
+- Initial load time < 3 seconds
+- Image loading < 1 second per image
+- Cache hit rate > 80%
+- Failed feed tolerance > 50%
+- Memory usage < 50MB
+- No blocking UI operations
+
+Reference files: [js/news.js](mdc:js/news.js), [css/news.css](mdc:css/news.css)

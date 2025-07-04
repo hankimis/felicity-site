@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lbank 거래소 정보 - ONBit</title>
+  
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+  
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="../../css/style.css"/>
+  <link rel="stylesheet" href="../../auth.css"/>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" />
+  <link rel="icon" type="image/png" href="/onbit/favicon-96x96.png" sizes="96x96" />
+  <link rel="icon" type="image/svg+xml" href="/onbit/favicon.svg" />
+  <link rel="shortcut icon" href="/onbit/favicon.ico" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/onbit/apple-touch-icon.png" />
+  <meta name="apple-mobile-web-app-title" content="Onbit" />
+  <link rel="manifest" href="/onbit/site.webmanifest" />
+  
+  <!-- Common Scripts -->
+  <script src="../../js/auth.js"></script>
+  <!-- Unified Header Loader -->
+  <script src="../../js/header-loader.js" defer></script>
+</head>
+<body>
+  <!-- Header will be loaded here by header-loader.js -->
+  <div id="header-placeholder"></div>
+  
+  <main class="main-container lbank-detail-page" style="max-width: 1000px !important; margin: 0 auto !important;">
+    <section class="exchange-intro-card info-card" style="text-align:center; margin-top:40px;">
+      <img src="../../assets/tradelogo/lbanklogo.png" alt="Lbank 로고" class="exchange-logo" style="width:110px; height:110px; border-radius:24px; background:#fff; object-fit:contain; margin-bottom:18px;" />
+      <h1 class="exchange-title" style="font-size:2.2em; font-weight:900; letter-spacing:2px; margin-bottom:8px;">Lbank</h1>
+      <p class="exchange-desc" style="font-size:1.13em; color:var(--text-color-secondary); margin-bottom:30px;">Lbank는 글로벌 유저가 많은 대형 거래소로, 다양한 코인 상장과 빠른 입출금을 제공합니다.</p>
+      <a href="https://lbank.com/ref/ONBIT" target="_blank" class="lbank-join-btn signup-button filled" style="font-size:1.15em; padding:14px 38px; margin-bottom:0;">가입하기</a>
+    </section>
+
+    <section class="exchange-benefit-card info-card" style="margin-top:32px;">
+      <h2 class="section-title" style="margin-bottom:18px;">주요 혜택</h2>
+      <ul style="list-style:none; padding:0; display:flex; flex-direction:column; gap:12px;">
+        <li style="display:flex;align-items:center;gap:10px;"><i class="fas fa-fire" style="color:#ff5252;"></i> <b style="color:#3182f6;">수수료 50% 페이백</b> <span style="color:var(--text-color-secondary);">(해당 링크 가입 유저, 이벤트)</span></li>
+        <li style="display:flex;align-items:center;gap:10px;"><i class="fas fa-gift" style="color:#ffd700;"></i> <b style="color:#3182f6;">신규 가입 이벤트</b> <span style="color:var(--text-color-secondary);">(가입 시 추가 보너스 지급 - 500USDT 입금시 200USDT 추가 지급)</span></li>
+        <li style="display:flex;align-items:center;gap:10px;"><i class="fas fa-rocket" style="color:#8b5cf6;"></i> <b style="color:#3182f6;">빠른 입출금</b> <span style="color:var(--text-color-secondary);">(신속한 자금 이동 서비스)</span></li>
+      </ul>
+    </section>
+
+    <section class="exchange-fee-card info-card" style="margin-top:32px;">
+      <h2 class="section-title" style="margin-bottom:18px;">수수료 안내</h2>
+      <div style="display:flex; flex-direction:column; gap:14px; align-items:flex-start; margin-bottom:10px;">
+        <div style="display:flex; align-items:center; gap:14px; font-size:1.18em;">
+          <span style="min-width:60px; color:var(--text-color-secondary); font-weight:700;">지정가</span>
+          <span style="color:#888; text-decoration:line-through; font-weight:600; margin-right:6px;">0.025%</span>
+          <span style="color:#3182f6; font-weight:700; font-size:1.13em;">0.0125%</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:14px; font-size:1.18em;">
+          <span style="min-width:60px; color:var(--text-color-secondary); font-weight:700;">시장가</span>
+          <span style="color:#888; text-decoration:line-through; font-weight:600; margin-right:6px;">0.075%</span>
+          <span style="color:#3182f6; font-weight:700; font-size:1.13em;">0.0375%</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="exchange-features-card info-card" style="margin-top:32px;">
+      <h2 class="section-title" style="margin-bottom:18px;">주요 특징</h2>
+      <ul style="list-style:none; padding:0; display:flex; flex-direction:column; gap:12px;">
+        <li style="display:flex;align-items:center;gap:10px;"><i class="fas fa-globe" style="color:#06b6d4;"></i> <b>글로벌 메인 거래소</b> <span style="color:var(--text-color-secondary);">- 전 세계 다수 국가 서비스</span></li>
+        <li style="display:flex;align-items:center;gap:10px;"><i class="fas fa-coins" style="color:#f59e0b;"></i> <b>다양한 코인 상장</b> <span style="color:var(--text-color-secondary);">- 신규 프로젝트 조기 상장</span></li>
+        <li style="display:flex;align-items:center;gap:10px;"><i class="fas fa-tachometer-alt" style="color:#22c55e;"></i> <b>고속 거래 엔진</b> <span style="color:var(--text-color-secondary);">- 빠른 주문 체결 시스템</span></li>
+        <li style="display:flex;align-items:center;gap:10px;"><i class="fas fa-mobile-alt" style="color:#8b5cf6;"></i> <b>모바일 최적화</b> <span style="color:var(--text-color-secondary);">- 편리한 모바일 거래</span></li>
+        <li style="display:flex;align-items:center;gap:10px;"><i class="fas fa-headset" style="color:#ef4444;"></i> <b>24/7 고객지원</b> <span style="color:var(--text-color-secondary);">- 연중무휴 다국어 지원</span></li>
+      </ul>
+    </section>
+
+    <section class="exchange-services-card info-card" style="margin-top:32px;">
+      <h2 class="section-title" style="margin-bottom:18px;">제공 서비스</h2>
+      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:16px;">
+        <div style="text-align:center; padding:16px; background:var(--bg-tertiary-color); border-radius:8px;">
+          <i class="fas fa-exchange-alt" style="font-size:2rem; color:#3182f6; margin-bottom:8px;"></i>
+          <h3 style="margin:0 0 4px 0; font-size:1rem; font-weight:600;">스팟 거래</h3>
+          <p style="margin:0; font-size:0.9rem; color:var(--text-color-secondary);">현물 거래</p>
+        </div>
+        <div style="text-align:center; padding:16px; background:var(--bg-tertiary-color); border-radius:8px;">
+          <i class="fas fa-chart-line" style="font-size:2rem; color:#10b981; margin-bottom:8px;"></i>
+          <h3 style="margin:0 0 4px 0; font-size:1rem; font-weight:600;">마진 거래</h3>
+          <p style="margin:0; font-size:0.9rem; color:var(--text-color-secondary);">레버리지 거래</p>
+        </div>
+        <div style="text-align:center; padding:16px; background:var(--bg-tertiary-color); border-radius:8px;">
+          <i class="fas fa-coins" style="font-size:2rem; color:#f59e0b; margin-bottom:8px;"></i>
+          <h3 style="margin:0 0 4px 0; font-size:1rem; font-weight:600;">IEO 런치패드</h3>
+          <p style="margin:0; font-size:0.9rem; color:var(--text-color-secondary);">신규 토큰 상장</p>
+        </div>
+        <div style="text-align:center; padding:16px; background:var(--bg-tertiary-color); border-radius:8px;">
+          <i class="fas fa-piggy-bank" style="font-size:2rem; color:#8b5cf6; margin-bottom:8px;"></i>
+          <h3 style="margin:0 0 4px 0; font-size:1rem; font-weight:600;">스테이킹</h3>
+          <p style="margin:0; font-size:0.9rem; color:var(--text-color-secondary);">이자 적립</p>
+        </div>
+      </div>
+    </section>
+
+            <button class="back-btn-modern" style="margin:40px 0 32px 0;" onclick="window.location.href='../'"><i class='fas fa-arrow-left'></i> 거래소 목록으로</button>
+  </main>
+
+  <!-- Footer -->
+  <div id="footer-placeholder"></div>
+
+  <script src="../../js/footer-loader.js" defer></script>
+</body>
+</html> 

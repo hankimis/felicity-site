@@ -3,3 +3,527 @@ description:
 globs:
 alwaysApply: false
 ---
+# Firebase Admin Permission Management System
+
+## 🎯 MISSION CRITICAL: Role-Based Access Control Architecture
+**ABSOLUTE REQUIREMENT**: Every admin feature MUST implement dual permission validation with comprehensive debugging capabilities and fail-safe security protocols.
+
+## 🔥 CORE PERMISSION ARCHITECTURE
+
+### 1. Dual Permission Validation Protocol
+```javascript
+// ✅ MANDATORY: Support both legacy and modern permission patterns
+const validateAdminPermission = async (user) => {
+  if (!user) return false;
+  
+  try {
+    const userDoc = await getDoc(doc(db, 'users', user.uid));
+    if (!userDoc.exists()) return false;
+    
+    const userData = userDoc.data();
+    
+    // 🔥 CRITICAL: Dual validation for backward compatibility
+    const isAdmin = userData.role === 'admin' || userData.isAdmin === true;
+    
+    // Additional role checks for granular permissions
+    const isModerator = userData.role === 'moderator';
+    const hasElevatedAccess = isAdmin || isModerator;
+    
+    return {
+      isAdmin,
+      isModerator,
+      hasElevatedAccess,
+      role: userData.role || 'user',
+      permissions: userData.permissions || []
+    };
+  } catch (error) {
+    console.error('Permission validation error:', error);
+    return false;
+  }
+};
+```
+
+### 2. Authentication State Management
+```javascript
+// 🎯 CENTRALIZED AUTH STATE: Single source of truth
+let currentUser = null;
+let isAdmin = false;
+let userPermissions = {};
+
+onAuthStateChanged(auth, async (user) => {
+  currentUser = user;
+  isAdmin = false;
+  userPermissions = {};
+  
+  if (user) {
+    try {
+      const permissionResult = await validateAdminPermission(user);
+      
+      if (permissionResult) {
+        isAdmin = permissionResult.isAdmin;
+        userPermissions = permissionResult;
+        
+        console.log('🔥 User permissions loaded:', {
+          uid: user.uid,
+          email: user.email,
+          ...permissionResult
+        });
+      }
+    } catch (error) {
+      console.error('Error loading user permissions:', error);
+      // Fail-safe: deny all permissions on error
+      isAdmin = false;
+      userPermissions = {};
+    }
+  }
+  
+  // Update UI based on permissions
+  updateUIBasedOnPermissions();
+});
+```
+
+### 3. UI Permission Control Matrix
+```javascript
+// 🛡️ PERMISSION-BASED UI VISIBILITY
+const updateUIBasedOnPermissions = () => {
+  // Admin-only elements
+  const adminElements = document.querySelectorAll('[data-admin-only]');
+  adminElements.forEach(element => {
+    element.style.display = isAdmin ? 'block' : 'none';
+  });
+  
+  // Moderator+ elements
+  const moderatorElements = document.querySelectorAll('[data-moderator-plus]');
+  moderatorElements.forEach(element => {
+    element.style.display = userPermissions.hasElevatedAccess ? 'block' : 'none';
+  });
+  
+  // Role-specific elements
+  const roleElements = document.querySelectorAll('[data-required-role]');
+  roleElements.forEach(element => {
+    const requiredRole = element.getAttribute('data-required-role');
+    const hasRole = userPermissions.role === requiredRole || 
+                   (requiredRole === 'moderator' && isAdmin);
+    element.style.display = hasRole ? 'block' : 'none';
+  });
+  
+  // Permission-specific elements
+  const permissionElements = document.querySelectorAll('[data-required-permission]');
+  permissionElements.forEach(element => {
+    const requiredPermission = element.getAttribute('data-required-permission');
+    const hasPermission = userPermissions.permissions?.includes(requiredPermission) || isAdmin;
+    element.style.display = hasPermission ? 'block' : 'none';
+  });
+};
+```
+
+### 4. Firestore Security Rules Integration
+```javascript
+// 🔥 FIRESTORE SECURITY RULES: Server-side validation
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Admin permission helper function
+    function isAdmin() {
+      return request.auth != null && (
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true
+      );
+    }
+    
+    function isModerator() {
+      return request.auth != null && (
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'moderator' ||
+        isAdmin()
+      );
+    }
+    
+    function hasPermission(permission) {
+      return request.auth != null && (
+        permission in get(/databases/$(database)/documents/users/$(request.auth.uid)).data.permissions ||
+        isAdmin()
+      );
+    }
+    
+    // Events collection - Admin only write
+    match /events/{eventId} {
+      allow read: if true;
+      allow write, delete: if isAdmin();
+    }
+    
+    // Users collection - Admin read, self write
+    match /users/{userId} {
+      allow read: if isAdmin() || request.auth.uid == userId;
+      allow write: if request.auth.uid == userId;
+      allow delete: if isAdmin();
+    }
+    
+    // Admin-only collections
+    match /admin/{document=**} {
+      allow read, write: if isAdmin();
+    }
+  }
+}
+```
+
+## 🚀 DEBUGGING & MONITORING SYSTEM
+
+### 1. Permission Debug Interface
+```javascript
+// 🔧 COMPREHENSIVE PERMISSION DEBUGGER
+const createPermissionDebugger = () => {
+  const debugContainer = document.createElement('div');
+  debugContainer.id = 'permission-debugger';
+  debugContainer.style.cssText = `
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    z-index: 9999;
+    background: rgba(0,0,0,0.9);
+    color: white;
+    padding: 12px;
+    border-radius: 8px;
+    font-family: monospace;
+    font-size: 12px;
+    max-width: 300px;
+    display: none;
+  `;
+  
+  const toggleBtn = document.createElement('button');
+  toggleBtn.textContent = 'Debug Permissions';
+  toggleBtn.style.cssText = `
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    z-index: 10000;
+    background: #ff4444;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+  `;
+  
+  toggleBtn.addEventListener('click', async () => {
+    const isVisible = debugContainer.style.display !== 'none';
+    debugContainer.style.display = isVisible ? 'none' : 'block';
+    
+    if (!isVisible) {
+      await updateDebugInfo();
+    }
+  });
+  
+  const updateDebugInfo = async () => {
+    if (!currentUser) {
+      debugContainer.innerHTML = '<strong>❌ No user logged in</strong>';
+      return;
+    }
+    
+    try {
+      const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+      const userData = userDoc.exists() ? userDoc.data() : {};
+      
+      debugContainer.innerHTML = `
+        <strong>🔥 Permission Debug Info</strong><br>
+        <strong>UID:</strong> ${currentUser.uid}<br>
+        <strong>Email:</strong> ${currentUser.email}<br>
+        <strong>Role:</strong> ${userData.role || 'undefined'}<br>
+        <strong>isAdmin (field):</strong> ${userData.isAdmin || 'undefined'}<br>
+        <strong>Computed isAdmin:</strong> ${isAdmin}<br>
+        <strong>Permissions:</strong> ${JSON.stringify(userData.permissions || [])}<br>
+        <strong>Document exists:</strong> ${userDoc.exists()}<br>
+        <strong>Last updated:</strong> ${new Date().toLocaleTimeString()}
+      `;
+    } catch (error) {
+      debugContainer.innerHTML = `<strong>❌ Error:</strong> ${error.message}`;
+    }
+  };
+  
+  document.body.appendChild(toggleBtn);
+  document.body.appendChild(debugContainer);
+};
+
+// Initialize debugger in development
+if (window.location.hostname === 'localhost' || window.location.hostname.includes('127.0.0.1')) {
+  createPermissionDebugger();
+}
+```
+
+### 2. Permission Validation Middleware
+```javascript
+// 🛡️ FUNCTION-LEVEL PERMISSION GUARDS
+const requireAdmin = (fn) => {
+  return async (...args) => {
+    if (!currentUser) {
+      throw new Error('Authentication required');
+    }
+    
+    if (!isAdmin) {
+      throw new Error('Admin permission required');
+    }
+    
+    return await fn(...args);
+  };
+};
+
+const requireRole = (requiredRole) => (fn) => {
+  return async (...args) => {
+    if (!currentUser) {
+      throw new Error('Authentication required');
+    }
+    
+    if (userPermissions.role !== requiredRole && !isAdmin) {
+      throw new Error(`${requiredRole} role required`);
+    }
+    
+    return await fn(...args);
+  };
+};
+
+const requirePermission = (permission) => (fn) => {
+  return async (...args) => {
+    if (!currentUser) {
+      throw new Error('Authentication required');
+    }
+    
+    const hasPermission = userPermissions.permissions?.includes(permission) || isAdmin;
+    if (!hasPermission) {
+      throw new Error(`Permission '${permission}' required`);
+    }
+    
+    return await fn(...args);
+  };
+};
+
+// Usage examples
+const deleteEvent = requireAdmin(async (eventId) => {
+  await deleteDoc(doc(db, 'events', eventId));
+});
+
+const moderateComment = requireRole('moderator')(async (commentId) => {
+  // Moderation logic
+});
+
+const uploadImage = requirePermission('upload_images')(async (file) => {
+  // Upload logic
+});
+```
+
+## 🛡️ SECURITY PROTOCOLS
+
+### Critical Security Patterns:
+1. **❌ NEVER** rely solely on client-side permission checks
+2. **❌ NEVER** expose admin functions without validation
+3. **❌ NEVER** cache permissions without expiration
+4. **❌ NEVER** ignore authentication state changes
+5. **❌ NEVER** use predictable admin identifiers
+
+### Required Security Implementations:
+```javascript
+// 🎯 FAIL-SAFE PERMISSION CHECKING
+const secureAdminAction = async (action, ...args) => {
+  // Triple validation: client + server + audit
+  try {
+    // 1. Client-side pre-check
+    if (!isAdmin) {
+      throw new Error('Client: Admin permission required');
+    }
+    
+    // 2. Server-side validation (Firestore rules)
+    const result = await action(...args);
+    
+    // 3. Audit logging
+    await addDoc(collection(db, 'audit_logs'), {
+      userId: currentUser.uid,
+      action: action.name,
+      timestamp: serverTimestamp(),
+      success: true
+    });
+    
+    return result;
+  } catch (error) {
+    // Log failed attempts
+    await addDoc(collection(db, 'audit_logs'), {
+      userId: currentUser?.uid || 'anonymous',
+      action: action.name,
+      error: error.message,
+      timestamp: serverTimestamp(),
+      success: false
+    });
+    
+    throw error;
+  }
+};
+```
+
+## 📋 HTML ATTRIBUTE-BASED PERMISSIONS
+
+### Permission-Controlled Elements:
+```html
+<!-- Admin-only elements -->
+<button data-admin-only class="admin-btn">Admin Panel</button>
+<div data-admin-only class="admin-dashboard">...</div>
+
+<!-- Role-based elements -->
+<button data-required-role="moderator" class="moderate-btn">Moderate</button>
+<section data-required-role="admin" class="admin-section">...</section>
+
+<!-- Permission-based elements -->
+<button data-required-permission="upload_images" class="upload-btn">Upload</button>
+<div data-required-permission="manage_events" class="event-manager">...</div>
+
+<!-- Multiple permissions (OR logic) -->
+<button data-required-permissions="admin,moderator" class="elevated-action">Action</button>
+
+<!-- Inverse permissions (hide for admins) -->
+<div data-hide-for-role="admin" class="user-only-content">...</div>
+```
+
+### CSS Permission Classes:
+```css
+/* 🎨 PERMISSION-BASED STYLING */
+[data-admin-only] {
+  display: none;
+}
+
+[data-admin-only].admin-visible {
+  display: block;
+}
+
+[data-required-role] {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+[data-required-role].role-authorized {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Permission indicators */
+.admin-indicator::before {
+  content: "👑";
+  margin-right: 4px;
+}
+
+.moderator-indicator::before {
+  content: "🛡️";
+  margin-right: 4px;
+}
+```
+
+## ⚡ PERFORMANCE OPTIMIZATION
+
+### 1. Permission Caching Strategy
+```javascript
+// ✅ SMART CACHING: Balance security and performance
+const permissionCache = new Map();
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
+const getCachedPermissions = (uid) => {
+  const cached = permissionCache.get(uid);
+  if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+    return cached.permissions;
+  }
+  return null;
+};
+
+const setCachedPermissions = (uid, permissions) => {
+  permissionCache.set(uid, {
+    permissions,
+    timestamp: Date.now()
+  });
+};
+
+const invalidatePermissionCache = (uid) => {
+  permissionCache.delete(uid);
+};
+```
+
+### 2. Batch Permission Updates
+```javascript
+// ✅ EFFICIENT: Batch permission changes
+const updateUserPermissions = async (updates) => {
+  const batch = writeBatch(db);
+  
+  updates.forEach(({ uid, permissions }) => {
+    const userRef = doc(db, 'users', uid);
+    batch.update(userRef, { permissions });
+    
+    // Invalidate cache
+    invalidatePermissionCache(uid);
+  });
+  
+  await batch.commit();
+};
+```
+
+## 🔧 INTEGRATION POINTS
+
+### File References:
+- **Permission Logic**: [event-board.js](mdc:event-board.js)
+- **Admin Dashboard**: [admin.js](mdc:admin.js)
+- **Authentication**: [js/auth.js](mdc:js/auth.js)
+- **Security Rules**: [firestore.rules](mdc:firestore.rules)
+
+### Key Functions:
+- `validateAdminPermission()` - Core validation
+- `updateUIBasedOnPermissions()` - UI control
+- `requireAdmin()` - Function guard
+- `secureAdminAction()` - Secure execution
+
+## 🚨 EMERGENCY PROTOCOLS
+
+### If Permissions Fail:
+1. **Check Authentication**: Verify user login status
+2. **Validate User Document**: Ensure Firestore user doc exists
+3. **Verify Role Fields**: Check both `role` and `isAdmin` fields
+4. **Test Security Rules**: Confirm Firestore rules deployment
+5. **Clear Cache**: Invalidate permission cache
+
+### Manual Permission Assignment:
+```javascript
+// Emergency admin assignment (Firebase Console)
+// Navigate to Firestore > users > [UID]
+// Add/Update fields:
+{
+  role: "admin",
+  isAdmin: true,
+  permissions: ["upload_images", "manage_events", "moderate_content"]
+}
+```
+
+### Debug Commands:
+```javascript
+// Permission status check
+console.log('Current permissions:', userPermissions);
+
+// Force permission refresh
+invalidatePermissionCache(currentUser.uid);
+location.reload();
+
+// Test specific permission
+console.log('Has upload permission:', 
+  userPermissions.permissions?.includes('upload_images') || isAdmin);
+```
+
+## 📈 SUCCESS METRICS
+
+### Security Benchmarks:
+- **Authentication**: 100% user verification
+- **Authorization**: Multi-layer permission checks
+- **Audit Trail**: Complete action logging
+- **Fail-Safe**: Secure defaults on errors
+- **Cache Security**: Time-limited permission caching
+
+### Performance Targets:
+- **Permission Check**: < 50ms response time
+- **UI Update**: < 100ms permission-based visibility
+- **Cache Hit Rate**: > 80% for repeated checks
+- **Batch Operations**: < 500ms for bulk updates
+
+---
+
+**🎯 SECURITY PRINCIPLE**: Defense in depth with client-side UX optimization and server-side enforcement. Never trust the client, always verify on the server.

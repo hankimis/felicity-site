@@ -3,3 +3,713 @@ description:
 globs:
 alwaysApply: false
 ---
+# Felicity Development Workflow & Deployment Rules
+
+## 🔄 GIT WORKFLOW (STRICTLY ENFORCED)
+
+### Branch Strategy (MANDATORY STRUCTURE)
+```bash
+# ✅ CORRECT - GitFlow branch naming
+main                    # Production-ready code ONLY
+develop                 # Integration branch for features
+feature/whale-tracker   # Feature branches (kebab-case)
+feature/ui-redesign     # Feature branches
+hotfix/security-patch   # Critical fixes
+release/v1.2.0         # Release preparation
+
+# ❌ FORBIDDEN - Bad branch names
+Feature/WhaleTracker    # PascalCase
+whale_tracker          # snake_case
+my-feature             # Non-descriptive
+temp-branch            # Temporary names
+```
+
+### Commit Message Standards (NON-NEGOTIABLE)
+```bash
+# ✅ CORRECT - Conventional Commits format
+feat(whale-tracker): add real-time BTC transaction monitoring
+fix(auth): resolve Firebase authentication timeout issue
+docs(api): update whale tracking endpoint documentation
+style(ui): improve dark mode color contrast
+refactor(analysis): optimize liquidation calculation performance
+test(integration): add comprehensive API endpoint tests
+chore(deps): update Chart.js to version 4.4.6
+
+# ✅ CORRECT - Detailed commit body
+feat(analysis): implement advanced liquidation predictor
+
+- Add ML-based liquidation risk assessment
+- Integrate with Binance WebSocket for real-time data
+- Include confidence scoring for predictions
+- Add user notification system for high-risk scenarios
+
+Closes #123
+Breaking Change: Updates API response format for liquidation data
+
+# ❌ FORBIDDEN - Bad commit messages
+"fix bug"              # Too vague
+"update code"          # No context
+"WIP"                  # Work in progress
+"asdf"                 # Meaningless
+"Fixed the thing"      # Unprofessional
+```
+
+### Code Review Requirements (MANDATORY CHECKS)
+```markdown
+## Pull Request Template (REQUIRED)
+
+### 🎯 Purpose
+Brief description of what this PR accomplishes
+
+### 🔧 Changes Made
+- [ ] Feature implementation
+- [ ] Bug fixes
+- [ ] Performance improvements
+- [ ] Security enhancements
+- [ ] Documentation updates
+
+### 🧪 Testing
+- [ ] Unit tests added/updated
+- [ ] Integration tests passing
+- [ ] Manual testing completed
+- [ ] Cross-browser compatibility verified
+- [ ] Mobile responsiveness tested
+
+### 🔒 Security Checklist
+- [ ] No hardcoded secrets or API keys
+- [ ] Input validation implemented
+- [ ] Authentication checks in place
+- [ ] XSS prevention measures applied
+- [ ] CSRF protection maintained
+
+### 📱 UI/UX Checklist
+- [ ] Follows design system guidelines
+- [ ] Dark/light theme compatibility
+- [ ] Accessibility standards met (WCAG 2.1 AA)
+- [ ] Loading states implemented
+- [ ] Error states handled gracefully
+
+### 🚀 Performance Impact
+- [ ] Bundle size impact assessed
+- [ ] Performance metrics measured
+- [ ] Memory leaks checked
+- [ ] Database query optimization verified
+
+### 📚 Documentation
+- [ ] Code comments added for complex logic
+- [ ] API documentation updated
+- [ ] README updated if needed
+- [ ] Cursor rules updated if applicable
+```
+
+## 🧪 TESTING STANDARDS (MANDATORY IMPLEMENTATION)
+
+### Test Structure (REQUIRED ORGANIZATION)
+```javascript
+// ✅ CORRECT - Comprehensive test structure
+describe('WhaleTracker', () => {
+  let whaleTracker;
+  let mockWebSocket;
+  
+  beforeEach(() => {
+    // Setup test environment
+    mockWebSocket = new MockWebSocket();
+    whaleTracker = new WhaleTracker({
+      websocket: mockWebSocket,
+      btcThreshold: 50,
+      ethThreshold: 1000
+    });
+  });
+  
+  afterEach(() => {
+    // Cleanup after each test
+    whaleTracker.destroy();
+    mockWebSocket.close();
+  });
+  
+  describe('initialization', () => {
+    it('should initialize with correct default settings', () => {
+      expect(whaleTracker.settings.btcThreshold).toBe(50);
+      expect(whaleTracker.settings.ethThreshold).toBe(1000);
+    });
+    
+    it('should throw error with invalid configuration', () => {
+      expect(() => {
+        new WhaleTracker({ btcThreshold: -1 });
+      }).toThrow('Invalid BTC threshold');
+    });
+  });
+  
+  describe('transaction processing', () => {
+    it('should detect whale transactions above threshold', async () => {
+      const mockTransaction = {
+        value: 60 * 100000000, // 60 BTC in satoshis
+        type: 'buy',
+        timestamp: Date.now()
+      };
+      
+      const spy = jest.spyOn(whaleTracker, 'notifyWhaleActivity');
+      await whaleTracker.processTransaction(mockTransaction);
+      
+      expect(spy).toHaveBeenCalledWith(mockTransaction);
+    });
+    
+    it('should ignore transactions below threshold', async () => {
+      const mockTransaction = {
+        value: 10 * 100000000, // 10 BTC in satoshis
+        type: 'buy',
+        timestamp: Date.now()
+      };
+      
+      const spy = jest.spyOn(whaleTracker, 'notifyWhaleActivity');
+      await whaleTracker.processTransaction(mockTransaction);
+      
+      expect(spy).not.toHaveBeenCalled();
+    });
+  });
+  
+  describe('error handling', () => {
+    it('should handle WebSocket connection failures gracefully', async () => {
+      mockWebSocket.simulateError('Connection failed');
+      
+      const errorSpy = jest.spyOn(console, 'error');
+      await whaleTracker.start();
+      
+      expect(errorSpy).toHaveBeenCalledWith(
+        expect.stringContaining('WebSocket connection failed')
+      );
+    });
+  });
+  
+  describe('performance', () => {
+    it('should process transactions within acceptable time', async () => {
+      const startTime = performance.now();
+      
+      await whaleTracker.processTransaction({
+        value: 100 * 100000000,
+        type: 'buy',
+        timestamp: Date.now()
+      });
+      
+      const duration = performance.now() - startTime;
+      expect(duration).toBeLessThan(100); // Should complete in <100ms
+    });
+  });
+});
+
+// ❌ FORBIDDEN - Poor test structure
+test('whale tracker works', () => {
+  const wt = new WhaleTracker();
+  expect(wt).toBeTruthy(); // Too vague
+});
+```
+
+### Testing Requirements (MANDATORY COVERAGE)
+```javascript
+// ✅ CORRECT - Test coverage requirements
+/*
+MINIMUM TEST COVERAGE REQUIREMENTS:
+- Unit Tests: 80% line coverage
+- Integration Tests: All API endpoints
+- E2E Tests: Critical user journeys
+- Performance Tests: Core features
+- Security Tests: Authentication flows
+*/
+
+// ✅ CORRECT - Mock external dependencies
+class MockBinanceWebSocket {
+  constructor() {
+    this.listeners = {};
+    this.isConnected = false;
+  }
+  
+  addEventListener(event, callback) {
+    this.listeners[event] = this.listeners[event] || [];
+    this.listeners[event].push(callback);
+  }
+  
+  simulateMessage(data) {
+    if (this.listeners.message) {
+      this.listeners.message.forEach(callback => {
+        callback({ data: JSON.stringify(data) });
+      });
+    }
+  }
+  
+  simulateError(error) {
+    if (this.listeners.error) {
+      this.listeners.error.forEach(callback => {
+        callback(new Error(error));
+      });
+    }
+  }
+  
+  close() {
+    this.isConnected = false;
+  }
+}
+
+// ✅ CORRECT - Integration test example
+describe('API Integration', () => {
+  const testServer = setupTestServer();
+  
+  beforeAll(async () => {
+    await testServer.start();
+  });
+  
+  afterAll(async () => {
+    await testServer.stop();
+  });
+  
+  it('should authenticate user and return valid token', async () => {
+    const response = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: 'test@example.com',
+        password: 'securePassword123'
+      })
+    });
+    
+    expect(response.status).toBe(200);
+    
+    const data = await response.json();
+    expect(data).toHaveProperty('token');
+    expect(data).toHaveProperty('user');
+    expect(data.user.email).toBe('test@example.com');
+  });
+});
+
+// ❌ FORBIDDEN - No mocking of external services
+test('real API call', async () => {
+  const data = await fetch('https://api.binance.com/api/v3/ticker/price');
+  // This will fail in CI/CD and is unreliable
+});
+```
+
+## 🚀 DEPLOYMENT PIPELINE (AUTOMATED WORKFLOW)
+
+### Pre-Deployment Checklist (MANDATORY VALIDATION)
+```yaml
+# ✅ CORRECT - CI/CD Pipeline (.github/workflows/deploy.yml)
+name: Deploy to Production
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  security-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Security Audit
+        run: |
+          npm audit --audit-level high
+          # Fail if high/critical vulnerabilities found
+          
+      - name: Check for Secrets
+        run: |
+          # Scan for accidentally committed secrets
+          grep -r "AIzaSy" . && exit 1 || true
+          grep -r "sk_" . && exit 1 || true
+          grep -r "password.*=" . && exit 1 || true
+          
+  code-quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Lint CSS
+        run: |
+          # Check CSS follows ITCSS structure
+          npm run lint:css
+          
+      - name: Lint JavaScript
+        run: |
+          # Check JS follows coding standards
+          npm run lint:js
+          
+      - name: Check Bundle Size
+        run: |
+          npm run build
+          # Fail if bundle size exceeds limits
+          npm run size-check
+          
+  testing:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Unit Tests
+        run: |
+          npm test -- --coverage --coverageThreshold='{"global":{"lines":80}}'
+          
+      - name: Integration Tests
+        run: |
+          npm run test:integration
+          
+      - name: E2E Tests
+        run: |
+          npm run test:e2e
+          
+      - name: Performance Tests
+        run: |
+          npm run test:performance
+          
+  deploy:
+    needs: [security-scan, code-quality, testing]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Build Production
+        run: |
+          npm run build:prod
+          
+      - name: Deploy to Firebase
+        run: |
+          npm install -g firebase-tools
+          firebase deploy --token ${{ secrets.FIREBASE_TOKEN }}
+          
+      - name: Post-Deploy Verification
+        run: |
+          # Health check
+          curl -f https://felicity-site.web.app/health || exit 1
+          
+          # Performance check
+          npm run lighthouse:ci
+```
+
+### Environment Configuration (SECURE MANAGEMENT)
+```javascript
+// ✅ CORRECT - Environment-based configuration
+class ConfigManager {
+  static getConfig() {
+    const env = process.env.NODE_ENV || 'development';
+    
+    const configs = {
+      development: {
+        apiUrl: 'http://localhost:3000/api',
+        firebase: {
+          apiKey: process.env.FIREBASE_DEV_API_KEY,
+          authDomain: 'felicity-dev.firebaseapp.com',
+          projectId: 'felicity-dev'
+        },
+        debug: true,
+        enableMockData: true
+      },
+      
+      staging: {
+        apiUrl: 'https://staging-api.felicity.com/api',
+        firebase: {
+          apiKey: process.env.FIREBASE_STAGING_API_KEY,
+          authDomain: 'felicity-staging.firebaseapp.com',
+          projectId: 'felicity-staging'
+        },
+        debug: false,
+        enableMockData: false
+      },
+      
+      production: {
+        apiUrl: 'https://api.felicity.com/api',
+        firebase: {
+          apiKey: process.env.FIREBASE_PROD_API_KEY,
+          authDomain: 'felicity.firebaseapp.com',
+          projectId: 'felicity-prod'
+        },
+        debug: false,
+        enableMockData: false,
+        enableAnalytics: true
+      }
+    };
+    
+    const config = configs[env];
+    if (!config) {
+      throw new Error(`Unknown environment: ${env}`);
+    }
+    
+    // Validate required configuration
+    this.validateConfig(config);
+    
+    return config;
+  }
+  
+  static validateConfig(config) {
+    const required = ['apiUrl', 'firebase.apiKey', 'firebase.projectId'];
+    
+    required.forEach(key => {
+      const value = key.split('.').reduce((obj, prop) => obj?.[prop], config);
+      if (!value) {
+        throw new Error(`Missing required configuration: ${key}`);
+      }
+    });
+  }
+}
+
+// ❌ FORBIDDEN - Hardcoded configuration
+const badConfig = {
+  apiKey: "AIzaSyCbvgcol3P4wTUNh88-d9HPZl-2NC9WbqI", // Exposed secret
+  databaseUrl: "https://production-db.firebaseio.com"  // Hardcoded
+};
+```
+
+## 📋 CODE REVIEW PROCESS (MANDATORY PROCEDURES)
+
+### Review Requirements (NON-NEGOTIABLE)
+```markdown
+# Code Review Checklist (MANDATORY)
+
+## 🔍 Code Quality Review
+- [ ] **Follows naming conventions** (camelCase, kebab-case, PascalCase)
+- [ ] **No console.log statements** in production code
+- [ ] **Proper error handling** with try-catch blocks
+- [ ] **Input validation** implemented for all user inputs
+- [ ] **Comments added** for complex business logic
+- [ ] **No code duplication** - DRY principle followed
+- [ ] **Functions are single-purpose** and well-named
+
+## 🎨 UI/UX Review
+- [ ] **Follows design system** colors and typography
+- [ ] **Responsive design** tested on mobile/tablet/desktop
+- [ ] **Dark/light theme** compatibility verified
+- [ ] **Loading states** implemented for async operations
+- [ ] **Error states** handled gracefully with user feedback
+- [ ] **Accessibility** requirements met (ARIA labels, keyboard navigation)
+- [ ] **Performance impact** assessed (bundle size, render time)
+
+## 🔒 Security Review
+- [ ] **Authentication required** for sensitive operations
+- [ ] **User permissions** validated before actions
+- [ ] **Input sanitization** prevents XSS attacks
+- [ ] **No sensitive data** exposed in client-side code
+- [ ] **API endpoints** properly secured
+- [ ] **HTTPS enforced** for all external requests
+- [ ] **No eval() usage** or other dangerous functions
+
+## 🧪 Testing Review
+- [ ] **Unit tests added** for new functionality
+- [ ] **Test coverage** meets minimum 80% requirement
+- [ ] **Integration tests** updated if API changes
+- [ ] **Error scenarios** covered in tests
+- [ ] **Performance tests** for critical features
+- [ ] **Mock data** used instead of real API calls
+
+## 📚 Documentation Review
+- [ ] **README updated** if project structure changed
+- [ ] **API documentation** updated for endpoint changes
+- [ ] **Cursor rules updated** if new patterns introduced
+- [ ] **Inline comments** explain complex algorithms
+- [ ] **Breaking changes** documented in commit message
+```
+
+### Review Process Workflow
+```bash
+# ✅ CORRECT - Review workflow
+1. Create feature branch from develop
+   git checkout develop
+   git pull origin develop
+   git checkout -b feature/new-analysis-tool
+
+2. Implement feature following all rules
+   - Write tests first (TDD approach)
+   - Follow coding standards
+   - Add proper documentation
+
+3. Self-review before creating PR
+   npm run lint
+   npm test
+   npm run build
+   npm run security-check
+
+4. Create Pull Request with template
+   - Fill out all sections completely
+   - Add screenshots for UI changes
+   - Link related issues
+
+5. Address review feedback
+   - Make requested changes
+   - Update tests if needed
+   - Re-request review
+
+6. Merge only after approval
+   - Squash commits if needed
+   - Delete feature branch after merge
+   - Deploy to staging for verification
+
+# ❌ FORBIDDEN - Bad review process
+git add .
+git commit -m "stuff"
+git push origin main  # Direct push to main
+```
+
+## 🔧 DEVELOPMENT ENVIRONMENT (STANDARDIZED SETUP)
+
+### Required Tools (MANDATORY INSTALLATION)
+```json
+{
+  "required": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0",
+    "git": ">=2.30.0"
+  },
+  "recommended": {
+    "vscode": "latest",
+    "extensions": [
+      "ms-vscode.vscode-eslint",
+      "stylelint.vscode-stylelint",
+      "bradlc.vscode-tailwindcss",
+      "ms-vscode.vscode-json"
+    ]
+  },
+  "devDependencies": {
+    "eslint": "^8.0.0",
+    "stylelint": "^14.0.0",
+    "prettier": "^2.8.0",
+    "jest": "^29.0.0",
+    "cypress": "^12.0.0"
+  }
+}
+```
+
+### Local Development Setup (STEP-BY-STEP)
+```bash
+# ✅ CORRECT - Development setup
+# 1. Clone repository
+git clone https://github.com/hankimis/felicity-site.git
+cd felicity-site
+
+# 2. Install dependencies
+npm install
+
+# 3. Set up environment variables
+cp .env.example .env.local
+# Edit .env.local with your Firebase config
+
+# 4. Install pre-commit hooks
+npx husky install
+npx husky add .husky/pre-commit "npm run pre-commit"
+
+# 5. Start development server
+npm run dev
+
+# 6. Run tests in watch mode
+npm run test:watch
+
+# 7. Verify setup
+npm run health-check
+```
+
+### Pre-commit Hooks (MANDATORY ENFORCEMENT)
+```json
+// package.json
+{
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged && npm test",
+      "commit-msg": "commitlint -E HUSKY_GIT_PARAMS"
+    }
+  },
+  "lint-staged": {
+    "*.js": [
+      "eslint --fix",
+      "prettier --write",
+      "git add"
+    ],
+    "*.css": [
+      "stylelint --fix",
+      "prettier --write",
+      "git add"
+    ],
+    "*.html": [
+      "prettier --write",
+      "git add"
+    ]
+  },
+  "commitlint": {
+    "extends": ["@commitlint/config-conventional"]
+  }
+}
+```
+
+## 📊 MONITORING & MAINTENANCE (ONGOING REQUIREMENTS)
+
+### Performance Monitoring (CONTINUOUS TRACKING)
+```javascript
+// ✅ CORRECT - Production monitoring
+class ProductionMonitor {
+  static initializeMonitoring() {
+    // Core Web Vitals tracking
+    this.trackCoreWebVitals();
+    
+    // Error tracking
+    this.trackErrors();
+    
+    // User analytics
+    this.trackUserBehavior();
+    
+    // Performance budgets
+    this.enforcePerformanceBudgets();
+  }
+  
+  static trackCoreWebVitals() {
+    // Largest Contentful Paint
+    new PerformanceObserver((list) => {
+      for (const entry of list.getEntries()) {
+        if (entry.entryType === 'largest-contentful-paint') {
+          this.reportMetric('LCP', entry.startTime);
+        }
+      }
+    }).observe({ entryTypes: ['largest-contentful-paint'] });
+    
+    // First Input Delay
+    new PerformanceObserver((list) => {
+      for (const entry of list.getEntries()) {
+        if (entry.entryType === 'first-input') {
+          this.reportMetric('FID', entry.processingStart - entry.startTime);
+        }
+      }
+    }).observe({ entryTypes: ['first-input'] });
+    
+    // Cumulative Layout Shift
+    let cumulativeLayoutShiftScore = 0;
+    new PerformanceObserver((list) => {
+      for (const entry of list.getEntries()) {
+        if (!entry.hadRecentInput) {
+          cumulativeLayoutShiftScore += entry.value;
+        }
+      }
+      this.reportMetric('CLS', cumulativeLayoutShiftScore);
+    }).observe({ entryTypes: ['layout-shift'] });
+  }
+  
+  static enforcePerformanceBudgets() {
+    const budgets = {
+      LCP: 2500,  // 2.5 seconds
+      FID: 100,   // 100 milliseconds
+      CLS: 0.1    // 0.1 score
+    };
+    
+    Object.entries(budgets).forEach(([metric, threshold]) => {
+      if (this.metrics[metric] > threshold) {
+        console.warn(`⚠️ Performance budget exceeded: ${metric} = ${this.metrics[metric]}ms (budget: ${threshold}ms)`);
+        
+        // Alert development team
+        this.sendPerformanceAlert(metric, this.metrics[metric], threshold);
+      }
+    });
+  }
+}
+
+// Initialize monitoring in production
+if (process.env.NODE_ENV === 'production') {
+  ProductionMonitor.initializeMonitoring();
+}
+```
+
+This development workflow ensures **consistent code quality**, **security compliance**, and **reliable deployments** for the Felicity cryptocurrency analysis platform. **ALL TEAM MEMBERS MUST FOLLOW THESE PROCEDURES WITHOUT EXCEPTION.**

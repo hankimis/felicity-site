@@ -3,3 +3,304 @@ description:
 globs:
 alwaysApply: false
 ---
+# 🚀 이미지 성능 최적화 시스템 규칙
+
+## 📋 개요
+이벤트 페이지 이미지 로딩 성능을 최적화하기 위한 포괄적인 시스템 규칙입니다.
+
+## 🎯 핵심 최적화 기법
+
+### 1. 🔄 Lazy Loading 시스템
+```javascript
+// ✅ 올바른 Lazy Loading 구현
+class ImageOptimizer {
+  initLazyLoading() {
+    this.observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          this.loadImage(entry.target);
+          this.observer.unobserve(entry.target);
+        }
+      });
+    }, {
+      rootMargin: '50px 0px',  // 50px 미리 로드
+      threshold: 0.1
+    });
+  }
+}
+
+// ❌ 피해야 할 패턴
+img.src = url; // 즉시 로드 (성능 저하)
+```
+
+### 2. 🖼️ 이미지 압축 & 형식 최적화
+```javascript
+// ✅ 이미지 압축 및 WebP 변환
+async compressImage(file, maxWidth = 800, maxHeight = 600, quality = 0.8) {
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  
+  // 비율 유지하면서 크기 조정
+  const ratio = Math.min(maxWidth / img.width, maxHeight / img.height);
+  canvas.width = img.width * ratio;
+  canvas.height = img.height * ratio;
+  
+  // WebP 지원 시 WebP로 변환
+  const mimeType = this.supportsWebP() ? 'image/webp' : 'image/jpeg';
+  return new Promise(resolve => {
+    canvas.toBlob(resolve, mimeType, quality);
+  });
+}
+
+// ❌ 압축 없이 업로드
+uploadTask = uploadBytesResumable(storageRef, file); // 원본 크기 업로드
+```
+
+### 3. 🔗 Firebase Storage URL 최적화
+```javascript
+// ✅ Firebase Storage 이미지 변환 파라미터
+optimizeImageUrl(url, width = 400, height = 400) {
+  const urlObj = new URL(url);
+  urlObj.searchParams.set('w', width.toString());
+  urlObj.searchParams.set('h', height.toString());
+  urlObj.searchParams.set('fit', 'cover');
+  urlObj.searchParams.set('q', '85'); // 품질 85%
+  
+  if (this.supportsWebP()) {
+    urlObj.searchParams.set('format', 'webp');
+  }
+  
+  return urlObj.toString();
+}
+
+// ❌ 원본 URL 사용
+<img src={originalUrl} /> // 최적화 없음
+```
+
+### 4. 💾 캐싱 전략
+```javascript
+// ✅ 다층 캐싱 시스템
+class ImageOptimizer {
+  constructor() {
+    this.imageCache = new Map();        // 메모리 캐시
+    this.loadingImages = new Set();     // 중복 로딩 방지
+  }
+  
+  async loadImage(imgElement) {
+    // 1. 메모리 캐시 확인
+    if (this.imageCache.has(src)) {
+      imgElement.src = this.imageCache.get(src);
+      return;
+    }
+    
+    // 2. Service Worker 캐시 활용
+    // 3. 네트워크 요청 (최후)
+  }
+}
+
+// ❌ 캐시 없이 매번 로드
+fetch(imageUrl); // 매번 네트워크 요청
+```
+
+### 5. 🎨 로딩 상태 UI
+```css
+/* ✅ 로딩 애니메이션 */
+.lazy-image {
+  opacity: 0;
+  transition: opacity 0.3s ease-in-out;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: loading-shimmer 1.5s infinite;
+}
+
+.lazy-image.loaded {
+  opacity: 1;
+  animation: none;
+  background: none;
+}
+
+@keyframes loading-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* ❌ 로딩 상태 없음 */
+img { opacity: 1; } /* 로딩 중에도 투명도 1 */
+```
+
+## 🛠️ Service Worker 캐싱
+
+### 캐시 전략
+```javascript
+// ✅ 이미지 전용 Service Worker
+const CACHE_NAME = 'felicity-images-v1';
+const MAX_CACHE_SIZE = 100;
+
+self.addEventListener('fetch', (event) => {
+  if (isImageRequest(event.request)) {
+    event.respondWith(
+      caches.open(CACHE_NAME).then(async (cache) => {
+        // 캐시 우선, 네트워크 폴백
+        const cachedResponse = await cache.match(event.request);
+        if (cachedResponse) return cachedResponse;
+        
+        const response = await fetch(event.request);
+        if (response.ok) {
+          cache.put(event.request, response.clone());
+        }
+        return response;
+      })
+    );
+  }
+});
+```
+
+### 캐시 관리
+```javascript
+// ✅ 캐시 크기 제한
+async function manageCacheSize() {
+  const cache = await caches.open(CACHE_NAME);
+  const keys = await cache.keys();
+  
+  if (keys.length > MAX_CACHE_SIZE) {
+    const keysToDelete = keys.slice(0, keys.length - MAX_CACHE_SIZE);
+    await Promise.all(keysToDelete.map(key => cache.delete(key)));
+  }
+}
+```
+
+## 📊 성능 모니터링
+
+### 성능 메트릭 수집
+```javascript
+// ✅ 이미지 로딩 성능 추적
+class ImagePerformanceMonitor {
+  constructor() {
+    this.metrics = {
+      totalImages: 0,
+      loadedImages: 0,
+      failedImages: 0,
+      cacheHits: 0,
+      totalLoadTime: 0,
+      averageLoadTime: 0
+    };
+  }
+  
+  startLoading(url) {
+    this.loadStartTimes.set(url, performance.now());
+    this.metrics.totalImages++;
+  }
+  
+  finishLoading(url, fromCache = false) {
+    const loadTime = performance.now() - this.loadStartTimes.get(url);
+    this.metrics.totalLoadTime += loadTime;
+    this.metrics.loadedImages++;
+    
+    if (fromCache) this.metrics.cacheHits++;
+  }
+}
+```
+
+### 성능 디버깅
+```javascript
+// ✅ 실시간 성능 디버거
+class ImageDebugger {
+  createDebugPanel() {
+    const panel = document.createElement('div');
+    panel.innerHTML = `
+      <h4>🚀 이미지 성능 디버거</h4>
+      <div id="debug-stats">
+        <div>총 이미지: ${report.totalImages}</div>
+        <div>캐시 히트율: ${report.cacheHitRate}%</div>
+        <div>평균 로딩 시간: ${report.averageLoadTime.toFixed(0)}ms</div>
+      </div>
+    `;
+  }
+}
+
+// 디버그 모드 활성화: Ctrl+Shift+I
+```
+
+## 🎯 HTML 최적화
+
+### 이미지 태그 최적화
+```html
+<!-- ✅ 최적화된 이미지 태그 -->
+<img class="event-card-img lazy-image" 
+     data-src="${optimizedImgUrl}" 
+     alt="${data.exchange} Event" 
+     loading="lazy"
+     decoding="async" />
+
+<!-- ❌ 기본 이미지 태그 -->
+<img src="${data.img}" alt="Event" />
+```
+
+### 리소스 힌트
+```html
+<!-- ✅ 성능 최적화 메타 태그 -->
+<link rel="preconnect" href="https://firebasestorage.googleapis.com">
+<link rel="dns-prefetch" href="https://firebasestorage.googleapis.com">
+<link rel="preload" href="/assets/default-event-image.svg" as="image">
+```
+
+## 🚫 금지 사항
+
+### ❌ 피해야 할 패턴
+1. **즉시 로드**: 모든 이미지를 한 번에 로드
+2. **압축 없음**: 원본 크기 이미지 업로드
+3. **캐시 무시**: 매번 네트워크 요청
+4. **로딩 상태 없음**: 사용자에게 진행 상황 미표시
+5. **에러 처리 없음**: 이미지 로딩 실패 시 대응 없음
+
+### ❌ 성능 저하 코드
+```javascript
+// 모든 이미지 즉시 로드
+images.forEach(img => img.src = img.dataset.src);
+
+// 압축 없이 업로드
+uploadBytes(storageRef, file);
+
+// 캐시 무시
+fetch(url, { cache: 'no-cache' });
+```
+
+## 🎯 성능 목표
+
+### 📈 성능 지표
+- **로딩 시간**: 평균 500ms 이하
+- **캐시 히트율**: 70% 이상
+- **성공률**: 95% 이상
+- **압축률**: 원본 대비 60% 이하
+
+### 🏆 최적화 체크리스트
+- [ ] Lazy Loading 구현
+- [ ] 이미지 압축 적용
+- [ ] WebP 형식 지원
+- [ ] Service Worker 캐싱
+- [ ] 성능 모니터링
+- [ ] 에러 처리
+- [ ] 로딩 상태 UI
+- [ ] 디버깅 도구
+
+## 🔧 디버깅 & 모니터링
+
+### 성능 분석 도구
+```javascript
+// 성능 리포트 생성
+performanceMonitor.getReport();
+
+// 최적화 제안 받기
+performanceMonitor.getSuggestions();
+
+// 캐시 상태 확인
+imageDebugger.getCacheStatus();
+```
+
+### 문제 해결 가이드
+1. **느린 로딩**: 이미지 크기 및 압축 확인
+2. **캐시 미스**: Service Worker 상태 확인
+3. **로딩 실패**: 네트워크 및 URL 유효성 확인
+4. **메모리 누수**: 캐시 크기 제한 확인
+
+이 규칙들을 준수하여 이미지 로딩 성능을 최적화하고, 사용자 경험을 향상시키세요.

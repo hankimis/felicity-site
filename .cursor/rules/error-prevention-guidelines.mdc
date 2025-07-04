@@ -3,3 +3,186 @@ description:
 globs:
 alwaysApply: false
 ---
+# Error Prevention & Quality Assurance Guidelines
+
+## CRITICAL ERROR PATTERNS & PREVENTION
+
+### 1. CODE MODIFICATION SAFETY PROTOCOLS
+
+#### BEFORE ANY CODE CHANGE:
+- **ALWAYS** read the target file section completely before modification
+- **VERIFY** exact string matching including whitespace, indentation, and special characters
+- **CHECK** for multiple occurrences of similar patterns before using search_replace
+- **VALIDATE** that the old_string is unique within the file context
+- **ENSURE** sufficient context (minimum 3-5 lines before and after) for unique identification
+
+#### SEARCH & REPLACE BEST PRACTICES:
+```markdown
+❌ WRONG: Using partial or ambiguous strings
+✅ CORRECT: Using complete, unique context blocks
+
+❌ WRONG: Assuming whitespace/indentation
+✅ CORRECT: Copy exact formatting from file
+```
+
+### 2. JAVASCRIPT FUNCTION INTEGRATION RULES
+
+#### FUNCTION DEFINITION & SCOPE:
+- **ALWAYS** define functions in the correct scope (global vs local)
+- **VERIFY** function accessibility before calling from event handlers
+- **CHECK** function execution order and dependencies
+- **ENSURE** proper variable hoisting and closure handling
+
+#### EVENT HANDLER BINDING:
+- **CONFIRM** DOM elements exist before binding events
+- **USE** proper event delegation for dynamically created elements
+- **IMPLEMENT** error handling within event callbacks
+- **VALIDATE** function references are correct (not undefined)
+
+### 3. API INTEGRATION ERROR PREVENTION
+
+#### EXTERNAL LIBRARY INTEGRATION:
+- **VERIFY** library loading status before initialization
+- **IMPLEMENT** fallback mechanisms for library loading failures
+- **USE** proper async/await patterns for library-dependent code
+- **CHECK** for library version compatibility
+
+#### TRADINGVIEW WIDGET SPECIFIC:
+- **ALWAYS** check window.TradingView availability
+- **IMPLEMENT** widget instance management (creation/destruction)
+- **HANDLE** container element existence validation
+- **MANAGE** widget lifecycle properly (remove before recreate)
+
+### 4. CSS & STYLING ERROR PREVENTION
+
+#### VARIABLE USAGE:
+- **VERIFY** CSS custom properties are defined before use
+- **CHECK** theme-specific variables for dark/light mode compatibility
+- **ENSURE** fallback values for critical styling properties
+- **VALIDATE** color contrast and accessibility standards
+
+#### RESPONSIVE DESIGN:
+- **TEST** all breakpoints during development
+- **VERIFY** grid layouts work across different screen sizes
+- **CHECK** overflow handling for dynamic content
+- **ENSURE** touch-friendly interface elements
+
+### 5. DATA HANDLING & VALIDATION
+
+#### API RESPONSE PROCESSING:
+- **ALWAYS** validate API response structure before processing
+- **IMPLEMENT** null/undefined checks for nested properties
+- **USE** try-catch blocks for JSON parsing and data manipulation
+- **PROVIDE** meaningful fallback data for API failures
+
+#### TEXT PROCESSING:
+- **SANITIZE** all user input and external data
+- **HANDLE** special characters and encoding issues
+- **IMPLEMENT** robust text cleaning functions
+- **VALIDATE** data types before processing
+
+### 6. PERFORMANCE OPTIMIZATION RULES
+
+#### RESOURCE LOADING:
+- **USE** preconnect and dns-prefetch for external resources
+- **IMPLEMENT** lazy loading for non-critical resources
+- **OPTIMIZE** script loading order and dependencies
+- **MINIMIZE** blocking operations during page initialization
+
+#### MEMORY MANAGEMENT:
+- **CLEAN UP** event listeners and intervals
+- **REMOVE** unused DOM elements and references
+- **MANAGE** widget instances and third-party libraries
+- **MONITOR** memory usage in long-running applications
+
+### 7. DEBUGGING & ERROR HANDLING
+
+#### CONSOLE LOGGING STRATEGY:
+- **USE** structured logging with clear prefixes (✅, ❌, ⚠️)
+- **IMPLEMENT** different log levels (info, warn, error)
+- **PROVIDE** meaningful error messages with context
+- **AVOID** console.log in production code
+
+#### ERROR RECOVERY:
+- **IMPLEMENT** graceful degradation for failed features
+- **PROVIDE** user-friendly error messages
+- **MAINTAIN** application functionality when components fail
+- **LOG** errors for debugging while maintaining UX
+
+### 8. CODE REVIEW CHECKLIST
+
+#### BEFORE SUBMITTING CHANGES:
+- [ ] All functions are properly scoped and accessible
+- [ ] Event handlers are correctly bound to existing elements
+- [ ] API calls include proper error handling
+- [ ] CSS variables are defined and used correctly
+- [ ] Responsive design works across breakpoints
+- [ ] No console errors in browser developer tools
+- [ ] Memory leaks are prevented (cleanup implemented)
+- [ ] Loading states and user feedback are implemented
+
+### 9. TESTING PROTOCOLS
+
+#### FUNCTIONAL TESTING:
+- **TEST** all interactive elements (buttons, dropdowns, forms)
+- **VERIFY** data loading and display functionality
+- **CHECK** error scenarios and edge cases
+- **VALIDATE** cross-browser compatibility
+
+#### PERFORMANCE TESTING:
+- **MEASURE** page load times and resource loading
+- **MONITOR** JavaScript execution performance
+- **CHECK** memory usage and potential leaks
+- **VALIDATE** smooth animations and transitions
+
+### 10. EMERGENCY ROLLBACK PROCEDURES
+
+#### WHEN ERRORS OCCUR:
+- **IDENTIFY** the exact change that caused the issue
+- **REVERT** to last known working state if necessary
+- **ISOLATE** the problematic code section
+- **IMPLEMENT** incremental fixes with testing
+
+#### DAMAGE CONTROL:
+- **PRESERVE** user data and application state
+- **MAINTAIN** core functionality during fixes
+- **COMMUNICATE** issues transparently
+- **DOCUMENT** lessons learned for future prevention
+
+## IMPLEMENTATION PRIORITIES
+
+### HIGH PRIORITY (Must Fix Immediately):
+1. JavaScript runtime errors
+2. API integration failures
+3. Critical UI/UX breaking changes
+4. Security vulnerabilities
+
+### MEDIUM PRIORITY (Fix in Next Iteration):
+1. Performance optimization opportunities
+2. Code organization improvements
+3. Enhanced error handling
+4. Accessibility improvements
+
+### LOW PRIORITY (Technical Debt):
+1. Code refactoring for maintainability
+2. Documentation updates
+3. Non-critical feature enhancements
+4. Style guide compliance
+
+## CONTINUOUS IMPROVEMENT
+
+### REGULAR AUDITS:
+- **WEEKLY**: Code quality and error pattern analysis
+- **MONTHLY**: Performance metrics review
+- **QUARTERLY**: Architecture and design pattern evaluation
+- **ANNUALLY**: Technology stack and dependency updates
+
+### KNOWLEDGE SHARING:
+- **DOCUMENT** all error patterns and solutions
+- **SHARE** best practices across team members
+- **UPDATE** guidelines based on new learnings
+- **MAINTAIN** comprehensive error prevention database
+
+---
+
+**REMEMBER**: Prevention is always better than correction. Invest time in proper planning, validation, and testing to avoid costly debugging sessions later.

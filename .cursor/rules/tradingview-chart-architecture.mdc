@@ -3,3 +3,447 @@ description:
 globs:
 alwaysApply: false
 ---
+# TradingView Chart System Architecture
+
+## 🎯 MISSION CRITICAL: Advanced Chart Integration Protocol
+**ABSOLUTE REQUIREMENT**: Every TradingView implementation MUST follow enterprise-grade architecture patterns with full API utilization.
+
+## 🔥 CORE SYSTEM ARCHITECTURE
+
+### 1. Widget Configuration Matrix
+```javascript
+// ✅ PRODUCTION-READY: Complete feature enablement
+const TRADINGVIEW_CONFIG = {
+    enabled_features: [
+        // 🔥 CRITICAL CORE FEATURES
+        'header_indicators',            // Indicator toolbar
+        'header_chart_type',           // Chart type selector
+        'header_screenshot',           // Screenshot functionality
+        'header_settings',             // Settings access
+        'header_undo_redo',           // Undo/Redo operations
+        'header_saveload',            // Save/Load layouts
+        'header_symbol_search',       // Symbol search
+        'header_resolutions',         // Timeframe selector
+        'header_fullscreen_button',   // Fullscreen toggle
+        'header_compare',             // Symbol comparison
+        'header_widget',              // Widget controls
+        
+        // 🎯 ADVANCED INTERACTION FEATURES
+        'symbol_search_hot_key',      // Ctrl+K search
+        'symbol_info',                // Symbol information
+        'timeframes_toolbar',         // Timeframe controls
+        'custom_resolutions',         // Custom intervals
+        'show_interval_dialog',       // Interval selection
+        'display_market_status',      // Market status indicator
+        'datasource_copypaste',       // Copy/paste functionality
+        
+        // 🚀 PROFESSIONAL TOOLS
+        'study_templates',            // Technical analysis templates
+        'property_pages',             // Settings dialogs
+        'show_chart_property_page',   // Chart properties
+        'legend_widget',              // Legend display
+        'left_toolbar',               // Drawing tools
+        'control_bar',                // Bottom control bar
+        'timeframes_toolbar',         // Time navigation
+        'edit_buttons_in_legend',     // Legend editing
+        'context_menus',              // Right-click menus
+        'use_localstorage_for_settings', // Persistent settings
+        
+        // 🔧 TECHNICAL CAPABILITIES
+        'studies_access',             // Full indicator access
+        'snapshot_trading_drawings',  // Drawing persistence
+        'source_selection_markers',   // Source selection
+        'go_to_date',                // Date navigation
+        'adaptive_logo',              // Responsive branding
+        'show_logo_on_all_charts',   // Logo display
+        'side_toolbar_in_fullscreen_mode', // Fullscreen tools
+        'header_in_fullscreen_mode'   // Fullscreen header
+    ],
+    
+    // ❌ STRATEGIC DISABLING: Only non-essential features
+    disabled_features: [
+        'drawing_templates'  // Reduce UI complexity
+    ]
+};
+```
+
+### 2. Event System Architecture
+```javascript
+// 🎯 COMPREHENSIVE EVENT HANDLING SYSTEM
+class TradingViewEventManager {
+    constructor(widget) {
+        this.widget = widget;
+        this.eventListeners = new Map();
+        this.initializeEventSystem();
+    }
+    
+    initializeEventSystem() {
+        // 🔥 CRITICAL: Chart readiness detection
+        this.widget.onChartReady(() => {
+            this.setupChartEventListeners();
+            this.setupIndicatorEvents();
+            this.setupCustomEventHandlers();
+        });
+        
+        // 🎯 HEADER READY: Toolbar customization
+        this.widget.headerReady().then(() => {
+            this.addCustomToolbarButtons();
+            this.setupThemeHandling();
+        });
+    }
+    
+    setupChartEventListeners() {
+        const chart = this.widget.chart();
+        
+        // Symbol change monitoring
+        chart.onSymbolChanged().subscribe(null, (symbolInfo) => {
+            this.handleSymbolChange(symbolInfo);
+        });
+        
+        // Resolution change tracking
+        chart.onIntervalChanged().subscribe(null, (interval) => {
+            this.handleResolutionChange(interval);
+        });
+        
+        // Study (indicator) management
+        chart.onStudyEvent().subscribe(null, (studyEvent) => {
+            this.handleStudyEvent(studyEvent);
+        });
+    }
+}
+```
+
+### 3. Cross-Origin iframe Management
+```javascript
+// 🛡️ SECURE IFRAME ACCESS PROTOCOL
+class IframeAccessManager {
+    constructor(containerId) {
+        this.containerId = containerId;
+        this.iframe = null;
+        this.accessLevel = 'unknown';
+        this.initializeAccess();
+    }
+    
+    initializeAccess() {
+        this.iframe = document.querySelector(`#${this.containerId} iframe`);
+        
+        // 🔥 CRITICAL: Access level detection
+        try {
+            const doc = this.iframe.contentDocument;
+            if (doc) {
+                this.accessLevel = 'full';
+                this.setupDirectAccess();
+            }
+        } catch (error) {
+            this.accessLevel = 'restricted';
+            this.setupFallbackAccess();
+        }
+    }
+    
+    setupDirectAccess() {
+        // Direct DOM manipulation available
+        const doc = this.iframe.contentDocument;
+        this.observeForChanges(doc);
+    }
+    
+    setupFallbackAccess() {
+        // CSS-based interaction only
+        this.setupCSSBasedEvents();
+    }
+}
+```
+
+## 🚀 IMPLEMENTATION PATTERNS
+
+### 1. Widget Initialization Protocol
+```javascript
+// ✅ ENTERPRISE PATTERN: Robust initialization
+function initializeTradingViewChart() {
+    // 🔥 CRITICAL: Cleanup existing instances
+    if (window.widget) {
+        window.widget.remove();
+        window.widget = null;
+    }
+    
+    // Configuration validation
+    const config = validateConfiguration(TRADINGVIEW_CONFIG);
+    
+    // Widget creation with error handling
+    try {
+        window.widget = new TradingView.widget({
+            ...config,
+            container_id: 'tradingview_chart',
+            datafeed: createDatafeed(),
+            library_path: '/charting_library/',
+            
+            // 🎯 CALLBACK ORCHESTRATION
+            onChartReady: () => {
+                console.log('✅ TradingView Chart Ready');
+                setupEventSystem();
+                setupIndicatorDoubleClick();
+                initializeCustomFeatures();
+            },
+            
+            // Error handling
+            onError: (error) => {
+                console.error('❌ TradingView Error:', error);
+                handleChartError(error);
+            }
+        });
+    } catch (initError) {
+        console.error('❌ Widget Initialization Failed:', initError);
+        showFallbackChart();
+    }
+}
+```
+
+### 2. Datafeed Architecture
+```javascript
+// 🎯 PROFESSIONAL DATAFEED IMPLEMENTATION
+class CryptocurrencyDatafeed {
+    constructor() {
+        this.supportedResolutions = [
+            '1', '3', '5', '15', '30', '60', '120', '240', '360', '720', 'D', 'W', 'M'
+        ];
+        this.config = {
+            supports_marks: false,
+            supports_timescale_marks: false,
+            supports_time: true,
+            exchanges: [
+                { value: 'Binance', name: 'Binance', desc: 'Binance Exchange' },
+                { value: 'Coinbase', name: 'Coinbase', desc: 'Coinbase Pro' }
+            ],
+            symbols_types: [
+                { name: 'crypto', value: 'crypto' }
+            ]
+        };
+    }
+    
+    onReady(callback) {
+        setTimeout(() => callback(this.config), 0);
+    }
+    
+    searchSymbols(userInput, exchange, symbolType, onResultReadyCallback) {
+        // 🔥 CRITICAL: Async symbol search
+        this.performSymbolSearch(userInput)
+            .then(results => onResultReadyCallback(results))
+            .catch(error => {
+                console.error('Symbol search failed:', error);
+                onResultReadyCallback([]);
+            });
+    }
+    
+    resolveSymbol(symbolName, onSymbolResolvedCallback, onResolveErrorCallback) {
+        // Symbol resolution with error handling
+        this.getSymbolInfo(symbolName)
+            .then(symbolInfo => onSymbolResolvedCallback(symbolInfo))
+            .catch(error => onResolveErrorCallback(error));
+    }
+}
+```
+
+### 3. Theme Management System
+```javascript
+// 🎨 DYNAMIC THEME SWITCHING
+class ThemeManager {
+    constructor(widget) {
+        this.widget = widget;
+        this.currentTheme = 'light';
+        this.themeConfigs = {
+            light: {
+                background: '#ffffff',
+                grid: '#f0f0f0',
+                text: '#333333',
+                accent: '#2196F3'
+            },
+            dark: {
+                background: '#1a1a1a',
+                grid: '#2a2a2a',
+                text: '#ffffff',
+                accent: '#00bcd4'
+            }
+        };
+    }
+    
+    switchTheme(themeName) {
+        if (!this.themeConfigs[themeName]) return;
+        
+        this.currentTheme = themeName;
+        const config = this.themeConfigs[themeName];
+        
+        // 🔥 CRITICAL: Apply theme to widget
+        this.widget.changeTheme(themeName);
+        
+        // Update CSS variables
+        this.updateCSSVariables(config);
+        
+        // Persist theme preference
+        localStorage.setItem('tradingview-theme', themeName);
+    }
+    
+    updateCSSVariables(config) {
+        const root = document.documentElement;
+        Object.entries(config).forEach(([key, value]) => {
+            root.style.setProperty(`--tv-${key}`, value);
+        });
+    }
+}
+```
+
+## 🛡️ ERROR PREVENTION PROTOCOLS
+
+### Critical Error Patterns to AVOID:
+1. **❌ NEVER** initialize widget without proper cleanup
+2. **❌ NEVER** access iframe content without try-catch
+3. **❌ NEVER** disable core TradingView features unnecessarily
+4. **❌ NEVER** ignore onChartReady callback timing
+5. **❌ NEVER** hardcode API keys or sensitive data
+
+### Required Error Handling Matrix:
+```javascript
+// 🎯 COMPREHENSIVE ERROR HANDLING
+const ERROR_HANDLERS = {
+    'widget_initialization': (error) => {
+        console.error('Widget init failed:', error);
+        showFallbackChart();
+    },
+    
+    'datafeed_connection': (error) => {
+        console.error('Datafeed error:', error);
+        switchToBackupDatafeed();
+    },
+    
+    'symbol_resolution': (error) => {
+        console.error('Symbol resolution failed:', error);
+        loadDefaultSymbol();
+    },
+    
+    'cross_origin_access': (error) => {
+        console.warn('Cross-origin restriction:', error);
+        activateFallbackMode();
+    }
+};
+```
+
+## 📋 DEBUGGING TOOLKIT
+
+### Development Console Commands:
+```javascript
+// Widget status check
+console.log('Widget Status:', {
+    exists: !!window.widget,
+    ready: window.widget?.chart ? 'Ready' : 'Not Ready',
+    symbol: window.widget?.chart()?.symbol(),
+    interval: window.widget?.chart()?.resolution()
+});
+
+// Feature availability check
+const checkFeatures = () => {
+    const features = ['legend_widget', 'property_pages', 'studies_access'];
+    features.forEach(feature => {
+        console.log(`${feature}:`, window.widget?.options?.enabled_features?.includes(feature));
+    });
+};
+
+// Event listener audit
+const auditEvents = () => {
+    console.log('Active Event Listeners:', window.eventManager?.eventListeners?.size || 0);
+};
+```
+
+### Performance Monitoring:
+```javascript
+// 🎯 PERFORMANCE METRICS
+class PerformanceMonitor {
+    constructor() {
+        this.metrics = {
+            initTime: 0,
+            firstRender: 0,
+            dataLoadTime: 0,
+            interactionResponse: []
+        };
+    }
+    
+    startTiming(metric) {
+        this.metrics[`${metric}_start`] = performance.now();
+    }
+    
+    endTiming(metric) {
+        const start = this.metrics[`${metric}_start`];
+        if (start) {
+            this.metrics[metric] = performance.now() - start;
+            console.log(`📊 ${metric}: ${this.metrics[metric].toFixed(2)}ms`);
+        }
+    }
+}
+```
+
+## 🔧 INTEGRATION STANDARDS
+
+### File Organization:
+- **Primary Controller**: [js/community.js](mdc:js/community.js)
+- **Chart Styling**: [css/tradingview-custom.css](mdc:css/tradingview-custom.css)
+- **HTML Container**: [community.html](mdc:community.html)
+- **Configuration**: [js/analysis-config.js](mdc:js/analysis-config.js)
+
+### Required Dependencies:
+```html
+<!-- TradingView Library -->
+<script src="/charting_library/charting_library.js"></script>
+
+<!-- Custom Components -->
+<script src="/js/firebase-config.js"></script>
+<script src="/js/websocket-manager.js"></script>
+<script src="/js/analysis-utils.js"></script>
+```
+
+## 🚨 EMERGENCY PROTOCOLS
+
+### If Chart Fails to Load:
+1. **Check Console**: Look for specific error messages
+2. **Verify Dependencies**: Ensure all scripts are loaded
+3. **Test Datafeed**: Validate data connection
+4. **Clear Cache**: Remove stored configurations
+5. **Fallback Mode**: Activate simplified chart
+
+### Quick Recovery Commands:
+```javascript
+// Complete widget reset
+window.widget?.remove();
+window.widget = null;
+initializeTradingViewChart();
+
+// Force refresh with clean state
+localStorage.removeItem('tradingview-settings');
+location.reload();
+
+// Emergency fallback
+document.getElementById('tradingview_chart').innerHTML = '<div class="chart-fallback">Chart temporarily unavailable</div>';
+```
+
+## 📈 SUCCESS CRITERIA
+
+### Functional Requirements:
+- ✅ Chart loads within 3 seconds
+- ✅ All enabled features are functional
+- ✅ Cross-browser compatibility (Chrome, Firefox, Safari, Edge)
+- ✅ Mobile responsiveness maintained
+- ✅ Error recovery mechanisms active
+
+### Performance Benchmarks:
+- **Initial Load**: < 3 seconds
+- **Symbol Switch**: < 1 second
+- **Indicator Addition**: < 500ms
+- **Theme Switch**: < 200ms
+- **Memory Usage**: < 50MB baseline
+
+### Quality Assurance:
+- Zero console errors on initialization
+- Graceful degradation on feature failures
+- Persistent user preferences
+- Accessibility compliance (WCAG 2.1)
+- Security best practices enforced
+
+---
+
+**🎯 ARCHITECTURAL PRINCIPLE**: Build for enterprise scalability while maintaining simplicity. Every component should be modular, testable, and maintainable.

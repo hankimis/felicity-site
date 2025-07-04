@@ -3,3 +3,360 @@ description:
 globs:
 alwaysApply: false
 ---
+# Chat System Architecture & Standards
+
+## 🏗️ System Architecture Overview
+
+### Class-Based Design Pattern
+The chat system follows a strict class-based architecture to ensure maintainability and prevent conflicts.
+
+#### Core Classes:
+- **[js/community-chat.js](mdc:js/community-chat.js)**: `CommunityChat` class for community page
+- **[js/analysis-chat.js](mdc:js/analysis-chat.js)**: `AnalysisChat` class for analysis dashboard
+
+### Singleton Pattern Enforcement
+```javascript
+// ✅ CORRECT: Singleton instantiation
+document.addEventListener('DOMContentLoaded', () => {
+    if (!window.communityChat) {
+        window.communityChat = new CommunityChat();
+    }
+});
+
+// ❌ FORBIDDEN: Multiple instances
+new CommunityChat(); // Without singleton check
+```
+
+## 🔧 Implementation Standards
+
+### 1. Constructor Requirements
+Every chat class MUST implement:
+```javascript
+constructor() {
+    // DOM element references
+    this.messagesContainer = document.getElementById('chat-messages');
+    this.messageForm = document.getElementById('chat-form');
+    this.messageInput = document.getElementById('message-input');
+    this.usersCountElement = document.getElementById('chat-users-count');
+    
+    // State management
+    this.messagesUnsubscribe = null;
+    this.usersUnsubscribe = null;
+    this.isChatFormInitialized = false;
+    this.isSubmitting = false;
+    
+    // Configuration
+    this.MESSAGES_PER_PAGE = 50; // Adjust per use case
+    
+    // Initialize
+    this.init();
+}
+```
+
+### 2. Initialization Sequence
+```javascript
+async init() {
+    console.log('Chat initialization started');
+    
+    // Wait for dependencies
+    await this.waitForDependencies();
+    
+    // Setup in order
+    this.setupChatForm();
+    this.setupUserCount();
+    await this.loadMessages();
+    
+    console.log('Chat initialization completed');
+}
+```
+
+### 3. Event Handler Pattern
+**MANDATORY**: Use the following pattern for ALL event handlers:
+```javascript
+setupChatForm() {
+    if (!this.messageForm) return;
+    
+    // Cleanup existing handlers
+    if (this._submitHandler) {
+        this.messageForm.removeEventListener('submit', this._submitHandler);
+        this._submitHandler = null;
+    }
+    
+    if (!this.isChatFormInitialized) {
+        this.isSubmitting = false;
+        
+        this._submitHandler = async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            if (this.isSubmitting || !this.messageInput.value.trim()) {
+                return;
+            }
+            
+            await this.handleMessageSubmission();
+        };
+        
+        this.messageForm.addEventListener('submit', this._submitHandler);
+        this.isChatFormInitialized = true;
+    }
+}
+```
+
+### 4. Message Submission Protocol
+```javascript
+async handleMessageSubmission() {
+    this.isSubmitting = true;
+    const originalText = this.messageInput.value.trim();
+    
+    // Immediate UI feedback
+    this.messageInput.value = '';
+    this.messageInput.disabled = true;
+    
+    try {
+        const messageData = await this.prepareMessageData(originalText);
+        await this.sendToFirestore(messageData);
+        console.log('Message sent successfully');
+    } catch (error) {
+        console.error('Message send failed:', error);
+        this.messageInput.value = originalText; // Restore on failure
+        this.showErrorFeedback(error);
+    } finally {
+        this.isSubmitting = false;
+        this.messageInput.disabled = false;
+        this.messageInput.focus();
+    }
+}
+```
+
+## 🔄 Lifecycle Management
+
+### Component Lifecycle
+```javascript
+// ✅ REQUIRED: Proper lifecycle management
+class ChatComponent {
+    constructor() { /* ... */ }
+    
+    async init() { /* Initialize resources */ }
+    
+    setupRealtimeListener() { /* Firebase listeners */ }
+    
+    updateUserMessageStyles() { /* UI updates */ }
+    
+    cleanup() { /* Resource cleanup */ }
+}
+```
+
+### Resource Cleanup
+**CRITICAL**: Always implement proper cleanup:
+```javascript
+cleanup() {
+    // Unsubscribe from Firebase
+    if (this.messagesUnsubscribe) {
+        this.messagesUnsubscribe();
+        this.messagesUnsubscribe = null;
+    }
+    
+    if (this.usersUnsubscribe) {
+        this.usersUnsubscribe();
+        this.usersUnsubscribe = null;
+    }
+    
+    // Remove event listeners
+    if (this._submitHandler && this.messageForm) {
+        this.messageForm.removeEventListener('submit', this._submitHandler);
+        this._submitHandler = null;
+    }
+    
+    // Clear intervals
+    if (this._lastSeenInterval) {
+        clearInterval(this._lastSeenInterval);
+        this._lastSeenInterval = null;
+    }
+    
+    // Firestore cleanup
+    this.cleanupFirestoreResources();
+}
+```
+
+## 🎨 UI/UX Standards
+
+### Message Rendering
+```javascript
+renderMessage(msg) {
+    // Security: Always escape user content
+    const safeText = msg.data.text
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+    
+    // Accessibility: Proper ARIA labels
+    return `
+        <div class="message-item ${this.getMessageClass(msg)}" 
+             id="${msg.id}" 
+             data-uid="${msg.data.uid}"
+             role="article"
+             aria-label="Message from ${msg.data.displayName}">
+            <!-- Message content -->
+        </div>
+    `;
+}
+```
+
+### Loading States
+```javascript
+showLoadingState() {
+    this.messagesContainer.innerHTML = `
+        <div class="loading" role="status" aria-live="polite">
+            <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+            <span>Loading messages...</span>
+        </div>
+    `;
+}
+```
+
+## 🔐 Security Guidelines
+
+### Input Sanitization
+```javascript
+// ✅ REQUIRED: Sanitize all user inputs
+sanitizeInput(text) {
+    return text
+        .trim()
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#x27;")
+        .replace(/\//g, "&#x2F;");
+}
+```
+
+### Firebase Security
+```javascript
+// ✅ REQUIRED: Validate before sending to Firestore
+async sendMessage(text) {
+    // Validation
+    if (!text || text.length > 500) {
+        throw new Error('Invalid message length');
+    }
+    
+    // Rate limiting
+    if (this.lastMessageTime && Date.now() - this.lastMessageTime < 1000) {
+        throw new Error('Please wait before sending another message');
+    }
+    
+    // Send to Firestore
+    await this.sendToFirestore(messageData);
+    this.lastMessageTime = Date.now();
+}
+```
+
+## 📊 Performance Standards
+
+### Efficient DOM Updates
+```javascript
+// ✅ EFFICIENT: Batch DOM updates
+updateMessages(newMessages) {
+    const fragment = document.createDocumentFragment();
+    newMessages.forEach(msg => {
+        const messageElement = this.createMessageElement(msg);
+        fragment.appendChild(messageElement);
+    });
+    this.messagesContainer.appendChild(fragment);
+}
+
+// ❌ INEFFICIENT: Individual DOM updates
+newMessages.forEach(msg => {
+    this.messagesContainer.innerHTML += this.renderMessage(msg);
+});
+```
+
+### Memory Management
+```javascript
+// ✅ REQUIRED: Limit message history in DOM
+maintainMessageLimit() {
+    const messages = this.messagesContainer.children;
+    const limit = this.MESSAGES_PER_PAGE * 2; // Keep 2x for performance
+    
+    while (messages.length > limit) {
+        messages[0].remove();
+    }
+}
+```
+
+## 🧪 Testing Requirements
+
+### Unit Test Coverage
+Every chat class must have tests for:
+- Message sending/receiving
+- Event listener management
+- State management
+- Error handling
+- Cleanup procedures
+
+### Integration Tests
+- Firebase connectivity
+- Real-time updates
+- Cross-browser compatibility
+- Mobile responsiveness
+
+### Load Testing
+- Multiple users simultaneously
+- High message frequency
+- Network interruption recovery
+- Memory leak detection
+
+## 📝 Documentation Standards
+
+### Code Comments
+```javascript
+/**
+ * Handles real-time message submission with duplicate prevention
+ * @param {Event} e - Form submission event
+ * @throws {Error} When message validation fails
+ * @returns {Promise<void>}
+ */
+async handleMessageSubmission(e) {
+    // Implementation
+}
+```
+
+### Error Logging
+```javascript
+// ✅ STRUCTURED: Use consistent error logging
+console.error('Chat Error:', {
+    component: 'CommunityChat',
+    method: 'handleMessageSubmission',
+    error: error.message,
+    timestamp: new Date().toISOString(),
+    userId: this.getCurrentUserId()
+});
+```
+
+## 🚨 Code Review Checklist
+
+Before merging ANY chat-related changes:
+
+### Functionality
+- [ ] Single event listener per form
+- [ ] Proper state management
+- [ ] Error handling with recovery
+- [ ] Resource cleanup implemented
+
+### Security
+- [ ] Input sanitization
+- [ ] Rate limiting
+- [ ] User validation
+- [ ] XSS prevention
+
+### Performance
+- [ ] Efficient DOM updates
+- [ ] Memory leak prevention
+- [ ] Proper async handling
+- [ ] Resource optimization
+
+### Accessibility
+- [ ] ARIA labels
+- [ ] Keyboard navigation
+- [ ] Screen reader support
+- [ ] Focus management
+
+Remember: **Quality over speed.** Take time to implement chat features correctly to avoid future issues.

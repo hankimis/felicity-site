@@ -3,3 +3,588 @@ description:
 globs:
 alwaysApply: false
 ---
+# DOM Manipulation and CSS Interaction Safety Rules
+
+## CRITICAL DOM SAFETY GUIDELINES
+
+### 1. Element Existence Verification
+**❌ NEVER DO:**
+- Access DOM elements without existence checks
+- Assume elements are available immediately after page load
+- Use querySelector without null checks
+
+**✅ ALWAYS DO:**
+```javascript
+// Safe element access pattern
+const getElement = (selector, context = document) => {
+    const element = context.querySelector(selector);
+    if (!element) {
+        console.warn(`Element not found: ${selector}`);
+        return null;
+    }
+    return element;
+};
+
+// Usage with multiple selectors fallback
+const getChartContainer = () => {
+    const selectors = ['#chart-container', '#tradingview_chart', '.tv-lightweight-charts'];
+    for (const selector of selectors) {
+        const element = document.querySelector(selector);
+        if (element) return element;
+    }
+    console.warn('No chart container found');
+    return null;
+};
+```
+
+### 2. Event Listener Management
+**❌ EVENT LISTENER ERRORS:**
+- Adding listeners without removal strategy
+- Not checking if element supports the event
+- Missing passive listeners for performance
+
+**✅ SAFE EVENT HANDLING:**
+```javascript
+class EventManager {
+    constructor() {
+        this.listeners = new Map();
+    }
+    
+    addListener(element, event, handler, options = {}) {
+        if (!element || typeof element.addEventListener !== 'function') {
+            console.warn('Invalid element for event listener');
+            return false;
+        }
+        
+        // Store for cleanup
+        const key = `${element}_${event}_${handler.name}`;
+        if (this.listeners.has(key)) {
+            console.warn('Duplicate event listener detected');
+            return false;
+        }
+        
+        // Add optimized listener
+        const optimizedOptions = {
+            passive: ['scroll', 'wheel', 'touchstart', 'touchmove'].includes(event),
+            ...options
+        };
+        
+        element.addEventListener(event, handler, optimizedOptions);
+        this.listeners.set(key, { element, event, handler, options: optimizedOptions });
+        
+        return true;
+    }
+    
+    removeAllListeners() {
+        this.listeners.forEach(({ element, event, handler, options }) => {
+            element.removeEventListener(event, handler, options);
+        });
+        this.listeners.clear();
+    }
+}
+```
+
+### 3. CSS Class and Style Manipulation
+**❌ CSS MANIPULATION ERRORS:**
+- Direct style manipulation without checking current values
+- Not preserving existing classes when adding new ones
+- Missing CSS custom property support checks
+
+**✅ SAFE CSS OPERATIONS:**
+```javascript
+const SafeCSS = {
+    addClass(element, className) {
+        if (!element || !className) return false;
+        
+        if (element.classList) {
+            element.classList.add(className);
+        } else {
+            // Fallback for older browsers
+            const classes = element.className.split(' ');
+            if (!classes.includes(className)) {
+                element.className = `${element.className} ${className}`.trim();
+            }
+        }
+        return true;
+    },
+    
+    removeClass(element, className) {
+        if (!element || !className) return false;
+        
+        if (element.classList) {
+            element.classList.remove(className);
+        } else {
+            const classes = element.className.split(' ');
+            element.className = classes.filter(c => c !== className).join(' ');
+        }
+        return true;
+    },
+    
+    setCustomProperty(property, value, element = document.documentElement) {
+        if (!element || !property) return false;
+        
+        try {
+            if (element.style.setProperty) {
+                element.style.setProperty(property, value);
+                return true;
+            }
+        } catch (error) {
+            console.warn('CSS custom property not supported:', error);
+        }
+        return false;
+    },
+    
+    getComputedStyle(element, property) {
+        if (!element || !property) return null;
+        
+        try {
+            if (window.getComputedStyle) {
+                return window.getComputedStyle(element).getPropertyValue(property);
+            }
+        } catch (error) {
+            console.warn('getComputedStyle failed:', error);
+        }
+        return null;
+    }
+};
+```
+
+## TRADINGVIEW-SPECIFIC DOM RULES
+
+### 4. Chart Container Detection and Setup
+**❌ CHART CONTAINER ERRORS:**
+- Assuming specific container IDs exist
+- Not handling dynamic container creation
+- Missing responsive container setup
+
+**✅ ROBUST CONTAINER MANAGEMENT:**
+```javascript
+const ChartContainerManager = {
+    detectContainer() {
+        const possibleSelectors = [
+            '#tradingview_chart',
+            '#chart-container', 
+            '.tv-chart-container',
+            '.tv-lightweight-charts',
+            '[data-chart="true"]'
+        ];
+        
+        for (const selector of possibleSelectors) {
+            const container = document.querySelector(selector);
+            if (container) {
+                console.log(`Chart container found: ${selector}`);
+                return { element: container, selector };
+            }
+        }
+        
+        console.error('No chart container detected');
+        return null;
+    },
+    
+    createContainer(parentSelector = 'body') {
+        const parent = document.querySelector(parentSelector);
+        if (!parent) {
+            console.error(`Parent element not found: ${parentSelector}`);
+            return null;
+        }
+        
+        const container = document.createElement('div');
+        container.id = 'tradingview_chart';
+        container.style.cssText = `
+            width: 100%;
+            height: 500px;
+            position: relative;
+            border-radius: 8px;
+            overflow: hidden;
+        `;
+        
+        parent.appendChild(container);
+        console.log('Chart container created');
+        return container;
+    },
+    
+    setupResponsiveContainer(container) {
+        if (!container) return false;
+        
+        // Add responsive classes
+        SafeCSS.addClass(container, 'chart-responsive');
+        
+        // Setup ResizeObserver if available
+        if (typeof ResizeObserver !== 'undefined') {
+            const resizeObserver = new ResizeObserver(entries => {
+                for (const entry of entries) {
+                    console.log('Chart container resized:', entry.contentRect);
+                    // Trigger chart resize if widget is available
+                    if (window.tvWidget && window.tvWidget.onChartReady) {
+                        window.tvWidget.onChartReady(() => {
+                            window.tvWidget.applyOverrides({});
+                        });
+                    }
+                }
+            });
+            
+            resizeObserver.observe(container);
+            return resizeObserver;
+        }
+        
+        return false;
+    }
+};
+```
+
+### 5. Modal and Overlay Management
+**❌ MODAL MANAGEMENT ERRORS:**
+- Not preventing body scroll when modal is open
+- Missing accessibility attributes
+- Not handling multiple modals properly
+
+**✅ COMPREHENSIVE MODAL SYSTEM:**
+```javascript
+const ModalManager = {
+    activeModals: new Set(),
+    originalBodyOverflow: '',
+    
+    show(modalId, options = {}) {
+        const modal = getElement(`#${modalId}`);
+        if (!modal) {
+            console.error(`Modal not found: ${modalId}`);
+            return false;
+        }
+        
+        // Prevent body scroll
+        if (this.activeModals.size === 0) {
+            this.originalBodyOverflow = document.body.style.overflow;
+            document.body.style.overflow = 'hidden';
+        }
+        
+        // Set accessibility attributes
+        modal.setAttribute('aria-modal', 'true');
+        modal.setAttribute('role', 'dialog');
+        
+        // Add to active modals
+        this.activeModals.add(modalId);
+        
+        // Show modal with animation
+        modal.style.display = 'block';
+        
+        // Focus management
+        if (options.autoFocus !== false) {
+            const focusElement = modal.querySelector('[autofocus], input, button');
+            if (focusElement) {
+                setTimeout(() => focusElement.focus(), 100);
+            }
+        }
+        
+        // Setup close handlers
+        this.setupCloseHandlers(modal, modalId, options);
+        
+        console.log(`Modal opened: ${modalId}`);
+        return true;
+    },
+    
+    hide(modalId) {
+        const modal = getElement(`#${modalId}`);
+        if (!modal) return false;
+        
+        // Remove from active modals
+        this.activeModals.delete(modalId);
+        
+        // Restore body scroll if no modals active
+        if (this.activeModals.size === 0) {
+            document.body.style.overflow = this.originalBodyOverflow;
+        }
+        
+        // Hide modal
+        modal.style.display = 'none';
+        modal.removeAttribute('aria-modal');
+        
+        console.log(`Modal closed: ${modalId}`);
+        return true;
+    },
+    
+    setupCloseHandlers(modal, modalId, options) {
+        // ESC key handler
+        const escHandler = (e) => {
+            if (e.key === 'Escape' && this.activeModals.has(modalId)) {
+                this.hide(modalId);
+                document.removeEventListener('keydown', escHandler);
+            }
+        };
+        document.addEventListener('keydown', escHandler);
+        
+        // Click outside handler
+        if (options.closeOnOverlayClick !== false) {
+            const clickHandler = (e) => {
+                if (e.target === modal) {
+                    this.hide(modalId);
+                    modal.removeEventListener('click', clickHandler);
+                }
+            };
+            modal.addEventListener('click', clickHandler);
+        }
+        
+        // Close button handler
+        const closeBtn = modal.querySelector('.modal-close, [data-close="modal"]');
+        if (closeBtn) {
+            const closeBtnHandler = () => {
+                this.hide(modalId);
+                closeBtn.removeEventListener('click', closeBtnHandler);
+            };
+            closeBtn.addEventListener('click', closeBtnHandler);
+        }
+    }
+};
+```
+
+### 6. Dynamic Content Injection Safety
+**❌ CONTENT INJECTION RISKS:**
+- Using innerHTML with untrusted content
+- Not sanitizing user input
+- Missing XSS protection
+
+**✅ SAFE CONTENT INJECTION:**
+```javascript
+const SafeContentInjector = {
+    setText(element, text) {
+        if (!element || text == null) return false;
+        
+        if (element.textContent !== undefined) {
+            element.textContent = String(text);
+        } else {
+            element.innerText = String(text);
+        }
+        return true;
+    },
+    
+    setHTML(element, html, options = {}) {
+        if (!element || html == null) return false;
+        
+        // Basic sanitization
+        let sanitizedHTML = String(html);
+        
+        if (options.allowTags) {
+            // Allow only specified tags
+            const allowedTags = Array.isArray(options.allowTags) 
+                ? options.allowTags 
+                : ['b', 'i', 'em', 'strong', 'span'];
+            
+            const allowedPattern = allowedTags.map(tag => 
+                `<\\/?${tag}(?:\\s[^>]*)?>`
+            ).join('|');
+            
+            sanitizedHTML = sanitizedHTML.replace(
+                new RegExp(`<(?!(?:${allowedPattern}))[^>]*>`, 'gi'),
+                ''
+            );
+        } else {
+            // Strip all HTML tags
+            sanitizedHTML = sanitizedHTML.replace(/<[^>]*>/g, '');
+        }
+        
+        // Remove javascript: and data: URLs
+        sanitizedHTML = sanitizedHTML.replace(
+            /(javascript|data):[^"'\s>]*/gi,
+            ''
+        );
+        
+        element.innerHTML = sanitizedHTML;
+        return true;
+    },
+    
+    createSafeElement(tagName, attributes = {}, textContent = '') {
+        const element = document.createElement(tagName);
+        
+        // Safe attribute setting
+        for (const [key, value] of Object.entries(attributes)) {
+            if (this.isSafeAttribute(key, value)) {
+                element.setAttribute(key, String(value));
+            }
+        }
+        
+        if (textContent) {
+            this.setText(element, textContent);
+        }
+        
+        return element;
+    },
+    
+    isSafeAttribute(name, value) {
+        const unsafeAttributes = ['onclick', 'onload', 'onerror', 'onmouseover'];
+        const unsafeValues = /^(javascript|data|vbscript):/i;
+        
+        return !unsafeAttributes.includes(name.toLowerCase()) && 
+               !unsafeValues.test(String(value));
+    }
+};
+```
+
+## PERFORMANCE OPTIMIZATION RULES
+
+### 7. Efficient DOM Queries and Caching
+**❌ PERFORMANCE KILLERS:**
+- Repeated DOM queries in loops
+- Not caching frequently accessed elements
+- Excessive reflow-triggering operations
+
+**✅ OPTIMIZED DOM ACCESS:**
+```javascript
+class DOMCache {
+    constructor() {
+        this.cache = new Map();
+        this.selectors = new Map();
+    }
+    
+    get(selector, context = document) {
+        const key = `${selector}_${context === document ? 'doc' : 'ctx'}`;
+        
+        if (!this.cache.has(key)) {
+            const element = context.querySelector(selector);
+            if (element) {
+                this.cache.set(key, element);
+                this.selectors.set(key, selector);
+            }
+        }
+        
+        return this.cache.get(key) || null;
+    }
+    
+    refresh(selector = null) {
+        if (selector) {
+            // Refresh specific selector
+            for (const [key, cachedSelector] of this.selectors.entries()) {
+                if (cachedSelector === selector) {
+                    this.cache.delete(key);
+                    this.selectors.delete(key);
+                }
+            }
+        } else {
+            // Clear all cache
+            this.cache.clear();
+            this.selectors.clear();
+        }
+    }
+    
+    // Batch DOM operations to minimize reflow
+    batchUpdate(operations) {
+        const fragment = document.createDocumentFragment();
+        let hasFragmentOperations = false;
+        
+        operations.forEach(op => {
+            switch (op.type) {
+                case 'create':
+                    const element = SafeContentInjector.createSafeElement(
+                        op.tagName, 
+                        op.attributes, 
+                        op.textContent
+                    );
+                    if (op.parent === 'fragment') {
+                        fragment.appendChild(element);
+                        hasFragmentOperations = true;
+                    } else {
+                        const parent = this.get(op.parent);
+                        if (parent) parent.appendChild(element);
+                    }
+                    break;
+                    
+                case 'update':
+                    const target = this.get(op.selector);
+                    if (target && op.property && op.value !== undefined) {
+                        target[op.property] = op.value;
+                    }
+                    break;
+                    
+                case 'style':
+                    const styleTarget = this.get(op.selector);
+                    if (styleTarget && op.styles) {
+                        Object.assign(styleTarget.style, op.styles);
+                    }
+                    break;
+            }
+        });
+        
+        // Apply fragment operations at once
+        if (hasFragmentOperations && operations.targetContainer) {
+            const container = this.get(operations.targetContainer);
+            if (container) {
+                container.appendChild(fragment);
+            }
+        }
+    }
+}
+```
+
+### 8. CSS Animation and Transition Safety
+**❌ ANIMATION ERRORS:**
+- Not checking for animation support
+- Missing fallbacks for reduced motion preferences
+- Triggering layout thrashing
+
+**✅ SAFE ANIMATION PATTERNS:**
+```javascript
+const AnimationManager = {
+    supportsAnimations() {
+        return typeof CSS !== 'undefined' && 
+               CSS.supports && 
+               CSS.supports('animation-duration', '1s');
+    },
+    
+    respectsReducedMotion() {
+        if (typeof window.matchMedia === 'undefined') return false;
+        
+        const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+        return mediaQuery.matches;
+    },
+    
+    animate(element, keyframes, options = {}) {
+        if (!element) return null;
+        
+        // Respect user preferences
+        if (this.respectsReducedMotion()) {
+            console.log('Animation skipped due to reduced motion preference');
+            return null;
+        }
+        
+        // Use Web Animations API if available
+        if (element.animate && this.supportsAnimations()) {
+            return element.animate(keyframes, {
+                duration: 300,
+                easing: 'ease',
+                fill: 'forwards',
+                ...options
+            });
+        }
+        
+        // CSS fallback
+        return this.cssAnimate(element, keyframes, options);
+    },
+    
+    cssAnimate(element, keyframes, options = {}) {
+        const duration = options.duration || 300;
+        const easing = options.easing || 'ease';
+        
+        // Apply initial styles
+        if (keyframes[0]) {
+            Object.assign(element.style, keyframes[0]);
+        }
+        
+        // Apply transition
+        element.style.transition = `all ${duration}ms ${easing}`;
+        
+        // Apply final styles
+        setTimeout(() => {
+            if (keyframes[keyframes.length - 1]) {
+                Object.assign(element.style, keyframes[keyframes.length - 1]);
+            }
+        }, 10);
+        
+        // Cleanup
+        setTimeout(() => {
+            element.style.transition = '';
+        }, duration + 50);
+        
+        return { finished: Promise.resolve() };
+    }
+};
+```
+
+These rules should be applied alongside the TradingView-specific rules when working with [css/tradingview-custom.css](mdc:css/tradingview-custom.css) and DOM manipulation in [js/community.js](mdc:js/community.js) to ensure safe, performant, and accessible user interfaces.

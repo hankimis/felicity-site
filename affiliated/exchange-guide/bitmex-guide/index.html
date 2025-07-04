@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BitMEX 가이드 - ONBit</title>
+  
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+  
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="../../../css/style.css" />
+  <link rel="stylesheet" href="../../../auth.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" />
+  <link rel="icon" type="image/png" href="/onbit/favicon-96x96.png" sizes="96x96" />
+  <link rel="icon" type="image/svg+xml" href="/onbit/favicon.svg" />
+  <link rel="shortcut icon" href="/onbit/favicon.ico" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/onbit/apple-touch-icon.png" />
+  <meta name="apple-mobile-web-app-title" content="Onbit" />
+  <link rel="manifest" href="/onbit/site.webmanifest" />
+  
+  <!-- Common Scripts -->
+  <script src="../../../js/auth.js"></script>
+  <!-- Unified Header Loader -->
+  <script src="../../../js/header-loader.js" defer></script>
+  
+  <style>
+    body { background: var(--bg-color); min-height: 100vh; padding-top: 80px; }
+    .faq-container { max-width: 700px; margin: 40px auto; padding: 0 16px 60px 16px; }
+    .faq-header { display: flex; align-items: center; gap: 24px; margin-bottom: 24px; background: var(--card-bg); border-radius: 18px; box-shadow: 0 2px 12px rgba(0,0,0,0.04); padding: 28px 24px; }
+    .faq-header .avatar {
+      width: 70px;
+      height: 70px;
+      border-radius: 50%;
+      background: var(--faq-avatar-bg, #f3f4f8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.8em;
+      color: var(--faq-avatar-icon, #3a3a3a);
+      font-weight: 900;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      transition: background 0.2s, color 0.2s;
+    }
+    .faq-title { font-size: 2.3em; font-weight: 900; margin: 0 0 10px 0; letter-spacing: -1px; color: var(--text-color); }
+    .faq-subtitle { color: var(--text-color-secondary); font-size: 1.15em; margin: 0; font-weight: 500; }
+    .faq-list { display: flex; flex-direction: column; gap: 18px; }
+    .faq-card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 16px; padding: 22px 28px; box-shadow: 0 2px 12px rgba(0,0,0,0.04); display: flex; align-items: center; gap: 18px; cursor: pointer; transition: all 0.2s ease; position: relative; }
+    .faq-card:hover, .faq-card:focus-within { transform: translateY(-3px); box-shadow: 0 4px 24px rgba(0,0,0,0.08); border-color: var(--primary-color); }
+    .faq-number {
+      min-width: 38px;
+      min-height: 38px;
+      background: var(--faq-number-bg, #e9eaf0);
+      color: var(--faq-number-icon, #3a3a3a);
+      font-weight: 700;
+      font-size: 1.25em;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 8px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+      transition: background 0.2s, color 0.2s;
+    }
+    .faq-content { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+    .faq-question { font-size: 1.13em; font-weight: 700; color: var(--primary-color); margin-bottom: 2px; }
+    .faq-answer { font-size: 1em; color: var(--text-color-secondary); font-weight: 400; }
+    .faq-nav { display: flex; justify-content: space-between; gap: 12px; margin-top: 40px; }
+    .faq-nav-btn { flex: 1; background: var(--primary-color); color: #fff; font-weight: 700; border-radius: 10px; padding: 14px 0; border: none; font-size: 1.08em; cursor: pointer; transition: background 0.18s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+    .faq-nav-btn:hover { background: var(--primary-color-dark); }
+    .dark-mode {
+      --faq-avatar-bg: #232a3a;
+      --faq-avatar-icon: #fff;
+      --faq-number-bg: #232a3a;
+      --faq-number-icon: #fff;
+    }
+    :root:not(.dark-mode) .faq-question { color: #000; }
+    .dark-mode .faq-question { color: #fff; }
+  </style>
+</head>
+<body>
+  <!-- Header will be loaded here by header-loader.js -->
+  <div id="header-placeholder"></div>
+
+  <main class="faq-container">
+    <div class="faq-header">
+      <div class="avatar"><img src="../../../assets/tradelogo/Bitmexlogo.png" alt="BitMEX" class="avatar"></div>
+      <div>
+        <div class="faq-title">'BitMEX' 가이드</div>
+        <p class="faq-subtitle">트레이더님들이 궁금해하는 내용을 한눈에!</p>
+      </div>
+    </div>
+    
+    <div class="faq-list">
+      <div class="faq-card" tabindex="0" onclick="window.open('https://t.me/onbitofficial')">
+        <div class="faq-number"><i class="fas fa-user-check"></i></div>
+        <div class="faq-content">
+          <div class="faq-question">이미 계정이 있으신가요?</div>
+          <div class="faq-answer">BitMEX 기존 계정 사용자에요.</div>
+        </div>
+      </div>
+      <div class="faq-card" tabindex="0" onclick="alert('준비 중입니다.')">
+        <div class="faq-number"><i class="fas fa-user-plus"></i></div>
+        <div class="faq-content">
+          <div class="faq-question">거래소 어떻게 가입해요?</div>
+          <div class="faq-answer">BitMEX 회원 가입 방법 안내 (준비 중)</div>
+        </div>
+      </div>
+      <div class="faq-card" tabindex="0" onclick="alert('준비 중입니다.')">
+        <div class="faq-number"><i class="fas fa-id-card"></i></div>
+        <div class="faq-content">
+          <div class="faq-question">가입 후 어떻게 해요?</div>
+          <div class="faq-answer">KYC 인증 버튼 찾기 (준비 중)</div>
+        </div>
+      </div>
+      <div class="faq-card" tabindex="0" onclick="alert('준비 중입니다.')">
+        <div class="faq-number"><i class="fas fa-shield-alt"></i></div>
+        <div class="faq-content">
+          <div class="faq-question">거래소 이용방법?</div>
+          <div class="faq-answer">BitMEX 거래소 이용방법 바로가기 (준비 중)</div>
+        </div>
+      </div>
+    </div>
+    <div class="faq-nav">
+      <button class="faq-nav-btn" onclick="window.location.href='../'"><i class="fas fa-arrow-left"></i> 이전으로</button>
+      <button class="faq-nav-btn" onclick="window.location.href='../../bitmex/'"><i class="fas fa-user-plus"></i> BitMEX 가입</button>
+    </div>
+  </main>
+
+  <!-- 인증 모달 -->
+  <div id="login-modal" class="auth-modal">
+    <div class="auth-modal-content">
+      <span class="auth-modal-close" data-action="close-modal">&times;</span>
+      <form id="login-form" class="auth-form">
+        <h2>로그인</h2>
+        <p id="login-error-message" class="error-message"></p>
+        <div class="input-group">
+          <i class="fas fa-envelope"></i>
+          <input type="email" name="login-email" placeholder="이메일" required>
+        </div>
+        <div class="input-group">
+          <i class="fas fa-lock"></i>
+          <input type="password" name="login-password" placeholder="비밀번호" required>
+        </div>
+        <button type="submit" class="submit-btn">로그인</button>
+        <p class="auth-form-switch">계정이 없으신가요? <a href="#" id="show-signup" data-action="show-signup">회원가입</a></p>
+      </form>
+    </div>
+  </div>
+  <div id="signup-modal" class="auth-modal">
+    <div class="auth-modal-content">
+      <span class="auth-modal-close" data-action="close-modal">&times;</span>
+      <form id="signup-form" class="auth-form">
+        <h2>회원가입</h2>
+        <p id="signup-error-message" class="error-message"></p>
+        <div class="input-group">
+          <i class="fas fa-user"></i>
+          <input type="text" name="signup-name" placeholder="닉네임" required>
+        </div>
+        <div class="input-group">
+          <i class="fas fa-envelope"></i>
+          <input type="email" name="signup-email" placeholder="이메일" required>
+        </div>
+        <div class="input-group">
+          <i class="fas fa-lock"></i>
+          <input type="password" name="signup-password" placeholder="비밀번호" required>
+        </div>
+        <div class="input-group">
+          <i class="fas fa-check-circle"></i>
+          <input type="password" name="signup-confirm-password" placeholder="비밀번호 확인" required>
+        </div>
+        <button type="submit" class="submit-btn">회원가입</button>
+        <p class="auth-form-switch">이미 계정이 있으신가요? <a href="#" id="show-login" data-action="show-login">로그인</a></p>
+      </form>
+    </div>
+  </div>
+  <!-- Footer -->
+  <div id="footer-placeholder"></div>
+
+  <script src="../../../js/footer-loader.js" defer></script>
+</body>
+</html> 

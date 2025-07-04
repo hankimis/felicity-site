@@ -3,3 +3,555 @@ description:
 globs:
 alwaysApply: false
 ---
+# Felicity-Site Specific Development Rules
+
+## PROJECT ARCHITECTURE UNDERSTANDING
+
+### FILE STRUCTURE AWARENESS
+Reference the main files when making changes:
+- Main page: [index.html](mdc:index.html) - Primary landing page with dashboard
+- Authentication: [auth.js](mdc:js/auth.js) - Firebase authentication logic
+- Main JavaScript: [index.js](mdc:js/index.js) - Core functionality and initialization
+- Styling: [style.css](mdc:css/style.css) - Main stylesheet with CSS variables
+- Firebase config: [firebase-config.js](mdc:js/firebase-config.js) - Database connection
+
+### COMPONENT INTEGRATION PATTERNS
+```javascript
+// ✅ CORRECT: Proper component initialization in index.html
+document.addEventListener('DOMContentLoaded', function() {
+  // 1. Initialize authentication first
+  if (typeof initializeAuth === 'function') {
+    initializeAuth();
+  }
+  
+  // 2. Load header/footer components
+  if (typeof loadHeader === 'function') {
+    loadHeader();
+  }
+  
+  // 3. Initialize page-specific functionality
+  if (typeof initializePage === 'function') {
+    initializePage();
+  }
+  
+  // 4. Initialize third-party widgets last
+  initializeTradingViewChart();
+});
+
+// ❌ WRONG: Random initialization order
+initializeTradingViewChart(); // Before DOM ready
+loadHeader(); // After chart initialization
+```
+
+## CRYPTOCURRENCY DATA HANDLING
+
+### API INTEGRATION STANDARDS
+```javascript
+// ✅ CORRECT: Robust cryptocurrency API handling
+async function loadCryptoData() {
+  const APIs = [
+    'https://api.coingecko.com/api/v3/coins/markets',
+    'https://api.binance.com/api/v3/ticker/24hr' // Backup
+  ];
+  
+  for (const apiUrl of APIs) {
+    try {
+      const response = await fetch(`${apiUrl}?vs_currency=usd&order=market_cap_desc&per_page=250&page=1`);
+      
+      if (!response.ok) {
+        throw new Error(`API ${response.status}: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      
+      // Validate data structure
+      if (!Array.isArray(data) || data.length === 0) {
+        throw new Error('Invalid or empty data received');
+      }
+      
+      return data.map(coin => ({
+        id: coin.id || coin.symbol?.toLowerCase(),
+        symbol: cleanText(coin.symbol || '').toUpperCase(),
+        name: cleanText(coin.name || 'Unknown'),
+        price: parseFloat(coin.current_price || coin.price || 0),
+        change24h: parseFloat(coin.price_change_percentage_24h || 0),
+        volume: parseFloat(coin.total_volume || coin.volume || 0),
+        marketCap: parseFloat(coin.market_cap || 0)
+      }));
+      
+    } catch (error) {
+      console.warn(`API ${apiUrl} failed:`, error);
+      continue; // Try next API
+    }
+  }
+  
+  // All APIs failed, return fallback data
+  return getFallbackCryptoData();
+}
+
+// ❌ WRONG: Single API without error handling
+async function loadData() {
+  const response = await fetch('https://api.coingecko.com/api/v3/coins/markets');
+  return response.json(); // Will throw on network/parse errors
+}
+```
+
+### DATA CLEANING FOR CRYPTOCURRENCY
+```javascript
+// ✅ CORRECT: Cryptocurrency-specific text cleaning
+function cleanText(text) {
+  if (typeof text !== 'string') return String(text || '');
+  
+  return text
+    .replace(/[^\w\s\-().]/g, '') // Remove special chars except crypto-friendly ones
+    .replace(/B'">|B">|'>|"/g, '') // Remove specific problematic patterns
+    .replace(/\s+/g, ' ') // Normalize whitespace
+    .trim();
+}
+
+// ✅ CORRECT: Price formatting for various ranges
+function formatCryptoPrice(price) {
+  const numPrice = parseFloat(price);
+  
+  if (isNaN(numPrice) || !isFinite(numPrice)) {
+    return '$0.00';
+  }
+  
+  if (numPrice < 0.000001) {
+    return `$${numPrice.toExponential(2)}`;
+  } else if (numPrice < 0.01) {
+    return `$${numPrice.toFixed(6)}`;
+  } else if (numPrice < 1) {
+    return `$${numPrice.toFixed(4)}`;
+  } else if (numPrice < 100) {
+    return `$${numPrice.toFixed(2)}`;
+  } else {
+    return `$${numPrice.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+  }
+}
+
+// ❌ WRONG: Generic formatting that doesn't handle crypto price ranges
+function formatPrice(price) {
+  return `$${price.toFixed(2)}`; // Loses precision for small values
+}
+```
+
+## TRADINGVIEW INTEGRATION SPECIFICS
+
+### WIDGET LIFECYCLE MANAGEMENT
+```javascript
+// ✅ CORRECT: Complete TradingView widget management
+let tradingViewWidget = null;
+const SUPPORTED_SYMBOLS = [
+  'BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'SOLUSDT', 'ADAUSDT',
+  'XRPUSDT', 'DOGEUSDT', 'AVAXUSDT', 'DOTUSDT', 'MATICUSDT'
+];
+
+function initializeTradingViewChart(symbol = 'BTCUSDT') {
+  // Validate symbol
+  if (!SUPPORTED_SYMBOLS.includes(symbol)) {
+    console.warn(`Unsupported symbol: ${symbol}, using BTCUSDT`);
+    symbol = 'BTCUSDT';
+  }
+  
+  const container = document.getElementById('tradingview_chart');
+  if (!container) {
+    console.error('TradingView container not found');
+    return;
+  }
+  
+  // Check library availability
+  if (!window.TradingView) {
+    console.error('TradingView library not loaded');
+    showChartError(container, 'Chart library not available');
+    return;
+  }
+  
+  // Clean up existing widget
+  if (tradingViewWidget) {
+    try {
+      tradingViewWidget.remove();
+    } catch (e) {
+      console.warn('Error removing existing widget:', e);
+    }
+    tradingViewWidget = null;
+  }
+  
+  // Clear container
+  container.innerHTML = '';
+  
+  try {
+    const isDarkMode = document.documentElement.getAttribute('data-theme') === 'dark';
+    
+    tradingViewWidget = new TradingView.widget({
+      autosize: true,
+      symbol: `BINANCE:${symbol}`,
+      interval: '15',
+      timezone: 'Asia/Seoul',
+      theme: isDarkMode ? 'dark' : 'light',
+      style: '1',
+      locale: 'ko',
+      toolbar_bg: isDarkMode ? '#1e222d' : '#f1f3f6',
+      enable_publishing: false,
+      hide_top_toolbar: true,
+      hide_legend: false,
+      hide_side_toolbar: false,
+      save_image: false,
+      container_id: 'tradingview_chart',
+      disabled_features: [
+        'use_localstorage_for_settings',
+        'volume_force_overlay',
+        'create_volume_indicator_by_default'
+      ],
+      enabled_features: ['study_templates'],
+      loading_screen: {
+        backgroundColor: isDarkMode ? '#1e222d' : '#ffffff',
+        foregroundColor: isDarkMode ? '#ffffff' : '#000000'
+      }
+    });
+    
+    console.log(`✅ TradingView chart initialized: ${symbol}`);
+    
+  } catch (error) {
+    console.error('Failed to create TradingView widget:', error);
+    showChartError(container, 'Failed to load chart');
+  }
+}
+
+function showChartError(container, message) {
+  container.innerHTML = `
+    <div style="display: flex; align-items: center; justify-content: center; height: 100%; color: var(--text-secondary);">
+      <div style="text-align: center;">
+        <i class="fas fa-exclamation-triangle" style="font-size: 3rem; margin-bottom: 1rem; color: var(--error-color, #dc2626);"></i>
+        <div>${message}</div>
+        <button onclick="location.reload()" style="margin-top: 1rem; padding: 0.5rem 1rem; background: var(--primary-color); color: white; border: none; border-radius: 4px; cursor: pointer;">
+          새로고침
+        </button>
+      </div>
+    </div>
+  `;
+}
+```
+
+## FIREBASE INTEGRATION PATTERNS
+
+### AUTHENTICATION HANDLING
+```javascript
+// ✅ CORRECT: Proper Firebase auth integration
+function initializeAuth() {
+  if (!firebase || !firebase.auth) {
+    console.error('Firebase not initialized');
+    return;
+  }
+  
+  firebase.auth().onAuthStateChanged((user) => {
+    if (user) {
+      console.log('✅ User authenticated:', user.email);
+      updateUIForAuthenticatedUser(user);
+      loadUserSpecificData(user.uid);
+    } else {
+      console.log('ℹ️ User not authenticated');
+      updateUIForUnauthenticatedUser();
+    }
+  });
+}
+
+function updateUIForAuthenticatedUser(user) {
+  const authElements = document.querySelectorAll('[data-auth="required"]');
+  authElements.forEach(el => el.style.display = 'block');
+  
+  const guestElements = document.querySelectorAll('[data-auth="guest"]');
+  guestElements.forEach(el => el.style.display = 'none');
+  
+  // Update user info displays
+  const userDisplays = document.querySelectorAll('[data-user-info]');
+  userDisplays.forEach(el => {
+    const infoType = el.getAttribute('data-user-info');
+    if (infoType === 'email') el.textContent = user.email;
+    if (infoType === 'name') el.textContent = user.displayName || 'User';
+  });
+}
+
+// ❌ WRONG: Assuming Firebase is always available
+firebase.auth().onAuthStateChanged((user) => {
+  // Will throw error if Firebase not loaded
+});
+```
+
+## RESPONSIVE DESIGN FOR CRYPTO TABLES
+
+### MOBILE-FIRST TABLE DESIGN
+```css
+/* ✅ CORRECT: Mobile-optimized crypto table */
+.crypto-table-container {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin: 0 -1rem; /* Extend to screen edges on mobile */
+}
+
+.crypto-table {
+  width: 100%;
+  min-width: 800px; /* Ensure readability */
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.crypto-table th,
+.crypto-table td {
+  padding: 0.75rem 0.5rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border-light);
+  white-space: nowrap;
+}
+
+/* Priority columns for mobile */
+.crypto-table .rank-col,
+.crypto-table .name-col,
+.crypto-table .price-col,
+.crypto-table .change-col {
+  position: sticky;
+  left: 0;
+  background: var(--bg-primary);
+  z-index: 1;
+}
+
+@media (max-width: 768px) {
+  .crypto-table {
+    font-size: 0.75rem;
+  }
+  
+  .crypto-table th,
+  .crypto-table td {
+    padding: 0.5rem 0.25rem;
+  }
+  
+  /* Hide less important columns on mobile */
+  .crypto-table .oi-col,
+  .crypto-table .market-col,
+  .crypto-table .liquidation-col {
+    display: none;
+  }
+}
+
+/* ❌ WRONG: Fixed table that breaks on mobile */
+.crypto-table {
+  width: 100%;
+  /* No min-width, no overflow handling */
+}
+```
+
+## ERROR HANDLING PATTERNS
+
+### USER-FRIENDLY ERROR MESSAGES
+```javascript
+// ✅ CORRECT: Contextual error handling for crypto site
+function handleCryptoDataError(error, context = {}) {
+  const errorMessages = {
+    'rate_limit': '잠시 후 다시 시도해 주세요. (API 제한)',
+    'network': '인터넷 연결을 확인해 주세요.',
+    'invalid_data': '데이터 형식이 올바르지 않습니다.',
+    'server_error': '서버에 일시적인 문제가 있습니다.',
+    'default': '데이터를 불러오는 중 오류가 발생했습니다.'
+  };
+  
+  let errorType = 'default';
+  
+  if (error.message?.includes('429') || error.message?.includes('rate')) {
+    errorType = 'rate_limit';
+  } else if (error.message?.includes('network') || error.name === 'TypeError') {
+    errorType = 'network';
+  } else if (error.message?.includes('invalid') || error.message?.includes('parse')) {
+    errorType = 'invalid_data';
+  } else if (error.message?.includes('500') || error.message?.includes('server')) {
+    errorType = 'server_error';
+  }
+  
+  const userMessage = errorMessages[errorType];
+  
+  // Log technical details
+  console.error('🔥 Crypto Data Error:', {
+    type: errorType,
+    message: error.message,
+    stack: error.stack,
+    context,
+    timestamp: new Date().toISOString()
+  });
+  
+  // Show user-friendly notification
+  showNotification(userMessage, 'error');
+  
+  // Return fallback data
+  return getFallbackCryptoData();
+}
+
+function showNotification(message, type = 'info') {
+  const notification = document.createElement('div');
+  notification.className = `notification notification--${type}`;
+  notification.innerHTML = `
+    <div class="notification__content">
+      <i class="fas fa-${type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
+      <span>${message}</span>
+    </div>
+    <button class="notification__close" onclick="this.parentElement.remove()">
+      <i class="fas fa-times"></i>
+    </button>
+  `;
+  
+  document.body.appendChild(notification);
+  
+  // Auto-remove after 5 seconds
+  setTimeout(() => {
+    if (notification.parentElement) {
+      notification.remove();
+    }
+  }, 5000);
+}
+```
+
+## PERFORMANCE OPTIMIZATION FOR CRYPTO DATA
+
+### EFFICIENT DATA UPDATES
+```javascript
+// ✅ CORRECT: Optimized real-time updates
+class CryptoDataManager {
+  constructor() {
+    this.updateInterval = null;
+    this.lastUpdateTime = 0;
+    this.minUpdateInterval = 30000; // 30 seconds minimum
+    this.failureCount = 0;
+    this.maxFailures = 3;
+  }
+  
+  startRealTimeUpdates() {
+    this.updateInterval = setInterval(() => {
+      this.updateCryptoData();
+    }, this.minUpdateInterval);
+  }
+  
+  async updateCryptoData() {
+    // Prevent too frequent updates
+    const now = Date.now();
+    if (now - this.lastUpdateTime < this.minUpdateInterval) {
+      return;
+    }
+    
+    try {
+      const data = await loadCryptoData();
+      this.failureCount = 0; // Reset on success
+      this.lastUpdateTime = now;
+      
+      // Update UI efficiently
+      this.updateTableData(data);
+      
+    } catch (error) {
+      this.failureCount++;
+      
+      if (this.failureCount >= this.maxFailures) {
+        console.warn('Too many failures, stopping real-time updates');
+        this.stopRealTimeUpdates();
+        showNotification('실시간 업데이트가 일시 중단되었습니다.', 'warning');
+      }
+    }
+  }
+  
+  updateTableData(data) {
+    // Use DocumentFragment for efficient DOM updates
+    const tbody = document.getElementById('crypto-table-body');
+    if (!tbody) return;
+    
+    const fragment = document.createDocumentFragment();
+    
+    data.forEach(coin => {
+      const row = this.createTableRow(coin);
+      fragment.appendChild(row);
+    });
+    
+    // Single DOM update
+    tbody.innerHTML = '';
+    tbody.appendChild(fragment);
+  }
+  
+  stopRealTimeUpdates() {
+    if (this.updateInterval) {
+      clearInterval(this.updateInterval);
+      this.updateInterval = null;
+    }
+  }
+}
+
+// ❌ WRONG: Inefficient updates
+setInterval(() => {
+  fetch('/api/crypto').then(data => {
+    // Updates DOM for each item individually
+    data.forEach(coin => {
+      document.getElementById(`coin-${coin.id}`).innerHTML = coin.price;
+    });
+  });
+}, 1000); // Too frequent
+```
+
+## SECURITY CONSIDERATIONS
+
+### INPUT SANITIZATION FOR CRYPTO DATA
+```javascript
+// ✅ CORRECT: Secure data handling
+function sanitizeCryptoInput(input) {
+  if (typeof input !== 'string') {
+    return String(input || '');
+  }
+  
+  return input
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '') // Remove scripts
+    .replace(/javascript:/gi, '') // Remove javascript: URLs
+    .replace(/on\w+\s*=/gi, '') // Remove event handlers
+    .trim();
+}
+
+// ✅ CORRECT: Safe HTML generation
+function createCoinRow(coin) {
+  const row = document.createElement('tr');
+  row.className = 'crypto-table__row';
+  
+  // Use textContent for user data, innerHTML only for trusted content
+  row.innerHTML = `
+    <td class="rank-col">${parseInt(coin.rank) || 0}</td>
+    <td class="name-col">
+      <div class="coin-info">
+        <img src="${escapeHtml(coin.image || '/assets/default-coin.png')}" alt="" class="coin-icon">
+        <div>
+          <div class="coin-name">${escapeHtml(coin.name)}</div>
+          <div class="coin-symbol">${escapeHtml(coin.symbol)}</div>
+        </div>
+      </div>
+    </td>
+    <td class="price-col">${formatCryptoPrice(coin.price)}</td>
+  `;
+  
+  return row;
+}
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+// ❌ WRONG: Direct HTML injection
+function createRow(coin) {
+  return `<tr><td>${coin.name}</td></tr>`; // XSS vulnerable
+}
+```
+
+---
+
+**FELICITY-SITE SPECIFIC REMINDERS:**
+1. **Always use cleanText() for cryptocurrency names and symbols**
+2. **Implement proper TradingView widget lifecycle management**
+3. **Handle API rate limits gracefully with fallback data**
+4. **Use mobile-first responsive design for crypto tables**
+5. **Implement user-friendly error messages in Korean**
+6. **Optimize for cryptocurrency price ranges (micro to macro)**
+7. **Follow Firebase authentication patterns consistently**
+8. **Test with real cryptocurrency data edge cases**
+9. **Implement proper loading states for all data operations**
+10. **Use structured logging with emoji prefixes for better debugging**

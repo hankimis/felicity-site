@@ -3,3 +3,559 @@ description:
 globs:
 alwaysApply: false
 ---
+# CSS & UI/UX Error Prevention Guidelines
+
+## CSS VARIABLE MANAGEMENT
+
+### PROPER VARIABLE DEFINITION & USAGE
+```css
+/* ✅ CORRECT: Define variables in :root with fallbacks */
+:root {
+  --primary-color: #3b82f6;
+  --bg-primary: #ffffff;
+  --text-primary: #1f2937;
+  --border-color: #e2e8f0;
+}
+
+/* ✅ CORRECT: Use variables with fallbacks */
+.component {
+  background-color: var(--bg-primary, #ffffff);
+  color: var(--text-primary, #000000);
+  border: 1px solid var(--border-color, #cccccc);
+}
+
+/* ❌ WRONG: Using undefined variables */
+.component {
+  background-color: var(--undefined-variable); /* Will fail */
+}
+```
+
+### THEME CONSISTENCY
+```css
+/* ✅ CORRECT: Consistent theme variable structure */
+:root {
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8fafc;
+  --text-primary: #1f2937;
+  --text-secondary: #6b7280;
+}
+
+[data-theme="dark"] {
+  --bg-primary: #1a1a1a;
+  --bg-secondary: #2a2a2a;
+  --text-primary: #ffffff;
+  --text-secondary: #cccccc;
+}
+
+/* ❌ WRONG: Inconsistent variable naming */
+:root {
+  --background: #ffffff;
+  --main-text: #000000;
+}
+
+[data-theme="dark"] {
+  --bg-color: #000000; /* Different naming pattern */
+  --text-color: #ffffff;
+}
+```
+
+## RESPONSIVE DESIGN BEST PRACTICES
+
+### MOBILE-FIRST APPROACH
+```css
+/* ✅ CORRECT: Mobile-first responsive design */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+@media (min-width: 768px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .dashboard-grid {
+    grid-template-columns: 2fr 1fr;
+    gap: 2rem;
+  }
+}
+
+/* ❌ WRONG: Desktop-first approach */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 2rem;
+}
+
+@media (max-width: 1024px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+}
+```
+
+### BREAKPOINT CONSISTENCY
+```css
+/* ✅ CORRECT: Consistent breakpoint system */
+:root {
+  --breakpoint-sm: 640px;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 1024px;
+  --breakpoint-xl: 1280px;
+}
+
+@media (min-width: 768px) { /* Use consistent values */ }
+@media (min-width: 1024px) { }
+
+/* ❌ WRONG: Inconsistent breakpoints */
+@media (min-width: 750px) { }
+@media (min-width: 1000px) { }
+@media (min-width: 1200px) { }
+```
+
+## LAYOUT & POSITIONING
+
+### FLEXBOX BEST PRACTICES
+```css
+/* ✅ CORRECT: Proper flexbox usage */
+.flex-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap; /* Allow wrapping on smaller screens */
+}
+
+.flex-item {
+  flex: 1 1 auto; /* Grow, shrink, auto basis */
+  min-width: 0; /* Prevent overflow */
+}
+
+/* ❌ WRONG: Inflexible flexbox */
+.flex-container {
+  display: flex;
+  /* No gap, no wrap, no alignment */
+}
+
+.flex-item {
+  width: 50%; /* Fixed width prevents flexibility */
+}
+```
+
+### GRID LAYOUT SAFETY
+```css
+/* ✅ CORRECT: Responsive grid with fallbacks */
+.crypto-table-container {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.crypto-table {
+  width: 100%;
+  min-width: 800px; /* Prevent table from becoming too narrow */
+  border-collapse: collapse;
+}
+
+/* ❌ WRONG: Fixed grid that breaks on small screens */
+.crypto-table {
+  width: 100%;
+  /* No min-width, no overflow handling */
+}
+```
+
+## COMPONENT STYLING PATTERNS
+
+### BUTTON COMPONENT CONSISTENCY
+```css
+/* ✅ CORRECT: Consistent button system */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 1rem;
+  border: 1px solid transparent;
+  border-radius: 0.375rem;
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.btn-primary {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background-color: var(--primary-color-hover, #2563eb);
+}
+
+/* ❌ WRONG: Inconsistent button styles */
+.button1 {
+  padding: 8px 16px;
+  background: blue;
+}
+
+.button2 {
+  padding: 10px 20px;
+  background: #0000ff;
+}
+```
+
+### FORM INPUT CONSISTENCY
+```css
+/* ✅ CORRECT: Consistent form inputs */
+.form-input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: 0.375rem;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 1rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.form-input::placeholder {
+  color: var(--text-secondary);
+}
+
+/* ❌ WRONG: Inconsistent input styling */
+input {
+  padding: 5px;
+  border: 1px solid gray;
+}
+
+select {
+  padding: 10px;
+  border: 2px solid black;
+}
+```
+
+## ANIMATION & TRANSITIONS
+
+### PERFORMANCE-OPTIMIZED ANIMATIONS
+```css
+/* ✅ CORRECT: Hardware-accelerated animations */
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--border-color);
+  border-top: 3px solid var(--primary-color);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  will-change: transform; /* Optimize for animation */
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* ❌ WRONG: Non-optimized animations */
+.spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg) scale(1); } /* Avoid scale in spin */
+  50% { transform: rotate(180deg) scale(1.1); }
+  100% { transform: rotate(360deg) scale(1); }
+}
+```
+
+### SMOOTH TRANSITIONS
+```css
+/* ✅ CORRECT: Smooth, purposeful transitions */
+.card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px var(--shadow-medium);
+}
+
+/* ❌ WRONG: Jarring or slow transitions */
+.card {
+  transition: all 0.8s ease; /* Too slow */
+}
+
+.card:hover {
+  transform: scale(1.2); /* Too dramatic */
+}
+```
+
+## ACCESSIBILITY CONSIDERATIONS
+
+### COLOR CONTRAST & VISIBILITY
+```css
+/* ✅ CORRECT: Proper contrast ratios */
+.text-primary {
+  color: var(--text-primary); /* Ensure 4.5:1 contrast ratio */
+}
+
+.text-secondary {
+  color: var(--text-secondary); /* Ensure 3:1 contrast ratio */
+}
+
+.btn-primary {
+  background-color: var(--primary-color);
+  color: white; /* Ensure sufficient contrast */
+}
+
+/* ❌ WRONG: Poor contrast */
+.text-light {
+  color: #cccccc; /* Too light on white background */
+}
+```
+
+### FOCUS STATES
+```css
+/* ✅ CORRECT: Visible focus states */
+.interactive-element {
+  outline: none;
+  transition: box-shadow 0.2s ease;
+}
+
+.interactive-element:focus {
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5);
+}
+
+.interactive-element:focus:not(:focus-visible) {
+  box-shadow: none; /* Hide focus for mouse users */
+}
+
+/* ❌ WRONG: Removing focus without replacement */
+button {
+  outline: none; /* Don't do this without alternative */
+}
+```
+
+## ERROR STATE STYLING
+
+### LOADING STATES
+```css
+/* ✅ CORRECT: Clear loading states */
+.loading-skeleton {
+  background: linear-gradient(90deg, 
+    var(--bg-secondary) 25%, 
+    var(--bg-tertiary) 50%, 
+    var(--bg-secondary) 75%);
+  background-size: 200% 100%;
+  animation: loading 1.5s infinite;
+  border-radius: 4px;
+}
+
+@keyframes loading {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ❌ WRONG: No loading feedback */
+.content {
+  /* No indication of loading state */
+}
+```
+
+### ERROR STATES
+```css
+/* ✅ CORRECT: Clear error indication */
+.error-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.error-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  color: var(--error-color, #dc2626);
+}
+
+.error-message {
+  margin-bottom: 1rem;
+  font-weight: 500;
+}
+
+.error-retry {
+  padding: 0.5rem 1rem;
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 0.375rem;
+  cursor: pointer;
+}
+
+/* ❌ WRONG: No error state styling */
+.error {
+  color: red; /* Too harsh, no context */
+}
+```
+
+## PERFORMANCE OPTIMIZATION
+
+### EFFICIENT SELECTORS
+```css
+/* ✅ CORRECT: Efficient CSS selectors */
+.crypto-table-row {
+  /* Direct class selector */
+}
+
+.crypto-table-row:hover {
+  background-color: var(--bg-secondary);
+}
+
+/* ❌ WRONG: Inefficient selectors */
+table tr td div span {
+  /* Too specific, slow */
+}
+
+* {
+  /* Universal selector, very slow */
+}
+```
+
+### CRITICAL CSS PATTERNS
+```css
+/* ✅ CORRECT: Critical above-the-fold styles */
+.main-container {
+  max-width: 1800px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+.loading-skeleton {
+  background: var(--bg-secondary);
+  border-radius: 4px;
+  animation: pulse 1.5s infinite;
+}
+
+/* ❌ WRONG: Non-critical styles in critical CSS */
+.footer-copyright {
+  /* This shouldn't be in critical CSS */
+}
+```
+
+## BROWSER COMPATIBILITY
+
+### VENDOR PREFIXES & FALLBACKS
+```css
+/* ✅ CORRECT: Progressive enhancement */
+.element {
+  background: var(--bg-primary);
+  background: linear-gradient(to right, var(--bg-primary), var(--bg-secondary));
+  
+  /* Fallback for older browsers */
+  display: block;
+  display: flex;
+  
+  /* Vendor prefixes for newer features */
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+
+/* ❌ WRONG: No fallbacks */
+.element {
+  display: grid; /* No fallback for older browsers */
+  backdrop-filter: blur(10px); /* No vendor prefix */
+}
+```
+
+## MAINTENANCE & ORGANIZATION
+
+### CONSISTENT NAMING CONVENTIONS
+```css
+/* ✅ CORRECT: BEM methodology */
+.crypto-table {
+  /* Block */
+}
+
+.crypto-table__header {
+  /* Element */
+}
+
+.crypto-table__row--selected {
+  /* Modifier */
+}
+
+/* ❌ WRONG: Inconsistent naming */
+.cryptoTable {
+  /* camelCase */
+}
+
+.crypto_table_header {
+  /* snake_case */
+}
+
+.CryptoTableRow {
+  /* PascalCase */
+}
+```
+
+### COMPONENT ORGANIZATION
+```css
+/* ✅ CORRECT: Organized component structure */
+/* ==========================================================================
+   CRYPTO TABLE COMPONENT
+   ========================================================================== */
+
+/* Base styles */
+.crypto-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+/* Element styles */
+.crypto-table__header { }
+.crypto-table__row { }
+.crypto-table__cell { }
+
+/* Modifier styles */
+.crypto-table__row--selected { }
+.crypto-table__cell--numeric { }
+
+/* State styles */
+.crypto-table--loading { }
+.crypto-table--error { }
+
+/* Responsive styles */
+@media (max-width: 768px) {
+  .crypto-table {
+    font-size: 0.875rem;
+  }
+}
+```
+
+---
+
+**CRITICAL REMINDERS:**
+1. **Always test on multiple screen sizes and devices**
+2. **Verify color contrast meets accessibility standards**
+3. **Provide fallbacks for modern CSS features**
+4. **Use consistent naming conventions throughout**
+5. **Optimize for performance (avoid expensive selectors)**
+6. **Include loading and error states for all components**
+7. **Test with different themes (light/dark mode)**
+8. **Validate CSS and check for browser compatibility**
