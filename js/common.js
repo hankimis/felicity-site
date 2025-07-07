@@ -53,31 +53,10 @@ document.addEventListener('DOMContentLoaded', loadCommonHead);
 
 // 공통 기능들을 담당하는 스크립트
 
-// 모바일 메뉴 관련 기능
+// 모바일 메뉴 관련 기능 (auth.js에서 처리하므로 제거)
 function setupMobileMenu() {
-    const body = document.body;
-    const menuButton = document.querySelector('.mobile-menu-button');
-    const mobileMenu = document.querySelector('.mobile-menu');
-
-    if (!menuButton || !mobileMenu) {
-        console.log('Mobile menu elements not found');
-        return;
-    }
-
-    menuButton.addEventListener('click', () => {
-        mobileMenu.classList.toggle('active');
-        body.style.overflow = mobileMenu.classList.contains('active') ? 'hidden' : '';
-    });
-
-    // 모바일 메뉴 외부 클릭 시 닫기
-    document.addEventListener('click', (e) => {
-        if (mobileMenu.classList.contains('active') && 
-            !mobileMenu.contains(e.target) && 
-            !menuButton.contains(e.target)) {
-            mobileMenu.classList.remove('active');
-            body.style.overflow = '';
-        }
-    });
+    // 모바일 메뉴는 auth.js의 createMobileMenuIfNeeded()에서 처리
+    console.log('Mobile menu setup is handled by auth.js');
 }
 
 // 테마 관련 기능 - auth.js에서 처리하므로 제거

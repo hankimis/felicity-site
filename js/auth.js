@@ -201,9 +201,21 @@ function updateThemeIcon() {
 function updateLogos() {
     const isDarkMode = document.documentElement.classList.contains('dark-mode');
     const logoSrc = isDarkMode ? '/assets/darklogo.png' : '/assets/lightlogo.png';
-    document.querySelectorAll('.logo img, #mobile-main-logo').forEach(img => {
-        if(img) img.src = logoSrc;
+    
+    // 헤더 로고 업데이트 (모바일 메뉴는 텍스트 기반)
+    document.querySelectorAll('.logo img').forEach(img => {
+        if(img) {
+            img.src = logoSrc;
+            // 로드 에러 시 기본 로고로 설정
+            img.onerror = function() {
+                this.src = '/assets/lightlogo.png';
+            };
+        }
     });
+}
+
+function getCurrentTheme() {
+    return localStorage.getItem('theme') || 'light';
 }
 
 // 4. UI 업데이트 함수
@@ -223,7 +235,7 @@ async function updateAuthUI(user) {
             const _exists = typeof userDoc.exists === 'function' ? userDoc.exists() : userDoc.exists;
             currentUser = _exists 
                 ? { uid: user.uid, ...userDoc.data() } 
-                : { uid: user.uid, displayName: user.displayName || "사용자", points: 0, level: "새싹" };
+                : { uid: user.uid, displayName: user.displayName || "사용자" };
             window.currentUser = currentUser;
             console.log("User data fetched:", currentUser);
 
@@ -250,7 +262,7 @@ async function updateAuthUI(user) {
         } catch (error) {
             console.error("Error fetching user data:", error);
             // 에러 발생 시에도 기본 사용자 정보로 설정
-            currentUser = { uid: user.uid, displayName: user.displayName || "사용자", points: 0, level: "새싹" };
+            currentUser = { uid: user.uid, displayName: user.displayName || "사용자" };
             window.currentUser = currentUser;
             
             if (userProfile) userProfile.style.display = 'flex';
@@ -298,11 +310,11 @@ function updateMobileMenuUserInfo() {
     if (!currentUser) {
         // 로그인/회원가입 버튼 (비로그인 시)
         mobileAuthSection.innerHTML = `
-            <div style="display:flex; flex-direction:column; gap:12px; padding:20px 0;">
-                <button class="mobile-auth-btn login" data-action="open-login-modal" style="font-size:1.15rem; padding:14px 0; border-radius:12px; font-weight:700; display:flex; align-items:center; justify-content:center; gap:8px; background:var(--primary-color); color:#fff; border:none;">
+            <div class="mobile-auth-buttons">
+                <button class="mobile-auth-btn login" data-action="open-login-modal">
                     <i class="fas fa-sign-in-alt"></i> 로그인
                 </button>
-                <button class="mobile-auth-btn signup" data-action="open-signup-modal" style="font-size:1.15rem; padding:14px 0; border-radius:12px; font-weight:700; display:flex; align-items:center; justify-content:center; gap:8px; background:var(--bg-secondary-color); color:var(--primary-color); border:1.5px solid var(--primary-color);">
+                <button class="mobile-auth-btn signup" data-action="open-signup-modal">
                     <i class="fas fa-user-plus"></i> 회원가입
                 </button>
             </div>
@@ -310,21 +322,19 @@ function updateMobileMenuUserInfo() {
         return;
     }
     
-    // 레벨 시스템 제거됨
-    
+    // 로그인 상태 - 사용자 프로필 표시
     mobileAuthSection.innerHTML = `
         <div class="mobile-user-profile">
             <div class="mobile-user-info">
                 <span class="mobile-user-name">${currentUser.displayName}님</span>
             </div>
-            <div class="mobile-user-stats">
-                <span class="mobile-user-points">${(currentUser.points || 0).toLocaleString()}P</span>
-            </div>
-            <button class="mobile-logout-btn" data-action="logout">로그아웃</button>
-                </div>`;
+            <button class="mobile-logout-btn" data-action="logout">
+                <i class="fas fa-sign-out-alt"></i> 로그아웃
+            </button>
+        </div>`;
 }
 
-// 사용자 데이터 새로고침 함수 (관리자가 포인트 변경 시 호출)
+// 사용자 데이터 새로고침 함수
 window.refreshUserData = async function() {
     if (window.auth.currentUser) {
         // 최신 사용자 데이터를 다시 가져와서 업데이트
@@ -332,10 +342,9 @@ window.refreshUserData = async function() {
             console.log('사용자 데이터 새로고침 시작...');
             const userDoc = await window.db.collection("users").doc(window.auth.currentUser.uid).get();
             if ( (typeof userDoc.exists === 'function' ? userDoc.exists() : userDoc.exists) ) {
-                const oldPoints = currentUser ? currentUser.points : 0;
                 const newUserData = userDoc.data();
                 
-                console.log('포인트 변경:', oldPoints, '->', newUserData.points);
+                console.log('사용자 데이터 업데이트:', newUserData);
                 
                 // 모바일 메뉴 업데이트
                 updateMobileMenuUserInfo();
@@ -494,40 +503,52 @@ function createMobileMenuIfNeeded() {
     });
     document.body.appendChild(overlay);
 
-    // 메뉴 생성 (깔끔한 세로형, 큰 터치영역, 상단 사용자 정보)
+    // 메뉴 생성 (현대적인 사이드 슬라이드 디자인)
     const menu = document.createElement('div');
     menu.id = 'mobile-menu';
     menu.className = 'mobile-menu';
     menu.innerHTML = `
         <div class="mobile-menu-header">
-          <a href="index.html" class="logo-container"><img id="mobile-main-logo" src="" alt="Onbit Logo" height="36"/></a>
-          <button class="mobile-menu-close" data-action="close-mobile-menu" aria-label="메뉴 닫기"><i class="fas fa-times"></i></button>
+          <div class="mobile-menu-title">
+            <span>Onbit</span>
+          </div>
+          <button class="mobile-menu-close" data-action="close-mobile-menu" aria-label="메뉴 닫기">
+            <i class="fas fa-times"></i>
+          </button>
         </div>
         <div class="mobile-auth-section">
-            <div style="display:flex; flex-direction:column; gap:12px; padding:20px 0;">
-                <button class="mobile-auth-btn login" data-action="open-login-modal" style="font-size:1.15rem; padding:14px 0; border-radius:12px; font-weight:700; display:flex; align-items:center; justify-content:center; gap:8px; background:var(--primary-color); color:#fff; border:none;">
+            <div class="mobile-auth-buttons">
+                <button class="mobile-auth-btn login" data-action="open-login-modal">
                     <i class="fas fa-sign-in-alt"></i> 로그인
                 </button>
-                <button class="mobile-auth-btn signup" data-action="open-signup-modal" style="font-size:1.15rem; padding:14px 0; border-radius:12px; font-weight:700; display:flex; align-items:center; justify-content:center; gap:8px; background:var(--bg-secondary-color); color:var(--primary-color); border:1.5px solid var(--primary-color);">
+                <button class="mobile-auth-btn signup" data-action="open-signup-modal">
                     <i class="fas fa-user-plus"></i> 회원가입
                 </button>
             </div>
         </div>
         <nav class="mobile-menu-nav">
           <ul>
-                            <li><a href="/affiliated/" data-action="close-mobile-menu"><i class="fas fa-building"></i> 제휴 거래소</a></li>
-            <li><a href="/community.html" data-action="close-mobile-menu"><i class="fas fa-comments"></i> 실시간 채팅</a></li>
-            <li><a href="/community-board.html" data-action="close-mobile-menu"><i class="fas fa-clipboard-list"></i> 자유 게시판</a></li>
-            <li><a href="/attendance.html" data-action="close-mobile-menu"><i class="fas fa-calendar-check"></i> 출석체크</a></li>
+            <li><a href="/affiliated/" data-action="close-mobile-menu"><i class="fas fa-building"></i> 제휴 거래소</a></li>
+            <li><a href="/community/" data-action="close-mobile-menu"><i class="fas fa-comments"></i> 실시간 채팅</a></li>
+            <li><a href="/news/" data-action="close-mobile-menu"><i class="fas fa-newspaper"></i> 뉴스</a></li>
+            <li><a href="/event-board.html" data-action="close-mobile-menu"><i class="fas fa-calendar-alt"></i> 이벤트</a></li>
             <li><a href="/notice-board.html" data-action="close-mobile-menu"><i class="fas fa-bullhorn"></i> 공지사항</a></li>
             <li><a href="/my-account.html" data-action="close-mobile-menu"><i class="fas fa-user"></i> 마이페이지</a></li>
             <li><a href="#" data-action="toggle-theme"><i class="fas fa-adjust"></i> 테마 변경</a></li>
           </ul>
         </nav>
-        <div class="mobile-menu-footer" style="margin-top:auto; padding-top:20px; border-top:1px solid var(--border-color); text-align:center; color:var(--text-color-secondary); font-size:0.95em;">
-          <span>© 2024 Onbit</span>
+        <div class="mobile-menu-actions">
+          <div class="mobile-action-grid">
+            <a href="/admin.html" class="mobile-action-btn" id="mobile-admin-link" style="display: none;">
+              <i class="fas fa-shield-alt"></i>
+              <span>관리자</span>
+            </a>
+          </div>
         </div>`;
     document.body.appendChild(menu);
+    
+    // 모바일 메뉴는 텍스트 기반이므로 별도 로고 설정 불필요
+    
     updateMobileMenuUserInfo();
 }
 
@@ -605,8 +626,6 @@ if (!window.bindAuthForms) {
                         await window.db.collection("users").doc(userCredential.user.uid).set({
                             displayName: userCredential.user.displayName || "사용자",
                             email,
-                            points: 0,
-                            level: "새싹",
                             role: 'user',
                             createdAt: firebase.firestore.FieldValue.serverTimestamp()
                         });
@@ -665,8 +684,6 @@ if (!window.bindAuthForms) {
                         await window.db.collection("users").doc(userCredential.user.uid).set({
                             displayName: name,
                             email,
-                            points: 0,
-                            level: "새싹",
                             role: email === 'admin@site.com' ? 'admin' : 'user',
                             createdAt: firebase.firestore.FieldValue.serverTimestamp()
                         });

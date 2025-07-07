@@ -1,0 +1,379 @@
+/* Mobile Tab Navigation Styles */
+.mobile-tab-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    background: var(--bg-color);
+    border-bottom: 1px solid var(--border-color);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Desktop Header - 데스크톱에서만 보임 */
+.desktop-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 2rem;
+    height: 60px;
+    background: var(--header-bg);
+}
+
+.desktop-header .logo img {
+    height: 40px;
+    width: auto;
+}
+
+.desktop-header .desktop-nav ul {
+    display: flex;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    gap: 2rem;
+}
+
+.desktop-header .desktop-nav a {
+    text-decoration: none;
+    color: var(--text-color);
+    font-weight: 500;
+    transition: color 0.2s ease;
+}
+
+.desktop-header .desktop-nav a:hover {
+    color: var(--primary-color);
+}
+
+.desktop-header .header-right {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.desktop-header .auth-buttons {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.desktop-header .auth-buttons a {
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.desktop-header .auth-buttons .login {
+    background: var(--primary-color);
+    color: white;
+}
+
+.desktop-header .auth-buttons .signup {
+    background: transparent;
+    color: var(--primary-color);
+    border: 1px solid var(--primary-color);
+}
+
+.desktop-header .user-info {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.desktop-header .theme-button,
+.desktop-header .icon-button,
+.desktop-header .user-info button {
+    background: none;
+    border: none;
+    padding: 0.5rem;
+    border-radius: 6px;
+    color: var(--text-color);
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.desktop-header .theme-button:hover,
+.desktop-header .icon-button:hover,
+.desktop-header .user-info button:hover {
+    background: var(--bg-secondary-color);
+}
+
+/* Mobile Tab Navigation - 모바일에서만 보임 */
+.mobile-tab-nav {
+    display: none;
+    background: var(--bg-color);
+    border-top: 1px solid var(--border-color);
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    justify-content: space-around;
+    padding: 0;
+    min-height: 60px;
+}
+
+.mobile-tab-nav::-webkit-scrollbar {
+    display: none;
+}
+
+.mobile-tab-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 12px;
+    text-decoration: none;
+    color: var(--text-color-secondary);
+    font-size: 11px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    min-width: 60px;
+    position: relative;
+    border-radius: 8px;
+    margin: 4px 2px;
+}
+
+.mobile-tab-item i {
+    font-size: 18px;
+    margin-bottom: 4px;
+    transition: all 0.2s ease;
+}
+
+.mobile-tab-item span {
+    font-size: 10px;
+    text-align: center;
+    line-height: 1;
+}
+
+.mobile-tab-item.active {
+    color: var(--primary-color);
+    background: rgba(59, 130, 246, 0.1);
+}
+
+.mobile-tab-item.active i {
+    color: var(--primary-color);
+    transform: scale(1.1);
+}
+
+.mobile-tab-item:hover {
+    color: var(--primary-color);
+    background: rgba(59, 130, 246, 0.05);
+}
+
+/* Mobile Top Bar - 모바일에서만 보임 */
+.mobile-top-bar {
+    display: none;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 16px;
+    background: var(--header-bg);
+    border-bottom: 1px solid var(--border-color);
+    min-height: 44px;
+}
+
+.mobile-user-section {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.mobile-auth-buttons {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.mobile-auth-btn {
+    padding: 4px 12px;
+    border-radius: 4px;
+    text-decoration: none;
+    font-size: 12px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.mobile-auth-btn.login-btn {
+    background: var(--primary-color);
+    color: white;
+}
+
+.mobile-auth-btn.signup-btn {
+    background: transparent;
+    color: var(--primary-color);
+    border: 1px solid var(--primary-color);
+}
+
+.mobile-user-info {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.mobile-user-info img {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.mobile-user-info span {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-color);
+}
+
+.mobile-user-info a,
+.mobile-user-info button {
+    background: none;
+    border: none;
+    padding: 4px;
+    border-radius: 4px;
+    color: var(--text-color);
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    text-decoration: none;
+}
+
+.mobile-user-info a:hover,
+.mobile-user-info button:hover {
+    background: var(--bg-secondary-color);
+}
+
+.mobile-theme-toggle {
+    background: none;
+    border: none;
+    padding: 6px;
+    border-radius: 6px;
+    color: var(--text-color);
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.mobile-theme-toggle:hover {
+    background: var(--bg-secondary-color);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .desktop-header {
+        display: none;
+    }
+    
+    .mobile-tab-nav {
+        display: flex;
+    }
+    
+    .mobile-top-bar {
+        display: flex;
+    }
+    
+    .mobile-tab-header {
+        flex-direction: column-reverse;
+    }
+    
+    body {
+        padding-top: 104px; /* 44px (top bar) + 60px (tab nav) */
+    }
+}
+
+@media (min-width: 769px) {
+    .desktop-header {
+        display: flex;
+    }
+    
+    .mobile-tab-nav {
+        display: none;
+    }
+    
+    .mobile-top-bar {
+        display: none;
+    }
+    
+    body {
+        padding-top: 60px; /* 데스크톱 헤더 높이 */
+    }
+}
+
+/* Dark Theme Support */
+[data-theme="dark"] .mobile-tab-header {
+    background: var(--bg-color);
+    border-bottom-color: var(--border-color);
+}
+
+[data-theme="dark"] .mobile-tab-item {
+    color: var(--text-color-secondary);
+}
+
+[data-theme="dark"] .mobile-tab-item.active {
+    color: var(--primary-color);
+    background: rgba(96, 165, 250, 0.15);
+}
+
+[data-theme="dark"] .mobile-tab-item:hover {
+    color: var(--primary-color);
+    background: rgba(96, 165, 250, 0.1);
+}
+
+[data-theme="dark"] .mobile-auth-btn.login-btn {
+    background: var(--primary-color);
+    color: white;
+}
+
+[data-theme="dark"] .mobile-auth-btn.signup-btn {
+    background: transparent;
+    color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+[data-theme="dark"] .mobile-user-info span {
+    color: var(--text-color);
+}
+
+[data-theme="dark"] .mobile-user-info a,
+[data-theme="dark"] .mobile-user-info button,
+[data-theme="dark"] .mobile-theme-toggle {
+    color: var(--text-color);
+}
+
+[data-theme="dark"] .mobile-user-info a:hover,
+[data-theme="dark"] .mobile-user-info button:hover,
+[data-theme="dark"] .mobile-theme-toggle:hover {
+    background: var(--bg-secondary-color);
+}
+
+/* Animation for tab switching */
+.mobile-tab-item {
+    transform: scale(1);
+    transition: transform 0.15s ease, color 0.2s ease, background-color 0.2s ease;
+}
+
+.mobile-tab-item:active {
+    transform: scale(0.95);
+}
+
+/* Ensure proper spacing on very small screens */
+@media (max-width: 480px) {
+    .mobile-tab-item {
+        min-width: 50px;
+        padding: 6px 8px;
+    }
+    
+    .mobile-tab-item i {
+        font-size: 16px;
+    }
+    
+    .mobile-tab-item span {
+        font-size: 9px;
+    }
+    
+    .mobile-top-bar {
+        padding: 6px 12px;
+    }
+    
+    .mobile-user-info img {
+        width: 24px;
+        height: 24px;
+    }
+    
+    .mobile-user-info span {
+        font-size: 11px;
+    }
+} 

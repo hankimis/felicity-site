@@ -2939,70 +2939,6 @@
       transform: translateY(-1px);
     }
 
-    /* 반응형 디자인 */
-    @media (max-width: 1024px) {
-      .realtime-grid {
-        grid-template-columns: 1fr;
-        height: auto;
-        gap: 1rem;
-      }
-      
-      .longshort-container,
-      .whale-container,
-      .compound-calculator-container {
-        height: 340px;
-      }
-    }
-
-    @media (min-width: 768px) and (max-width: 1024px) {
-      .realtime-grid {
-        grid-template-columns: repeat(2, 1fr);
-      }
-      
-      .influencer-container {
-        grid-column: 1 / -1;
-      }
-    }
-
-    @media (max-width: 768px) {
-      .realtime-section {
-        padding: 0 0.5rem;
-      }
-      
-      .realtime-grid {
-        gap: 0.75rem;
-        height: auto;
-      }
-      
-      .longshort-container,
-      .whale-container,
-      .compound-calculator-container {
-        height: 320px;
-      }
-      
-      .longshort-content,
-      .whale-trades-container,
-      .influencer-positions-container {
-        padding: 0.75rem;
-      }
-      
-      .whale-trades-list,
-      .positions-list {
-        max-height: 180px;
-      }
-      
-      .modal-content {
-        width: 95%;
-        margin: 1rem;
-      }
-      
-      .modal-header,
-      .modal-body,
-      .modal-footer {
-        padding: 1rem;
-      }
-    }
-
     /* 코인 테이블 스타일 */
     .crypto-table-section {
       margin: 2rem 0;
@@ -3017,13 +2953,25 @@
       justify-content: space-between;
       align-items: center;
       margin-bottom: 1.5rem;
+      padding: 1rem 1.5rem;
+      background: var(--bg-primary);
+      border-radius: 12px 12px 0 0;
+      border-bottom: 1px solid var(--border-default);
     }
     
     .crypto-table-section .section-title {
-      font-size: 1.8rem;
-      font-weight: 700;
+      font-size: 1.2rem;
+      font-weight: 600;
       color: var(--text-primary);
       margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .crypto-table-section .section-title i {
+      color: var(--accent-blue);
+      font-size: 1.1rem;
     }
     
     .table-controls {
@@ -3087,9 +3035,11 @@
     
     .crypto-table-wrapper {
       background: var(--bg-primary);
-      border-radius: 12px;
+      border-radius: 0 0 12px 12px;
       box-shadow: 0 4px 20px var(--shadow-light);
       overflow: hidden;
+      border: 1px solid var(--border-default);
+      border-top: none;
     }
     
     .table-tabs {
@@ -3183,6 +3133,465 @@
       opacity: 0.4;
       font-size: 12px;
       font-weight: normal;
+    }
+    
+    .crypto-table th.sort-asc::after {
+      content: '▲';
+      opacity: 0.8;
+      color: var(--accent-blue);
+    }
+    
+    .crypto-table th.sort-desc::after {
+      content: '▼';
+      opacity: 0.8;
+      color: var(--accent-blue);
+    }
+    
+    .crypto-table td {
+      padding: 12px 8px;
+      border-bottom: 1px solid var(--border-light);
+      vertical-align: middle;
+      text-align: center;
+      font-size: 13px;
+      color: var(--text-primary);
+    }
+    
+    .crypto-table td:nth-child(2) {
+      text-align: left;
+    }
+    
+    .crypto-table td:nth-child(3),
+    .crypto-table td:nth-child(7),
+    .crypto-table td:nth-child(8),
+    .crypto-table td:nth-child(11),
+    .crypto-table td:nth-child(12),
+    .crypto-table td:nth-child(13) {
+      text-align: right;
+    }
+    
+    .crypto-table tr:hover {
+      background: var(--bg-secondary);
+    }
+    
+    .coin-info {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .coin-logo {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    
+    .coin-details {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+    
+    .coin-name {
+      font-weight: 600;
+      color: var(--text-primary);
+      font-size: 13px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    
+    .coin-symbol {
+      font-size: 11px;
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+    
+    .price {
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    
+    .change {
+      font-weight: 500;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 13px;
+    }
+    
+    .change.positive {
+      color: var(--positive-text);
+      background: var(--positive-bg);
+    }
+    
+    .change.negative {
+      color: var(--negative-text);
+      background: var(--negative-bg);
+    }
+    
+    .change.neutral {
+      color: var(--text-secondary);
+      background: var(--bg-tertiary);
+    }
+    
+    .volume, .market-cap {
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+    
+    .mini-chart {
+      width: 60px;
+      height: 30px;
+      cursor: pointer;
+      transition: transform 0.2s ease;
+    }
+    
+    .mini-chart:hover {
+      transform: scale(1.05);
+    }
+    
+    .table-pagination {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 1rem;
+      padding: 1rem;
+      background: var(--bg-secondary);
+    }
+    
+    .page-btn {
+      padding: 8px 16px;
+      background: var(--bg-primary);
+      border: 1px solid var(--border-strong);
+      border-radius: 6px;
+      color: var(--text-primary);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    
+    .page-btn:hover:not(:disabled) {
+      background: var(--bg-tertiary);
+      border-color: var(--text-muted);
+    }
+    
+    .page-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    
+    .page-info {
+      font-size: 14px;
+      color: var(--text-secondary);
+    }
+    
+    .loading-row {
+      text-align: center;
+      padding: 2rem;
+      color: var(--text-secondary);
+    }
+
+    /* 반응형 디자인 */
+    @media (max-width: 1024px) {
+      .realtime-grid {
+        grid-template-columns: 1fr;
+        height: auto;
+        gap: 1rem;
+      }
+      
+      .longshort-container,
+      .whale-container,
+      .compound-calculator-container {
+        height: 340px;
+      }
+    }
+
+    @media (min-width: 768px) and (max-width: 1024px) {
+      .realtime-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      
+      .influencer-container {
+        grid-column: 1 / -1;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .realtime-section {
+        padding: 0 0.5rem;
+      }
+      
+      .realtime-grid {
+        gap: 0.75rem;
+        height: auto;
+      }
+      
+      .longshort-container,
+      .whale-container,
+      .compound-calculator-container {
+        height: 320px;
+      }
+      
+      .longshort-content,
+      .whale-trades-container,
+      .influencer-positions-container {
+        padding: 0.75rem;
+      }
+      
+      .whale-trades-list,
+      .positions-list {
+        max-height: 180px;
+      }
+      
+      .modal-content {
+        width: 95%;
+        margin: 1rem;
+      }
+      
+      .modal-header,
+      .modal-body,
+      .modal-footer {
+        padding: 1rem;
+      }
+      
+             /* 모바일 코인 테이블 최적화 */
+       .crypto-table-section {
+         padding: 0 0.5rem;
+       }
+       
+       .crypto-table-section .section-header {
+         flex-direction: column;
+         align-items: stretch;
+         gap: 1rem;
+         margin-bottom: 0;
+         padding: 1rem;
+         border-radius: 12px 12px 0 0;
+       }
+       
+       .crypto-table-section .section-title {
+         font-size: 1.1rem;
+         justify-content: center;
+       }
+       
+       .crypto-table-section .section-title i {
+         font-size: 1rem;
+       }
+      
+      .table-controls {
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+      
+      .search-box {
+        width: 100%;
+      }
+      
+      .search-box input {
+        width: 100%;
+      }
+      
+      .refresh-btn {
+        align-self: center;
+        padding: 10px 20px;
+      }
+      
+      /* 모바일 테이블 슬라이드 컨테이너 */
+      .crypto-table-container {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scroll-behavior: smooth;
+        scrollbar-width: thin;
+        scrollbar-color: var(--accent-blue) transparent;
+      }
+      
+      .crypto-table-container::-webkit-scrollbar {
+        height: 4px;
+      }
+      
+      .crypto-table-container::-webkit-scrollbar-track {
+        background: var(--bg-secondary);
+        border-radius: 2px;
+      }
+      
+      .crypto-table-container::-webkit-scrollbar-thumb {
+        background: var(--accent-blue);
+        border-radius: 2px;
+      }
+      
+      .crypto-table-container::-webkit-scrollbar-thumb:hover {
+        background: #2563eb;
+      }
+      
+      /* 모바일 테이블 최소 너비 설정 */
+      .crypto-table {
+        min-width: 900px;
+        font-size: 12px;
+      }
+      
+      .crypto-table th,
+      .crypto-table td {
+        padding: 8px 4px;
+        font-size: 11px;
+        white-space: nowrap;
+      }
+      
+      .crypto-table th {
+        position: sticky;
+        top: 0;
+        background: var(--bg-secondary);
+        z-index: 10;
+        border-bottom: 2px solid var(--border-default);
+      }
+      
+      /* 모바일에서 중요한 컬럼만 표시 */
+      .crypto-table .rank-col { width: 40px; }
+      .crypto-table .name-col { width: 120px; }
+      .crypto-table .price-col { width: 80px; }
+      .crypto-table .change-col { width: 70px; }
+      .crypto-table .funding-col { width: 70px; }
+      .crypto-table .volume-col { width: 80px; }
+      .crypto-table .oi-col { width: 80px; }
+      .crypto-table .oi-change-col { width: 60px; }
+      .crypto-table .market-col { width: 90px; }
+      .crypto-table .liquidation-col { width: 80px; }
+      .crypto-table .chart-col { width: 60px; }
+      
+      .coin-logo {
+        width: 24px;
+        height: 24px;
+      }
+      
+      .coin-name {
+        font-size: 11px;
+      }
+      
+      .coin-symbol {
+        font-size: 9px;
+      }
+      
+      .change {
+        padding: 2px 4px;
+        font-size: 10px;
+      }
+      
+      .mini-chart {
+        width: 40px;
+        height: 20px;
+      }
+      
+      /* 모바일 테이블 탭 최적화 */
+      .table-tabs {
+        padding: 0 0.5rem;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+      }
+      
+      .table-tabs::-webkit-scrollbar {
+        display: none;
+      }
+      
+      .tab-btn {
+        padding: 8px 16px;
+        font-size: 13px;
+        white-space: nowrap;
+        flex-shrink: 0;
+      }
+      
+      /* 모바일 페이지네이션 */
+      .table-pagination {
+        flex-direction: column;
+        gap: 0.5rem;
+        padding: 0.75rem;
+      }
+      
+      .page-btn {
+        padding: 8px 12px;
+        font-size: 12px;
+        min-width: 60px;
+      }
+      
+      .page-info {
+        font-size: 12px;
+        order: -1;
+      }
+      
+      /* 모바일 스크롤 힌트 */
+      .crypto-table-wrapper::after {
+        content: "← 좌우로 스크롤하여 더 많은 정보를 확인하세요 →";
+        display: block;
+        text-align: center;
+        padding: 8px;
+        font-size: 11px;
+        color: var(--text-muted);
+        background: var(--bg-secondary);
+        border-top: 1px solid var(--border-light);
+      }
+    }
+    
+         /* 초소형 모바일 (360px 이하) */
+     @media (max-width: 360px) {
+       .crypto-table-section {
+         padding: 0 0.25rem;
+       }
+       
+       .crypto-table-section .section-header {
+         padding: 0.75rem;
+       }
+       
+       .crypto-table-section .section-title {
+         font-size: 1rem;
+       }
+       
+       .crypto-table-section .section-title i {
+         font-size: 0.9rem;
+       }
+      
+      .crypto-table {
+        min-width: 800px;
+        font-size: 11px;
+      }
+      
+      .crypto-table th,
+      .crypto-table td {
+        padding: 6px 3px;
+        font-size: 10px;
+      }
+      
+      .crypto-table .rank-col { width: 35px; }
+      .crypto-table .name-col { width: 100px; }
+      .crypto-table .price-col { width: 70px; }
+      .crypto-table .change-col { width: 60px; }
+      .crypto-table .funding-col { width: 60px; }
+      .crypto-table .volume-col { width: 70px; }
+      .crypto-table .oi-col { width: 70px; }
+      .crypto-table .oi-change-col { width: 50px; }
+      .crypto-table .market-col { width: 80px; }
+      .crypto-table .liquidation-col { width: 70px; }
+      .crypto-table .chart-col { width: 50px; }
+      
+      .coin-logo {
+        width: 20px;
+        height: 20px;
+      }
+      
+      .coin-name {
+        font-size: 10px;
+      }
+      
+      .coin-symbol {
+        font-size: 8px;
+      }
+      
+      .change {
+        padding: 1px 3px;
+        font-size: 9px;
+      }
+      
+      .mini-chart {
+        width: 35px;
+        height: 18px;
+      }
     }
     
     .crypto-table th.sort-asc::after {
@@ -3577,7 +3986,10 @@
   <!-- 실시간 코인 시세 테이블 섹션 -->
     <section class="crypto-table-section">
       <div class="section-header">
-        <h2 class="section-title">실시간 코인 시세</h2>
+        <h3 class="section-title">
+          <i class="fas fa-coins"></i>
+          실시간 코인 시세
+        </h3>
         <div class="table-controls">
           <div class="search-box">
             <i class="fas fa-search"></i>
