@@ -1,0 +1,236 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# Header & Footer Integration System
+
+## CRITICAL SYSTEM ARCHITECTURE RULE
+
+**ABSOLUTE REQUIREMENT**: All pages MUST use the centralized header and footer system. Direct header/footer coding in individual pages is STRICTLY PROHIBITED.
+
+## Implementation Standards
+
+### 1. Header Integration Protocol
+
+**MANDATORY STRUCTURE**:
+```html
+<body>
+  <!-- Header placeholder - REQUIRED on ALL pages -->
+  <div id="header-placeholder"></div>
+  
+  <!-- Page content here -->
+  
+  <!-- Footer placeholder - REQUIRED on ALL pages -->
+  <div id="footer-placeholder"></div>
+</body>
+```
+
+**REQUIRED SCRIPTS**:
+- [js/header-loader.js](mdc:js/header-loader.js) - Handles dynamic header loading
+- [js/footer-loader.js](mdc:js/footer-loader.js) - Handles dynamic footer loading (if exists)
+- [js/auth.js](mdc:js/auth.js) - Authentication system integration
+
+### 2. Core Files Structure
+
+**Master Header Template**: [_header.html](mdc:_header.html)
+- Contains complete header HTML structure
+- Includes authentication modals
+- Includes mobile menu
+- Includes all navigation elements
+
+**Header Loader Script**: [js/header-loader.js](mdc:js/header-loader.js)
+- Dynamically loads header content
+- Handles path resolution for subdirectories
+- Manages duplicate element removal
+- Integrates with authentication system
+
+### 3. Path Resolution Logic
+
+The system automatically detects page location and adjusts paths:
+- Root pages: Uses `/_header.html`
+- Subdirectory pages: Uses `../_header.html`
+- Automatically adjusts all internal links
+
+### 4. Authentication Integration
+
+**NEVER** duplicate authentication modals. The header system provides:
+- Login modal
+- Signup modal
+- Password reset modal
+- ID recovery modal
+- Turnstile integration
+
+## Development Guidelines
+
+### ✅ CORRECT Implementation
+
+```html
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <!-- Meta tags and CSS -->
+  <script src="js/auth.js"></script>
+  <script src="js/header-loader.js" defer></script>
+</head>
+<body>
+  <div id="header-placeholder"></div>
+  
+  <main>
+    <!-- Page content -->
+  </main>
+  
+  <div id="footer-placeholder"></div>
+</body>
+</html>
+```
+
+### ❌ INCORRECT Implementation
+
+```html
+<!-- NEVER DO THIS -->
+<body>
+  <header class="navbar">
+    <!-- Direct header code -->
+  </header>
+  
+  <!-- NEVER duplicate auth modals -->
+  <div id="login-modal">...</div>
+</body>
+```
+
+## Error Prevention Protocols
+
+### 1. Duplicate Prevention
+- [js/header-loader.js](mdc:js/header-loader.js) automatically removes duplicate elements
+- System prevents multiple header/modal instances
+- Warns about legacy elements in console
+
+### 2. Path Resolution
+- Automatic subdirectory detection
+- Dynamic link adjustment
+- Prevents broken navigation links
+
+### 3. Loading State Management
+- FOUC (Flash of Unstyled Content) prevention
+- Loading spinner during header initialization
+- Graceful error handling
+
+## Quality Assurance Checklist
+
+Before deploying any page, verify:
+- [ ] Header placeholder div exists
+- [ ] Footer placeholder div exists
+- [ ] header-loader.js is included
+- [ ] auth.js is included
+- [ ] No duplicate header elements
+- [ ] No duplicate authentication modals
+- [ ] All navigation links work correctly
+- [ ] Mobile menu functions properly
+
+## Advanced Features
+
+### 1. Theme Integration
+- Automatic theme switching
+- Logo adaptation (light/dark)
+- CSS variable integration
+
+### 2. Authentication State Management
+- Dynamic user info display
+- Admin panel access control
+- Login/logout state handling
+
+### 3. Mobile Responsiveness
+- Responsive navigation menu
+- Mobile-optimized authentication
+- Touch-friendly interface
+
+## Troubleshooting Guide
+
+### Common Issues & Solutions
+
+**Issue**: Header not loading
+**Solution**: Check path resolution in [js/header-loader.js](mdc:js/header-loader.js)
+
+**Issue**: Duplicate modals
+**Solution**: Remove manual modal code, use header system only
+
+**Issue**: Broken navigation links
+**Solution**: Verify adjustHeaderLinks() function execution
+
+**Issue**: Authentication not working
+**Solution**: Ensure [js/auth.js](mdc:js/auth.js) loads before header-loader.js
+
+## Performance Optimization
+
+### 1. Loading Strategy
+- Defer header-loader.js for non-blocking execution
+- Preload critical authentication resources
+- Minimize FOUC with loading states
+
+### 2. Caching Strategy
+- Browser caching for static header content
+- Efficient DOM manipulation
+- Memory leak prevention
+
+## Security Considerations
+
+### 1. Authentication Security
+- Turnstile integration for bot protection
+- Secure form handling
+- XSS prevention in dynamic content
+
+### 2. Content Security
+- Sanitized dynamic content insertion
+- Secure path resolution
+- Protection against header injection
+
+## Maintenance Protocol
+
+### 1. Updates
+- All header changes made only in [_header.html](mdc:_header.html)
+- Path logic updates in [js/header-loader.js](mdc:js/header-loader.js)
+- Authentication updates in [js/auth.js](mdc:js/auth.js)
+
+### 2. Testing
+- Test all navigation paths
+- Verify authentication flows
+- Check mobile responsiveness
+- Validate subdirectory functionality
+
+## Integration Examples
+
+### Root Level Page
+```html
+<!-- index.html -->
+<div id="header-placeholder"></div>
+<!-- Content -->
+```
+
+### Subdirectory Page
+```html
+<!-- community/index.html -->
+<div id="header-placeholder"></div>
+<!-- Content -->
+```
+
+### Page with Special Requirements
+```html
+<!-- Any page requiring authentication -->
+<script src="js/auth.js"></script>
+<script src="js/header-loader.js" defer></script>
+<div id="header-placeholder"></div>
+```
+
+## ENFORCEMENT POLICY
+
+**ZERO TOLERANCE**: Any page found with direct header/footer implementation will be immediately refactored to use the centralized system. This rule is non-negotiable for maintaining code consistency and preventing technical debt.
+
+## Success Metrics
+
+- 100% header/footer consistency across all pages
+- Zero duplicate authentication modals
+- Seamless navigation experience
+- Mobile-responsive design compliance
+- Optimal loading performance
+- Secure authentication integration

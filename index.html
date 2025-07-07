@@ -538,101 +538,180 @@
       opacity: 0.7;
     }
     
-    /* 김프/역프 카드 스타일 */
-    .kimchi-item {
-      background: #ffffff;
-      border: 1px solid #f1f5f9;
+    /* 이벤트 카드 스타일 (뉴스와 유사한 레이아웃) */
+    .event-item {
+      background: var(--bg-primary);
+      border: 1px solid var(--border-light);
       border-radius: 12px;
       padding: 1rem;
       margin-bottom: 0.75rem;
       transition: all 0.2s ease;
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+      cursor: pointer;
+      display: flex;
+      gap: 0.75rem;
     }
     
-    .kimchi-item:hover {
-      border-color: #e2e8f0;
+    .event-item:hover {
+      border-color: var(--border-default);
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
       transform: translateY(-1px);
     }
     
-    .kimchi-item:last-child {
+    .event-item:last-child {
       margin-bottom: 0;
     }
     
-    .kimchi-header {
+    .event-content {
+      flex: 1;
       display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 0.75rem;
+      flex-direction: column;
+      gap: 0.5rem;
     }
     
-    .kimchi-coin {
+    .event-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 0.5rem;
+    }
+    
+    .event-info {
       display: flex;
       flex-direction: column;
       gap: 0.25rem;
+      flex: 1;
     }
     
-    .kimchi-symbol {
+    .event-title {
       font-weight: 700;
-      font-size: 16px;
-      color: #1e293b;
-      letter-spacing: -0.025em;
+      font-size: 14px;
+      color: var(--text-primary);
+      line-height: 1.3;
+      margin-bottom: 0.25rem;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
     }
     
-    .kimchi-name {
+    .event-desc {
       font-size: 12px;
-      color: #64748b;
-      font-weight: 500;
+      color: var(--text-secondary);
+      line-height: 1.4;
+      margin-bottom: 0.5rem;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
     }
     
-    .kimchi-premium {
-      font-weight: 700;
-      font-size: 16px;
-      padding: 0.375rem 0.75rem;
-      border-radius: 8px;
-      border: none;
-      letter-spacing: -0.025em;
-    }
-    
-    .kimchi-premium.positive {
-      color: #059669;
-      background: #dcfce7;
-    }
-    
-    .kimchi-premium.negative {
-      color: #dc2626;
-      background: #fef2f2;
-    }
-    
-    .kimchi-prices {
+    .event-meta {
       display: flex;
       justify-content: space-between;
-      gap: 1rem;
+      align-items: center;
+      font-size: 11px;
+      color: var(--text-muted);
     }
     
-    .kimchi-exchange {
-      flex: 1;
-      text-align: center;
-      padding: 0.5rem;
-      background: #f8fafc;
-      border-radius: 8px;
-      border: 1px solid #f1f5f9;
-    }
-    
-    .kimchi-exchange-name {
-      font-size: 10px;
+    .event-period {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 11px;
+      color: var(--accent-blue);
       font-weight: 600;
-      color: #64748b;
+    }
+    
+    .event-period i {
+      font-size: 10px;
+    }
+    
+    .event-exchange {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.375rem 0.75rem;
+      background: var(--bg-secondary);
+      border-radius: 8px;
+      border: 1px solid var(--border-light);
+    }
+    
+    .event-exchange-logo {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+    
+    .event-exchange-name {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-secondary);
       text-transform: uppercase;
       letter-spacing: 0.05em;
-      margin-bottom: 0.25rem;
     }
     
-    .kimchi-price {
-      font-weight: 600;
-      font-size: 13px;
-      color: #1e293b;
-      line-height: 1.2;
+    .event-image {
+      width: 80px;
+      height: 60px;
+      border-radius: 6px;
+      overflow: hidden;
+      flex-shrink: 0;
+      background: var(--bg-tertiary);
+    }
+    
+    .event-image img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.2s ease;
+      background: var(--bg-tertiary);
+    }
+    
+    .event-item:hover .event-image img {
+      transform: scale(1.05);
+    }
+    
+    /* 이미지 로딩 상태 */
+    .event-image img.loading {
+      opacity: 0.6;
+    }
+    
+    .event-image img.loaded {
+      opacity: 1;
+    }
+    
+    .event-image img.error {
+      opacity: 0.3;
+    }
+    
+    /* 이벤트 카드 더보기 버튼 스타일 */
+    .events-view-all {
+      display: flex;
+      justify-content: center;
+      padding: 1rem;
+      border-top: 1px solid var(--border-light);
+      margin-top: 0.5rem;
+    }
+    
+    .events-view-all-btn {
+      padding: 8px 16px;
+      background: var(--accent-blue);
+      color: white;
+      text-decoration: none;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 500;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .events-view-all-btn:hover {
+      background: #2563eb;
+      transform: translateY(-1px);
     }
     
     /* Indices styles */
@@ -894,26 +973,49 @@
           font-size: 9px;
         }
         
-        .kimchi-item {
+        .event-item {
           padding: 0.75rem;
           margin-bottom: 0.5rem;
+          gap: 0.5rem;
         }
         
-        .kimchi-symbol {
-          font-size: 14px;
+        .event-title {
+          font-size: 13px;
         }
         
-        .kimchi-premium {
-          font-size: 14px;
+        .event-desc {
+          font-size: 11px;
+        }
+        
+        .event-period {
+          font-size: 10px;
+        }
+        
+        .event-exchange {
           padding: 0.25rem 0.5rem;
         }
         
-        .kimchi-exchange {
-          padding: 0.375rem;
+        .event-exchange-logo {
+          width: 18px;
+          height: 18px;
         }
         
-        .kimchi-price {
-          font-size: 12px;
+        .event-exchange-name {
+          font-size: 10px;
+        }
+        
+        .event-image {
+          width: 60px;
+          height: 45px;
+        }
+        
+        .events-view-all {
+          padding: 0.75rem;
+        }
+        
+        .events-view-all-btn {
+          padding: 6px 12px;
+          font-size: 11px;
         }
       }
 
@@ -3445,21 +3547,27 @@
           </div>
         </div>
         
-        <!-- 실시간 김프/역프 확인 영역 -->
+        <!-- 실시간 이벤트 카드 영역 -->
         <div class="indices-container">
           <div class="section-header">
             <h3 class="section-title">
-              <i class="fas fa-exchange-alt"></i>
-              실시간 김프/역프
+              <i class="fas fa-calendar-alt"></i>
+              실시간 이벤트
             </h3>
-            <button class="refresh-indices-btn" id="refresh-kimchi">
+            <div class="news-header-controls">
+              <button class="refresh-indices-btn" id="refresh-events">
               <i class="fas fa-sync-alt"></i>
             </button>
+              <a href="event-board.html" class="view-all-news-btn" title="모든 이벤트 보기">
+                <i class="fas fa-external-link-alt"></i>
+                전체보기
+              </a>
           </div>
-          <div class="indices-content" id="kimchi-content">
+          </div>
+          <div class="indices-content" id="events-content">
             <div class="loading-indices">
               <div class="loading-spinner"></div>
-              <span>김프/역프 데이터 로딩 중...</span>
+              <span>이벤트 데이터 로딩 중...</span>
             </div>
           </div>
         </div>
@@ -3550,9 +3658,55 @@
   <script src="js/analysis/longshort-tracker.js" type="module"></script>
   <script src="js/analysis/whale-tracker.js" type="module"></script>
   <script src="js/compound-calculator.js" type="module"></script>
-  <script src="js/index.js"></script>
+  <!-- html2canvas for modal capture -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script type="module">
+    // Whale Tracker 초기화
+    import { WhaleTracker } from './js/analysis/whale-tracker.js';
+    
+    // DOM 로드 후 초기화
+    document.addEventListener('DOMContentLoaded', () => {
+      setTimeout(() => {
+        try {
+          window.whaleTracker = new WhaleTracker();
+          console.log('Whale Tracker 초기화 완료');
+        } catch (error) {
+          console.error('Whale Tracker 초기화 실패:', error);
+        }
+      }, 1000);
+    });
+  </script>
+  <script src="js/compound-calculator.js" type="module"></script>
+
   <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
   <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+  
+  <!-- Firebase SDK for Events -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getFirestore, collection, getDocs, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { firebaseConfig } from './firebase-config.js';
+    
+    // Firebase 초기화
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    
+    // 전역 변수로 Firebase 객체들 노출 (바인딩 유지)
+    window.firebaseDB = db;
+    window.firebaseCollection = collection.bind(null, db);
+    window.firebaseGetDocs = getDocs;
+    window.firebaseQuery = query;
+    window.firebaseOrderBy = orderBy;
+    window.firebaseLimit = limit;
+    
+    // Firebase 초기화 완료 플래그
+    window.firebaseInitialized = true;
+    
+    console.log('Firebase 초기화 완료');
+    
+    // Firebase 초기화 완료 이벤트 발생
+    window.dispatchEvent(new CustomEvent('firebaseInitialized'));
+  </script>
 
   <script>
     // 페이지 초기화
@@ -4025,199 +4179,169 @@
       }
       
       initIndices() {
-        this.loadKimchiPremium();
+        this.loadEvents();
         setInterval(() => {
-          this.loadKimchiPremium();
-        }, 10000); // 10초마다 김프/역프 업데이트
+          this.loadEvents();
+        }, 30000); // 30초마다 이벤트 업데이트
       }
       
-      async loadKimchiPremium() {
-        const kimchiContent = document.getElementById('kimchi-content');
+      async loadEvents() {
+        const eventsContent = document.getElementById('events-content');
         
         try {
-          // 주요 코인 목록 (업비트와 바이낸스 모두 지원하는 코인)
-          const coins = [
-            { symbol: 'BTC', upbitSymbol: 'KRW-BTC', binanceSymbol: 'BTCUSDT', name: '비트코인' },
-            { symbol: 'ETH', upbitSymbol: 'KRW-ETH', binanceSymbol: 'ETHUSDT', name: '이더리움' },
-            { symbol: 'XRP', upbitSymbol: 'KRW-XRP', binanceSymbol: 'XRPUSDT', name: '리플' },
-            { symbol: 'ADA', upbitSymbol: 'KRW-ADA', binanceSymbol: 'ADAUSDT', name: '에이다' },
-            { symbol: 'SOL', upbitSymbol: 'KRW-SOL', binanceSymbol: 'SOLUSDT', name: '솔라나' }
-          ];
-          
-          // 환경 감지
-          const isLocal = window.location.hostname === 'localhost' || 
-                         window.location.hostname === '127.0.0.1' || 
-                         window.location.hostname === '';
-          
-          let upbitData, binanceData, usdToKrw;
-          
-          if (isLocal) {
-            console.log('로컬 환경: 직접 API 호출');
-            
-            // 환율 정보 가져오기 (USD/KRW)
-            const exchangeRateResponse = await fetch('https://api.exchangerate-api.com/v4/latest/USD');
-            const exchangeRateData = await exchangeRateResponse.json();
-            usdToKrw = exchangeRateData.rates.KRW || 1300; // 기본값 1300
-            
-            // 업비트 데이터 가져오기
-            const upbitSymbols = coins.map(coin => coin.upbitSymbol).join(',');
-            const upbitResponse = await fetch(`https://api.upbit.com/v1/ticker?markets=${upbitSymbols}`);
-            upbitData = await upbitResponse.json();
-            
-            // 바이낸스 데이터 가져오기
-            const binancePromises = coins.map(coin => 
-              fetch(`https://api.binance.com/api/v3/ticker/price?symbol=${coin.binanceSymbol}`)
-                .then(res => res.json())
-            );
-            binanceData = await Promise.all(binancePromises);
-            
-          } else {
-            console.log('프로덕션 환경: 대체 API 및 계산 방식 사용');
-            
-            // 환율 정보는 바이낸스에서 USDT/KRW 쌍으로 가져오기
-            try {
-              const usdtKrwResponse = await fetch('https://api.binance.com/api/v3/ticker/price?symbol=USDTKRW');
-              const usdtKrwData = await usdtKrwResponse.json();
-              usdToKrw = parseFloat(usdtKrwData.price) || 1300;
-            } catch (error) {
-              console.warn('USDT/KRW 환율 조회 실패, 기본값 사용');
-              usdToKrw = 1300; // 기본값
-            }
-            
-            // 업비트 대신 빗썸 API 사용 (CORS 지원)
-            try {
-              const bithumbResponse = await fetch('https://api.bithumb.com/public/ticker/ALL_KRW');
-              const bithumbData = await bithumbResponse.json();
-              
-              if (bithumbData.status === '0000') {
-                upbitData = coins.map(coin => {
-                  const coinData = bithumbData.data[coin.symbol];
-                  return coinData ? {
-                    market: coin.upbitSymbol,
-                    trade_price: parseFloat(coinData.closing_price)
-                  } : null;
-                }).filter(item => item !== null);
-              } else {
-                throw new Error('빗썸 API 응답 오류');
-              }
-        } catch (error) {
-              console.warn('빗썸 API 실패, 모의 데이터 사용');
-              // 모의 데이터 생성 (바이낸스 가격 기반)
-              const binancePromises = coins.map(coin => 
-                fetch(`https://api.binance.com/api/v3/ticker/price?symbol=${coin.binanceSymbol}`)
-                  .then(res => res.json())
-              );
-              binanceData = await Promise.all(binancePromises);
-              
-              upbitData = coins.map((coin, index) => {
-                const binancePrice = parseFloat(binanceData[index].price) * usdToKrw;
-                const premium = (Math.random() - 0.5) * 10; // -5% ~ +5% 랜덤 프리미엄
-                const koreanPrice = binancePrice * (1 + premium / 100);
-                
-                return {
-                  market: coin.upbitSymbol,
-                  trade_price: Math.round(koreanPrice)
-                };
-              });
-              
-              // 바이낸스 데이터 다시 가져오기
-              const binancePromises2 = coins.map(coin => 
-                fetch(`https://api.binance.com/api/v3/ticker/price?symbol=${coin.binanceSymbol}`)
-                  .then(res => res.json())
-              );
-              binanceData = await Promise.all(binancePromises2);
-              return;
-            }
-            
-            // 바이낸스 데이터 가져오기
-            const binancePromises = coins.map(coin => 
-              fetch(`https://api.binance.com/api/v3/ticker/price?symbol=${coin.binanceSymbol}`)
-                .then(res => res.json())
-            );
-            binanceData = await Promise.all(binancePromises);
+          // Firebase 초기화 확인
+          if (!window.firebaseInitialized || !window.firebaseDB || !window.firebaseCollection) {
+            console.log('Firebase 초기화 대기 중...');
+            setTimeout(() => this.loadEvents(), 1000);
+            return;
           }
           
-          // 김프/역프 계산
-          const kimchiData = coins.map((coin, index) => {
-            const upbitTicker = upbitData.find(ticker => ticker.market === coin.upbitSymbol);
-            const binanceTicker = binanceData[index];
+          // Firebase에서 이벤트 데이터 가져오기
+          const eventsRef = window.firebaseCollection('events');
+          const q = window.firebaseQuery(eventsRef, window.firebaseOrderBy('createdAt', 'desc'), window.firebaseLimit(5));
+          const snapshot = await window.firebaseGetDocs(q);
+          
+          if (snapshot.empty) {
+            eventsContent.innerHTML = `
+              <div class="loading-indices">
+                <i class="fas fa-calendar-alt"></i>
+                <span>등록된 이벤트가 없습니다</span>
+                <div style="font-size: 0.8rem; color: var(--text-muted); margin: 0.5rem 0;">
+                  새로운 이벤트를 등록해보세요
+                </div>
+                <div class="events-view-all">
+                  <a href="event-board.html" class="events-view-all-btn">
+                    <i class="fas fa-plus"></i>
+                    이벤트 등록하기
+                  </a>
+                </div>
+              </div>
+            `;
+            return;
+          }
+          
+          const events = [];
+          snapshot.forEach(doc => {
+            const data = doc.data();
+            events.push({
+              id: doc.id,
+              title: data.title,
+              desc: data.desc,
+              period: data.period,
+              exchange: data.exchange,
+              logo: data.logo,
+              img: data.img,
+              link: data.link,
+              createdAt: data.createdAt
+            });
+          });
+          
+          const html = events.map(event => this.renderEventItem(event)).join('');
+          eventsContent.innerHTML = html + `
+            <div class="events-view-all">
+              <a href="event-board.html" class="events-view-all-btn">
+                <i class="fas fa-calendar-alt"></i>
+                모든 이벤트 보기
+              </a>
+            </div>
+          `;
+          
+          // 이벤트 카드 클릭 이벤트 추가
+          document.querySelectorAll('.event-item').forEach(card => {
+            card.addEventListener('click', () => {
+              const link = card.dataset.link;
+              if (link) {
+                window.open(link, '_blank');
+              }
+            });
+          });
+          
+          // 이미지 로딩 상태 관리
+          document.querySelectorAll('.event-image img').forEach(img => {
+            img.classList.add('loading');
             
-            if (!upbitTicker || !binanceTicker) return null;
-            
-            const upbitPrice = parseFloat(upbitTicker.trade_price);
-            const binancePrice = parseFloat(binanceTicker.price) * usdToKrw;
-            const premium = ((upbitPrice - binancePrice) / binancePrice) * 100;
-            
-            return {
-              symbol: coin.symbol,
-              name: coin.name,
-              upbitPrice: upbitPrice,
-              binancePrice: binancePrice,
-              premium: premium,
-              timestamp: new Date().toLocaleTimeString('ko-KR')
+            img.onload = () => {
+              img.classList.remove('loading');
+              img.classList.add('loaded');
             };
-          }).filter(item => item !== null);
-          
-          // 김프/역프 순으로 정렬
-          kimchiData.sort((a, b) => Math.abs(b.premium) - Math.abs(a.premium));
-          
-          const html = kimchiData.map(item => this.renderKimchiItem(item)).join('');
-          kimchiContent.innerHTML = html;
+            
+            img.onerror = () => {
+              img.classList.remove('loading');
+              img.classList.add('error');
+              img.src = '/assets/default-event-image.svg';
+            };
+          });
           
         } catch (error) {
-          console.error('김프/역프 데이터 로드 실패:', error);
+          console.error('이벤트 데이터 로드 실패:', error);
           
-          const isLocal = window.location.hostname === 'localhost' || 
-                         window.location.hostname === '127.0.0.1' || 
-                         window.location.hostname === '';
+          // Firebase 관련 오류인지 확인
+          const isFirebaseError = error.message && error.message.includes('collection');
           
-          const errorMessage = isLocal ? 
-            '업비트 API 연결에 실패했습니다' : 
-            '김프/역프 데이터를 불러올 수 없습니다';
-          
-          kimchiContent.innerHTML = `
+          if (isFirebaseError) {
+            eventsContent.innerHTML = `
             <div class="loading-indices">
               <i class="fas fa-exclamation-triangle"></i>
-              <span>${errorMessage}</span>
+                <span>Firebase 연결 오류</span>
               <div style="font-size: 0.8rem; color: var(--text-muted); margin: 0.5rem 0;">
-                ${isLocal ? 
-                  'CORS 정책으로 인해 직접 API 호출이 제한됩니다' : 
-                  '빗썸 API를 통해 대체 데이터를 제공합니다'
-                }
+                  잠시 후 자동으로 재시도됩니다
               </div>
-              <button onclick="dashboard.loadKimchiPremium()" style="margin-top: 0.5rem; padding: 0.25rem 0.5rem; border: 1px solid var(--border-strong); border-radius: 4px; background: var(--bg-primary); color: var(--text-secondary); cursor: pointer;">
+              </div>
+            `;
+            
+            // 5초 후 재시도
+            setTimeout(() => {
+              if (this && typeof this.loadEvents === 'function') {
+                this.loadEvents();
+              }
+            }, 5000);
+          } else {
+            eventsContent.innerHTML = `
+              <div class="loading-indices">
+                <i class="fas fa-exclamation-triangle"></i>
+                <span>이벤트를 불러올 수 없습니다</span>
+                <button onclick="dashboard.loadEvents()" style="margin-top: 0.5rem; padding: 0.25rem 0.5rem; border: 1px solid var(--border-strong); border-radius: 4px; background: var(--bg-primary); color: var(--text-secondary); cursor: pointer;">
                 <i class="fas fa-sync-alt"></i> 다시 시도
               </button>
           </div>
         `;
+          }
         }
       }
       
-      renderKimchiItem(item) {
-        const isKimchi = item.premium > 0;
-        const premiumClass = isKimchi ? 'positive' : 'negative';
-        const premiumSign = isKimchi ? '+' : '';
+      renderEventItem(event) {
+        const logoUrl = event.logo || '/assets/default-event-image.svg';
+        const imageUrl = event.img || '/assets/default-event-image.svg';
         
         return `
-          <div class="kimchi-item">
-            <div class="kimchi-header">
-              <div class="kimchi-coin">
-                <span class="kimchi-symbol">${item.symbol}</span>
-                <span class="kimchi-name">${item.name}</span>
+          <div class="event-item" data-link="${event.link || ''}">
+            <div class="event-content">
+              <div class="event-header">
+                <div class="event-info">
+                  <div class="event-title">${event.title}</div>
+                  <div class="event-desc">${event.desc}</div>
             </div>
-              <div class="kimchi-premium ${premiumClass}">
-                ${premiumSign}${item.premium.toFixed(2)}%
+                <div class="event-exchange">
+                  <img class="event-exchange-logo" 
+                       src="${logoUrl}" 
+                       alt="${event.exchange}" 
+                       loading="lazy"
+                       onerror="this.src='/assets/default-event-image.svg'" />
+                  <span class="event-exchange-name">${event.exchange}</span>
               </div>
             </div>
-            <div class="kimchi-prices">
-              <div class="kimchi-exchange">
-                <div class="kimchi-exchange-name">업비트</div>
-                <div class="kimchi-price">₩${item.upbitPrice.toLocaleString('ko-KR')}</div>
+              <div class="event-meta">
+                <div class="event-period">
+                  <i class="fas fa-clock"></i>
+                  <span>${event.period}</span>
               </div>
-              <div class="kimchi-exchange">
-                <div class="kimchi-exchange-name">바이낸스</div>
-                <div class="kimchi-price">₩${Math.round(item.binancePrice).toLocaleString('ko-KR')}</div>
               </div>
+            </div>
+            <div class="event-image">
+              <img src="${imageUrl}" 
+                   alt="${event.title}" 
+                   loading="lazy"
+                   onerror="this.src='/assets/default-event-image.svg'" />
             </div>
           </div>
         `;
@@ -4251,13 +4375,13 @@
           });
         }
         
-        // 김프/역프 새로고침
-        const refreshKimchi = document.getElementById('refresh-kimchi');
-        if (refreshKimchi) {
-          refreshKimchi.addEventListener('click', () => {
-            refreshKimchi.classList.add('loading');
-            this.loadKimchiPremium().finally(() => {
-              refreshKimchi.classList.remove('loading');
+        // 이벤트 새로고침
+        const refreshEvents = document.getElementById('refresh-events');
+        if (refreshEvents) {
+          refreshEvents.addEventListener('click', () => {
+            refreshEvents.classList.add('loading');
+            this.loadEvents().finally(() => {
+              refreshEvents.classList.remove('loading');
             });
           });
         }
@@ -4378,36 +4502,9 @@
         }
         
         try {
-          // 환경 감지
-          const isLocal = window.location.hostname === 'localhost' || 
-                         window.location.hostname === '127.0.0.1' || 
-                         window.location.hostname === '';
+          console.log('CoinGecko API에서 직접 데이터 로딩 중...');
           
-          let data;
-          
-          if (isLocal) {
-            console.log('로컬 환경: 백엔드 서버에서 데이터 로딩 중...');
-            
-            // 로컬 환경: 백엔드 서버 사용
-            const response = await fetch('http://localhost:3001/api/crypto-data');
-            
-            if (!response.ok) {
-              throw new Error(`서버 응답 오류: ${response.status}`);
-            }
-            
-            const result = await response.json();
-            
-            if (!result.success || !result.data) {
-              throw new Error('서버에서 유효하지 않은 데이터를 반환했습니다');
-            }
-            
-            console.log(`${result.data.length}개 코인 데이터 로드 완료 (캐시: ${result.cached})`);
-            data = result.data;
-            
-          } else {
-            console.log('프로덕션 환경: 직접 CoinGecko API 호출 중...');
-            
-            // 프로덕션 환경: 직접 CoinGecko API 호출
+          // 직접 CoinGecko API 호출 (로컬/프로덕션 모두)
             const promises = [];
             for (let page = 1; page <= 2; page++) {
               promises.push(
@@ -4460,7 +4557,7 @@
             });
             
             // 추가 데이터 계산
-            data = processedData.map(coin => ({
+          const data = processedData.map(coin => ({
               ...coin,
               fundingRate: this.calculateFundingRate(coin),
             openInterest: this.calculateOpenInterest(coin),
@@ -4471,7 +4568,6 @@
             }));
             
             console.log(`${data.length}개 코인 데이터 처리 완료`);
-          }
           
           // 데이터 매핑
           this.coins = data.map(coin => ({
@@ -4509,10 +4605,7 @@
                     <i class="fas fa-exclamation-triangle" style="margin-bottom: 0.5rem; font-size: 1.5rem;"></i>
                     <div>실시간 데이터를 불러올 수 없습니다</div>
                     <div style="font-size: 0.9rem; margin-top: 0.5rem;">
-                      ${window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname === '' ? 
-                        '백엔드 서버(localhost:3001)가 실행 중인지 확인해주세요' : 
-                        'CoinGecko API 호출에 실패했습니다. 잠시 후 다시 시도해주세요.'
-                      }
+                      CoinGecko API 호출에 실패했습니다. 잠시 후 다시 시도해주세요.
                     </div>
                     <button onclick="cryptoTable.loadData()" style="
                       margin-top: 1rem; 
@@ -4814,7 +4907,8 @@
     let dashboard;
     let cryptoTable;
     
-    document.addEventListener('DOMContentLoaded', function() {
+    // 대시보드 초기화 함수
+    function initializeDashboard() {
       // 분봉 버튼 이벤트 리스너 추가
       document.querySelectorAll('.timeframe-btn').forEach(btn => {
         btn.addEventListener('click', function() {
@@ -4847,6 +4941,46 @@
           console.error('CryptoTable 초기화 실패:', error);
         }
       }, 1000);
+    }
+    
+    // Firebase 초기화 완료 후 대시보드 초기화
+    document.addEventListener('DOMContentLoaded', function() {
+      // Firebase가 이미 초기화되었는지 확인
+      if (window.firebaseInitialized && window.firebaseDB) {
+        initializeDashboard();
+      } else {
+        // Firebase 초기화를 기다림
+        const checkFirebase = setInterval(() => {
+          if (window.firebaseInitialized && window.firebaseDB) {
+            clearInterval(checkFirebase);
+            initializeDashboard();
+          }
+        }, 100);
+        
+        // Firebase 초기화 완료 이벤트 리스너
+        window.addEventListener('firebaseInitialized', function() {
+          clearInterval(checkFirebase);
+          initializeDashboard();
+        });
+        
+        // 10초 후 타임아웃
+        setTimeout(() => {
+          clearInterval(checkFirebase);
+          console.warn('Firebase 초기화 타임아웃');
+          initializeDashboard(); // Firebase 없이도 다른 기능들은 초기화
+        }, 10000);
+      }
+    });
+    
+    // 복리 계산기 초기화
+    document.addEventListener('DOMContentLoaded', function() {
+      // 복리 계산기 초기화
+      if (typeof window.CompoundCalculator !== 'undefined') {
+        window.compoundCalculator = new window.CompoundCalculator();
+        console.log('💰 복리 계산기 초기화 완료');
+      } else {
+        console.warn('복리 계산기 클래스를 찾을 수 없습니다');
+      }
     });
   </script>
 </body>

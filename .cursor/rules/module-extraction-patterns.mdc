@@ -1,0 +1,329 @@
+# Module Extraction Patterns for Large Files
+
+## 🎯 SAFE EXTRACTION METHODOLOGY
+
+### EXTRACTION PRINCIPLES
+- **PRESERVE INTERFACES**: Keep all public function signatures unchanged
+- **MAINTAIN GLOBALS**: Don't remove global variables during transition
+- **GRADUAL MIGRATION**: Extract one module at a time
+- **BACKWARD COMPATIBILITY**: Ensure existing code continues to work
+
+## 📦 EXTRACTION PATTERNS BY FILE TYPE
+
+### 1. Utility Function Extraction (SAFEST)
+
+#### Pattern: Extract Pure Functions
+```javascript
+// ✅ SAFE: Extract from [js/community.js](mdc:js/community.js) lines 1521-2100
+// Create: src/core/utils/technical-calculations.js
+
+// Original in community.js
+function calculateRSI(prices, period = 14) {
+    // Implementation
+}
+
+function calculateMACD(prices, fastPeriod = 12, slowPeriod = 26, signalPeriod = 9) {
+    // Implementation
+}
+
+// ✅ SAFE: Extract to new file
+export function calculateRSI(prices, period = 14) {
+    // Same implementation
+}
+
+export function calculateMACD(prices, fastPeriod = 12, slowPeriod = 26, signalPeriod = 9) {
+    // Same implementation
+}
+
+// ✅ SAFE: Update original file
+import { calculateRSI, calculateMACD } from '../core/utils/technical-calculations.js';
+```
+
+#### Pattern: Extract Constants
+```javascript
+// ✅ SAFE: Extract from [js/community.js](mdc:js/community.js) lines 50-200
+// Create: src/core/constants/trading-symbols.js
+
+export const TRADING_SYMBOLS = [
+    { symbol: 'BTCUSDT', full_name: 'BINANCE:BTCUSDT', description: 'Bitcoin/USDT' },
+    { symbol: 'ETHUSDT', full_name: 'BINANCE:ETHUSDT', description: 'Ethereum/USDT' },
+    // ... rest of symbols
+];
+
+export const INTERVAL_MAP = {
+    '1': '1m', '3': '3m', '5': '5m', '15': '15m', '30': '30m',
+    '60': '1h', '120': '2h', '240': '4h', '360': '6h', '480': '8h', '720': '12h',
+    'D': '1d', 'W': '1w', 'M': '1M'
+};
+```
+
+### 2. Class Extraction (CAREFUL)
+
+#### Pattern: Extract Class Methods
+```javascript
+// ✅ SAFE: Extract from [js/analysis/technical-indicators.js](mdc:js/analysis/technical-indicators.js)
+// Create: src/features/analysis/services/indicator-calculator.js
+
+// Original class method
+class TechnicalIndicators {
+    calculateRSI(period = 14) {
+        // Implementation
+    }
+    
+    calculateMACD(fastPeriod = 12, slowPeriod = 26, signalPeriod = 9) {
+        // Implementation
+    }
+}
+
+// ✅ SAFE: Extract to service class
+export class IndicatorCalculator {
+    static calculateRSI(prices, period = 14) {
+        // Same implementation
+    }
+    
+    static calculateMACD(prices, fastPeriod = 12, slowPeriod = 26, signalPeriod = 9) {
+        // Same implementation
+    }
+}
+
+// ✅ SAFE: Update original class
+import { IndicatorCalculator } from '../services/indicator-calculator.js';
+
+class TechnicalIndicators {
+    calculateRSI(period = 14) {
+        return IndicatorCalculator.calculateRSI(this.priceData, period);
+    }
+    
+    calculateMACD(fastPeriod = 12, slowPeriod = 26, signalPeriod = 9) {
+        return IndicatorCalculator.calculateMACD(this.priceData, fastPeriod, slowPeriod, signalPeriod);
+    }
+}
+```
+
+### 3. Service Extraction (MODERATE RISK)
+
+#### Pattern: Extract API Services
+```javascript
+// ✅ SAFE: Extract from [js/community.js](mdc:js/community.js) lines 1486-1520
+// Create: src/core/services/market-data-service.js
+
+// Original function
+async function getMarketData(symbol) {
+    // Implementation
+}
+
+// ✅ SAFE: Extract to service class
+export class MarketDataService {
+    static async getMarketData(symbol) {
+        // Same implementation
+    }
+    
+    static async getKlines(symbol, interval, limit = 200) {
+        // New method for klines data
+    }
+}
+
+// ✅ SAFE: Update original file
+import { MarketDataService } from '../core/services/market-data-service.js';
+
+// Keep original function for backward compatibility
+async function getMarketData(symbol) {
+    return MarketDataService.getMarketData(symbol);
+}
+```
+
+### 4. Component Extraction (HIGH RISK)
+
+#### Pattern: Extract UI Components
+```javascript
+// ✅ SAFE: Extract from [js/community.js](mdc:js/community.js) lines 3144-3765
+// Create: src/features/analysis/components/ai-analysis-display.js
+
+// Original function
+function displayAIAnalysisResult(result, analysisType) {
+    // Large display logic
+}
+
+// ✅ SAFE: Extract to component class
+export class AIAnalysisDisplay {
+    constructor(containerId) {
+        this.container = document.getElementById(containerId);
+    }
+    
+    displayResult(result, analysisType) {
+        // Same implementation
+    }
+    
+    createAnalysisCard(data) {
+        // Extract card creation logic
+    }
+}
+
+// ✅ SAFE: Update original file
+import { AIAnalysisDisplay } from '../components/ai-analysis-display.js';
+
+// Keep original function for backward compatibility
+const aiDisplay = new AIAnalysisDisplay('ai-analysis-container');
+function displayAIAnalysisResult(result, analysisType) {
+    aiDisplay.displayResult(result, analysisType);
+}
+```
+
+## 🔄 MIGRATION STRATEGIES
+
+### Strategy 1: Wrapper Pattern (SAFEST)
+```javascript
+// ✅ SAFE: Create wrapper that maintains original interface
+// Original: js/community.js
+function performAdvancedAnalysis(symbol, analysisType) {
+    // Large implementation
+}
+
+// ✅ SAFE: Create wrapper module
+// New: src/features/analysis/services/advanced-analysis-service.js
+export class AdvancedAnalysisService {
+    static async performAnalysis(symbol, analysisType) {
+        // New implementation
+    }
+}
+
+// ✅ SAFE: Update original file
+import { AdvancedAnalysisService } from '../services/advanced-analysis-service.js';
+
+// Wrapper function maintains original interface
+async function performAdvancedAnalysis(symbol, analysisType) {
+    return AdvancedAnalysisService.performAnalysis(symbol, analysisType);
+}
+```
+
+### Strategy 2: Gradual Replacement (CAREFUL)
+```javascript
+// ✅ SAFE: Replace functions one by one
+// Step 1: Add new module alongside existing code
+import { calculateRSI } from '../utils/technical-calculations.js';
+
+// Step 2: Replace function implementation
+function calculateRSI(prices, period = 14) {
+    return calculateRSI(prices, period); // Use new implementation
+}
+
+// Step 3: Remove old implementation after testing
+```
+
+### Strategy 3: Module Federation (ADVANCED)
+```javascript
+// ✅ SAFE: Use dynamic imports for large modules
+// Original: Load all at once
+import { TechnicalIndicators } from './technical-indicators.js';
+
+// ✅ SAFE: Dynamic loading
+async function loadTechnicalIndicators() {
+    const { TechnicalIndicators } = await import('./technical-indicators.js');
+    return new TechnicalIndicators();
+}
+```
+
+## 🛡️ BREAKAGE PREVENTION TECHNIQUES
+
+### 1. Interface Preservation
+```javascript
+// ✅ SAFE: Keep exact function signatures
+// Original
+function analyzePatterns(marketData) {
+    // Implementation
+}
+
+// ✅ SAFE: Extract with same signature
+export function analyzePatterns(marketData) {
+    // Same implementation
+}
+
+// ❌ DANGEROUS: Change signature
+export function analyzePatterns(marketData, options = {}) {
+    // This breaks existing callers
+}
+```
+
+### 2. Global Variable Protection
+```javascript
+// ✅ SAFE: Maintain global variables during transition
+// Original
+let widget = null;
+let chartRestored = false;
+
+// ✅ SAFE: Extract to module but keep globals
+export class ChartManager {
+    constructor() {
+        this.widget = null;
+        this.chartRestored = false;
+    }
+}
+
+// ✅ SAFE: Keep globals for backward compatibility
+const chartManager = new ChartManager();
+window.widget = chartManager.widget;
+window.chartRestored = chartManager.chartRestored;
+```
+
+### 3. Event Handler Preservation
+```javascript
+// ✅ SAFE: Keep event handlers in original location
+// Original
+document.addEventListener('DOMContentLoaded', function() {
+    initializeTradingViewChart();
+});
+
+// ✅ SAFE: Extract chart logic but keep event handler
+import { ChartInitializer } from '../components/chart-initializer.js';
+
+document.addEventListener('DOMContentLoaded', function() {
+    const chartInitializer = new ChartInitializer();
+    chartInitializer.initialize();
+});
+```
+
+## 📊 EXTRACTION PRIORITY MATRIX
+
+### High Priority (Safe to Extract)
+- Pure utility functions (calculateRSI, calculateMACD)
+- Constants and configuration objects
+- Data transformation functions
+- Validation functions
+
+### Medium Priority (Careful Extraction)
+- Service layer functions (API calls, data fetching)
+- Helper functions with minimal dependencies
+- Formatting and display utilities
+
+### Low Priority (High Risk)
+- Event handlers and DOM manipulation
+- Global state management
+- Complex business logic with many dependencies
+- Third-party library integrations
+
+## 🔍 VALIDATION CHECKLIST
+
+### Pre-Extraction
+- [ ] Function has no side effects
+- [ ] Function has clear inputs and outputs
+- [ ] Function is not tightly coupled to DOM
+- [ ] Function doesn't depend on global state
+
+### Post-Extraction
+- [ ] All tests pass
+- [ ] No console errors
+- [ ] Functionality unchanged
+- [ ] Performance maintained
+- [ ] Import paths correct
+
+### Integration Testing
+- [ ] Original file still works
+- [ ] New module can be imported
+- [ ] No circular dependencies
+- [ ] Bundle size optimized
+
+This extraction pattern guide ensures safe modularization of the Felicity project's large files while maintaining functionality and performance.
+description:
+globs:
+alwaysApply: false
+---

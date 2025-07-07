@@ -85,6 +85,11 @@ export class WhaleTracker {
         this.setupAudio();
         this.connectWebSockets();
         this.start();
+        
+        // 연결 상태 업데이트
+        setTimeout(() => {
+            this.updateConnectionStatus();
+        }, 2000);
     }
 
     setupAudio() {
@@ -136,17 +141,23 @@ export class WhaleTracker {
         // 기존 markets가 없거나 비어있으면 기본값 사용
         const marketsToConnect = this.markets.length > 0 ? this.markets : defaultMarkets;
         
+        let connectedCount = 0;
         marketsToConnect.forEach(market => {
             if (!market.enabled) return;
 
             const connector = this[`connect${market.exchange}${market.type}`];
             if (typeof connector === 'function') {
-                // 연결 시도 (콘솔 로그 제거)
-                connector.call(this, market);
-            } else {
-                // 연결기 없음 (콘솔 로그 제거)
+                try {
+                    connector.call(this, market);
+                    connectedCount++;
+                } catch (error) {
+                    console.warn(`Failed to connect to ${market.exchange} ${market.type}:`, error);
+                }
             }
         });
+        
+        // 연결 상태 업데이트
+        this.updateConnectionStatus(connectedCount);
     }
     
     addTrade(trade) {
@@ -644,6 +655,38 @@ export class WhaleTracker {
     updateStats() {
         // This function is no longer needed as the stats elements are removed.
     }
+    
+    updateConnectionStatus(connectedCount = null) {
+        const statusElement = document.querySelector('.whale-status');
+        if (!statusElement) return;
+        
+        if (connectedCount !== null) {
+            if (connectedCount > 0) {
+                statusElement.textContent = `${connectedCount}개 거래소 연결됨`;
+                statusElement.style.color = '#22c55e';
+            } else {
+                statusElement.textContent = '연결 실패';
+                statusElement.style.color = '#ef4444';
+            }
+        } else {
+            // 연결 상태 확인
+            const activeConnections = Object.values(this.connections).filter(conn => 
+                conn && conn.readyState === WebSocket.OPEN
+            ).length;
+            
+            // 테스트 데이터 생성 중인지 확인
+            if (this.testDataInterval && this.isTracking) {
+                statusElement.textContent = '테스트 데이터 생성 중';
+                statusElement.style.color = '#f59e0b';
+            } else if (activeConnections > 0) {
+                statusElement.textContent = `${activeConnections}개 거래소 연결됨`;
+                statusElement.style.color = '#22c55e';
+            } else {
+                statusElement.textContent = '연결 중...';
+                statusElement.style.color = '#f59e0b';
+            }
+        }
+    }
 
     getStats() {
         const now = Date.now();
@@ -698,6 +741,9 @@ export class WhaleTracker {
         if (this.testDataInterval) return; // 이미 실행 중이면 중단
         
         console.log('🐋 테스트 고래 거래 데이터 생성 시작...');
+        
+        // 연결 상태 업데이트
+        this.updateConnectionStatus();
         
         this.testDataInterval = setInterval(() => {
             if (!this.isTracking) {

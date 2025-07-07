@@ -1,0 +1,411 @@
+# New Folder Structure Implementation Guide
+
+## 🏗️ TARGET ARCHITECTURE OVERVIEW
+
+### PROPOSED STRUCTURE
+```
+felicity-site/
+├── src/                          # New source directory
+│   ├── core/                     # Core system layer
+│   │   ├── config/              # Configuration management
+│   │   ├── services/            # Common services
+│   │   ├── utils/               # Utility functions
+│   │   └── constants/           # Constants and enums
+│   ├── features/                # Feature-based modules
+│   │   ├── analysis/            # Analysis functionality
+│   │   ├── community/           # Community features
+│   │   ├── trading/             # Trading components
+│   │   ├── auth/                # Authentication
+│   │   └── admin/               # Admin functionality
+│   ├── shared/                  # Shared components
+│   │   ├── components/          # UI components
+│   │   ├── hooks/               # Custom hooks
+│   │   └── context/             # React context
+│   └── assets/                  # Static assets
+├── public/                      # Public assets
+├── dist/                        # Build output
+└── docs/                        # Documentation
+```
+
+## 📋 IMPLEMENTATION PHASES
+
+### Phase 1: Foundation Setup (Week 1)
+
+#### Step 1: Create New Directory Structure
+```bash
+# ✅ SAFE: Create new structure alongside existing
+mkdir -p src/core/{config,services,utils,constants}
+mkdir -p src/features/{analysis,community,trading,auth,admin}
+mkdir -p src/shared/{components,hooks,context}
+mkdir -p src/assets/{images,icons,styles}
+```
+
+#### Step 2: Move Configuration Files
+```bash
+# ✅ SAFE: Move config files to new structure
+mv firebase-config.js src/core/config/
+mv js/firebase-config.js src/core/config/firebase-config.js
+
+# ✅ SAFE: Create new config files
+touch src/core/config/app-config.js
+touch src/core/config/api-config.js
+```
+
+#### Step 3: Extract Constants
+```javascript
+// ✅ SAFE: Create src/core/constants/trading-symbols.js
+// Extract from [js/community.js](mdc:js/community.js) lines 50-200
+
+export const TRADING_SYMBOLS = [
+    { symbol: 'BTCUSDT', full_name: 'BINANCE:BTCUSDT', description: 'Bitcoin/USDT' },
+    { symbol: 'ETHUSDT', full_name: 'BINANCE:ETHUSDT', description: 'Ethereum/USDT' },
+    // ... rest of symbols from community.js
+];
+
+export const INTERVAL_MAP = {
+    '1': '1m', '3': '3m', '5': '5m', '15': '15m', '30': '30m',
+    '60': '1h', '120': '2h', '240': '4h', '360': '6h', '480': '8h', '720': '12h',
+    'D': '1d', 'W': '1w', 'M': '1M'
+};
+
+export const SUPPORTED_RESOLUTIONS = [
+    '1', '3', '5', '15', '30', '60', '120', '240', '360', '480', '720', 'D', 'W', 'M'
+];
+```
+
+### Phase 2: Core Utilities Extraction (Week 2)
+
+#### Step 1: Extract Math Utilities
+```javascript
+// ✅ SAFE: Create src/core/utils/math-utils.js
+// Extract from [js/community.js](mdc:js/community.js) lines 1521-2100
+
+export function calculateRSI(prices, period = 14) {
+    // Move implementation from community.js line 1521
+}
+
+export function calculateMACD(prices, fastPeriod = 12, slowPeriod = 26, signalPeriod = 9) {
+    // Move implementation from community.js line 1658
+}
+
+export function calculateBollingerBands(prices, period = 20, multiplier = 2) {
+    // Move implementation from community.js line 1551
+}
+
+export function calculateSMA(prices, period) {
+    // Move implementation from community.js line 1566
+}
+
+export function calculateEMA(prices, period) {
+    // Move implementation from community.js line 1573
+}
+
+export function calculateStandardDeviation(prices) {
+    // Move implementation from community.js line 1587
+}
+```
+
+#### Step 2: Extract Formatting Utilities
+```javascript
+// ✅ SAFE: Create src/core/utils/format-utils.js
+// Extract from various files
+
+export function formatPrice(price) {
+    const numPrice = parseFloat(price);
+    if (isNaN(numPrice) || !isFinite(numPrice)) {
+        return '$0.00';
+    }
+    
+    if (numPrice < 0.000001) {
+        return `$${numPrice.toExponential(2)}`;
+    } else if (numPrice < 0.01) {
+        return `$${numPrice.toFixed(6)}`;
+    } else if (numPrice < 1) {
+        return `$${numPrice.toFixed(4)}`;
+    } else if (numPrice < 100) {
+        return `$${numPrice.toFixed(2)}`;
+    } else {
+        return `$${numPrice.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+    }
+}
+
+export function formatTime(timestamp) {
+    // Move implementation from community.js
+}
+
+export function formatVolume(volume) {
+    // Move implementation from community.js
+}
+```
+
+#### Step 3: Extract Validation Utilities
+```javascript
+// ✅ SAFE: Create src/core/utils/validation-utils.js
+
+export function validateSymbol(symbol) {
+    return typeof symbol === 'string' && symbol.length > 0;
+}
+
+export function validateTimeframe(timeframe) {
+    const validTimeframes = ['1m', '3m', '5m', '15m', '30m', '1h', '2h', '4h', '6h', '8h', '12h', '1d', '1w', '1M'];
+    return validTimeframes.includes(timeframe);
+}
+
+export function validateData(data) {
+    return data && Array.isArray(data) && data.length > 0;
+}
+```
+
+### Phase 3: Service Layer Creation (Week 3)
+
+#### Step 1: Create API Service
+```javascript
+// ✅ SAFE: Create src/core/services/api-service.js
+// Extract from [js/community.js](mdc:js/community.js) lines 1486-1520
+
+export class ApiService {
+    static async getMarketData(symbol) {
+        // Move implementation from community.js line 1486
+    }
+    
+    static async getKlines(symbol, interval, limit = 200) {
+        const url = `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`;
+        
+        try {
+            const response = await fetch(url);
+            const data = await response.json();
+            
+            if (!data || data.length === 0) {
+                throw new Error('No data received');
+            }
+            
+            return data.map(candle => ({
+                time: candle[0],
+                open: parseFloat(candle[1]),
+                high: parseFloat(candle[2]),
+                low: parseFloat(candle[3]),
+                close: parseFloat(candle[4]),
+                volume: parseFloat(candle[5])
+            }));
+        } catch (error) {
+            console.error('API call failed:', error);
+            throw error;
+        }
+    }
+    
+    static async getTicker24hr(symbol) {
+        // Implementation for 24hr ticker
+    }
+}
+```
+
+#### Step 2: Create WebSocket Service
+```javascript
+// ✅ SAFE: Create src/core/services/websocket-service.js
+// Extract from [js/websocket-manager.js](mdc:js/websocket-manager.js)
+
+export class WebSocketService {
+    constructor() {
+        this.connections = new Map();
+        this.subscribers = new Map();
+    }
+    
+    subscribeToSymbol(symbol, resolution, callback) {
+        // Move implementation from websocket-manager.js
+    }
+    
+    unsubscribeFromSymbol(symbol) {
+        // Implementation
+    }
+    
+    connect(url) {
+        // Implementation
+    }
+    
+    disconnect() {
+        // Implementation
+    }
+}
+```
+
+#### Step 3: Create Storage Service
+```javascript
+// ✅ SAFE: Create src/core/services/storage-service.js
+// Extract from [js/analysis/data-storage.js](mdc:js/analysis/data-storage.js)
+
+export class StorageService {
+    static async saveData(key, data) {
+        // Implementation
+    }
+    
+    static async getData(key) {
+        // Implementation
+    }
+    
+    static async deleteData(key) {
+        // Implementation
+    }
+    
+    static async getDataByTimeRange(key, startTime, endTime) {
+        // Implementation
+    }
+}
+```
+
+### Phase 4: Feature Module Extraction (Week 4-5)
+
+#### Step 1: Analysis Module Structure
+```bash
+# ✅ SAFE: Create analysis module structure
+mkdir -p src/features/analysis/{components,services,controllers}
+mkdir -p src/features/analysis/components/{whale-tracker,technical-indicators,sentiment-analysis}
+```
+
+#### Step 2: Extract Technical Indicators
+```javascript
+// ✅ SAFE: Create src/features/analysis/components/technical-indicators/
+// Extract from [js/analysis/technical-indicators.js](mdc:js/analysis/technical-indicators.js)
+
+// Create: src/features/analysis/components/technical-indicators/technical-indicators.js
+import { IndicatorCalculator } from '../../services/indicator-calculator.js';
+
+export class TechnicalIndicators {
+    constructor(settings) {
+        // Keep existing constructor
+        this.currentSymbol = settings.symbol || 'BTCUSDT';
+        this.currentTimeframe = settings.timeframe || '1h';
+        // ... rest of constructor
+    }
+    
+    // Keep all existing public methods
+    async start() {
+        // Implementation
+    }
+    
+    stop() {
+        // Implementation
+    }
+    
+    updateDisplay() {
+        // Implementation
+    }
+    
+    // Use extracted calculator for calculations
+    calculateIndicators() {
+        this.indicators.rsi = IndicatorCalculator.calculateRSI(this.priceData);
+        this.indicators.macd = IndicatorCalculator.calculateMACD(this.priceData);
+        // ... rest of calculations
+    }
+}
+```
+
+#### Step 3: Extract Whale Tracker
+```javascript
+// ✅ SAFE: Create src/features/analysis/components/whale-tracker/whale-tracker.js
+// Extract from [js/analysis/whale-tracker.js](mdc:js/analysis/whale-tracker.js)
+
+export class WhaleTracker {
+    constructor(settings) {
+        // Keep existing constructor
+    }
+    
+    // Keep all existing public methods
+    async start() {
+        // Implementation
+    }
+    
+    stop() {
+        // Implementation
+    }
+    
+    getWhales() {
+        // Implementation
+    }
+}
+```
+
+### Phase 5: Component Integration (Week 6)
+
+#### Step 1: Update Import Statements
+```javascript
+// ✅ SAFE: Update [js/analysis-main.js](mdc:js/analysis-main.js)
+// Replace existing imports with new structure
+
+// Old imports
+import { WhaleTracker } from './analysis/whale-tracker.js';
+import { TechnicalIndicators } from './analysis/technical-indicators.js';
+
+// ✅ SAFE: New imports
+import { WhaleTracker } from '../src/features/analysis/components/whale-tracker/whale-tracker.js';
+import { TechnicalIndicators } from '../src/features/analysis/components/technical-indicators/technical-indicators.js';
+```
+
+#### Step 2: Update HTML References
+```html
+<!-- ✅ SAFE: Update [index.html](mdc:index.html) -->
+<!-- Replace old script references -->
+
+<!-- Old references -->
+<script src="js/analysis-main.js"></script>
+<script src="js/community.js"></script>
+
+<!-- ✅ SAFE: New references -->
+<script type="module" src="src/features/analysis/controllers/analysis-controller.js"></script>
+<script type="module" src="src/features/community/controllers/community-controller.js"></script>
+```
+
+## 🔄 MIGRATION VALIDATION
+
+### Testing Checklist
+- [ ] All TradingView charts load correctly
+- [ ] Authentication system works
+- [ ] Analysis dashboard displays data
+- [ ] Community features function
+- [ ] AI analysis generates results
+- [ ] Technical indicators calculate correctly
+- [ ] No console errors
+- [ ] All imports resolve correctly
+- [ ] Global variables accessible
+- [ ] Event handlers fire properly
+- [ ] Firebase connections work
+- [ ] WebSocket connections stable
+
+### Performance Validation
+- [ ] Load times maintained or improved
+- [ ] Memory usage patterns preserved
+- [ ] No memory leaks introduced
+- [ ] Bundle size optimized
+
+### Security Validation
+- [ ] Authentication flows preserved
+- [ ] Data validation maintained
+- [ ] No sensitive data exposed
+- [ ] User permissions validated
+
+## 🚨 ROLLBACK PROCEDURE
+
+### Emergency Rollback Commands
+```bash
+# If migration breaks functionality
+git reset --hard HEAD~1
+git clean -fd
+
+# Selective rollback
+git checkout HEAD~1 -- specific-file.js
+
+# Restore original structure
+git checkout HEAD~1 -- js/
+git checkout HEAD~1 -- css/
+```
+
+### Validation After Rollback
+- [ ] All functionality restored
+- [ ] No broken imports
+- [ ] Console errors resolved
+- [ ] Performance restored
+
+This implementation guide ensures safe migration to the new folder structure while maintaining all existing functionality.
+description:
+globs:
+alwaysApply: false
+---
