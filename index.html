@@ -308,39 +308,10 @@
       color: var(--text-primary);
     }
 
-    /* 분봉 버튼 스타일 */
-    .timeframe-buttons {
-      display: flex;
-      gap: 0.25rem;
-      background: var(--bg-secondary);
-      padding: 2px;
-      border-radius: 6px;
-      border: 1px solid var(--border-light);
-    }
-
-    .timeframe-btn {
-      padding: 4px 8px;
-      border: none;
-      background: transparent;
-      color: var(--text-secondary);
-      font-size: 11px;
-      font-weight: 500;
-      border-radius: 4px;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      white-space: nowrap;
-      min-width: 32px;
-    }
-
-    .timeframe-btn:hover {
-      background: var(--bg-tertiary);
-      color: var(--text-primary);
-    }
-
-    .timeframe-btn.active {
-      background: var(--primary-color);
-      color: white;
-      box-shadow: 0 1px 3px rgba(59, 130, 246, 0.3);
+    /* 분봉 드롭다운 스타일 */
+    .timeframe-select {
+      min-width: 100px;
+      max-width: 120px;
     }
     
     .tradingview-widget-container {
@@ -3316,19 +3287,9 @@
     }
 
     @media (max-width: 768px) {
+      /* 모바일에서 realtime-section 전체 숨기기 */
       .realtime-section {
-        padding: 0 0.5rem;
-      }
-      
-      .realtime-grid {
-        gap: 0.75rem;
-        height: auto;
-      }
-      
-      .longshort-container,
-      .whale-container,
-      .compound-calculator-container {
-        height: 320px;
+        display: none;
       }
       
       .longshort-content,
@@ -3908,14 +3869,14 @@
                 <option value="BCHUSDT">Bitcoin Cash (BCH)</option>
                 <option value="ATOMUSDT">Cosmos (ATOM)</option>
               </select>
-              <div class="timeframe-buttons">
-                <button class="timeframe-btn active" data-timeframe="1">1분</button>
-                <button class="timeframe-btn" data-timeframe="5">5분</button>
-                <button class="timeframe-btn" data-timeframe="15">15분</button>
-                <button class="timeframe-btn" data-timeframe="60">1시간</button>
-                <button class="timeframe-btn" data-timeframe="240">4시간</button>
-                <button class="timeframe-btn" data-timeframe="1D">1일</button>
-              </div>
+              <select id="chart-timeframe" class="chart-select timeframe-select">
+                <option value="1">1분</option>
+                <option value="5">5분</option>
+                <option value="15">15분</option>
+                <option value="60" selected>1시간</option>
+                <option value="240">4시간</option>
+                <option value="1D">1일</option>
+              </select>
             </div>
           </div>
           <div class="tradingview-widget-container">
@@ -4247,15 +4208,10 @@
     function changeTimeframe(timeframe) {
       currentTimeframe = timeframe;
       
-      // 모든 분봉 버튼에서 active 클래스 제거
-      document.querySelectorAll('.timeframe-btn').forEach(btn => {
-        btn.classList.remove('active');
-      });
-      
-      // 선택된 버튼에 active 클래스 추가
-      const selectedBtn = document.querySelector(`[data-timeframe="${timeframe}"]`);
-      if (selectedBtn) {
-        selectedBtn.classList.add('active');
+      // 드롭다운 값 업데이트
+      const timeframeSelect = document.getElementById('chart-timeframe');
+      if (timeframeSelect) {
+        timeframeSelect.value = timeframe;
       }
       
       // 현재 심볼로 차트 재초기화
@@ -5321,13 +5277,14 @@
     
     // 대시보드 초기화 함수
     function initializeDashboard() {
-      // 분봉 버튼 이벤트 리스너 추가
-      document.querySelectorAll('.timeframe-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-          const timeframe = this.getAttribute('data-timeframe');
+      // 분봉 드롭다운 이벤트 리스너 추가
+      const timeframeSelect = document.getElementById('chart-timeframe');
+      if (timeframeSelect) {
+        timeframeSelect.addEventListener('change', function() {
+          const timeframe = this.value;
           changeTimeframe(timeframe);
         });
-      });
+      }
       
       // 차트 심볼 변경 이벤트 리스너
       const chartSymbol = document.getElementById('chart-symbol');
