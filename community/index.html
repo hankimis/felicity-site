@@ -80,6 +80,14 @@
             display: flex;
             flex-direction: column;
             min-height: 100vh;
+            overflow: hidden;
+        }
+        
+        @media (max-width: 768px) {
+            body {
+                overflow: hidden;
+                height: 100vh;
+            }
         }
 
         .main-container {
@@ -119,16 +127,22 @@
         @media (max-width: 1024px) {
             .community-layout {
                 flex-direction: column;
-                height: auto;
+                height: calc(100vh - 80px); /* 전체 화면 높이에서 헤더 높이 제외 */
+            }
+            .community-layout-inner {
+                flex-direction: column;
+                height: 100%;
             }
             .chat-section {
                 width: 100%;
                 border-left: none;
                 border-top: 1px solid var(--border-color);
-                flex: 0 0 400px; /* 모바일에서 채팅 영역 고정 높이 */
+                flex: 1; /* 반 높이 차지 */
+                min-height: 0; /* flexbox 최소 높이 제한 해제 */
             }
             .chart-section {
-                min-height: 500px; /* 모바일에서 차트 최소 높이 */
+                flex: 1; /* 반 높이 차지 */
+                min-height: 0; /* flexbox 최소 높이 제한 해제 */
             }
         }
 
@@ -172,6 +186,35 @@
 
         /* 모바일에서 분봉 버튼 조정 */
         @media (max-width: 768px) {
+            .community-layout {
+                height: 100vh; /* 전체 화면 높이 */
+                margin-top: 0; /* 마진 제거 */
+                padding-top: 0px; /* 헤더 높이만큼 패딩으로 변경 */
+                box-sizing: border-box;
+            }
+            
+            .community-layout-inner {
+                flex-direction: column;
+                height: calc(100% - 56px); /* 헤더 높이 제외 */
+            }
+            
+            .chart-section {
+                flex: 1; /* 정확히 반 높이 */
+                min-height: 0;
+                max-height: calc(50vh - 28px); /* 헤더 높이 절반 제외 */
+                display: flex;
+                flex-direction: column;
+            }
+            
+            .chat-section {
+                flex: 1; /* 정확히 반 높이 */
+                min-height: 0;
+                max-height: calc(50vh - 28px); /* 헤더 높이 절반 제외 */
+                display: flex;
+                flex-direction: column;
+                position: relative;
+            }
+            
             .interval-selector {
                 gap: 2px;
                 padding: 2px;
@@ -188,12 +231,25 @@
             flex: 1;
             position: relative;
             min-height: 0; /* flexbox에서 중요 */
+            overflow: hidden;
         }
         
         #chart-container {
             width: 100%;
             height: 100%;
-            min-height: 500px; /* 차트 최소 높이 */
+            min-height: 300px; /* 차트 최소 높이 */
+        }
+        
+        /* 모바일에서 차트 높이 조정 */
+        @media (max-width: 768px) {
+            #chart-container {
+                min-height: 200px; /* 모바일에서 차트 최소 높이 줄임 */
+            }
+            
+            #chart-container-wrapper {
+                overflow: hidden;
+                border-radius: 0;
+            }
         }
 
         /* 차트 로딩 인디케이터 */
