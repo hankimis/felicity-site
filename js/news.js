@@ -199,7 +199,7 @@ async function fetchAndParseFeed({ url, source }) {
                     }
 
                     // 이미지 최적화: 기본 이미지 사용으로 로딩 속도 향상
-                    let imageUrl = 'assets/default-news.jpg';
+                    let imageUrl = '/assets/default-news.jpg';
                     if (item.thumbnail && item.thumbnail.startsWith('http')) {
                         imageUrl = item.thumbnail;
                     }
@@ -219,134 +219,35 @@ async function fetchAndParseFeed({ url, source }) {
         // RSS2JSON 실패 시 빠른 실패
     }
 
-    // RSS2JSON 실패 시 즉시 백업 뉴스 사용 (빠른 실패)
-    return getBackupNews(source);
+    // RSS2JSON 실패 시 빈 배열 반환 (백업 뉴스 제거)
+    return [];
 }
 
-// 백업 뉴스 제공 함수
-function getBackupNews(source) {
-    const now = new Date();
-    const backupNews = {
-        'cointelegraph': [
-            {
-                title: "비트코인 가격 분석 및 전망",
-                link: "https://kr.cointelegraph.com/news/bitcoin-analysis",
-                pubDate: now.toISOString(),
-                contentSnippet: "최근 비트코인 시장 동향과 기술적 분석을 통한 향후 전망을 살펴봅니다.",
-                image: "assets/default-news.jpg"
-            },
-            {
-                title: "이더리움 2.0 업데이트 현황",
-                link: "https://kr.cointelegraph.com/news/ethereum-2-update",
-                pubDate: new Date(now.getTime() - 3600000).toISOString(),
-                contentSnippet: "이더리움 네트워크의 최신 개발 소식과 생태계 확장 현황을 분석합니다.",
-                image: "assets/default-news.jpg"
-            }
-        ],
-        'tokenpost': [
-            {
-                title: "비트코인 11만 달러 돌파 임박",
-                link: "https://www.tokenpost.kr/news/cryptocurrency/bitcoin-110k",
-                pubDate: now.toISOString(),
-                contentSnippet: "ETF 유입과 트럼프 호재에 힘입어 비트코인이 11만 달러 돌파를 앞두고 있습니다.",
-                image: "assets/default-news.jpg"
-            },
-            {
-                title: "이더리움 현물 ETF 거래량 증가",
-                link: "https://www.tokenpost.kr/news/cryptocurrency/ethereum-etf",
-                pubDate: new Date(now.getTime() - 1800000).toISOString(),
-                contentSnippet: "이더리움 현물 ETF의 거래량이 두 배로 증가하며 시장 관심이 높아지고 있습니다.",
-                image: "assets/default-news.jpg"
-            }
-        ],
-        'blockmedia': [
-            {
-                title: "국내 가상자산 거래소 규제 동향",
-                link: "https://www.blockmedia.co.kr/news/domestic-exchange-regulation",
-                pubDate: new Date(now.getTime() - 2700000).toISOString(),
-                contentSnippet: "금융당국의 가상자산 거래소 규제 강화 방안과 업계 대응 현황을 분석합니다.",
-                image: "assets/default-news.jpg"
-            }
-        ],
-        'coinreaders': [
-            {
-                title: "DeFi 프로토콜 최신 동향",
-                link: "https://coinreaders.com/news/defi-protocol-trends",
-                pubDate: new Date(now.getTime() - 3600000).toISOString(),
-                contentSnippet: "탈중앙화 금융 생태계의 최신 발전사항과 새로운 프로토콜들을 소개합니다.",
-                image: "assets/default-news.jpg"
-            }
-        ],
-        'bloomingbit': [
-            {
-                title: "NFT 시장 회복 신호",
-                link: "https://bloomingbit.io/news/nft-market-recovery",
-                pubDate: new Date(now.getTime() - 4500000).toISOString(),
-                contentSnippet: "NFT 거래량과 가격이 최근 상승세를 보이며 시장 회복 조짐을 나타내고 있습니다.",
-                image: "assets/default-news.jpg"
-            }
-        ],
-        'yonhap': [
-            {
-                title: "한국 디지털자산 시장 동향",
-                link: "https://www.yna.co.kr/economy",
-                pubDate: now.toISOString(),
-                contentSnippet: "국내 가상자산 거래소 현황 및 규제 동향에 대한 최신 소식입니다.",
-                image: "assets/default-news.jpg"
-            }
-        ],
-        'investing': [
-            {
-                title: "글로벌 암호화폐 규제 동향",
-                link: "https://kr.investing.com/news/crypto-regulation",
-                pubDate: now.toISOString(),
-                contentSnippet: "전 세계 주요국의 암호화폐 규제 정책 변화와 시장에 미치는 영향을 종합 분석했습니다.",
-                image: "assets/default-news.jpg"
-            }
-        ]
-    };
-    
-    return (backupNews[source] || []).map(item => ({ ...item, source }));
-}
 
-// RSS 피드 파싱
+
+// RSS 피드 파싱 (실제 데이터만 처리)
 function parseRSSFeed(xmlString) {
     const parser = new DOMParser();
     const doc = parser.parseFromString(xmlString, 'text/xml');
     const items = Array.from(doc.querySelectorAll('item'));
     
     return items.map(item => {
-        let link = item.querySelector('link')?.textContent || '';
+        const link = item.querySelector('link')?.textContent || '';
         const title = item.querySelector('title')?.textContent || '';
         const description = item.querySelector('description')?.textContent || '';
         const pubDate = item.querySelector('pubDate')?.textContent || '';
         
-        let actualSource = null;
-        
-
-        
-        // source 태그에서도 언론사명 추출 시도 (백업)
-        if (!actualSource) {
-            const sourceTag = item.querySelector('source');
-            if (sourceTag && sourceTag.textContent) {
-                actualSource = sourceTag.textContent.trim();
-            }
-        }
-        
-        // 컨텐츠 스니펫 생성 (개선된 텍스트 처리)
+        // 컨텐츠 스니펫 생성
         let contentSnippet = '';
         if (description) {
-            // HTML 태그 제거
-            contentSnippet = description.replace(/<[^>]*>/g, '');
-            // 특수 문자 정리
-            contentSnippet = contentSnippet.replace(/&nbsp;/g, ' ')
-                                         .replace(/&amp;/g, '&')
-                                         .replace(/&lt;/g, '<')
-                                         .replace(/&gt;/g, '>')
-                                         .replace(/&quot;/g, '"')
-                                         .trim();
-            // 길이 제한
-            contentSnippet = contentSnippet.substring(0, 180);
+            contentSnippet = description.replace(/<[^>]*>/g, '')
+                                       .replace(/&nbsp;/g, ' ')
+                                       .replace(/&amp;/g, '&')
+                                       .replace(/&lt;/g, '<')
+                                       .replace(/&gt;/g, '>')
+                                       .replace(/&quot;/g, '"')
+                                       .trim()
+                                       .substring(0, 180);
         }
         
         return {
@@ -355,8 +256,7 @@ function parseRSSFeed(xmlString) {
             pubDate: pubDate,
             content: description,
             contentSnippet: contentSnippet || title.substring(0, 100),
-            image: findImageInItem(item),
-            actualSource: actualSource
+            image: findImageInItem(item)
         };
     });
 }
@@ -384,7 +284,7 @@ function findImageInItem(item) {
         return firstImage.src;
     }
 
-    return 'assets/default-news.jpg';
+    return '/assets/default-news.jpg';
 }
 
 // 뉴스 표시 (최적화된 이미지 로딩)
@@ -404,7 +304,7 @@ function displayNews(news) {
         const sourceName = getSourceDisplayName(item.source);
         
         // 이미지 최적화: 기본 이미지 우선 사용
-        const hasImage = item.image && item.image !== 'assets/default-news.jpg' && item.image.startsWith('http');
+        const hasImage = item.image && item.image !== '/assets/default-news.jpg' && item.image.startsWith('http');
         
         const newsItem = document.createElement('a');
         newsItem.href = item.link;
