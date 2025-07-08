@@ -283,6 +283,8 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
+      text-decoration: none;
+      color: inherit;
     }
     
     /* 컨테이너 크기를 로고에 맞게 조정 */
@@ -4181,6 +4183,7 @@
   
   <!-- Load critical CSS files -->
   <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/sidebar-ads.css">
   <link rel="stylesheet" href="auth.css">
   
   <!-- Preload critical fonts -->
@@ -4242,26 +4245,26 @@
       </div>
       <div class="banner-exchanges">
         <div class="exchanges-grid">
-          <div class="exchange-item">
+          <a href="/affiliated/" class="exchange-item">
             <img src="/assets/logoicon/binance.webp" alt="Binance" class="exchange-logo">
             <span class="exchange-name">Binance</span>
-          </div>
-          <div class="exchange-item">
+          </a>
+          <a href="/affiliated/bitget/" class="exchange-item">
             <img src="/assets/logoicon/bitget.png" alt="Bitget" class="exchange-logo">
             <span class="exchange-name">Bitget</span>
-          </div>
-          <div class="exchange-item">
+          </a>
+          <a href="/affiliated/okx/" class="exchange-item">
             <img src="/assets/logoicon/okx.png" alt="OKX" class="exchange-logo">
             <span class="exchange-name">OKX</span>
-          </div>
-          <div class="exchange-item">
+          </a>
+          <a href="/affiliated/bitmex/" class="exchange-item">
             <img src="/assets/logoicon/bitmex.png" alt="BitMEX" class="exchange-logo">
             <span class="exchange-name">BitMEX</span>
-          </div>
-          <div class="exchange-item">
+          </a>
+          <a href="/affiliated/lbank/" class="exchange-item">
             <img src="/assets/logoicon/lbank.png" alt="LBank" class="exchange-logo">
             <span class="exchange-name">LBank</span>
-          </div>
+          </a>
         </div>
       </div>
     </div>
@@ -4554,6 +4557,7 @@
   <script src="js/auth.js"></script>
   <script src="js/header-loader.js"></script>
   <script src="js/footer-loader.js"></script>
+  <script src="js/sidebar-ads.js"></script>
   <script src="js/analysis/longshort-tracker.js" type="module"></script>
   <script src="js/analysis/whale-tracker.js" type="module"></script>
   <script src="js/compound-calculator.js" type="module"></script>
