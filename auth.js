@@ -253,8 +253,9 @@ function controlModal(modalId, show) {
 }
 
 function applyTheme() {
-    const theme = localStorage.getItem('theme');
+    const theme = localStorage.getItem('theme') || 'light';
     document.documentElement.classList.toggle('dark-mode', theme === 'dark');
+    document.documentElement.setAttribute('data-theme', theme);
     updateLogos();
     updateThemeIcon();
 }
@@ -263,9 +264,15 @@ function toggleTheme() {
     const currentTheme = localStorage.getItem('theme') || 'light';
     const newTheme = currentTheme === 'light' ? 'dark' : 'light';
     document.documentElement.classList.toggle('dark-mode', newTheme === 'dark');
+    document.documentElement.setAttribute('data-theme', newTheme);
     localStorage.setItem('theme', newTheme);
     updateLogos();
     updateThemeIcon();
+    
+    // 테마 변경 이벤트 발생
+    document.dispatchEvent(new CustomEvent('themeChanged', { 
+        detail: { theme: newTheme } 
+    }));
 }
 
 function updateThemeIcon() {

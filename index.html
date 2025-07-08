@@ -4800,12 +4800,28 @@
           
           document.documentElement.setAttribute('data-theme', newTheme);
           localStorage.setItem('theme', newTheme);
+          
+          // TradingView 차트 테마 즉시 업데이트
+          setTimeout(() => {
+            if (tradingViewWidget && currentChartSymbol) {
+              initializeTradingViewChart(currentChartSymbol, currentTimeframe);
+            }
+          }, 100);
         });
       }
     }
 
     // 다크모드 초기화
     initializeDarkMode();
+    
+    // 테마 변경 감지 (헤더의 테마 토글 버튼용)
+    document.addEventListener('themeChanged', () => {
+      setTimeout(() => {
+        if (tradingViewWidget && currentChartSymbol) {
+          initializeTradingViewChart(currentChartSymbol, currentTimeframe);
+        }
+      }, 100);
+    });
 
     // 대시보드 관리 클래스
     class Dashboard {

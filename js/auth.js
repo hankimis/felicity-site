@@ -187,7 +187,7 @@ function toggleTheme() {
     }
     
     // 다른 페이지의 테마 변경 이벤트 발생
-    window.dispatchEvent(new CustomEvent('themeChanged', { detail: { theme: newTheme } }));
+    document.dispatchEvent(new CustomEvent('themeChanged', { detail: { theme: newTheme } }));
 }
 
 function updateThemeIcon() {
