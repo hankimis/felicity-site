@@ -182,7 +182,7 @@ export class WhaleTracker {
                 this.recentTradeIds.add(trade.id);
                 this.tradeIdQueue.push(trade.id);
                 
-                // 고래 거래 감지됨 (콘솔 로그 제거)
+                // 고래 거래 감지됨
             }
         }
 
@@ -217,7 +217,7 @@ export class WhaleTracker {
         this.playAudioAlert(largestTrade);
         this.updateDisplay();
         
-        console.log(`🐋 총 거래 수: ${this.trades.length}, 새 거래: ${newValidTrades.length}`);
+        // 거래 수 업데이트
     }
 
     // --- Exchange-specific connectors for SPOT markets ---
@@ -226,7 +226,7 @@ export class WhaleTracker {
         const ws = new WebSocket(`wss://stream.binance.com:9443/ws/${market.rawSymbol.toLowerCase()}@aggTrade`);
         
         ws.onopen = () => {
-            console.log(`🐋 Binance Spot 연결됨: ${market.symbol}`);
+            // Binance Spot 연결됨
         };
         
         ws.onmessage = (event) => {
@@ -244,11 +244,11 @@ export class WhaleTracker {
         };
         
         ws.onerror = (e) => {
-            console.error(`🐋 Binance Spot 연결 오류: ${market.symbol}`, e);
+            // Binance Spot 연결 오류
         };
         
         ws.onclose = (e) => {
-            console.log(`🐋 Binance Spot 연결 종료: ${market.symbol}, 코드: ${e.code}`);
+            // Binance Spot 연결 종료
             if (this.isTracking) {
                 setTimeout(() => this.connectBinanceSpot(market), 5000);
             }
@@ -263,7 +263,7 @@ export class WhaleTracker {
         const ws = new WebSocket(`wss://fstream.binance.com/ws/${market.rawSymbol.toLowerCase()}@aggTrade`);
         
         ws.onopen = () => {
-            console.log(`🐋 Binance Futures 연결됨: ${market.symbol}`);
+            // Binance Futures 연결됨
         };
         
         ws.onmessage = (event) => {
@@ -282,11 +282,11 @@ export class WhaleTracker {
         };
         
         ws.onerror = (e) => {
-            console.error(`🐋 Binance Futures 연결 오류: ${market.symbol}`, e);
+            // Binance Futures 연결 오류
         };
         
         ws.onclose = (e) => {
-            console.log(`🐋 Binance Futures 연결 종료: ${market.symbol}, 코드: ${e.code}`);
+            // Binance Futures 연결 종료
             if (this.isTracking) {
                 setTimeout(() => this.connectBinanceFutures(market), 5000);
             }
@@ -567,6 +567,13 @@ export class WhaleTracker {
         oscillator.stop(this.audioContext.currentTime + 0.1);
     }
     
+    showLoadingState() {
+        const container = document.querySelector('.whale-trades-list');
+        if (!container) return;
+        
+        container.innerHTML = '<div style="text-align: center; padding: 2rem; color: var(--text-secondary);">고래 거래 탐지 중...</div>';
+    }
+
     updateDisplay() {
         const container = document.querySelector('.whale-trades-list');
         if (!container) return;
@@ -707,7 +714,9 @@ export class WhaleTracker {
 
     start() {
         this.isTracking = true;
-        console.log('🐋 고래 탐지 시작... (실제 데이터만)');
+        
+        // 로딩 상태 표시
+        this.showLoadingState();
         
         // 실제 WebSocket 연결만 시도
         this.connectWebSockets();
@@ -729,10 +738,10 @@ export class WhaleTracker {
         ).length;
         
         if (connectedCount === 0) {
-            console.warn('🐋 고래 탐지: 실제 거래소 연결 실패. 테스트 데이터를 생성합니다.');
+            // 실제 거래소 연결 실패, 테스트 데이터 생성
             this.startTestDataGeneration();
         } else {
-            console.log(`🐋 고래 탐지: ${connectedCount}개 거래소 연결됨`);
+            // 거래소 연결 완료
         }
     }
 
@@ -740,7 +749,7 @@ export class WhaleTracker {
     startTestDataGeneration() {
         if (this.testDataInterval) return; // 이미 실행 중이면 중단
         
-        console.log('🐋 테스트 고래 거래 데이터 생성 시작...');
+        // 테스트 고래 거래 데이터 생성 시작
         
         // 연결 상태 업데이트
         this.updateConnectionStatus();
@@ -811,7 +820,7 @@ export class WhaleTracker {
             this.testDataInterval = null;
         }
         
-        console.log('🐋 고래 탐지 중지됨');
+        // 고래 탐지 중지됨
     }
 
     updateSymbol(newSymbol) {
@@ -924,11 +933,11 @@ const whaleTrackerStyles = `
 
 .whale-trades-container {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    color: #e5e7eb; /* Light gray text */
+    color: var(--text-primary); /* Theme-aware text */
     padding: 0;
     margin: 0;
     overflow: hidden;
-    background-color:rgb(255, 255, 255); /* Dark background */
+    background-color: var(--bg-primary); /* Theme-aware background */
 }
 
 .whale-trades-container ul {
@@ -941,7 +950,7 @@ const whaleTrackerStyles = `
     display: flex;
     align-items: center;
     padding: 8px 12px;
-    border-bottom: 1px solid #1f2937; /* Slightly lighter border */
+    border-bottom: 1px solid var(--border-light); /* Theme-aware border */
     font-size: 14px;
     font-weight: 500;
 }
@@ -985,7 +994,7 @@ const whaleTrackerStyles = `
 .trade-time {
     width: 40px;
     text-align: right;
-    color: #9ca3af; /* Muted color for time */
+    color: var(--text-secondary); /* Theme-aware muted color */
     font-size: 13px;
 }
 
