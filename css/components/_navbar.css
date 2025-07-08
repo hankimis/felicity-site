@@ -275,11 +275,11 @@ body.dark-mode .navbar nav a:hover:after {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px 20px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 20px;
+  border-bottom: 1px solid var(--border-color);
   background: linear-gradient(135deg, var(--primary-color), #667eea);
   color: white;
-  min-height: 56px;
+  min-height: 60px;
   flex-shrink: 0;
 }
 

@@ -91,15 +91,476 @@
 
     /* Main banner critical styles */
     .main-banner {
-      background: #181c23;
-      color: #f0f0f0;
-      text-align: center;
+      height: 500px;
+      width: 100%;
+      background: #2a2a2a;
+      color: #ffffff;
       margin-bottom: 40px;
-      padding: 40px 20px;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .banner-video {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      z-index: 0;
+      opacity: 0.4;
+      filter: blur(3px) grayscale(60%) brightness(0.7);
+      -webkit-filter: blur(3px) grayscale(60%) brightness(0.7);
+    }
+    
+    /* 다크모드에서 동영상 더 어둡게 */
+    [data-theme="dark"] .banner-video {
+      opacity: 0.25;
+      filter: blur(3px) grayscale(70%) brightness(0.5);
+      -webkit-filter: blur(3px) grayscale(70%) brightness(0.5);
+    }
+    
+    /* 동영상 로딩 실패 시 폴백 */
+    .main-banner:has(.banner-video:not([src])) {
+      background: linear-gradient(135deg, #2a2a2a 0%, #404040 50%, #2a2a2a 100%);
+    }
+    
+    .main-banner::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(40, 40, 40, 0.6);
+      backdrop-filter: blur(2px);
+      -webkit-backdrop-filter: blur(2px);
+      z-index: 1;
+    }
+    
+    .banner-content {
+      max-width: 1800px;
+      margin: 0 auto;
+      padding: 0 2rem;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      text-align: center;
+      position: relative;
+      z-index: 2;
+    }
+    
+    .banner-text {
+      width: 100%;
+      text-align: center;
+      margin-bottom: 3rem;
+    }
+    
+    .banner-title {
+      font-size: 3rem;
+      font-weight: 900;
+      margin-bottom: 1.5rem;
+      line-height: 1.2;
+      color: #ffffff !important;
+      text-shadow: none !important;
+    }
+    
+    .banner-title .highlight {
+      color: var(--primary-color) !important;
+      text-shadow: none !important;
+    }
+    
+    .banner-subtitle {
+      font-size: 1.25rem;
+      margin-bottom: 2rem;
+      opacity: 0.9;
+      line-height: 1.6;
+      color: #ffffff !important;
+      text-shadow: none !important;
+    }
+    
+    .banner-features {
+      display: flex;
+      gap: 2rem;
+      margin-bottom: 2.5rem;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    
+    .feature-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 1rem;
+      font-weight: 500;
+      color: #ffffff !important;
+      text-shadow: none !important;
+    }
+    
+    .feature-item i {
+      color: var(--primary-color) !important;
+      font-size: 1.2rem;
+      text-shadow: none !important;
+    }
+    
+    .banner-cta {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    
+    .cta-button {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 1rem 2rem;
       border-radius: 12px;
-      max-width: 1600px;
-      margin-left: auto;
-      margin-right: auto;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 1rem;
+      transition: all 0.3s ease;
+      border: 2px solid transparent;
+    }
+    
+    .cta-button.primary {
+      background: var(--primary-color);
+      color: #ffffff;
+    }
+    
+    .cta-button.primary:hover {
+      background: #2563eb;
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(59, 130, 246, 0.3);
+    }
+    
+    .cta-button.secondary {
+      background: transparent;
+      color: #ffffff;
+      border-color: #ffffff;
+    }
+    
+    .cta-button.secondary:hover {
+      background: #ffffff;
+      color: #1e3a8a;
+      transform: translateY(-2px);
+    }
+    
+    .banner-exchanges {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+      pointer-events: none;
+    }
+    
+    .exchanges-grid {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      flex-wrap: wrap;
+      padding: 2rem;
+    }
+    
+    .main-banner .exchange-item {
+      position: absolute;
+      background: transparent;
+      border-radius: 0;
+      padding: 0;
+      transition: all 0.4s ease;
+      border: none;
+      opacity: 0.7;
+      pointer-events: auto;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    /* 컨테이너 크기를 로고에 맞게 조정 */
+    .main-banner .exchange-item:nth-child(1) {
+      width: 100px;
+      height: 100px;
+    }
+    
+    .main-banner .exchange-item:nth-child(2) {
+      width: 100px;
+      height: 100px;
+    }
+    
+    .main-banner .exchange-item:nth-child(3) {
+      width: 140px;
+      height: 140px;
+    }
+    
+    .main-banner .exchange-item:nth-child(4) {
+      width: 110px;
+      height: 110px;
+    }
+    
+    .main-banner .exchange-item:nth-child(5) {
+      width: 130px;
+      height: 130px;
+    }
+    
+    .main-banner .exchange-item:nth-child(1) {
+      top: 10%;
+      left: 8%;
+      animation: float 6s ease-in-out infinite;
+    }
+    
+    .main-banner .exchange-item:nth-child(2) {
+      top: 20%;
+      right: 12%;
+      animation: float 6s ease-in-out infinite 1s;
+    }
+    
+    .main-banner .exchange-item:nth-child(3) {
+      top: 60%;
+      left: 10%;
+      animation: float 6s ease-in-out infinite 2s;
+    }
+    
+    .main-banner .exchange-item:nth-child(4) {
+      bottom: 15%;
+      right: 8%;
+      animation: float 6s ease-in-out infinite 3s;
+    }
+    
+    .main-banner .exchange-item:nth-child(5) {
+      bottom: 25%;
+      left: 25%;
+      animation: float 6s ease-in-out infinite 4s;
+    }
+    
+    .main-banner .exchange-item:hover {
+      background: transparent;
+      transform: translateY(-8px) scale(1.1);
+      opacity: 1;
+    }
+    
+    /* 메인 배너 전용 거래소 로고 스타일 */
+    .main-banner .exchange-logo {
+      border-radius: 50%;
+      margin: 0;
+      object-fit: cover;
+      background: transparent;
+      padding: 0;
+      transition: all 0.3s ease;
+      box-shadow: none;
+      filter: blur(6px);
+      -webkit-filter: blur(6px);
+    }
+    
+    /* 다양한 크기의 거래소 로고 */
+    .main-banner .exchange-item:nth-child(1) .exchange-logo {
+      width: 100px;
+      height: 100px;
+    }
+    
+    .main-banner .exchange-item:nth-child(2) .exchange-logo {
+      width: 150px;
+      height: 150px;
+    }
+    
+    .main-banner .exchange-item:nth-child(3) .exchange-logo {
+      width: 130px;
+      height: 130px;
+    }
+    
+    .main-banner .exchange-item:nth-child(4) .exchange-logo {
+      width: 110px;
+      height: 110px;
+    }
+    
+    .main-banner .exchange-item:nth-child(5) .exchange-logo {
+      width: 110px;
+      height: 110px;
+    }
+    
+    .main-banner .exchange-item:hover .exchange-logo {
+      transform: scale(1.1);
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+      filter: blur(0px);
+      -webkit-filter: blur(0px);
+    }
+    
+    .main-banner .exchange-name {
+      display: none;
+    }
+    
+    @keyframes float {
+      0%, 100% {
+        transform: translateY(0px);
+      }
+      50% {
+        transform: translateY(-10px);
+      }
+    }
+    
+    /* 반응형 디자인 */
+    @media (max-width: 1024px) {
+      .banner-content {
+        padding: 2rem 1rem;
+      }
+      
+      .banner-title {
+        font-size: 2.5rem;
+      }
+      
+      .main-banner .exchange-item {
+        padding: 0;
+      }
+      
+      .main-banner .exchange-item:nth-child(1) {
+        width: 80px;
+        height: 80px;
+      }
+      
+      .main-banner .exchange-item:nth-child(2) {
+        width: 70px;
+        height: 70px;
+      }
+      
+      .main-banner .exchange-item:nth-child(3) {
+        width: 90px;
+        height: 90px;
+      }
+      
+      .main-banner .exchange-item:nth-child(4) {
+        width: 75px;
+        height: 75px;
+      }
+      
+      .main-banner .exchange-item:nth-child(1) .exchange-logo {
+        width: 80px;
+        height: 80px;
+      }
+      
+      .main-banner .exchange-item:nth-child(2) .exchange-logo {
+        width: 70px;
+        height: 70px;
+      }
+      
+      .main-banner .exchange-item:nth-child(3) .exchange-logo {
+        width: 90px;
+        height: 90px;
+      }
+      
+      .main-banner .exchange-item:nth-child(4) .exchange-logo {
+        width: 75px;
+        height: 75px;
+      }
+      
+      .main-banner .exchange-item:nth-child(5) {
+        display: none;
+      }
+    }
+    
+    @media (max-width: 768px) {
+      .main-banner {
+        height: 500px;
+      }
+      
+      .banner-video {
+        /* 모바일에서 동영상 성능 최적화 */
+        transform: scale(1.1);
+        opacity: 0.3;
+        filter: blur(4px) grayscale(50%) brightness(0.6);
+        -webkit-filter: blur(4px) grayscale(50%) brightness(0.6);
+      }
+      
+      /* 다크모드 모바일에서 동영상 더 어둡게 */
+      [data-theme="dark"] .banner-video {
+        opacity: 0.2;
+        filter: blur(4px) grayscale(80%) brightness(0.4);
+        -webkit-filter: blur(4px) grayscale(80%) brightness(0.4);
+      }
+      
+      .banner-title {
+        font-size: 2rem;
+      }
+      
+      .banner-subtitle {
+        font-size: 1rem;
+      }
+      
+      .banner-features {
+        flex-direction: column;
+        gap: 1rem;
+      }
+      
+      .banner-cta {
+        flex-direction: column;
+      }
+      
+      .cta-button {
+        width: 100%;
+        justify-content: center;
+      }
+      
+      .main-banner .exchange-item {
+        padding: 0;
+        opacity: 0.6;
+      }
+      
+      .main-banner .exchange-item:nth-child(1) {
+        width: 60px;
+        height: 60px;
+      }
+      
+      .main-banner .exchange-item:nth-child(2) {
+        width: 50px;
+        height: 50px;
+      }
+      
+      .main-banner .exchange-item:nth-child(1) .exchange-logo {
+        width: 60px;
+        height: 60px;
+      }
+      
+      .main-banner .exchange-item:nth-child(2) .exchange-logo {
+        width: 50px;
+        height: 50px;
+      }
+      
+      .main-banner .exchange-item:nth-child(3),
+      .main-banner .exchange-item:nth-child(4),
+      .main-banner .exchange-item:nth-child(5) {
+        display: none;
+      }
+    }
+    
+    /* 저사양 기기 또는 느린 연결에서 동영상 비활성화 */
+    @media (prefers-reduced-motion: reduce) {
+      .banner-video {
+        display: none;
+      }
+      
+      .main-banner {
+        background: linear-gradient(135deg, #2a2a2a 0%, #404040 50%, #2a2a2a 100%);
+      }
+    }
+    
+    /* 라이트 모드 전용 스타일 */
+    :root:not([data-theme="dark"]) .main-banner {
+      background: #2a2a2a !important;
+    }
+    
+    :root:not([data-theme="dark"]) .main-banner::before {
+      background: rgba(40, 40, 40, 0.6) !important;
+    }
+    
+    :root:not([data-theme="dark"]) .main-banner:has(.banner-video:not([src])) {
+      background: linear-gradient(135deg, #2a2a2a 0%, #404040 50%, #2a2a2a 100%) !important;
     }
 
     /* Benefits section styles */
@@ -3740,6 +4201,71 @@
 <body>
   <!-- Header placeholder -->
   <div id="header-placeholder"></div>
+  
+  <!-- 메인 배너 섹션 -->
+  <section class="main-banner">
+    <video class="banner-video" autoplay muted loop playsinline>
+      <source src="/assets/mainbannerbackground/Video_Ready_White_Particle_Loop.mp4" type="video/mp4">
+    </video>
+    <div class="banner-content">
+      <div class="banner-text">
+        <h1 class="banner-title">
+          <span class="highlight">페이백</span>으로 더 많은 수익을!
+        </h1>
+        <p class="banner-subtitle">
+          제휴 거래소 이용 시 거래 수수료의 일부를 페이백으로 돌려받으세요
+        </p>
+        <div class="banner-features">
+          <div class="feature-item">
+            <i class="fas fa-percentage"></i>
+            <span>최대 40% 수수료 페이백</span>
+          </div>
+          <div class="feature-item">
+            <i class="fas fa-clock"></i>
+            <span>실시간 정산</span>
+          </div>
+          <div class="feature-item">
+            <i class="fas fa-shield-alt"></i>
+            <span>안전한 거래 보장</span>
+          </div>
+        </div>
+        <div class="banner-cta">
+          <a href="/affiliated/" class="cta-button primary">
+            <i class="fas fa-rocket"></i>
+            제휴 거래소 보기
+          </a>
+          <a href="/affiliated/payback-calculator/" class="cta-button secondary">
+            <i class="fas fa-calculator"></i>
+            페이백 계산하기
+          </a>
+        </div>
+      </div>
+      <div class="banner-exchanges">
+        <div class="exchanges-grid">
+          <div class="exchange-item">
+            <img src="/assets/logoicon/binance.webp" alt="Binance" class="exchange-logo">
+            <span class="exchange-name">Binance</span>
+          </div>
+          <div class="exchange-item">
+            <img src="/assets/logoicon/bitget.png" alt="Bitget" class="exchange-logo">
+            <span class="exchange-name">Bitget</span>
+          </div>
+          <div class="exchange-item">
+            <img src="/assets/logoicon/okx.png" alt="OKX" class="exchange-logo">
+            <span class="exchange-name">OKX</span>
+          </div>
+          <div class="exchange-item">
+            <img src="/assets/logoicon/bitmex.png" alt="BitMEX" class="exchange-logo">
+            <span class="exchange-name">BitMEX</span>
+          </div>
+          <div class="exchange-item">
+            <img src="/assets/logoicon/lbank.png" alt="LBank" class="exchange-logo">
+            <span class="exchange-name">LBank</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
   
     <!-- 실시간 추적 섹션 -->
     <section class="realtime-section">
