@@ -137,7 +137,7 @@ function createDatafeed() {
                 ticker: symbolName,
                 description: `${symbol.replace('USDT', '')}/USDT`,
                 session: '24x7',
-                timezone: 'Etc/UTC',
+                timezone: 'Asia/Seoul', // 🇰🇷 서울 시간대로 변경
                 minmov: 1,
                 pricescale: 100,
                 has_intraday: true,
@@ -593,6 +593,7 @@ async function initializeTradingViewChart() {
         datafeed: createDatafeed(),
         library_path: '/charting_library-master/charting_library/',
         locale: 'ko',
+        timezone: 'Asia/Seoul', // 🇰🇷 서울 시간대로 설정
         fullscreen: false,
         autosize: true,
         theme: document.documentElement.classList.contains('dark-mode') ? 'Dark' : 'Light',
@@ -1025,28 +1026,62 @@ async function initializeTradingViewChart() {
                                     }
                                 }
                                 
-                                // 🔄 차트 로드 with 개선된 타임아웃
-                                const loadPromise = new Promise((resolve, reject) => {
-                                    try {
+                                // 🔄 개선된 차트 로드 (단계별 처리)
+                                let loadSuccess = false;
+                                
+                                // 1단계: 기본 로드 시도
+                                try {
+                                    await new Promise((resolve, reject) => {
+                                        const timeoutId = setTimeout(() => {
+                                            reject(new Error('1단계 로드 타임아웃'));
+                                        }, 10000); // 10초
+                                        
                                         widget.load(layoutData, (success) => {
-                                            if (success !== false) { // undefined도 성공으로 처리
+                                            clearTimeout(timeoutId);
+                                            if (success !== false) {
+                                                loadSuccess = true;
                                                 resolve();
                                             } else {
                                                 reject(new Error('차트 로드 실패'));
                                             }
                                         });
-                                    } catch (loadError) {
-                                        reject(new Error(`차트 로드 중 오류: ${loadError.message}`));
+                                    });
+                                } catch (firstAttemptError) {
+                                    console.warn('⚠️ 1단계 로드 실패, 2단계 시도:', firstAttemptError.message);
+                                    
+                                    // 2단계: 재시도 (더 간단한 데이터로)
+                                    try {
+                                        await new Promise((resolve, reject) => {
+                                            const timeoutId = setTimeout(() => {
+                                                reject(new Error('2단계 로드 타임아웃'));
+                                            }, 15000); // 15초
+                                            
+                                            // 드로잉 제외하고 기본 차트만 로드
+                                            const basicLayoutData = {
+                                                ...layoutData,
+                                                drawings: [], // 드로잉 제거
+                                                studies: layoutData.studies?.slice(0, 3) || [] // 지표 최대 3개만
+                                            };
+                                            
+                                            widget.load(basicLayoutData, (success) => {
+                                                clearTimeout(timeoutId);
+                                                if (success !== false) {
+                                                    loadSuccess = true;
+                                                    resolve();
+                                                } else {
+                                                    reject(new Error('2단계 차트 로드 실패'));
+                                                }
+                                            });
+                                        });
+                                    } catch (secondAttemptError) {
+                                        console.warn('⚠️ 2단계 로드도 실패:', secondAttemptError.message);
+                                        throw new Error('차트 복원 실패 - 모든 시도 실패');
                                     }
-                                });
+                                }
                                 
-                                // 20초 타임아웃 설정 (더 여유롭게)
-                                await Promise.race([
-                                    loadPromise,
-                                    new Promise((_, reject) => 
-                                        setTimeout(() => reject(new Error('차트 로드 타임아웃 (20초)')), 20000)
-                                    )
-                                ]);
+                                if (!loadSuccess) {
+                                    throw new Error('차트 로드 검증 실패');
+                                }
                                 
                                 chartRestored = true; // 복원 완료 플래그 설정
                                 showNotification('차트가 복원되었습니다', 'success');
@@ -1111,14 +1146,20 @@ async function initializeTradingViewChart() {
                 }
             };
             
-            // 차트 완전 로드 후 복원 (초기 시도 후 백업으로 한 번 더)
+            // 차트 완전 로드 후 복원 (다단계 시도)
             setTimeout(restoreChart, 100);
             setTimeout(() => {
                 if (!chartRestored) {
-                    console.log('🔄 백업 차트 복원 시도');
+                    console.log('🔄 2차 차트 복원 시도');
                     restoreChart();
                 }
             }, 3000);
+            setTimeout(() => {
+                if (!chartRestored) {
+                    console.log('🔄 3차 차트 복원 시도 (최종)');
+                    restoreChart();
+                }
+            }, 8000);
 
             // 주기적 백업 저장 (1분마다)
             setInterval(() => {

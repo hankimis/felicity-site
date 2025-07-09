@@ -13,8 +13,9 @@ function connectWebSocket() {
 
     websocket.onopen = () => {
         console.log('WebSocket 연결됨');
-        // 기존 구독 복구
+        // 🔄 재연결 시 구독 정보 초기화
         for (let [symbol, subscriptionInfo] of activeSubscriptions) {
+            subscriptionInfo.lastTime = null; // 시간 검증 초기화
             subscribeToSymbol(symbol, subscriptionInfo.resolution, subscriptionInfo.callback);
         }
     };
@@ -36,10 +37,21 @@ function connectWebSocket() {
                 if (subscription) {
                     const currentTime = data.k.t;
                     
-                    // 🔒 시간 순서 검증
-                    if (subscription.lastTime && currentTime <= subscription.lastTime) {
-                        console.warn(`⚠️ 시간 순서 위반 감지 [${data.s}]: 이전=${new Date(subscription.lastTime)}, 현재=${new Date(currentTime)}`);
-                        return; // 잘못된 순서의 데이터 무시
+                    // 🔒 강화된 시간 순서 검증
+                    if (subscription.lastTime) {
+                        const timeDiff = currentTime - subscription.lastTime;
+                        
+                        // 같은 시간이거나 과거 데이터인 경우 무시
+                        if (timeDiff <= 0) {
+                            console.warn(`⚠️ 시간 순서 위반 감지 [${data.s}]: 이전=${new Date(subscription.lastTime)}, 현재=${new Date(currentTime)}, 차이=${timeDiff}ms`);
+                            return;
+                        }
+                        
+                        // 너무 큰 시간 차이 (1시간 이상)도 무시
+                        if (timeDiff > 3600000) {
+                            console.warn(`⚠️ 비정상적인 시간 차이 감지 [${data.s}]: ${timeDiff}ms`);
+                            return;
+                        }
                     }
                     
                     const bar = {
