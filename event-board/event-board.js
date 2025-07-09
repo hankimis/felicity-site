@@ -52,7 +52,7 @@ async function initializeAdminAuth() {
   
   // 어드민 상태 변경 감지 (올바른 메서드명과 매개변수 사용)
   adminAuthManager.onAuthStateChange((user, isAdminStatus) => {
-    currentUser = user;
+  currentUser = user;
     isAdmin = isAdminStatus;
     
     // UI 업데이트
@@ -70,7 +70,7 @@ async function initializeAdminAuth() {
     updateSecurityStatusUI(user, isAdminStatus);
     
     // 디버그 정보 출력
-    if (user) {
+  if (user) {
       console.log('🔐 이벤트 게시판 어드민 인증 상태:', {
         user: user.email,
         isAdmin: isAdminStatus,

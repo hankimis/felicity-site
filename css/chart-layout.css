@@ -4,8 +4,7 @@
     align-items: center;
     justify-content: space-between;
     height: 41px;
-    background: #1a1a1a;
-    border-bottom: 3px solid #404040;
+    border-bottom: 3px solid var(--border-color);
     padding: 0 16px;
     position: relative;
     z-index: 100;
@@ -307,6 +306,10 @@
 }
 
 /* 🔥 다크 모드 지원 */
+.dark-mode .chart-layout-header {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    border-bottom-color: #334155;
+}
 
 .dark-mode .chart-layout-header .symbol-name,
 .dark-mode .chart-layout-header .current-price,

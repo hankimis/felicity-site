@@ -31,10 +31,10 @@ function connectWebSocket() {
 
     websocket.onmessage = (event) => {
         try {
-            const data = JSON.parse(event.data);
-            if (data.e === 'kline') {
-                const subscription = activeSubscriptions.get(data.s);
-                if (subscription) {
+        const data = JSON.parse(event.data);
+        if (data.e === 'kline') {
+            const subscription = activeSubscriptions.get(data.s);
+            if (subscription) {
                     const currentTime = data.k.t;
                     
                     // 🔒 강화된 시간 순서 검증
@@ -54,18 +54,18 @@ function connectWebSocket() {
                         }
                     }
                     
-                    const bar = {
+                const bar = {
                         time: currentTime,
-                        open: parseFloat(data.k.o),
-                        high: parseFloat(data.k.h),
-                        low: parseFloat(data.k.l),
-                        close: parseFloat(data.k.c),
-                        volume: parseFloat(data.k.v)
-                    };
+                    open: parseFloat(data.k.o),
+                    high: parseFloat(data.k.h),
+                    low: parseFloat(data.k.l),
+                    close: parseFloat(data.k.c),
+                    volume: parseFloat(data.k.v)
+                };
                     
                     // 🔄 시간 검증 통과 후 콜백 실행
                     subscription.lastTime = currentTime;
-                    subscription.callback(bar);
+                subscription.callback(bar);
                 }
             }
         } catch (error) {

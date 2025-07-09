@@ -1,0 +1,368 @@
+# 🔐 AUTHENTICATION FLOW OPTIMIZATION RULES
+*Advanced prompt engineering for Firebase authentication and TradingView chart storage synchronization*
+
+## 🎯 CRITICAL AUTHENTICATION PROBLEMS IDENTIFIED
+
+### 🚨 PRIMARY ISSUE: DUAL AUTH LISTENERS CONFLICT
+```javascript
+// ❌ PROBLEM: Two separate onAuthStateChanged listeners
+// 1. auth.js: window.auth.onAuthStateChanged((user) => updateAuthUI(user))
+// 2. community.js: firebase.auth().onAuthStateChanged(onAuthStateChanged)
+// Result: Storage systems receive null user ID before proper initialization
+```
+
+### 🔍 ROOT CAUSE ANALYSIS
+- **Timing Issue**: `community.js` auth listener fires before `auth.js` sets `window.currentUser`
+- **Storage Initialization**: Settings/Drawings adapters get `null` user ID during initialization
+- **Race Condition**: Chart storage systems initialize before user authentication completes
+
+## 🛠️ AUTHENTICATION FLOW OPTIMIZATION RULES
+
+### 📋 RULE 1: UNIFIED AUTH STATE MANAGEMENT
+```javascript
+// ✅ SOLUTION: Single centralized auth state manager
+class AuthStateManager {
+    constructor() {
+        this.listeners = new Set();
+        this.currentUser = null;
+        this.isInitialized = false;
+    }
+    
+    // Register auth state change listeners
+    onAuthStateChange(callback) {
+        this.listeners.add(callback);
+        // Immediately call with current state if already initialized
+        if (this.isInitialized) {
+            callback(this.currentUser);
+        }
+    }
+    
+    // Centralized auth state update
+    updateAuthState(user) {
+        this.currentUser = user;
+        this.isInitialized = true;
+        window.currentUser = user;
+        
+        // Notify all listeners
+        this.listeners.forEach(callback => {
+            try {
+                callback(user);
+            } catch (error) {
+                console.error('Auth state callback error:', error);
+            }
+        });
+    }
+}
+```
+
+### 📋 RULE 2: STORAGE INITIALIZATION SEQUENCE
+```javascript
+// ✅ PROPER INITIALIZATION ORDER
+async function initializeStorageSystems(user) {
+    if (!user) {
+        console.log('👤 User logged out - clearing storage systems');
+        if (window.settingsAdapter) window.settingsAdapter.setUserId(null);
+        if (window.drawingsStorage) window.drawingsStorage.setUserId(null);
+        return;
+    }
+    
+    console.log('👤 User authenticated:', user.uid);
+    
+    // 1. Set user ID for all storage systems
+    const storagePromises = [];
+    
+    if (window.settingsAdapter) {
+        storagePromises.push(window.settingsAdapter.setUserId(user.uid));
+    }
+    
+    if (window.drawingsStorage) {
+        storagePromises.push(window.drawingsStorage.setUserId(user.uid));
+    }
+    
+    if (window.chartStorage) {
+        storagePromises.push(window.chartStorage.setUserId(user.uid));
+    }
+    
+    // 2. Wait for all storage systems to initialize
+    await Promise.all(storagePromises);
+    
+    // 3. Wait for Firebase data loading
+    await waitForStorageInitialization();
+    
+    console.log('✅ All storage systems initialized');
+}
+```
+
+### 📋 RULE 3: FIREBASE INITIALIZATION SYNCHRONIZATION
+```javascript
+// ✅ ENSURE FIREBASE IS READY BEFORE AUTH SETUP
+async function setupUnifiedAuthSystem() {
+    // 1. Wait for Firebase SDK
+    await waitForFirebase();
+    
+    // 2. Create unified auth manager
+    window.authStateManager = new AuthStateManager();
+    
+    // 3. Set up single auth listener
+    firebase.auth().onAuthStateChanged(async (user) => {
+        try {
+            // Update global state first
+            window.authStateManager.updateAuthState(user);
+            
+            // Initialize storage systems
+            await initializeStorageSystems(user);
+            
+            // Update UI (auth.js functionality)
+            await updateAuthUI(user);
+            
+        } catch (error) {
+            console.error('❌ Auth state change error:', error);
+        }
+    });
+    
+    console.log('✅ Unified auth system initialized');
+}
+```
+
+### 📋 RULE 4: STORAGE ADAPTER DEFENSIVE PROGRAMMING
+```javascript
+// ✅ STORAGE ADAPTERS SHOULD HANDLE NULL USER GRACEFULLY
+class SettingsAdapter {
+    setUserId(userId) {
+        this.userId = userId;
+        
+        if (userId) {
+            // Async initialization - don't block
+            this.loadUserSettings().catch(error => {
+                console.error('Settings loading failed:', error);
+                // Fallback to default settings
+                this.settings = this.getDefaultSettings();
+                this.initialized = true;
+            });
+        } else {
+            // Clear user data
+            this.settings = this.getDefaultSettings();
+            this.initialized = true;
+        }
+    }
+    
+    // Always provide fallback values
+    setValue(key, value) {
+        if (!this.initialized) {
+            console.warn('Settings not initialized, using memory storage');
+            // Store in memory until initialized
+            this.settings[key] = value;
+            return;
+        }
+        
+        this.settings[key] = value;
+        this.scheduleSave();
+    }
+}
+```
+
+### 📋 RULE 5: CHART INITIALIZATION TIMING
+```javascript
+// ✅ WAIT FOR COMPLETE AUTH BEFORE CHART CREATION
+async function initializeTradingViewChart() {
+    // 1. Wait for auth system to be ready
+    if (!window.authStateManager || !window.authStateManager.isInitialized) {
+        console.log('⏳ Waiting for auth system initialization...');
+        await new Promise(resolve => {
+            const checkAuth = () => {
+                if (window.authStateManager && window.authStateManager.isInitialized) {
+                    resolve();
+                } else {
+                    setTimeout(checkAuth, 100);
+                }
+            };
+            checkAuth();
+        });
+    }
+    
+    // 2. Wait for storage systems if user is logged in
+    if (window.currentUser) {
+        console.log('⏳ Waiting for storage systems...');
+        await waitForStorageInitialization();
+    }
+    
+    // 3. Now safe to create chart
+    await initializeSingleChart();
+}
+```
+
+## 🔧 IMPLEMENTATION STEPS
+
+### 🎯 STEP 1: REMOVE DUPLICATE AUTH LISTENERS
+```javascript
+// ❌ REMOVE FROM community.js
+// firebase.auth().onAuthStateChanged(onAuthStateChanged);
+
+// ❌ REMOVE FROM auth.js  
+// window.auth.onAuthStateChanged((user) => updateAuthUI(user));
+```
+
+### 🎯 STEP 2: CREATE UNIFIED AUTH MANAGER
+```javascript
+// ✅ ADD TO auth.js or new auth-manager.js
+window.authStateManager = new AuthStateManager();
+```
+
+### 🎯 STEP 3: UPDATE COMMUNITY.JS
+```javascript
+// ✅ REPLACE setupAuthListener() in community.js
+async function setupAuthListener() {
+    if (!window.authStateManager) {
+        console.error('❌ AuthStateManager not found!');
+        return;
+    }
+    
+    // Register for auth state changes
+    window.authStateManager.onAuthStateChange(async (user) => {
+        // This will be called after storage systems are initialized
+        console.log('📊 Chart system received auth state:', user ? user.uid : 'logged out');
+        
+        // Chart-specific logic only
+        if (user) {
+            autoSaveEnabled = true;
+        } else {
+            autoSaveEnabled = false;
+        }
+        
+        // Update chat UI
+        if (window.communityChat) {
+            window.communityChat.updateUserMessageStyles();
+        }
+    });
+}
+```
+
+### 🎯 STEP 4: STORAGE SYSTEM IMPROVEMENTS
+```javascript
+// ✅ MAKE STORAGE SYSTEMS MORE RESILIENT
+class DrawingsStorage {
+    async setUserId(userId) {
+        this.userId = userId;
+        
+        if (userId) {
+            try {
+                await this.loadUserDrawings();
+            } catch (error) {
+                console.error('Drawings loading failed:', error);
+                // Initialize with empty state
+                this.drawings = {};
+                this.drawingSourceSymbols = {};
+                this.initialized = true;
+            }
+        } else {
+            this.drawings = {};
+            this.drawingSourceSymbols = {};
+            this.initialized = true;
+        }
+    }
+}
+```
+
+## 🎯 PERFORMANCE OPTIMIZATIONS
+
+### 🚀 LAZY LOADING STRATEGY
+```javascript
+// ✅ LOAD STORAGE DATA ONLY WHEN NEEDED
+class ChartStorage {
+    async getChartData(symbol) {
+        // Only load if not already loaded
+        if (!this.chartData[symbol]) {
+            await this.loadChartData(symbol);
+        }
+        return this.chartData[symbol];
+    }
+}
+```
+
+### 🚀 DEBOUNCED SAVING
+```javascript
+// ✅ PREVENT EXCESSIVE FIREBASE WRITES
+class StorageAdapter {
+    scheduleSave() {
+        if (this.saveTimeout) {
+            clearTimeout(this.saveTimeout);
+        }
+        
+        this.saveTimeout = setTimeout(() => {
+            this.saveToFirebase();
+        }, this.SAVE_DELAY);
+    }
+}
+```
+
+## 🔍 DEBUGGING GUIDELINES
+
+### 🐛 AUTH STATE DEBUGGING
+```javascript
+// ✅ ADD COMPREHENSIVE LOGGING
+window.debugAuthState = () => {
+    console.log('🔍 Auth Debug Info:', {
+        currentUser: window.currentUser,
+        authManager: !!window.authStateManager,
+        authInitialized: window.authStateManager?.isInitialized,
+        settingsAdapter: {
+            exists: !!window.settingsAdapter,
+            initialized: window.settingsAdapter?.initialized,
+            userId: window.settingsAdapter?.userId
+        },
+        drawingsStorage: {
+            exists: !!window.drawingsStorage,
+            initialized: window.drawingsStorage?.initialized,
+            userId: window.drawingsStorage?.userId
+        }
+    });
+};
+```
+
+### 🐛 STORAGE INITIALIZATION DEBUGGING
+```javascript
+// ✅ MONITOR INITIALIZATION PROGRESS
+window.debugStorageInit = () => {
+    const systems = ['settingsAdapter', 'drawingsStorage', 'chartStorage'];
+    systems.forEach(system => {
+        const instance = window[system];
+        if (instance) {
+            console.log(`📊 ${system}:`, {
+                initialized: instance.initialized,
+                userId: instance.userId,
+                hasData: Object.keys(instance.settings || instance.drawings || {}).length > 0
+            });
+        }
+    });
+};
+```
+
+## 🎯 SUCCESS METRICS
+
+### ✅ AUTHENTICATION FLOW SUCCESS INDICATORS
+- No "Settings Adapter가 초기화되지 않았습니다" warnings
+- No "Drawings Storage가 초기화되지 않았습니다" warnings
+- User ID is never null when storage systems are called
+- Chart loads with proper settings/drawings restoration
+- Smooth login/logout transitions
+
+### ✅ PERFORMANCE INDICATORS
+- Auth state change < 100ms
+- Storage initialization < 500ms
+- Chart creation < 2000ms
+- No memory leaks during auth state changes
+
+## 🚨 CRITICAL REMINDERS
+
+1. **NEVER** call storage methods before user authentication completes
+2. **ALWAYS** wait for Firebase initialization before setting up auth listeners
+3. **ENSURE** proper cleanup on logout to prevent memory leaks
+4. **IMPLEMENT** fallback mechanisms for offline scenarios
+5. **TEST** auth flow with both login and logout scenarios
+
+---
+*This rule set ensures robust authentication flow and eliminates chart storage initialization issues through proper sequencing and error handling.*
+description:
+globs:
+alwaysApply: false
+---

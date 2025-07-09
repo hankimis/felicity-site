@@ -573,7 +573,7 @@ export class WhaleTracker {
         
         container.innerHTML = '<div style="text-align: center; padding: 2rem; color: var(--text-secondary);">고래 거래 탐지 중...</div>';
     }
-
+    
     updateDisplay() {
         const container = document.querySelector('.whale-trades-list');
         if (!container) return;
