@@ -547,10 +547,9 @@ async function initializeTradingViewChart() {
         widget = null;
     }
     
-    // AI 버튼 관련 플래그가 삭제되었습니다
-    
-    // 차트 복원 플래그 리셋
-    chartRestored = false;
+    // 🔄 모든 플래그 리셋
+    indicatorEventsSetup = false; // 지표 이벤트 플래그 리셋
+    chartRestored = false; // 차트 복원 플래그 리셋
 
     // 로딩 표시
     if (loadingIndicator) {
@@ -727,8 +726,12 @@ async function initializeTradingViewChart() {
             
             setupChartEventListeners();
             
-            // 🔥 지표 더블클릭 설정 기능 활성화
-            setupIndicatorDoubleClickEvents();
+            // 🔥 지표 더블클릭 설정 기능 활성화 (차트 완전 로드 후 한 번만)
+            setTimeout(() => {
+                if (!indicatorEventsSetup) {
+                    setupIndicatorDoubleClickEvents();
+                }
+            }, 3000); // 차트 완전 로드 후 3초 뒤에 한 번만 실행
             
             // 차트가 준비된 후 현재 테마 적용
             widget.headerReady().then(() => {
@@ -1307,14 +1310,23 @@ function setupChartEventListeners() {
 }
 
 // 🔥 지표 더블클릭 설정 기능 활성화 함수
+let indicatorEventsSetup = false; // 중복 실행 방지 플래그
+
 function setupIndicatorDoubleClickEvents() {
     if (!widget || !widget.chart) {
         console.warn('TradingView 위젯이 준비되지 않았습니다.');
         return;
     }
 
+    // 🔒 중복 실행 방지
+    if (indicatorEventsSetup) {
+        console.log('⚠️ 지표 이벤트가 이미 설정되어 있습니다. 건너뜀.');
+        return;
+    }
+
     try {
         console.log('🔥 지표 더블클릭 이벤트 설정 시작');
+        indicatorEventsSetup = true; // 플래그 설정
 
         // 차트 컨테이너 확인
         const chartContainer = document.getElementById('tradingview_chart');
@@ -1385,13 +1397,18 @@ function setupIndicatorDoubleClickEvents() {
                         element.title = '더블클릭하여 지표 설정 열기';
                     });
 
-                    console.log(`✅ ${legendElements.length}개 지표에 더블클릭 이벤트 추가됨`);
+                    if (legendElements.length > 0) {
+                        console.log(`✅ ${legendElements.length}개 지표에 더블클릭 이벤트 추가됨`);
+                    } else {
+                        console.log('⚠️ 지표 요소를 찾을 수 없습니다. 나중에 다시 시도됩니다.');
+                    }
                 };
 
                 // 초기 설정
                 setupLegendEvents();
 
-                // 동적으로 추가되는 지표를 위한 MutationObserver
+                // 동적으로 추가되는 지표를 위한 MutationObserver (디바운스 적용)
+                let updateTimeout = null;
                 const observer = new MutationObserver((mutations) => {
                     let shouldUpdate = false;
                     mutations.forEach((mutation) => {
@@ -1401,7 +1418,11 @@ function setupIndicatorDoubleClickEvents() {
                     });
                     
                     if (shouldUpdate) {
-                        setTimeout(setupLegendEvents, 100);
+                        // 🔄 디바운스 적용하여 중복 실행 방지
+                        if (updateTimeout) clearTimeout(updateTimeout);
+                        updateTimeout = setTimeout(() => {
+                            setupLegendEvents();
+                        }, 500); // 500ms 디바운스
                     }
                 });
 
@@ -1420,11 +1441,16 @@ function setupIndicatorDoubleClickEvents() {
             }
         };
 
-        // 차트 로딩 완료 후 범례 감지 시작
-        setTimeout(observeForLegend, 2000);
+        // 차트 로딩 완료 후 범례 감지 시작 (한 번만)
+        setTimeout(() => {
+            if (indicatorEventsSetup) {
+                observeForLegend();
+            }
+        }, 2000);
 
     } catch (error) {
         console.error('지표 더블클릭 이벤트 설정 실패:', error);
+        indicatorEventsSetup = false; // 오류 시 플래그 리셋
         setupCSSBasedIndicatorEvents();
     }
 }
