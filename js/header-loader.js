@@ -13,7 +13,14 @@ document.addEventListener('DOMContentLoaded', () => {
         authLoading.style.display = 'flex';
     }
 
-    fetch('/_header.html')
+    // 현재 경로에 따라 헤더 파일 경로 결정
+    const currentPath = window.location.pathname;
+    const headerPath = currentPath.includes('/event/') || currentPath.includes('/event-board/') || 
+                       currentPath.includes('/community/') || currentPath.includes('/news/') || 
+                       currentPath.includes('/affiliated/') || currentPath.includes('/notice-board/') || 
+                       currentPath.includes('/my-account/') ? '../_header.html' : '_header.html';
+    
+    fetch(headerPath)
         .then(response => {
             if (!response.ok) throw new Error('Could not load header.');
             return response.text();

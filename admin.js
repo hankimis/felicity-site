@@ -2,6 +2,7 @@ import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/
 import { getFirestore, collection, getDocs, doc, getDoc, deleteDoc, updateDoc, addDoc, serverTimestamp, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { firebaseConfig } from './firebase-config.js';
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { AdminAuthManager } from './js/admin-auth-manager.js';
 
 console.log("admin.js started");
 
@@ -18,11 +19,44 @@ const userSearch = document.getElementById('user-search');
 const refreshBtn = document.querySelector('.refresh-btn');
 
 let allUsers = [];
+let adminAuthManager = null;
+let currentUser = null;
+let isAdmin = false;
 
 // 차단/금지 관련 변수
 let currentBlockTab = 'banned';
 let blockedUsers = [];
 let mutedUsers = [];
+
+// 🔒 AdminAuthManager 초기화 및 인증 상태 감지
+async function initializeAdminAuth() {
+    adminAuthManager = new AdminAuthManager(auth, db);
+    
+    // 어드민 상태 변경 감지
+    adminAuthManager.onAuthStateChanged((authState) => {
+        currentUser = authState.user;
+        isAdmin = authState.isAdmin;
+        
+        if (authState.user && authState.isAdmin) {
+            console.log("🔐 관리자 페이지 접근 허용:", {
+                user: authState.user.email,
+                securityLevel: authState.securityLevel,
+                lastValidated: authState.lastValidated
+            });
+            
+            adminDashboard.style.display = 'block';
+            accessDenied.style.display = 'none';
+            loadDashboardData();
+            updateAdminSecurityUI(authState);
+        } else if (authState.user && !authState.isAdmin) {
+            console.log("🔐 관리자 페이지 접근 거부: 권한 없음");
+            showAccessDenied("관리자 계정이 아닙니다.");
+        } else {
+            console.log("🔐 관리자 페이지 접근 거부: 로그인 필요");
+            showAccessDenied("이 페이지는 관리자만 접근할 수 있습니다. 먼저 로그인해주세요.");
+        }
+    });
+}
 
 // 필수 요소가 없으면 스크립트 실행 중단
 if (!adminDashboard || !accessDenied || !usersTableBody) {
@@ -37,31 +71,9 @@ if (!adminDashboard || !accessDenied || !usersTableBody) {
     accessDenied.style.display = 'block';
     adminDashboard.style.display = 'none';
 
-    onAuthStateChanged(auth, async (user) => {
-        console.log("onAuthStateChanged triggered in admin.js");
-        if (user) {
-            console.log("User is logged in:", user.uid);
-            try {
-                const userDocRef = doc(db, 'users', user.uid);
-                const userDoc = await getDoc(userDocRef);
-
-                if (userDoc.exists() && userDoc.data().role === 'admin') {
-                    console.log("Admin access GRANTED.");
-                    adminDashboard.style.display = 'block';
-                    accessDenied.style.display = 'none';
-                    loadDashboardData();
-                } else {
-                    console.log("Admin access DENIED. User role is not 'admin'.");
-                    showAccessDenied("관리자 계정이 아닙니다.");
-                }
-            } catch (error) {
-                console.error("Error checking admin role:", error);
-                showAccessDenied("권한 확인 중 오류가 발생했습니다.");
-            }
-        } else {
-            console.log("User is not logged in.");
-            showAccessDenied("이 페이지는 관리자만 접근할 수 있습니다. 먼저 로그인해주세요.");
-        }
+    // 페이지 로드 시 어드민 인증 초기화
+    document.addEventListener('DOMContentLoaded', () => {
+        initializeAdminAuth();
     });
 }
 
@@ -74,6 +86,37 @@ function showAccessDenied(message) {
         <a href="index.html" class="back-btn">홈으로 돌아가기</a>
     `;
     accessDenied.style.display = 'block';
+}
+
+// 🔒 관리자 보안 UI 업데이트 함수
+function updateAdminSecurityUI(authState) {
+    // 기존 보안 상태 표시 제거
+    const existingSecurityInfo = document.querySelector('.admin-security-info');
+    if (existingSecurityInfo) {
+        existingSecurityInfo.remove();
+    }
+    
+    // 관리자 보안 상태 표시
+    const securityInfo = document.createElement('div');
+    securityInfo.className = 'admin-security-info';
+    securityInfo.innerHTML = `
+        <i class="fas fa-shield-alt"></i>
+        <div class="security-details">
+            <div class="security-main">
+                <strong>관리자 인증 완료</strong> - ${authState.user.email}
+            </div>
+            <div class="security-meta">
+                보안 레벨: ${authState.securityLevel} | 세션 ID: ${authState.sessionId?.substring(0, 8)}... | 
+                마지막 검증: ${new Date(authState.lastValidated).toLocaleTimeString()}
+            </div>
+        </div>
+    `;
+    
+    // 관리자 헤더 하단에 추가
+    const adminHeader = document.querySelector('.admin-header');
+    if (adminHeader) {
+        adminHeader.insertAdjacentElement('afterend', securityInfo);
+    }
 }
 
 async function loadDashboardData() {
@@ -294,6 +337,14 @@ document.getElementById('close-nickname-modal')?.addEventListener('click', () =>
 
 document.getElementById('nickname-form')?.addEventListener('submit', async (e) => {
     e.preventDefault();
+    
+    // 🔒 보안 강화된 권한 확인
+    const authResult = await adminAuthManager.checkAdminPermission();
+    if (!authResult.success) {
+        alert(authResult.message || '관리자 권한이 필요합니다.');
+        return;
+    }
+    
     const uid = document.getElementById('nickname-uid').value;
     const newName = document.getElementById('new-nickname').value.trim();
     
@@ -307,12 +358,27 @@ document.getElementById('nickname-form')?.addEventListener('submit', async (e) =
     }
     
     try {
+        // 보안 이벤트 로그 기록
+        await adminAuthManager.logSecurityEvent('user_nickname_change', {
+            targetUserId: uid,
+            action: 'change_nickname',
+            newNickname: newName,
+            timestamp: new Date().toISOString()
+        });
+        
         const userDocRef = doc(db, "users", uid);
         await updateDoc(userDocRef, { displayName: newName });
         showToast('닉네임이 성공적으로 변경되었습니다.');
         loadDashboardData();
         document.getElementById('nickname-modal').style.display = 'none';
         document.body.style.overflow = '';
+        
+        console.log('🔒 닉네임 변경 완료:', {
+            targetUserId: uid,
+            newNickname: newName,
+            adminUser: currentUser.email,
+            securityLevel: authResult.securityLevel
+        });
     } catch (error) {
         alert('닉네임 변경 중 오류가 발생했습니다.');
         console.error(error);
@@ -440,18 +506,38 @@ async function openUserDetailModal(uid) {
     }
 }
 
-// 사용자 삭제 처리
+// 🔒 보안 강화된 사용자 삭제 처리
 async function handleDeleteUser(uid) {
-    if (uid === auth.currentUser?.uid) {
+    // 실시간 권한 재확인
+    const authResult = await adminAuthManager.checkAdminPermission();
+    if (!authResult.success) {
+        alert(authResult.message || '관리자 권한이 필요합니다.');
+        return;
+    }
+    
+    if (uid === currentUser?.uid) {
         alert('자기 자신은 삭제할 수 없습니다.');
         return;
     }
 
     if (confirm('정말로 이 회원을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
         try {
+            // 보안 이벤트 로그 기록
+            await adminAuthManager.logSecurityEvent('user_delete', {
+                targetUserId: uid,
+                action: 'delete_user',
+                timestamp: new Date().toISOString()
+            });
+            
             await deleteDoc(doc(db, "users", uid));
             showToast('회원이 성공적으로 삭제되었습니다.');
             loadDashboardData();
+            
+            console.log('🔒 사용자 삭제 완료:', {
+                targetUserId: uid,
+                adminUser: currentUser.email,
+                securityLevel: authResult.securityLevel
+            });
         } catch (error) {
             console.error("Error deleting user: ", error);
             alert('회원 삭제 중 오류가 발생했습니다.');
@@ -475,9 +561,17 @@ document.getElementById('close-user-detail-modal')?.addEventListener('click', ()
     document.body.style.overflow = '';
 });
 
-// 포인트 조정 폼 제출
+// 🔒 보안 강화된 포인트 조정 폼 제출
 document.getElementById('points-form')?.addEventListener('submit', async (e) => {
     e.preventDefault();
+    
+    // 🔒 보안 강화된 권한 확인
+    const authResult = await adminAuthManager.checkAdminPermission();
+    if (!authResult.success) {
+        alert(authResult.message || '관리자 권한이 필요합니다.');
+        return;
+    }
+    
     const uid = document.getElementById('points-uid').value;
     const amount = parseInt(document.getElementById('points-amount').value);
     const reason = document.getElementById('points-reason').value.trim();
@@ -497,25 +591,47 @@ document.getElementById('points-form')?.addEventListener('submit', async (e) => 
         const currentPoints = userDoc.data().points || 0;
         const newPoints = Math.max(0, currentPoints + amount);
         
+        // 보안 이벤트 로그 기록
+        await adminAuthManager.logSecurityEvent('user_points_adjustment', {
+            targetUserId: uid,
+            action: 'adjust_points',
+            pointsChange: amount,
+            reason: reason,
+            previousPoints: currentPoints,
+            newPoints: newPoints,
+            timestamp: new Date().toISOString()
+        });
+        
         // 포인트 업데이트
         await updateDoc(doc(db, 'users', uid), {
             points: newPoints
         });
         
-        // 포인트 히스토리 추가
+        // 포인트 히스토리 추가 (보안 메타데이터 포함)
         await addDoc(collection(db, 'pointHistory'), {
             userId: uid,
             action: 'admin_adjustment',
             points: amount,
             timestamp: serverTimestamp(),
             description: `관리자 조정: ${reason}`,
-            adminId: auth.currentUser?.uid
+            adminId: currentUser?.uid,
+            adminEmail: currentUser?.email,
+            securityLevel: authResult.securityLevel,
+            sessionId: authResult.sessionId
         });
         
         showToast(`포인트가 ${amount > 0 ? '+' : ''}${amount} 조정되었습니다. (사유: ${reason})`);
         loadDashboardData();
         document.getElementById('points-modal').style.display = 'none';
         document.body.style.overflow = '';
+        
+        console.log('🔒 포인트 조정 완료:', {
+            targetUserId: uid,
+            pointsChange: amount,
+            reason: reason,
+            adminUser: currentUser.email,
+            securityLevel: authResult.securityLevel
+        });
         
         // 사용자 데이터 새로고침 (실시간 반영)
         if (window.refreshUserData) {
@@ -527,9 +643,17 @@ document.getElementById('points-form')?.addEventListener('submit', async (e) => 
     }
 });
 
-// 권한 변경 폼 제출
+// 🔒 보안 강화된 권한 변경 폼 제출
 document.getElementById('role-form')?.addEventListener('submit', async (e) => {
     e.preventDefault();
+    
+    // 🔒 보안 강화된 권한 확인
+    const authResult = await adminAuthManager.checkAdminPermission();
+    if (!authResult.success) {
+        alert(authResult.message || '관리자 권한이 필요합니다.');
+        return;
+    }
+    
     const uid = document.getElementById('role-uid').value;
     const newRole = document.getElementById('new-role').value;
     
@@ -538,12 +662,25 @@ document.getElementById('role-form')?.addEventListener('submit', async (e) => {
         return;
     }
     
-    if (uid === auth.currentUser?.uid && newRole !== 'admin') {
+    if (uid === currentUser?.uid && newRole !== 'admin') {
         alert('자기 자신의 관리자 권한은 해제할 수 없습니다.');
         return;
     }
     
     try {
+        // 기존 권한 조회
+        const userDoc = await getDoc(doc(db, 'users', uid));
+        const previousRole = userDoc.exists() ? userDoc.data().role : 'user';
+        
+        // 보안 이벤트 로그 기록
+        await adminAuthManager.logSecurityEvent('user_role_change', {
+            targetUserId: uid,
+            action: 'change_role',
+            previousRole: previousRole,
+            newRole: newRole,
+            timestamp: new Date().toISOString()
+        });
+        
         await updateDoc(doc(db, 'users', uid), {
             role: newRole
         });
@@ -552,6 +689,14 @@ document.getElementById('role-form')?.addEventListener('submit', async (e) => {
         loadDashboardData();
         document.getElementById('role-modal').style.display = 'none';
         document.body.style.overflow = '';
+        
+        console.log('🔒 권한 변경 완료:', {
+            targetUserId: uid,
+            previousRole: previousRole,
+            newRole: newRole,
+            adminUser: currentUser.email,
+            securityLevel: authResult.securityLevel
+        });
     } catch (error) {
         console.error('권한 변경 오류:', error);
         alert('권한 변경 중 오류가 발생했습니다.');
@@ -739,9 +884,16 @@ document.getElementById('block-reason')?.addEventListener('change', function(e) 
     }
 });
 
-// 차단 폼 제출
+// 🔒 보안 강화된 차단 폼 제출
 document.getElementById('block-user-form')?.addEventListener('submit', async function(e) {
     e.preventDefault();
+    
+    // 🔒 보안 강화된 권한 확인
+    const authResult = await adminAuthManager.checkAdminPermission();
+    if (!authResult.success) {
+        alert(authResult.message || '관리자 권한이 필요합니다.');
+        return;
+    }
     
     const userId = document.getElementById('block-user-id').value;
     const reason = document.getElementById('block-reason').value;
@@ -754,31 +906,76 @@ document.getElementById('block-user-form')?.addEventListener('submit', async fun
     }
 
     try {
+        const finalReason = reason === 'custom' ? customReason : reason;
+        
+        // 보안 이벤트 로그 기록
+        await adminAuthManager.logSecurityEvent('user_block', {
+            targetUserId: userId,
+            action: 'block_user',
+            reason: finalReason,
+            duration: duration,
+            timestamp: new Date().toISOString()
+        });
+        
         const blockData = {
-            reason: reason === 'custom' ? customReason : reason,
+            reason: finalReason,
             duration: duration,
             unit: duration === 'permanent' || duration === 'delete' ? null : 'days',
-            timestamp: serverTimestamp()
+            timestamp: serverTimestamp(),
+            adminId: currentUser?.uid,
+            adminEmail: currentUser?.email,
+            securityLevel: authResult.securityLevel,
+            sessionId: authResult.sessionId
         };
 
         await setDoc(doc(db, 'bannedUsers', userId), blockData);
         showToast('사용자가 차단되었습니다.');
         closeBlockModal();
         loadBlockedUsers();
+        
+        console.log('🔒 사용자 차단 완료:', {
+            targetUserId: userId,
+            reason: finalReason,
+            duration: duration,
+            adminUser: currentUser.email,
+            securityLevel: authResult.securityLevel
+        });
     } catch (error) {
         console.error('차단 실패:', error);
         showToast('차단 처리에 실패했습니다.');
     }
 });
 
-// 차단/금지 해제
+// 🔒 보안 강화된 차단/금지 해제
 async function unblockUser(uid, type) {
+    // 🔒 보안 강화된 권한 확인
+    const authResult = await adminAuthManager.checkAdminPermission();
+    if (!authResult.success) {
+        alert(authResult.message || '관리자 권한이 필요합니다.');
+        return;
+    }
+    
     if (!confirm('정말 해제하시겠습니까?')) return;
 
     try {
+        // 보안 이벤트 로그 기록
+        await adminAuthManager.logSecurityEvent('user_unblock', {
+            targetUserId: uid,
+            action: 'unblock_user',
+            blockType: type,
+            timestamp: new Date().toISOString()
+        });
+        
         await deleteDoc(doc(db, type === 'banned' ? 'bannedUsers' : 'mutedUsers', uid));
         showToast('해제되었습니다.');
         loadBlockedUsers();
+        
+        console.log('🔒 사용자 차단 해제 완료:', {
+            targetUserId: uid,
+            blockType: type,
+            adminUser: currentUser.email,
+            securityLevel: authResult.securityLevel
+        });
     } catch (error) {
         console.error('해제 실패:', error);
         showToast('해제 처리에 실패했습니다.');

@@ -502,6 +502,69 @@
         background: rgba(239, 68, 68, 1);
       }
 
+      /* 🔐 보안 인증 표시 스타일 */
+      .admin-security-info {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 12px 24px;
+        background: linear-gradient(135deg, #10b981, #059669);
+        color: white;
+        font-size: 0.9rem;
+        font-weight: 500;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .admin-security-info i {
+        font-size: 1rem;
+      }
+
+      /* 🚨 보안 경고 스타일 */
+      .security-warning {
+        background: linear-gradient(135deg, #ef4444, #dc2626);
+        color: white;
+        padding: 12px 16px;
+        border-radius: 8px;
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.9rem;
+        font-weight: 500;
+      }
+
+      .security-warning i {
+        font-size: 1.1rem;
+      }
+
+      /* 🛡️ 보안 강화된 버튼 스타일 */
+      .admin-btn {
+        background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-size: 0.9rem;
+        font-weight: 500;
+        cursor: pointer;
+        margin-left: auto;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        transition: all 0.2s ease;
+        box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+      }
+
+      .admin-btn:hover {
+        background: linear-gradient(135deg, #1d4ed8, #1e40af);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(59, 130, 246, 0.4);
+      }
+
+      .admin-btn:active {
+        transform: translateY(0);
+      }
+
             @media (max-width: 768px) {
         .notice-board-container {
           padding: 20px 16px;
@@ -666,6 +729,7 @@
 
   <div id="auth-modals"></div>
   <script type="module" src="auth.js"></script>
+  <script type="module" src="js/admin-auth-manager.js"></script>
   <script type="module" src="notice-board.js"></script>
   <script src="js/footer-loader.js" defer></script>
   

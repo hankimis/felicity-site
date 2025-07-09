@@ -11,6 +11,11 @@ class SidebarAds {
     }
     
     init() {
+        // affiliated 페이지에서만 동작하도록 체크
+        if (!this.isAffiliatedPage()) {
+            return;
+        }
+        
         this.createAdElements();
         this.setupEventListeners();
         // 초기 표시는 지연시켜서 메인 배너가 완전히 로드된 후에 실행
@@ -19,8 +24,14 @@ class SidebarAds {
         }, 500);
     }
     
+    // affiliated 페이지 여부 확인
+    isAffiliatedPage() {
+        const path = window.location.pathname;
+        return path.includes('/affiliated/') || path.endsWith('/affiliated') || path.includes('affiliated');
+    }
+    
     createAdElements() {
-        // 메인 배너 참조
+        // 메인 배너 참조 (있으면 사용, 없어도 동작)
         this.mainBanner = document.querySelector('.main-banner');
         
         // 왼쪽 광고
@@ -29,8 +40,8 @@ class SidebarAds {
         this.leftAd.innerHTML = `
             <div class="ad-content">
                 <div class="ad-close" onclick="sidebarAds.hideAd('left')">×</div>
-                <a href="#" target="_blank" class="ad-link">
-                    <img src="assets/lbankbanner.png" alt="LBank 광고" class="ad-image">
+                <a href="/affiliated/lbank/" target="_blank" class="ad-link">
+                    <img src="/assets/lbankbanner.png" alt="LBank 광고" class="ad-image">
                     <div class="ad-text">
                         <h3>LBank 거래소</h3>
                         <p>최대 70% 수수료 할인</p>
@@ -46,8 +57,8 @@ class SidebarAds {
         this.rightAd.innerHTML = `
             <div class="ad-content">
                 <div class="ad-close" onclick="sidebarAds.hideAd('right')">×</div>
-                <a href="#" target="_blank" class="ad-link">
-                    <img src="assets/partner/bitget.png" alt="Bitget 광고" class="ad-image">
+                <a href="/affiliated/bitget/" target="_blank" class="ad-link">
+                    <img src="/assets/partner/bitget.png" alt="Bitget 광고" class="ad-image">
                     <div class="ad-text">
                         <h3>Bitget 거래소</h3>
                         <p>신규 가입 보너스</p>
@@ -98,17 +109,8 @@ class SidebarAds {
     }
     
     updateAdVisibility() {
-        // 메인 배너가 없으면 다시 찾기
-        if (!this.mainBanner) {
-            this.mainBanner = document.querySelector('.main-banner');
-            if (!this.mainBanner) return;
-        }
-        
         const windowWidth = window.innerWidth;
         const scrollY = window.scrollY;
-        const bannerHeight = this.mainBanner.offsetHeight;
-        const bannerTop = this.mainBanner.offsetTop;
-        const bannerBottom = bannerTop + bannerHeight;
         
         // 데스크톱에서만 표시 (1400px 이상)
         const shouldShow = windowWidth >= 1400;
@@ -126,25 +128,32 @@ class SidebarAds {
     }
     
     updateAdPosition() {
-        if (!this.mainBanner) return;
-        
         const scrollY = window.scrollY;
         const windowHeight = window.innerHeight;
-        const bannerHeight = this.mainBanner.offsetHeight;
-        const bannerTop = this.mainBanner.offsetTop;
-        const bannerBottom = bannerTop + bannerHeight;
         
         let topPosition;
         
-        // 메인 배너 아래에 고정되어 있다가 스크롤하면 따라오기
-        const fixedPosition = bannerBottom + 20; // 메인 배너 아래 고정 위치
-        const followPosition = scrollY + 120; // 스크롤 따라가는 위치
-        
-        // 스크롤이 배너 아래까지 오면 따라오기 시작
-        if (scrollY + 120 > fixedPosition) {
-            topPosition = followPosition;
+        // 메인 배너가 있는 경우
+        if (this.mainBanner) {
+            const bannerHeight = this.mainBanner.offsetHeight;
+            const bannerTop = this.mainBanner.offsetTop;
+            const bannerBottom = bannerTop + bannerHeight;
+            
+            // 메인 배너 아래에 고정되어 있다가 스크롤하면 따라오기
+            const fixedPosition = bannerBottom + 20; // 메인 배너 아래 고정 위치
+            const followPosition = scrollY + 120; // 스크롤 따라가는 위치
+            
+            // 스크롤이 배너 아래까지 오면 따라오기 시작
+            if (scrollY + 120 > fixedPosition) {
+                topPosition = followPosition;
+            } else {
+                topPosition = fixedPosition;
+            }
         } else {
-            topPosition = fixedPosition;
+            // 메인 배너가 없는 경우 (affiliated 페이지 등)
+            // 헤더 아래에서 시작
+            const headerHeight = 80; // 헤더 높이 추정
+            topPosition = Math.max(scrollY + headerHeight + 20, headerHeight + 20);
         }
         
         if (this.leftAd) {
@@ -205,15 +214,17 @@ let sidebarAds;
 
 // DOM 로드 후 초기화
 document.addEventListener('DOMContentLoaded', () => {
-    // 메인 배너가 로드될 때까지 기다린 후 초기화
+    // affiliated 페이지에서만 초기화
+    const path = window.location.pathname;
+    const isAffiliatedPage = path.includes('/affiliated/') || path.endsWith('/affiliated') || path.includes('affiliated');
+    
+    if (!isAffiliatedPage) {
+        return;
+    }
+    
+    // 사이드바 광고 초기화 (메인 배너가 없어도 동작)
     const initializeAds = () => {
-        const mainBanner = document.querySelector('.main-banner');
-        if (mainBanner) {
-            sidebarAds = new SidebarAds();
-        } else {
-            // 메인 배너가 없으면 100ms 후 다시 시도
-            setTimeout(initializeAds, 100);
-        }
+        sidebarAds = new SidebarAds();
     };
     
     initializeAds();

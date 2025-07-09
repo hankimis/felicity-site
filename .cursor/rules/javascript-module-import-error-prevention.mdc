@@ -1,0 +1,635 @@
+# 📦 JavaScript Module Import Error Prevention Guide
+
+## 🚨 CRITICAL IMPORT ERROR PREVENTION PROTOCOLS
+
+### ⚠️ IMMEDIATE ACTION REQUIRED WHEN ENCOUNTERING:
+- `GET http://localhost:8000/module.js net::ERR_ABORTED 404 (File not found)`
+- `TypeError: Failed to resolve module specifier`
+- `Uncaught SyntaxError: Cannot use import statement outside a module`
+- `TypeError: Cannot read properties of undefined (reading 'default')`
+- `ReferenceError: module is not defined`
+
+## 🎯 ES6 MODULE IMPORT BEST PRACTICES
+
+### 📋 STATIC IMPORT PATTERNS:
+```javascript
+// ✅ CORRECT STATIC IMPORTS:
+import { functionName } from './relative/path/module.js';           // Named export
+import defaultExport from './relative/path/module.js';             // Default export
+import * as namespace from './relative/path/module.js';            // Namespace import
+import { name1, name2 } from './relative/path/module.js';          // Multiple named
+import defaultExport, { namedExport } from './relative/path/module.js'; // Mixed
+
+// ✅ FIREBASE IMPORTS (CDN):
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+// ❌ COMMON IMPORT MISTAKES:
+import { functionName } from './module';                           // Missing .js extension
+import { functionName } from '/absolute/path/module.js';          // Absolute path (wrong)
+import functionName from './module.js';                           // Wrong import type
+import './module.js';                                              // Side-effect only (careful)
+```
+
+### 📋 DYNAMIC IMPORT PATTERNS:
+```javascript
+// ✅ CORRECT DYNAMIC IMPORTS:
+const { default: module } = await import('./relative/path/module.js');
+const { namedExport } = await import('./relative/path/module.js');
+const module = await import('./relative/path/module.js');
+
+// ✅ DYNAMIC IMPORT WITH ERROR HANDLING:
+async function loadModule() {
+  try {
+    const { default: module } = await import('./path/to/module.js');
+    return module;
+  } catch (error) {
+    console.error('Failed to load module:', error);
+    throw new Error(`Module loading failed: ${error.message}`);
+  }
+}
+
+// ✅ CONDITIONAL DYNAMIC IMPORTS:
+if (condition) {
+  const { feature } = await import('./optional-feature.js');
+  feature.init();
+}
+
+// ❌ DYNAMIC IMPORT MISTAKES:
+const module = import('./module.js');                             // Missing await
+const { default } = await import('./module');                     // Missing .js extension
+import('./module.js').then(module => { /* ... */ });            // Use async/await instead
+```
+
+## 🗂️ PATH RESOLUTION MATRIX
+
+### 🎯 RELATIVE PATH PATTERNS:
+```javascript
+// ✅ CORRECT RELATIVE PATHS:
+// From root file to js/ directory:
+import module from './js/module.js';
+
+// From subdirectory to root:
+import module from '../module.js';
+
+// From subdirectory to js/ directory:
+import module from '../js/module.js';
+
+// From deep subdirectory:
+import module from '../../js/module.js';
+
+// ❌ INCORRECT PATH PATTERNS:
+import module from 'js/module.js';                               // Missing ./
+import module from '/js/module.js';                              // Absolute path
+import module from './js/module';                                // Missing .js
+import module from '../js/module.js/';                           // Trailing slash
+```
+
+### 🎯 FILE STRUCTURE VALIDATION:
+```
+✅ RECOMMENDED PROJECT STRUCTURE:
+felicity-site/
+├── js/                          ← JavaScript modules directory
+│   ├── admin-auth-manager.js    ← Admin authentication
+│   ├── firebase-config.js       ← Firebase configuration
+│   ├── common.js               ← Common utilities
+│   └── analysis/               ← Analysis modules
+├── css/                        ← Stylesheets
+├── assets/                     ← Static assets
+├── index.html                  ← Root HTML files
+├── event-board.js             ← Root JavaScript files
+└── subdirectory/              ← Feature directories
+    └── feature.js             ← Feature-specific files
+```
+
+## 🔧 MODULE EXPORT PATTERNS
+
+### 📋 EXPORT BEST PRACTICES:
+```javascript
+// ✅ CORRECT EXPORT PATTERNS:
+
+// Named exports:
+export function functionName() { /* ... */ }
+export const constantName = 'value';
+export class ClassName { /* ... */ }
+
+// Default export:
+export default class MainClass { /* ... */ }
+export default function mainFunction() { /* ... */ }
+export default { key: 'value' };
+
+// Mixed exports:
+export default mainFunction;
+export { helperFunction, constantValue };
+
+// Re-exports:
+export { functionName } from './other-module.js';
+export * from './other-module.js';
+
+// ❌ EXPORT MISTAKES:
+module.exports = { /* ... */ };                                  // CommonJS (wrong)
+exports.functionName = function() { /* ... */ };                 // CommonJS (wrong)
+export = { /* ... */ };                                          // TypeScript syntax
+export { functionName } from './module';                         // Missing .js extension
+```
+
+### 📋 IMPORT/EXPORT MATCHING:
+```javascript
+// ✅ CORRECT IMPORT/EXPORT MATCHING:
+
+// Module A (exporting):
+export default class AuthManager { /* ... */ }
+export const CONFIG = { /* ... */ };
+
+// Module B (importing):
+import AuthManager from './moduleA.js';           // Default import
+import { CONFIG } from './moduleA.js';            // Named import
+import AuthManager, { CONFIG } from './moduleA.js'; // Mixed import
+
+// ❌ IMPORT/EXPORT MISMATCHES:
+// Module A exports: export default AuthManager
+// Module B imports: import { AuthManager } from './moduleA.js';  // Wrong!
+
+// Module A exports: export const CONFIG = ...
+// Module B imports: import CONFIG from './moduleA.js';          // Wrong!
+```
+
+## 🔄 INITIALIZATION PATTERNS
+
+### 🎯 PROPER MODULE INITIALIZATION:
+```javascript
+// ✅ CORRECT MODULE INITIALIZATION PATTERN:
+let moduleInstance = null;
+
+async function initializeModule() {
+  if (moduleInstance) {
+    return moduleInstance; // Return existing instance
+  }
+  
+  try {
+    const { default: Module } = await import('./path/to/module.js');
+    moduleInstance = new Module();
+    
+    console.log('✅ Module initialized successfully');
+    return moduleInstance;
+  } catch (error) {
+    console.error('❌ Module initialization failed:', error);
+    throw new Error(`Failed to initialize module: ${error.message}`);
+  }
+}
+
+// ✅ USAGE:
+async function useModule() {
+  const module = await initializeModule();
+  return module.someMethod();
+}
+
+// ❌ INITIALIZATION MISTAKES:
+const module = await import('./module.js');                      // No error handling
+const { Module } = await import('./module.js');                  // Wrong destructuring
+const module = new (await import('./module.js'))();              // Complex inline
+```
+
+### 🎯 SINGLETON PATTERN FOR GLOBAL MODULES:
+```javascript
+// ✅ SINGLETON MODULE PATTERN:
+class SingletonManager {
+  constructor() {
+    if (SingletonManager.instance) {
+      return SingletonManager.instance;
+    }
+    
+    this.initialized = false;
+    SingletonManager.instance = this;
+  }
+  
+  async initialize() {
+    if (this.initialized) return;
+    
+    // Initialize module
+    this.initialized = true;
+    console.log('✅ Singleton initialized');
+  }
+}
+
+// Export singleton instance
+const instance = new SingletonManager();
+export default instance;
+
+// ✅ USAGE:
+const { default: manager } = await import('./singleton-manager.js');
+await manager.initialize();
+```
+
+## 🛡️ ERROR HANDLING & VALIDATION
+
+### 🎯 COMPREHENSIVE ERROR HANDLING:
+```javascript
+// ✅ ROBUST MODULE LOADING WITH VALIDATION:
+async function safeModuleImport(modulePath, options = {}) {
+  const { 
+    retries = 3, 
+    timeout = 5000,
+    fallback = null,
+    validate = null 
+  } = options;
+  
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      console.log(`🔄 Loading module: ${modulePath} (attempt ${attempt})`);
+      
+      // Set timeout for import
+      const importPromise = import(modulePath);
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Import timeout')), timeout)
+      );
+      
+      const module = await Promise.race([importPromise, timeoutPromise]);
+      
+      // Validate module if validator provided
+      if (validate && !validate(module)) {
+        throw new Error('Module validation failed');
+      }
+      
+      console.log(`✅ Module loaded successfully: ${modulePath}`);
+      return module;
+      
+    } catch (error) {
+      console.error(`❌ Module load attempt ${attempt} failed:`, error);
+      
+      if (attempt === retries) {
+        if (fallback) {
+          console.log(`🔄 Using fallback for: ${modulePath}`);
+          return fallback;
+        }
+        throw new Error(`Failed to load module after ${retries} attempts: ${error.message}`);
+      }
+      
+      // Wait before retry
+      await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+    }
+  }
+}
+
+// ✅ USAGE WITH VALIDATION:
+const adminAuthManager = await safeModuleImport('./js/admin-auth-manager.js', {
+  validate: (module) => module.default && typeof module.default.isAdminUser === 'function',
+  fallback: { default: { isAdminUser: () => false } }
+});
+```
+
+### 🎯 MODULE DEPENDENCY VALIDATION:
+```javascript
+// ✅ DEPENDENCY VALIDATION SYSTEM:
+class ModuleDependencyValidator {
+  constructor() {
+    this.loadedModules = new Map();
+    this.dependencies = new Map();
+  }
+  
+  // Register module dependencies
+  registerDependencies(moduleName, deps) {
+    this.dependencies.set(moduleName, deps);
+  }
+  
+  // Validate all dependencies are loaded
+  async validateDependencies(moduleName) {
+    const deps = this.dependencies.get(moduleName) || [];
+    const missing = [];
+    
+    for (const dep of deps) {
+      if (!this.loadedModules.has(dep)) {
+        missing.push(dep);
+      }
+    }
+    
+    if (missing.length > 0) {
+      throw new Error(`Missing dependencies for ${moduleName}: ${missing.join(', ')}`);
+    }
+    
+    return true;
+  }
+  
+  // Load module with dependency check
+  async loadModule(moduleName, modulePath) {
+    try {
+      await this.validateDependencies(moduleName);
+      
+      const module = await import(modulePath);
+      this.loadedModules.set(moduleName, module);
+      
+      console.log(`✅ Module loaded with dependencies: ${moduleName}`);
+      return module;
+      
+    } catch (error) {
+      console.error(`❌ Module loading failed: ${moduleName}`, error);
+      throw error;
+    }
+  }
+}
+
+// ✅ USAGE:
+const validator = new ModuleDependencyValidator();
+
+// Register dependencies
+validator.registerDependencies('admin-auth-manager', ['firebase-config']);
+validator.registerDependencies('event-board', ['admin-auth-manager', 'firebase-config']);
+
+// Load modules in order
+await validator.loadModule('firebase-config', './firebase-config.js');
+await validator.loadModule('admin-auth-manager', './js/admin-auth-manager.js');
+```
+
+## 🚀 PERFORMANCE OPTIMIZATION
+
+### 🎯 LAZY LOADING PATTERNS:
+```javascript
+// ✅ LAZY LOADING WITH CACHING:
+const moduleCache = new Map();
+
+async function lazyLoadModule(modulePath) {
+  if (moduleCache.has(modulePath)) {
+    return moduleCache.get(modulePath);
+  }
+  
+  const module = await import(modulePath);
+  moduleCache.set(modulePath, module);
+  
+  return module;
+}
+
+// ✅ CONDITIONAL FEATURE LOADING:
+async function loadFeatureIfNeeded(featureName) {
+  const featureMap = {
+    'admin': './js/admin-features.js',
+    'analytics': './js/analytics.js',
+    'charts': './js/chart-components.js'
+  };
+  
+  const modulePath = featureMap[featureName];
+  if (!modulePath) {
+    throw new Error(`Unknown feature: ${featureName}`);
+  }
+  
+  return await lazyLoadModule(modulePath);
+}
+
+// ✅ PRELOADING CRITICAL MODULES:
+async function preloadCriticalModules() {
+  const criticalModules = [
+    './js/admin-auth-manager.js',
+    './firebase-config.js',
+    './js/common.js'
+  ];
+  
+  const preloadPromises = criticalModules.map(path => 
+    import(path).catch(error => {
+      console.warn(`Preload failed for ${path}:`, error);
+      return null;
+    })
+  );
+  
+  const results = await Promise.allSettled(preloadPromises);
+  console.log('✅ Critical modules preloaded:', results.length);
+}
+```
+
+### 🎯 BUNDLE SPLITTING STRATEGIES:
+```javascript
+// ✅ FEATURE-BASED SPLITTING:
+async function loadFeatureBundle(feature) {
+  const bundles = {
+    'admin': () => import('./bundles/admin-bundle.js'),
+    'user': () => import('./bundles/user-bundle.js'),
+    'analytics': () => import('./bundles/analytics-bundle.js')
+  };
+  
+  const loader = bundles[feature];
+  if (!loader) {
+    throw new Error(`Unknown feature bundle: ${feature}`);
+  }
+  
+  return await loader();
+}
+
+// ✅ ROUTE-BASED SPLITTING:
+const routeModules = {
+  '/admin': () => import('./pages/admin.js'),
+  '/events': () => import('./pages/events.js'),
+  '/analysis': () => import('./pages/analysis.js')
+};
+
+async function loadRouteModule(route) {
+  const loader = routeModules[route];
+  if (!loader) {
+    return import('./pages/404.js');
+  }
+  
+  return await loader();
+}
+```
+
+## 🔍 DEBUGGING & TESTING
+
+### 🎯 MODULE DEBUGGING UTILITIES:
+```javascript
+// ✅ MODULE DEBUG HELPER:
+class ModuleDebugger {
+  constructor() {
+    this.loadTimes = new Map();
+    this.loadErrors = new Map();
+    this.moduleGraph = new Map();
+  }
+  
+  // Track module loading
+  async debugImport(modulePath, importerPath = 'unknown') {
+    const startTime = performance.now();
+    
+    try {
+      console.log(`🔍 Loading: ${modulePath} from ${importerPath}`);
+      
+      const module = await import(modulePath);
+      const loadTime = performance.now() - startTime;
+      
+      this.loadTimes.set(modulePath, loadTime);
+      this.updateModuleGraph(modulePath, importerPath);
+      
+      console.log(`✅ Loaded: ${modulePath} (${loadTime.toFixed(2)}ms)`);
+      return module;
+      
+    } catch (error) {
+      const loadTime = performance.now() - startTime;
+      this.loadErrors.set(modulePath, { error, loadTime, importerPath });
+      
+      console.error(`❌ Failed: ${modulePath} (${loadTime.toFixed(2)}ms)`, error);
+      throw error;
+    }
+  }
+  
+  // Update module dependency graph
+  updateModuleGraph(modulePath, importerPath) {
+    if (!this.moduleGraph.has(importerPath)) {
+      this.moduleGraph.set(importerPath, new Set());
+    }
+    this.moduleGraph.get(importerPath).add(modulePath);
+  }
+  
+  // Generate debug report
+  generateReport() {
+    console.group('📊 Module Debug Report');
+    
+    console.log('⏱️ Load Times:');
+    console.table(Object.fromEntries(this.loadTimes));
+    
+    if (this.loadErrors.size > 0) {
+      console.log('❌ Load Errors:');
+      console.table(Object.fromEntries(this.loadErrors));
+    }
+    
+    console.log('🕸️ Module Graph:');
+    for (const [importer, imports] of this.moduleGraph) {
+      console.log(`${importer} → [${Array.from(imports).join(', ')}]`);
+    }
+    
+    console.groupEnd();
+  }
+}
+
+// ✅ USAGE:
+const debugger = new ModuleDebugger();
+const module = await debugger.debugImport('./js/admin-auth-manager.js', 'event-board.js');
+```
+
+### 🎯 INTEGRATION TESTING:
+```javascript
+// ✅ MODULE INTEGRATION TEST SUITE:
+class ModuleIntegrationTester {
+  constructor() {
+    this.tests = [];
+    this.results = [];
+  }
+  
+  // Add test case
+  addTest(name, testFn) {
+    this.tests.push({ name, testFn });
+  }
+  
+  // Run all tests
+  async runTests() {
+    console.log('🧪 Running module integration tests...');
+    
+    for (const test of this.tests) {
+      try {
+        const startTime = performance.now();
+        await test.testFn();
+        const duration = performance.now() - startTime;
+        
+        this.results.push({
+          name: test.name,
+          status: 'PASSED',
+          duration: duration.toFixed(2)
+        });
+        
+        console.log(`✅ ${test.name} (${duration.toFixed(2)}ms)`);
+        
+      } catch (error) {
+        this.results.push({
+          name: test.name,
+          status: 'FAILED',
+          error: error.message
+        });
+        
+        console.error(`❌ ${test.name}: ${error.message}`);
+      }
+    }
+    
+    this.generateTestReport();
+  }
+  
+  // Generate test report
+  generateTestReport() {
+    console.group('📋 Test Results');
+    console.table(this.results);
+    
+    const passed = this.results.filter(r => r.status === 'PASSED').length;
+    const total = this.results.length;
+    
+    console.log(`${passed}/${total} tests passed`);
+    console.groupEnd();
+  }
+}
+
+// ✅ USAGE:
+const tester = new ModuleIntegrationTester();
+
+tester.addTest('AdminAuthManager Import', async () => {
+  const module = await import('./js/admin-auth-manager.js');
+  if (!module.default) throw new Error('Default export missing');
+  if (typeof module.default.isAdminUser !== 'function') {
+    throw new Error('isAdminUser method missing');
+  }
+});
+
+tester.addTest('Firebase Config Import', async () => {
+  const module = await import('./firebase-config.js');
+  if (!module.firebaseConfig) throw new Error('firebaseConfig missing');
+});
+
+await tester.runTests();
+```
+
+## 🎨 ADVANCED PROMPT ENGINEERING TECHNIQUES
+
+### 🧠 COGNITIVE LOAD REDUCTION:
+- **Visual Patterns**: Use consistent ✅/❌ markers for immediate pattern recognition
+- **Hierarchical Information**: Structure content from general to specific
+- **Code Grouping**: Group related patterns together for easier comparison
+- **Error Prevention**: Show mistakes alongside correct patterns
+
+### 🔄 REINFORCEMENT LEARNING:
+- **Immediate Feedback**: Console logs provide instant validation
+- **Pattern Repetition**: Same concepts shown in multiple contexts
+- **Success Metrics**: Performance timing and error tracking
+- **Progressive Difficulty**: Simple imports to complex dependency management
+
+### 🎯 BEHAVIORAL CONDITIONING:
+- **Consistent Patterns**: Standardized import/export structures
+- **Environmental Cues**: File structure guides correct path usage
+- **Positive Reinforcement**: Success messages for correct implementation
+- **Error Recovery**: Clear steps for fixing common mistakes
+
+---
+
+## 🚨 EMERGENCY TROUBLESHOOTING
+
+### 🔧 QUICK FIXES FOR COMMON ERRORS:
+
+1. **`404 Module Not Found`**:
+   ```javascript
+   // ❌ Wrong: import module from './path/module';
+   // ✅ Correct: import module from './path/module.js';
+   ```
+
+2. **`TypeError: Failed to resolve module specifier`**:
+   ```javascript
+   // ❌ Wrong: import module from 'module-name';
+   // ✅ Correct: import module from './path/to/module.js';
+   ```
+
+3. **`Cannot use import statement outside a module`**:
+   ```html
+   <!-- ❌ Wrong: <script src="script.js"></script> -->
+   <!-- ✅ Correct: <script type="module" src="script.js"></script> -->
+   ```
+
+4. **`Cannot read properties of undefined`**:
+   ```javascript
+   // ❌ Wrong: const { function } = await import('./module.js');
+   // ✅ Correct: const { default: module } = await import('./module.js');
+   ```
+
+Remember: **ALWAYS VALIDATE PATHS AND EXPORTS** - Check file existence, correct paths, and proper export/import matching before deployment.
+description:
+globs:
+alwaysApply: false
+---

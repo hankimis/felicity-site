@@ -2,7 +2,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/fireba
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore, collection, getDocs, addDoc, deleteDoc, doc, serverTimestamp, query, orderBy, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getStorage, ref, uploadBytesResumable, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
-import { firebaseConfig } from './firebase-config.js';
+import { firebaseConfig } from '../firebase-config.js';
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
@@ -42,26 +42,72 @@ let isAdmin = false;
 let currentImageFile = null;
 let currentImageUrl = null;
 let uploadTask = null;
+let adminAuthManager = null;
 
-onAuthStateChanged(auth, async (user) => {
-  currentUser = user;
-  isAdmin = false;
-  if (user) {
-    try {
-      // 🔥 직접 사용자 문서를 조회하여 권한 확인
-      const userDoc = await getDoc(doc(db, 'users', user.uid));
-      if (userDoc.exists()) {
-        const userData = userDoc.data();
-        // role 필드와 isAdmin 필드 모두 확인
-        isAdmin = userData.role === 'admin' || userData.isAdmin === true;
+// 🔒 AdminAuthManager 초기화 및 인증 상태 감지
+async function initializeAdminAuth() {
+  // 전역 인스턴스 import
+  const { default: authManager } = await import('../js/admin-auth-manager.js');
+  adminAuthManager = authManager;
+  
+  // 어드민 상태 변경 감지 (올바른 메서드명과 매개변수 사용)
+  adminAuthManager.onAuthStateChange((user, isAdminStatus) => {
+    currentUser = user;
+    isAdmin = isAdminStatus;
+    
+    // UI 업데이트
+    writeBtn.style.display = isAdmin ? 'inline-block' : 'none';
+    
+    // 🔒 작성 버튼에 보안 스타일 적용
+    if (isAdmin && writeBtn) {
+      writeBtn.className = 'floating-write-btn admin-btn';
+      writeBtn.innerHTML = '<i class="fas fa-shield-alt"></i> 보안 이벤트 작성';
+    }
+    
+    renderEvents();
+    
+    // 🔒 보안 상태 UI 업데이트
+    updateSecurityStatusUI(user, isAdminStatus);
+    
+    // 디버그 정보 출력
+    if (user) {
+      console.log('🔐 이벤트 게시판 어드민 인증 상태:', {
+        user: user.email,
+        isAdmin: isAdminStatus,
+        timestamp: new Date().toISOString()
+      });
+    }
+  });
+}
 
-      }
-    } catch (error) {
-      console.error('Error checking admin status:', error);
+// 🔒 보안 상태 UI 업데이트 함수
+function updateSecurityStatusUI(user, isAdminStatus) {
+  // 기존 보안 상태 표시 제거
+  const existingSecurityInfo = document.querySelector('.admin-security-info');
+  if (existingSecurityInfo) {
+    existingSecurityInfo.remove();
+  }
+  
+  // 관리자인 경우 보안 상태 표시
+  if (isAdminStatus && user) {
+    const securityInfo = document.createElement('div');
+    securityInfo.className = 'admin-security-info';
+    securityInfo.innerHTML = `
+      <i class="fas fa-shield-alt"></i>
+      <span>관리자 인증됨 - ${user.email}</span>
+    `;
+    
+    // 이벤트 보드 컨테이너 상단에 추가
+    const eventBoardContainer = document.querySelector('.event-board-container');
+    if (eventBoardContainer) {
+      eventBoardContainer.insertBefore(securityInfo, eventBoardContainer.firstChild);
     }
   }
-  writeBtn.style.display = isAdmin ? 'inline-block' : 'none';
-  renderEvents();
+}
+
+// 페이지 로드 시 어드민 인증 초기화
+document.addEventListener('DOMContentLoaded', () => {
+  initializeAdminAuth();
 });
 
 // 🚀 이미지 최적화 유틸리티 함수들
@@ -193,7 +239,7 @@ class ImageOptimizer {
       
       img.onerror = () => {
         // 에러 시 기본 이미지 표시
-        imgElement.src = '/assets/default-event-image.svg';
+                        imgElement.src = '../assets/default-event-image.svg';
         imgElement.classList.remove('loading');
         imgElement.classList.add('error');
         this.loadingImages.delete(src);

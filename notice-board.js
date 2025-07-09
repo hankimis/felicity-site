@@ -2,8 +2,11 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/fireba
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { getFirestore, collection, addDoc, serverTimestamp, query, orderBy, onSnapshot, doc, getCountFromServer, getDocs, limit, startAfter } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { firebaseConfig } from './firebase-config.js';
+import adminAuthManager from './js/admin-auth-manager.js';
 
-const ADMIN_EMAIL = "admin@site.com";
+// 🔥 LEGACY CODE REMOVED - Using AdminAuthManager instead
+// const ADMIN_EMAIL = "admin@site.com";
+
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
@@ -12,8 +15,49 @@ const noticeList = document.getElementById('notice-list');
 
 let allNotices = [];
 let currentFilter = 'all';
+let currentUser = null;
+let isAdmin = false;
 
+// 🛡️ 보안 강화된 어드민 인증 시스템 초기화
+adminAuthManager.onAuthStateChange((user, adminStatus) => {
+    currentUser = user;
+    isAdmin = adminStatus;
+    
+    console.log('🔐 Auth state changed:', {
+        user: user ? user.email : 'none',
+        isAdmin: adminStatus
+    });
+    
+    updateAdminUI();
+});
 
+// 🔒 어드민 UI 업데이트
+function updateAdminUI() {
+    const adminWriteBtn = document.getElementById('admin-write-btn');
+    
+    if (adminWriteBtn) {
+        if (isAdmin) {
+            adminWriteBtn.style.display = 'flex';
+            adminWriteBtn.removeEventListener('click', showWriteModal);
+            adminWriteBtn.addEventListener('click', handleAdminAction);
+        } else {
+            adminWriteBtn.style.display = 'none';
+        }
+    }
+}
+
+// 🚨 보안 강화된 어드민 액션 핸들러
+async function handleAdminAction() {
+    // 실시간 권한 재검증
+    const isCurrentlyAdmin = await adminAuthManager.isAdminUser();
+    
+    if (!isCurrentlyAdmin) {
+        alert('⚠️ 관리자 권한이 없습니다. 다시 로그인해주세요.');
+        return;
+    }
+    
+    showWriteModal();
+}
 
 // 공지사항 목록 렌더링
 function renderNotices(notices = allNotices) {
@@ -99,36 +143,49 @@ document.addEventListener('DOMContentLoaded', () => {
   loadNoticesFromFirebase();
 });
 
-// 관리자 기능
-onAuthStateChanged(auth, (user) => {
-  currentUser = user;
-  checkAdminPermission();
-});
+// 🔥 LEGACY CODE REMOVED - AdminAuthManager handles authentication
+// onAuthStateChanged(auth, (user) => {
+//   currentUser = user;
+//   checkAdminPermission();
+// });
 
-function checkAdminPermission() {
-  const adminWriteBtn = document.getElementById('admin-write-btn');
+// 🔥 LEGACY CODE REMOVED - Replaced with secure validation
+// function checkAdminPermission() {
+//   const adminWriteBtn = document.getElementById('admin-write-btn');
+//   
+//   if (currentUser && currentUser.email === ADMIN_EMAIL) {
+//     if (adminWriteBtn) {
+//       adminWriteBtn.style.display = 'flex';
+//       adminWriteBtn.addEventListener('click', showWriteModal);
+//     }
+//   } else {
+//     if (adminWriteBtn) {
+//       adminWriteBtn.style.display = 'none';
+//     }
+//   }
+// }
+
+// 🛡️ 보안 강화된 공지사항 작성 모달 표시
+async function showWriteModal() {
+  // 🚨 실시간 권한 재검증
+  const isCurrentlyAdmin = await adminAuthManager.isAdminUser();
   
-  if (currentUser && currentUser.email === ADMIN_EMAIL) {
-    if (adminWriteBtn) {
-      adminWriteBtn.style.display = 'flex';
-      adminWriteBtn.addEventListener('click', showWriteModal);
-    }
-  } else {
-    if (adminWriteBtn) {
-      adminWriteBtn.style.display = 'none';
-    }
+  if (!isCurrentlyAdmin) {
+    alert('⚠️ 관리자 권한이 없습니다. 접근이 거부되었습니다.');
+    return;
   }
-}
 
-// 공지사항 작성 모달 표시
-function showWriteModal() {
   const modal = document.createElement('div');
   modal.className = 'write-modal';
   modal.innerHTML = `
     <div class="write-modal-content">
       <div class="write-modal-header">
-        <h2>공지사항 작성</h2>
+        <h2>🔐 관리자 공지사항 작성</h2>
         <button class="close-modal" onclick="closeWriteModal()">&times;</button>
+      </div>
+      <div class="admin-security-info">
+        <i class="fas fa-shield-alt"></i>
+        <span>보안 인증된 관리자 세션</span>
       </div>
       <form id="write-form" class="write-form">
         <div class="form-group">
@@ -280,9 +337,18 @@ function showWriteModal() {
     };
   });
 
-  // 폼 제출 이벤트
+  // 🛡️ 보안 강화된 폼 제출 이벤트
   document.getElementById('write-form').addEventListener('submit', async (e) => {
     e.preventDefault();
+    
+    // 🚨 제출 전 최종 권한 검증
+    const isCurrentlyAdmin = await adminAuthManager.isAdminUser();
+    
+    if (!isCurrentlyAdmin) {
+      alert('⚠️ 관리자 권한이 만료되었습니다. 다시 로그인해주세요.');
+      closeWriteModal();
+      return;
+    }
     
     const category = document.getElementById('write-category').value;
     const title = document.getElementById('write-title').value;
@@ -311,6 +377,16 @@ function showWriteModal() {
         processedContent += '<div class="uploaded-images-section">' + imageSection + '</div>';
       }
 
+      // 🔐 보안 메타데이터 추가
+      const securityMetadata = {
+        authorId: currentUser.uid,
+        authorEmail: currentUser.email,
+        createdBy: 'AdminAuthManager',
+        securityLevel: 'admin-verified',
+        sessionId: adminAuthManager.sessionStartTime,
+        ipAddress: await adminAuthManager.getClientIP?.() || 'unknown'
+      };
+
       await addDoc(collection(db, 'notices'), {
         category: category,
         title: title,
@@ -319,16 +395,17 @@ function showWriteModal() {
         uid: currentUser.uid,
         createdAt: serverTimestamp(),
         views: 0,
-        likes: 0
+        likes: 0,
+        ...securityMetadata
       });
       
-      alert('공지사항이 등록되었습니다.');
+      alert('✅ 공지사항이 안전하게 등록되었습니다.');
       closeWriteModal();
       loadNoticesFromFirebase(); // 목록 새로고침
       
     } catch (error) {
       console.error('공지사항 등록 중 오류:', error);
-      alert('공지사항 등록 중 오류가 발생했습니다.');
+      alert('❌ 공지사항 등록 중 오류가 발생했습니다.');
     }
   });
 }
@@ -341,4 +418,5 @@ window.closeWriteModal = function() {
   }
 };
 
-let currentUser = null; 
+// 🔥 LEGACY CODE REMOVED - AdminAuthManager handles this
+// let currentUser = null; 

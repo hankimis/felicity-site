@@ -2,7 +2,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/fireba
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore, collection, getDocs, addDoc, deleteDoc, doc, serverTimestamp, query, orderBy, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getStorage, ref, uploadBytesResumable, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
-import { firebaseConfig } from './firebase-config.js';
+import { firebaseConfig } from '../firebase-config.js';
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
@@ -42,26 +42,72 @@ let isAdmin = false;
 let currentImageFile = null;
 let currentImageUrl = null;
 let uploadTask = null;
+let adminAuthManager = null;
 
-onAuthStateChanged(auth, async (user) => {
-  currentUser = user;
-  isAdmin = false;
-  if (user) {
-    try {
-      // 🔥 직접 사용자 문서를 조회하여 권한 확인
-      const userDoc = await getDoc(doc(db, 'users', user.uid));
-      if (userDoc.exists()) {
-        const userData = userDoc.data();
-        // role 필드와 isAdmin 필드 모두 확인
-        isAdmin = userData.role === 'admin' || userData.isAdmin === true;
+// 🔒 AdminAuthManager 초기화 및 인증 상태 감지
+async function initializeAdminAuth() {
+  // 전역 인스턴스 import
+  const { default: authManager } = await import('../js/admin-auth-manager.js');
+  adminAuthManager = authManager;
+  
+  // 어드민 상태 변경 감지 (올바른 메서드명과 매개변수 사용)
+  adminAuthManager.onAuthStateChange((user, isAdminStatus) => {
+    currentUser = user;
+    isAdmin = isAdminStatus;
+    
+    // UI 업데이트
+    writeBtn.style.display = isAdmin ? 'inline-block' : 'none';
+    
+    // 🔒 작성 버튼에 보안 스타일 적용
+    if (isAdmin && writeBtn) {
+      writeBtn.className = 'floating-write-btn admin-btn';
+      writeBtn.innerHTML = '<i class="fas fa-shield-alt"></i> 보안 이벤트 작성';
+    }
+    
+    renderEvents();
+    
+    // 🔒 보안 상태 UI 업데이트
+    updateSecurityStatusUI(user, isAdminStatus);
+    
+    // 디버그 정보 출력
+    if (user) {
+      console.log('🔐 이벤트 게시판 어드민 인증 상태:', {
+        user: user.email,
+        isAdmin: isAdminStatus,
+        timestamp: new Date().toISOString()
+      });
+    }
+  });
+}
 
-      }
-    } catch (error) {
-      console.error('Error checking admin status:', error);
+// 🔒 보안 상태 UI 업데이트 함수
+function updateSecurityStatusUI(user, isAdminStatus) {
+  // 기존 보안 상태 표시 제거
+  const existingSecurityInfo = document.querySelector('.admin-security-info');
+  if (existingSecurityInfo) {
+    existingSecurityInfo.remove();
+  }
+  
+  // 관리자인 경우 보안 상태 표시
+  if (isAdminStatus && user) {
+    const securityInfo = document.createElement('div');
+    securityInfo.className = 'admin-security-info';
+    securityInfo.innerHTML = `
+      <i class="fas fa-shield-alt"></i>
+      <span>관리자 인증됨 - ${user.email}</span>
+    `;
+    
+    // 이벤트 보드 컨테이너 상단에 추가
+    const eventBoardContainer = document.querySelector('.event-board-container');
+    if (eventBoardContainer) {
+      eventBoardContainer.insertBefore(securityInfo, eventBoardContainer.firstChild);
     }
   }
-  writeBtn.style.display = isAdmin ? 'inline-block' : 'none';
-  renderEvents();
+}
+
+// 페이지 로드 시 어드민 인증 초기화
+document.addEventListener('DOMContentLoaded', () => {
+  initializeAdminAuth();
 });
 
 // 🚀 이미지 최적화 유틸리티 함수들
@@ -191,11 +237,11 @@ class ImageOptimizer {
         imageDebugger.logImageEvent('로딩 완료', src);
       };
       
-      img.onerror = () => {
-        // 에러 시 기본 이미지 표시
-        imgElement.src = '/assets/default-event-image.svg';
-        imgElement.classList.remove('loading');
-        imgElement.classList.add('error');
+              img.onerror = () => {
+          // 에러 시 기본 이미지 표시
+          imgElement.src = '../assets/default-event-image.svg';
+          imgElement.classList.remove('loading');
+          imgElement.classList.add('error');
         this.loadingImages.delete(src);
         performanceMonitor.failLoading(src);
         imageDebugger.logImageEvent('로딩 실패', src);
@@ -465,7 +511,16 @@ async function renderEvents() {
     
     // 🚀 이미지 URL 최적화
     const optimizedImgUrl = imageOptimizer.optimizeImageUrl(data.img, 240, 240);
-    const optimizedLogoUrl = imageOptimizer.optimizeImageUrl(data.logo, 56, 56);
+    
+    // 로고 경로 수정 (event/ 폴더에서 접근할 때)
+    let logoPath = data.logo;
+    if (logoPath && logoPath.startsWith('assets/')) {
+      logoPath = '../' + logoPath;
+    } else if (logoPath && logoPath.startsWith('/assets/')) {
+      logoPath = '..' + logoPath;
+    }
+    
+    const optimizedLogoUrl = imageOptimizer.optimizeImageUrl(logoPath, 56, 56);
     
     card.innerHTML = `
       <button class="event-card-btn" ${data.link ? `data-link="${data.link}"` : ''}>
@@ -514,26 +569,66 @@ async function renderEvents() {
       if (link) window.open(link, '_blank');
     });
   });
-  // 삭제 버튼 이벤트
-  if (isAdmin) {
-    document.querySelectorAll('.event-card-delete').forEach(btn => {
-      btn.addEventListener('click', async (e) => {
-        e.stopPropagation();
-        const id = btn.dataset.id;
-        if (confirm('정말로 삭제하시겠습니까?')) {
-          await deleteDoc(doc(db, 'events', id));
-          renderEvents();
-        }
+      // 🔒 보안 강화된 삭제 버튼 이벤트
+    if (isAdmin) {
+      document.querySelectorAll('.event-card-delete').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          const id = btn.dataset.id;
+          
+          // 실시간 권한 재확인
+          const isAdminUser = await adminAuthManager.isAdminUser();
+          if (!isAdminUser) {
+            alert('관리자 권한이 필요합니다.');
+            return;
+          }
+          
+          if (confirm('정말로 삭제하시겠습니까?')) {
+            try {
+              // 보안 메타데이터와 함께 삭제 로그 기록
+              await adminAuthManager.logSecurityEvent('event_delete', {
+                eventId: id,
+                action: 'delete',
+                timestamp: new Date().toISOString()
+              });
+              
+              await deleteDoc(doc(db, 'events', id));
+              renderEvents();
+              
+              console.log('🔒 이벤트 삭제 완료:', {
+                eventId: id,
+                user: currentUser.email
+              });
+            } catch (error) {
+              console.error('이벤트 삭제 실패:', error);
+              alert('삭제 중 오류가 발생했습니다.');
+            }
+          }
+        });
       });
-    });
-    // 수정 버튼 클릭 이벤트
-    document.querySelectorAll('.event-card-edit').forEach(btn => {
-      btn.addEventListener('click', async (e) => {
-        e.stopPropagation();
-        const id = btn.dataset.id;
-        const eventDoc = await getDoc(doc(db, 'events', id));
-        if (!eventDoc.exists()) return alert('이벤트를 찾을 수 없습니다.');
-        const data = eventDoc.data();
+          // 🔒 보안 강화된 수정 버튼 클릭 이벤트
+      document.querySelectorAll('.event-card-edit').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          const id = btn.dataset.id;
+          
+          // 실시간 권한 재확인
+          const isAdminUser = await adminAuthManager.isAdminUser();
+          if (!isAdminUser) {
+            alert('관리자 권한이 필요합니다.');
+            return;
+          }
+          
+          const eventDoc = await getDoc(doc(db, 'events', id));
+          if (!eventDoc.exists()) return alert('이벤트를 찾을 수 없습니다.');
+          const data = eventDoc.data();
+          
+          // 수정 시도 로그 기록
+          await adminAuthManager.logSecurityEvent('event_edit_attempt', {
+            eventId: id,
+            action: 'edit_form_open',
+            timestamp: new Date().toISOString()
+          });
         
         // 기본 필드 채우기
         document.getElementById('event-title').value = data.title;
@@ -550,7 +645,14 @@ async function renderEvents() {
         // 거래소 선택 처리
         const exchangeSelect = document.getElementById('event-exchange');
         const exchangeName = data.exchange;
-        const logoPath = data.logo;
+        let logoPath = data.logo;
+        
+        // 로고 경로 수정 (event/ 폴더에서 접근할 때)
+        if (logoPath && logoPath.startsWith('assets/')) {
+          logoPath = '../' + logoPath;
+        } else if (logoPath && logoPath.startsWith('/assets/')) {
+          logoPath = '..' + logoPath;
+        }
         
         // 기본 거래소 목록에서 찾기
         let foundOption = false;
@@ -633,13 +735,14 @@ function showPreview(input, preview) {
 // 🔥 이미지 파일 업로드 함수 (압축 기능 추가)
 async function uploadImageFile(file) {
   return new Promise(async (resolve, reject) => {
-    // 사용자 권한 확인
-    if (!currentUser) {
-      reject(new Error('로그인이 필요합니다.'));
+    // 🔒 보안 강화된 권한 확인
+    if (!adminAuthManager) {
+      reject(new Error('인증 시스템이 초기화되지 않았습니다.'));
       return;
     }
     
-    if (!isAdmin) {
+    const isAdminUser = await adminAuthManager.isAdminUser();
+    if (!isAdminUser) {
       reject(new Error('관리자 권한이 필요합니다.'));
       return;
     }
@@ -788,17 +891,21 @@ if (eventImgFile) {
     const file = e.target.files[0];
     if (file) {
       try {
-        // 🔥 업로드 전 권한 확인
-        if (!currentUser) {
-          showFormMessage('로그인이 필요합니다.');
+        // 🔒 보안 강화된 업로드 전 권한 확인
+        if (!adminAuthManager) {
+          showFormMessage('인증 시스템이 초기화되지 않았습니다.');
           return;
         }
-        if (!isAdmin) {
+        
+        const isAdminUser = await adminAuthManager.isAdminUser();
+        if (!isAdminUser) {
           showFormMessage('관리자 권한이 필요합니다.');
           return;
         }
         
-        console.log('🔥 Upload attempt - User:', currentUser.uid, 'isAdmin:', isAdmin);
+        console.log('🔒 보안 강화된 업로드 시도:', {
+          user: currentUser.email
+        });
         currentImageFile = file;
         showFormMessage('이미지 업로드 중...', '#1976d2');
         const downloadURL = await uploadImageFile(file);
@@ -906,7 +1013,19 @@ function clearFormMessage() {
 
 const eventFormSubmitHandler = async (e) => {
   e.preventDefault();
-  if (!isAdmin) return;
+  
+  // 🔒 보안 강화된 권한 확인
+  if (!adminAuthManager) {
+    showFormMessage('인증 시스템이 초기화되지 않았습니다.');
+    return;
+  }
+  
+  const isAdminUser = await adminAuthManager.isAdminUser();
+  if (!isAdminUser) {
+    showFormMessage('관리자 권한이 필요합니다.');
+    return;
+  }
+  
   clearFormMessage();
   
   const title = document.getElementById('event-title').value.trim();
@@ -949,13 +1068,60 @@ const eventFormSubmitHandler = async (e) => {
   const editId = eventModal.getAttribute('data-edit-id');
   
   try {
+    // 🔒 보안 메타데이터 추가
+    const securityMetadata = {
+      authorId: currentUser.uid,
+      authorEmail: currentUser.email,
+      createdAt: serverTimestamp(),
+      lastModified: serverTimestamp()
+    };
+    
     if (editId) {
-      await updateDoc(doc(db, 'events', editId), { title, desc, period, exchange, img, logo, link });
+      // 수정 시 기존 데이터 유지하면서 보안 메타데이터 업데이트
+      await updateDoc(doc(db, 'events', editId), { 
+        title, desc, period, exchange, img, logo, link,
+        ...securityMetadata,
+        modifiedAt: serverTimestamp()
+      });
+      
+      // 수정 완료 로그 기록
+      await adminAuthManager.logSecurityEvent('event_update', {
+        eventId: editId,
+        action: 'update',
+        changes: { title, desc, period, exchange, img, logo, link },
+        timestamp: new Date().toISOString()
+      });
+      
       eventModal.removeAttribute('data-edit-id');
       showFormMessage('수정 완료!', '#388e3c');
+      
+      console.log('🔒 이벤트 수정 완료:', {
+        eventId: editId,
+        user: currentUser.email,
+        securityLevel: authResult.securityLevel
+      });
     } else {
-      await addDoc(collection(db, 'events'), { title, desc, period, exchange, img, logo, link, createdAt: serverTimestamp() });
+      // 새 이벤트 생성
+      const newEventRef = await addDoc(collection(db, 'events'), { 
+        title, desc, period, exchange, img, logo, link, 
+        ...securityMetadata
+      });
+      
+      // 생성 완료 로그 기록
+      await adminAuthManager.logSecurityEvent('event_create', {
+        eventId: newEventRef.id,
+        action: 'create',
+        data: { title, desc, period, exchange, img, logo, link },
+        timestamp: new Date().toISOString()
+      });
+      
       showFormMessage('등록 완료!', '#388e3c');
+      
+      console.log('🔒 이벤트 생성 완료:', {
+        eventId: newEventRef.id,
+        user: currentUser.email,
+        securityLevel: authResult.securityLevel
+      });
     }
     setTimeout(() => {
       eventModal.style.display = 'none';

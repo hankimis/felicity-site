@@ -21,6 +21,215 @@
     <link rel="stylesheet" href="toast.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" />
     
+    <!-- 🔒 보안 관련 스타일 -->
+    <style>
+        .admin-security-info {
+            background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
+            color: white;
+            padding: 16px 20px;
+            border-radius: 12px;
+            margin: 20px 0;
+            font-size: 0.95em;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 4px 12px rgba(30, 58, 138, 0.3);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+        }
+        
+        .admin-security-info i {
+            font-size: 1.3em;
+            color: #60a5fa;
+        }
+        
+        .security-details {
+            flex: 1;
+        }
+        
+        .security-main {
+            font-weight: 700;
+            margin-bottom: 4px;
+            font-size: 1.05em;
+        }
+        
+        .security-meta {
+            font-size: 0.85em;
+            color: #cbd5e1;
+            font-weight: 500;
+        }
+        
+        .security-warning {
+            background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+            color: white;
+            padding: 16px 20px;
+            border-radius: 12px;
+            margin: 20px 0;
+            font-size: 0.95em;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+            border: 1px solid rgba(248, 113, 113, 0.3);
+        }
+        
+        .security-warning i {
+            font-size: 1.3em;
+            color: #fca5a5;
+        }
+        
+        .admin-btn {
+            background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(5, 150, 105, 0.3);
+            font-size: 0.9em;
+        }
+        
+        .admin-btn:hover {
+            background: linear-gradient(135deg, #047857 0%, #059669 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(5, 150, 105, 0.4);
+        }
+        
+        .admin-btn:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .admin-btn i {
+            margin-right: 6px;
+        }
+        
+        /* 관리자 액션 버튼 스타일 개선 */
+        .admin-actions-cell .admin-btn {
+            padding: 8px 10px;
+            margin: 0 2px;
+            font-size: 0.8em;
+            border-radius: 6px;
+        }
+        
+        .admin-actions-cell .admin-btn.edit {
+            background: linear-gradient(135deg, #1976d2 0%, #2196f3 100%);
+        }
+        
+        .admin-actions-cell .admin-btn.edit:hover {
+            background: linear-gradient(135deg, #1565c0 0%, #1976d2 100%);
+        }
+        
+        .admin-actions-cell .admin-btn.points {
+            background: linear-gradient(135deg, #f57c00 0%, #ff9800 100%);
+        }
+        
+        .admin-actions-cell .admin-btn.points:hover {
+            background: linear-gradient(135deg, #ef6c00 0%, #f57c00 100%);
+        }
+        
+        .admin-actions-cell .admin-btn.role {
+            background: linear-gradient(135deg, #7b1fa2 0%, #9c27b0 100%);
+        }
+        
+        .admin-actions-cell .admin-btn.role:hover {
+            background: linear-gradient(135deg, #6a1b9a 0%, #7b1fa2 100%);
+        }
+        
+        .admin-actions-cell .admin-btn.view {
+            background: linear-gradient(135deg, #388e3c 0%, #4caf50 100%);
+        }
+        
+        .admin-actions-cell .admin-btn.view:hover {
+            background: linear-gradient(135deg, #2e7d32 0%, #388e3c 100%);
+        }
+        
+        .admin-actions-cell .admin-btn.danger {
+            background: linear-gradient(135deg, #d32f2f 0%, #f44336 100%);
+        }
+        
+        .admin-actions-cell .admin-btn.danger:hover {
+            background: linear-gradient(135deg, #c62828 0%, #d32f2f 100%);
+        }
+        
+        /* 다크 모드 보안 스타일 */
+        [data-theme="dark"] .admin-security-info {
+            background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+            border: 1px solid rgba(147, 197, 253, 0.3);
+        }
+        
+        [data-theme="dark"] .security-warning {
+            background: linear-gradient(135deg, #dc2626 0%, #f87171 100%);
+            box-shadow: 0 4px 12px rgba(248, 113, 113, 0.3);
+            border: 1px solid rgba(252, 165, 165, 0.3);
+        }
+        
+        [data-theme="dark"] .admin-btn {
+            background: linear-gradient(135deg, #059669 0%, #34d399 100%);
+            box-shadow: 0 2px 8px rgba(52, 211, 153, 0.3);
+        }
+        
+        [data-theme="dark"] .admin-btn:hover {
+            background: linear-gradient(135deg, #047857 0%, #10b981 100%);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+        }
+        
+        /* 보안 강화 표시 */
+        .security-enhanced {
+            position: relative;
+        }
+        
+        .security-enhanced::before {
+            content: "🔒";
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            font-size: 0.8em;
+            background: #059669;
+            color: white;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7em;
+        }
+        
+        /* 관리자 헤더 개선 */
+        .admin-header {
+            position: relative;
+            padding-bottom: 10px;
+        }
+        
+        .refresh-btn {
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+        }
+        
+        .refresh-btn:hover {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+        }
+        
+        .refresh-btn i {
+            margin-right: 8px;
+        }
+    </style>
+    
     <!-- Common Scripts -->
     <script src="js/auth.js"></script>
     <!-- Unified Header Loader -->
@@ -35,9 +244,9 @@
                     <p>ONBit Admin</p>
                 </div>
                 <div class="admin-actions">
-                    <button class="refresh-btn">
+                    <button class="refresh-btn security-enhanced">
                         <i class="fas fa-sync-alt"></i>
-                        새로고침
+                        보안 새로고침
                     </button>
                 </div>
             </div>
@@ -109,7 +318,7 @@
                                 <input type="text" id="block-search" placeholder="닉네임/UID 검색">
                                 <button onclick="searchBlockedUsers()" class="btn-search"><i class="fas fa-search"></i> 검색</button>
                             </div>
-                            <button onclick="showBlockUserModal()" class="btn-primary block-btn"><i class="fas fa-user-slash"></i> 사용자 차단</button>
+                            <button onclick="showBlockUserModal()" class="btn-primary block-btn security-enhanced"><i class="fas fa-user-slash"></i> 보안 차단</button>
                         </div>
                     </div>
                     <div class="block-tabs">
@@ -277,6 +486,7 @@
     <div id="footer-placeholder"></div>
 
     <script type="module" src="js/auth.js"></script>
+    <script type="module" src="js/admin-auth-manager.js"></script>
     <script type="module" src="admin.js"></script>
     <script src="js/footer-loader.js" defer></script>
 </body>

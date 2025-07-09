@@ -13,12 +13,12 @@
     <!-- 🚀 리소스 힌트 -->
     <link rel="preconnect" href="https://firebasestorage.googleapis.com">
     <link rel="dns-prefetch" href="https://firebasestorage.googleapis.com">
-    <link rel="preload" href="/assets/default-event-image.svg" as="image">
+    <link rel="preload" href="../assets/default-event-image.svg" as="image">
     
     <!-- 🚀 이미지 최적화를 위한 Service Worker 등록 -->
     <script>
       if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/image-cache-sw.js').catch(console.error);
+        navigator.serviceWorker.register('../image-cache-sw.js').catch(console.error);
       }
     </script>
     
@@ -32,23 +32,23 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="css/style.css"/>
-    <link rel="stylesheet" href="auth.css"/>
+    <link rel="stylesheet" href="../css/style.css"/>
+    <link rel="stylesheet" href="../auth.css"/>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" />
-    <link rel="icon" type="image/png" href="/onbit/favicon-96x96.png" sizes="96x96" />
-    <link rel="icon" type="image/svg+xml" href="/onbit/favicon.svg" />
-    <link rel="shortcut icon" href="/onbit/favicon.ico" />
-    <link rel="apple-touch-icon" sizes="180x180" href="/onbit/apple-touch-icon.png" />
+    <link rel="icon" type="image/png" href="../onbit/favicon-96x96.png" sizes="96x96" />
+    <link rel="icon" type="image/svg+xml" href="../onbit/favicon.svg" />
+    <link rel="shortcut icon" href="../onbit/favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="../onbit/apple-touch-icon.png" />
     <meta name="apple-mobile-web-app-title" content="Onbit" />
-    <link rel="manifest" href="/onbit/site.webmanifest" />
+    <link rel="manifest" href="../onbit/site.webmanifest" />
     
     <!-- Common Scripts -->
-    <script src="js/auth.js"></script>
-    <!-- <script src="js/level-system.js"></script> -->
+    <script src="../js/auth.js"></script>
+    <!-- <script src="../js/level-system.js"></script> -->
     <!-- Cloudflare Turnstile -->
     <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
     <!-- Unified Header Loader -->
-    <script src="js/header-loader.js" defer></script>
+    <script src="../js/header-loader.js" defer></script>
     
     <style>
       .event-board-container {
@@ -726,10 +726,10 @@
             <label for="event-exchange">거래소 선택</label>
             <select id="event-exchange" required>
               <option value="">거래소를 선택하세요</option>
-              <option value="Bitmex" data-logo="assets/tradelogo/Bitmexlogo.png">Bitmex</option>
-              <option value="Bitget" data-logo="assets/tradelogo/bitgetlogo.png">Bitget</option>
-              <option value="Blofin" data-logo="assets/tradelogo/blofinlogo.png">Blofin</option>
-              <option value="LBank" data-logo="assets/tradelogo/lbanklogo.png">LBank</option>
+              <option value="Bitmex" data-logo="../assets/tradelogo/Bitmexlogo.png">Bitmex</option>
+              <option value="Bitget" data-logo="../assets/tradelogo/bitgetlogo.png">Bitget</option>
+              <option value="Blofin" data-logo="../assets/tradelogo/blofinlogo.png">Blofin</option>
+              <option value="LBank" data-logo="../assets/tradelogo/lbanklogo.png">LBank</option>
               <option value="기타" data-logo="">기타 (직접 입력)</option>
             </select>
             <div id="exchange-preview" class="exchange-preview" style="display:none;">
@@ -794,7 +794,7 @@
 
     <!-- Auth Modals & Scripts (attendance.html 방식) -->
     <div id="auth-modals"></div>
-    <script type="module" src="js/auth.js"></script>
+    <script type="module" src="../js/auth.js"></script>
     <script type="module" src="event-board.js"></script>
 
     <!-- 로그인/회원가입 모달 직접 추가 -->
@@ -852,6 +852,6 @@
     <!-- Footer -->
     <div id="footer-placeholder"></div>
 
-    <script src="js/footer-loader.js" defer></script>
+    <script src="../js/footer-loader.js" defer></script>
   </body>
 </html> 
