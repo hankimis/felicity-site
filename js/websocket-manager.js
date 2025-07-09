@@ -47,8 +47,8 @@ function connectWebSocket() {
                             return;
                         }
                         
-                        // 너무 큰 시간 차이 (1시간 이상)도 무시
-                        if (timeDiff > 3600000) {
+                        // 너무 큰 시간 차이 (5분 이상)도 무시
+                        if (timeDiff > 300000) {
                             console.warn(`⚠️ 비정상적인 시간 차이 감지 [${data.s}]: ${timeDiff}ms`);
                             return;
                         }

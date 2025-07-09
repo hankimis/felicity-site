@@ -1,0 +1,527 @@
+/* 🔥 차트 레이아웃 헤더 */
+.chart-layout-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 41px;
+    background: #1a1a1a;
+    border-bottom: 3px solid #404040;
+    padding: 0 16px;
+    position: relative;
+    z-index: 100;
+}
+
+/* 🔥 레이아웃 버튼 그룹 */
+.layout-buttons-group {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.layout-btn {
+    background: #2d2d2d;
+    border: 1px solid #444;
+    border-radius: 6px;
+    padding: 6px 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 32px;
+    height: 28px;
+}
+
+.layout-btn:hover {
+    background: #3d3d3d;
+    border-color: #555;
+}
+
+.layout-btn.active {
+    background: #4a90e2;
+    border-color: #4a90e2;
+    color: white;
+}
+
+.layout-btn.active:hover {
+    background: #357abd;
+    border-color: #357abd;
+}
+
+/* 🔥 레이아웃 아이콘 */
+.layout-icon {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1px;
+    width: 16px;
+    height: 16px;
+    align-items: center;
+    justify-content: center;
+}
+
+.layout-icon.layout-1 {
+    width: 12px;
+    height: 12px;
+}
+
+.layout-icon.layout-2 {
+    width: 16px;
+    height: 8px;
+}
+
+.layout-icon.layout-3 {
+    width: 16px;
+    height: 12px;
+}
+
+.layout-icon.layout-4 {
+    width: 16px;
+    height: 16px;
+}
+
+.chart-box {
+    background: currentColor;
+    border-radius: 1px;
+    opacity: 0.8;
+}
+
+.layout-1 .chart-box {
+    width: 12px;
+    height: 12px;
+}
+
+.layout-2 .chart-box {
+    width: 7px;
+    height: 8px;
+}
+
+.layout-3 .chart-box {
+    width: 5px;
+    height: 5px;
+}
+
+.layout-4 .chart-box {
+    width: 7px;
+    height: 7px;
+}
+
+.layout-btn.active .chart-box {
+    opacity: 1;
+}
+
+/* 🔥 차트 메인 컨테이너 */
+.chart-main-container {
+    display: grid;
+    gap: 2px;
+    background: #f1f5f9;
+    border-radius: 0 0 8px 8px;
+    overflow: hidden;
+    min-height: 600px;
+}
+
+.chart-main-container.layout-1 {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr;
+}
+
+.chart-main-container.layout-2 {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr;
+}
+
+.chart-main-container.layout-3 {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+}
+
+.chart-main-container.layout-3 .chart-container:first-child {
+    grid-column: 1 / -1;
+}
+
+.chart-main-container.layout-4 {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+}
+
+/* 🔥 개별 차트 컨테이너 */
+.chart-container {
+    position: relative;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    overflow: hidden;
+    background: white;
+    min-height: 300px;
+}
+
+.chart-loading {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    color: #6c757d;
+    font-size: 14px;
+    z-index: 5;
+    pointer-events: none;
+}
+
+.chart-loading i {
+    font-size: 18px;
+    color: #4a90e2;
+    pointer-events: none;
+}
+
+
+
+.chart-loading {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    color: #6c757d;
+    font-size: 14px;
+    z-index: 1001; /* 오버레이보다 위에 */
+    pointer-events: none;
+}
+
+.chart-loading i {
+    font-size: 18px;
+    color: #4a90e2;
+    pointer-events: none;
+}
+
+/* 🔥 반응형 디자인 */
+@media (max-width: 1024px) {
+    .chart-layout-header {
+        padding: 8px 16px;
+        min-height: 50px;
+    }
+    
+    .chart-header-left {
+        gap: 12px;
+    }
+    
+    .symbol-name {
+        font-size: 16px;
+    }
+    
+    .current-price {
+        font-size: 14px;
+    }
+    
+    .price-change {
+        font-size: 12px;
+        padding: 2px 6px;
+    }
+    
+    .layout-buttons-group {
+        gap: 1px;
+        padding: 2px;
+    }
+    
+    .layout-btn {
+        padding: 6px 8px;
+    }
+    
+    .layout-icon {
+        width: 16px;
+        height: 12px;
+    }
+    
+    
+}
+
+@media (max-width: 768px) {
+    .chart-layout-header {
+        flex-direction: column;
+        gap: 12px;
+        padding: 12px;
+        min-height: auto;
+    }
+    
+    .chart-header-left {
+        width: 100%;
+        justify-content: center;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+    }
+    
+    .chart-market-data {
+        justify-content: center;
+        gap: 12px;
+    }
+    
+    .chart-header-right {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .chart-main-container.layout-2,
+    .chart-main-container.layout-3,
+    .chart-main-container.layout-4 {
+        grid-template-columns: 1fr;
+        grid-template-rows: repeat(auto, 1fr);
+    }
+    
+    .chart-main-container.layout-3 .chart-container:first-child {
+        grid-column: 1;
+    }
+    
+    .chart-container {
+        min-height: 250px;
+    }
+}
+
+@media (max-width: 480px) {
+    .chart-layout-header {
+        padding: 8px;
+    }
+    
+    .chart-header-left {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .chart-price-info {
+        gap: 8px;
+    }
+    
+    .layout-buttons-group {
+        flex-wrap: wrap;
+        gap: 4px;
+    }
+    
+
+    
+    .chart-container {
+        min-height: 200px;
+    }
+}
+
+/* 🔥 다크 모드 지원 */
+
+.dark-mode .chart-layout-header .symbol-name,
+.dark-mode .chart-layout-header .current-price,
+.dark-mode .chart-layout-header .market-value {
+    color: #f1f5f9;
+}
+
+.dark-mode .chart-layout-header .symbol-exchange,
+.dark-mode .chart-layout-header .market-label,
+.dark-mode .chart-layout-header .countdown {
+    color: #94a3b8;
+}
+
+.dark-mode .chart-layout-header .symbol-exchange {
+    background: rgba(148, 163, 184, 0.1);
+}
+
+.dark-mode .chart-layout-header .layout-buttons-group {
+    background: rgba(30, 41, 59, 0.5);
+    border-color: #475569;
+}
+
+.dark-mode .chart-layout-header .chart-box {
+    background: #94a3b8;
+}
+
+.dark-mode .chart-main-container {
+    background: #0f172a;
+}
+
+.dark-mode .chart-container {
+    background: #1e293b;
+    border-color: #334155;
+}
+
+.dark-mode .chart-container:hover {
+    border-color: #475569;
+}
+
+/* 🔥 애니메이션 */
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.chart-layout-header {
+    animation: slideIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+.chart-container {
+    animation: fadeIn 0.5s ease-out;
+}
+
+/* 🔥 스크롤바 스타일링 */
+.chart-main-container::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+.chart-main-container::-webkit-scrollbar-track {
+    background: #1e293b;
+    border-radius: 3px;
+}
+
+.chart-main-container::-webkit-scrollbar-thumb {
+    background: #475569;
+    border-radius: 3px;
+}
+
+.chart-main-container::-webkit-scrollbar-thumb:hover {
+    background: #64748b;
+}
+
+/* 🔥 전체화면 모드 */
+.chart-layout-header:fullscreen {
+    border-radius: 0;
+}
+
+.chart-main-container:fullscreen {
+    border-radius: 0;
+}
+
+/* 🔥 접근성 개선 */
+.layout-btn:focus {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+}
+
+.layout-btn:focus-visible {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+}
+
+/* 🔥 성능 최적화 */
+.chart-container,
+.layout-btn {
+    will-change: transform;
+}
+
+.chart-loading {
+    will-change: opacity;
+} 
+
+/* 🔥 차트 컨테이너 스타일 */
+.chart-container {
+    position: relative;
+    background: var(--card-bg);
+    border-radius: 8px;
+    overflow: hidden;
+    min-height: 400px;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    border: 2px solid transparent;
+    z-index: 1;
+}
+
+.chart-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1;
+    pointer-events: none;
+}
+
+.chart-container:hover {
+    border-color: var(--primary-color);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.chart-container.active {
+    border-color: var(--primary-color);
+    box-shadow: 0 4px 20px rgba(74, 144, 226, 0.3);
+}
+
+.chart-container.active::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--primary-color);
+    z-index: 10;
+} 
+
+/* 🔥 차트 헤더 바 스타일 */
+.chart-header-bar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 32px;
+    background: rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 12px;
+    z-index: 10;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.chart-header-bar:hover {
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.chart-number {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-color);
+    opacity: 0.8;
+}
+
+.chart-status {
+    display: flex;
+    align-items: center;
+}
+
+.chart-status i {
+    font-size: 8px;
+    color: #666;
+    transition: color 0.2s ease;
+}
+
+.chart-status i.active {
+    color: var(--primary-color);
+}
+
+.chart-container.active .chart-status i {
+    color: var(--primary-color);
+}
+
+.chart-container.active .chart-header-bar {
+    background: rgba(74, 144, 226, 0.2);
+}
+
+.chart-container.active .chart-number {
+    color: var(--primary-color);
+    opacity: 1;
+} 

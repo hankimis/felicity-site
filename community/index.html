@@ -27,6 +27,27 @@
     <!-- Turnstile은 필요할 때만 로드 -->
     <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
     
+    <!-- TradingView Charting Library -->
+    <script type="text/javascript" src="../charting_library-master/charting_library/charting_library.standalone.js"></script>
+    <script type="text/javascript" src="../charting_library-master/datafeeds/udf/dist/bundle.js"></script>
+    
+    <!-- Binance Datafeed -->
+    <script src="../js/binance-datafeed.js"></script>
+    
+    <!-- Chart Storage -->
+    <script src="../js/chart-storage.js"></script>
+    
+    <!-- Chart Layout Manager -->
+    <script src="../js/chart-layout-manager.js"></script>
+    <link rel="stylesheet" href="../css/chart-layout.css" />
+    
+    <!-- Market Data Manager -->
+    <script src="../js/market-data-manager.js"></script>
+    
+    <!-- 코인 선택 관련 파일 제거 -->
+    <!-- <script src="../js/coin-selector.js"></script> -->
+    <!-- <link rel="stylesheet" href="../css/coin-selector.css" /> -->
+    
     <!-- Common Scripts -->
     <script src="../js/auth.js"></script>
     <script src="../js/websocket-manager.js"></script>
@@ -37,11 +58,20 @@
     <script>
         // Firebase 설정이 auth.js에서 로드되기를 기다림
         document.addEventListener('DOMContentLoaded', function() {
+            // Firebase가 완전히 초기화될 때까지 대기
+            const waitForFirebase = () => {
+                if (window.firebase && window.firebase.apps && window.firebase.apps.length > 0) {
             // Firebase Database 초기화 확인
-            if (window.firebase && !window.database) {
+                    if (!window.database) {
                 window.database = window.firebase.database();
                 console.log('Community: Firebase Database 초기화됨');
             }
+                } else {
+                    console.log('Firebase 초기화 대기 중...');
+                    setTimeout(waitForFirebase, 100);
+                }
+            };
+            waitForFirebase();
         });
     </script>
     
@@ -232,6 +262,8 @@
             position: relative;
             min-height: 0; /* flexbox에서 중요 */
             overflow: hidden;
+            display: flex;
+            flex-direction: column;
         }
         
         #tradingview_chart {
@@ -239,6 +271,7 @@
             height: 100%;
             min-height: 300px; /* 차트 최소 높이 */
             background: var(--card-bg);
+            flex: 1;
         }
         
         /* 모바일에서 차트 높이 조정 */
@@ -1234,8 +1267,8 @@
             align-items: center;
             justify-content: space-between;
             padding: 0 16px;
-            height: 45px;
-            border-bottom: 1px solid var(--border-color);
+            height: 41px;
+            border-bottom: 3px solid var(--border-color);
         }
         
         .chat-section-header h2 {
@@ -1784,6 +1817,7 @@
             <div class="community-layout-inner">
                 <section class="chart-section">
                     <div id="chart-container-wrapper">
+                        <!-- 차트 헤더와 레이아웃 버튼들이 여기에 동적으로 추가됩니다 -->
                         <div id="tradingview_chart"></div>
                         <div class="chart-loading" id="chart-loading">데이터 로딩 중...</div>
                     </div>
@@ -1960,10 +1994,6 @@
 
     <!-- html2canvas for screenshots -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    
-    <!-- TradingView Advanced Charts -->
-    <script src="../charting_library-master/charting_library/charting_library.standalone.js"></script>
-    <script src="../charting_library-master/datafeeds/udf/dist/bundle.js"></script>
     
     <!-- Custom Scripts -->
     <script src="../js/community.js"></script>
