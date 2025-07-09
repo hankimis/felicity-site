@@ -177,14 +177,27 @@ function createDatafeed() {
                 const data = await response.json();
                 
                 if (data && data.length > 0) {
-                    const bars = data.map(candle => ({
-                        time: candle[0],
-                        open: parseFloat(candle[1]),
-                        high: parseFloat(candle[2]),
-                        low: parseFloat(candle[3]),
-                        close: parseFloat(candle[4]),
-                        volume: parseFloat(candle[5])
-                    }));
+                    // 🔒 시간 순서 검증 및 정렬
+                    const bars = data
+                        .map(candle => ({
+                            time: candle[0],
+                            open: parseFloat(candle[1]),
+                            high: parseFloat(candle[2]),
+                            low: parseFloat(candle[3]),
+                            close: parseFloat(candle[4]),
+                            volume: parseFloat(candle[5])
+                        }))
+                        .sort((a, b) => a.time - b.time) // 시간 순서로 정렬
+                        .filter((bar, index, arr) => {
+                            // 🔍 중복 시간 제거
+                            if (index === 0) return true;
+                            if (bar.time <= arr[index - 1].time) {
+                                console.warn(`⚠️ 시간 순서 위반 데이터 필터링: ${new Date(bar.time)} <= ${new Date(arr[index - 1].time)}`);
+                                return false;
+                            }
+                            return true;
+                        });
+                    
                     onHistoryCallback(bars, { noData: false });
                 } else {
                     onHistoryCallback([], { noData: true });
@@ -197,7 +210,41 @@ function createDatafeed() {
 
         subscribeBars: (symbolInfo, resolution, onRealtimeCallback, subscriberUID) => {
             const symbol = symbolInfo.name;
-            window.WebSocketManager.subscribeToSymbol(symbol, resolution, onRealtimeCallback);
+            
+            // 🔒 실시간 데이터 검증 래퍼 함수
+            const validatedCallback = (bar) => {
+                try {
+                    // 📊 데이터 유효성 검사
+                    if (!bar || typeof bar !== 'object' || !bar.time) {
+                        console.warn('⚠️ 유효하지 않은 실시간 데이터:', bar);
+                        return;
+                    }
+                    
+                    // 🔍 시간 검증 (현재 시간보다 너무 미래이거나 과거인 경우 필터링)
+                    const now = Date.now();
+                    const barTime = bar.time;
+                    const timeDiff = Math.abs(now - barTime);
+                    
+                    // 24시간 이상 차이나는 데이터 필터링
+                    if (timeDiff > 24 * 60 * 60 * 1000) {
+                        console.warn(`⚠️ 시간 차이가 큰 데이터 필터링: ${new Date(barTime)} (현재: ${new Date(now)})`);
+                        return;
+                    }
+                    
+                    // 📈 가격 데이터 검증
+                    if (bar.open <= 0 || bar.high <= 0 || bar.low <= 0 || bar.close <= 0) {
+                        console.warn('⚠️ 유효하지 않은 가격 데이터:', bar);
+                        return;
+                    }
+                    
+                    // 🔄 검증된 데이터만 전달
+                    onRealtimeCallback(bar);
+                } catch (error) {
+                    console.error('❌ 실시간 데이터 검증 실패:', error);
+                }
+            };
+            
+            window.WebSocketManager.subscribeToSymbol(symbol, resolution, validatedCallback);
         },
 
         unsubscribeBars: (subscriberUID) => {
@@ -482,7 +529,7 @@ function createChartStorageAdapter() {
 
 // TradingView 차트 초기화
 async function initializeTradingViewChart() {
-    const chartContainer = document.getElementById('chart-container');
+    const chartContainer = document.getElementById('tradingview_chart');
     const loadingIndicator = document.getElementById('chart-loading');
     
     if (!chartContainer) {
@@ -500,8 +547,7 @@ async function initializeTradingViewChart() {
         widget = null;
     }
     
-    // AI 버튼 추가 플래그 리셋
-    aiButtonsAdded = false;
+    // AI 버튼 관련 플래그가 삭제되었습니다
     
     // 차트 복원 플래그 리셋
     chartRestored = false;
@@ -602,17 +648,40 @@ async function initializeTradingViewChart() {
             'legend_inplace_edit',  // 범례에서 즉석 편집
             'studies_access',  // 지표 접근 권한
             
+            // 🚀 자동 저장 최적화 기능
+            'chart_template_storage',  // 차트 템플릿 저장소
+            'saveload_separate_drawings_storage',  // 드로잉 별도 저장 (성능 향상)
+            'chart_crosshair_menu',  // 차트 십자선 메뉴
+            'move_logo_to_main_pane',  // 로고를 메인 패널로 이동
+            
             // 기타 유용한 기능
             'volume_force_overlay',  // 거래량 오버레이
             'create_volume_indicator_by_default',  // 기본 볼륨 지표
             'left_toolbar',  // 왼쪽 도구바
             'hide_left_toolbar_by_default',  // 기본적으로 왼쪽 도구바 숨김
             'constraint_dialogs_movement',  // 대화상자 이동 제한
-            'charting_library_debug_mode'  // TradingView 디버그 모드
+            
+            // 🎨 UI/UX 개선
+            'show_object_tree',  // 객체 트리 표시
+            'symbol_search_hot_key',  // 심볼 검색 단축키 (Ctrl+K)
+            'go_to_date',  // 날짜로 이동 기능
+            'adaptive_logo'  // 적응형 로고
         ],
         disabled_features: [
-            // 🔥 지표 더블클릭 설정 기능을 위해 최소한의 기능만 비활성화
-            'drawing_templates'  // 그리기 템플릿만 비활성화
+            // 🔥 자동 저장 최적화를 위한 기능 비활성화
+            'use_localstorage_for_settings',  // 로컬 스토리지 대신 서버 저장 사용
+            'header_saveload',  // 커스텀 저장/로드 구현을 위해 기본 기능 비활성화
+            'drawing_templates',  // 그리기 템플릿 비활성화
+            
+            // 🚀 성능 최적화를 위한 비활성화
+            'widget_logo',  // 위젯 로고 비활성화
+            'popup_hints',  // 팝업 힌트 비활성화
+            'study_dialog_search_control',  // 지표 검색 컨트롤 비활성화 (성능 향상)
+            
+            // 불필요한 기능 비활성화
+            'compare_symbol',  // 심볼 비교 기능 비활성화
+            'display_market_status',  // 시장 상태 표시 비활성화
+            'go_to_date'  // 날짜로 이동 기능 비활성화 (필요시 활성화)
         ],
         
         // 커스텀 설정
@@ -621,8 +690,18 @@ async function initializeTradingViewChart() {
         auto_save_chart: false,
         load_last_chart: savedData ? true : false, // 저장된 데이터가 있으면 활성화
         
-        // 자동 저장 관련 설정
-        auto_save_delay: 5, // 5초 후 자동 저장
+        // 자동 저장 관련 설정 (최적화된 버전)
+        auto_save_delay: 5, // 5초 후 자동 저장 (TradingView 권장)
+        
+        // 🚀 성능 최적화 설정
+        debug: false, // 프로덕션에서 디버그 모드 비활성화
+        autosize: true, // 자동 크기 조정
+        
+        // 🔄 저장/로드 최적화
+        charts_storage_url: '', // 커스텀 저장소 사용
+        charts_storage_api_version: '1.1',
+        client_id: 'felicity-site',
+        user_id: window.currentUser?.uid || 'anonymous',
         
         // 저장된 데이터가 있으면 설정
         ...(savedData && { saved_data: savedData }),
@@ -650,11 +729,8 @@ async function initializeTradingViewChart() {
             // 🔥 지표 더블클릭 설정 기능 활성화
             setupIndicatorDoubleClickEvents();
             
-            // TradingView 공식 API로 툴바에 AI 버튼들 추가
+            // 차트가 준비된 후 현재 테마 적용
             widget.headerReady().then(() => {
-                addAIButtonsToToolbar();
-                
-                // 차트가 준비된 후 현재 테마 적용
                 setTimeout(() => {
                     updateChartTheme();
                 }, 200);
@@ -679,13 +755,48 @@ async function initializeTradingViewChart() {
                 if (now - lastSaveTime < SAVE_COOLDOWN) return;
                 
                 try {
-                    // TradingView 데이터를 JSON 문자열로 직렬화
+                    // 🔒 데이터 유효성 검사 (강화된 버전)
+                    if (!layoutData || typeof layoutData !== 'object') {
+                        console.error('❌ 유효하지 않은 차트 데이터 형식');
+                        return;
+                    }
+                    
+                    // 📊 빈 배열 검사
+                    if (Array.isArray(layoutData) && layoutData.length === 0) {
+                        console.warn('⚠️ 빈 차트 데이터 배열 - 저장 건너뜀');
+                        return;
+                    }
+                    
+                    // TradingView 데이터를 JSON 문자열로 직렬화 (안전한 버전)
                     let serializedData;
                     try {
                         serializedData = JSON.stringify(layoutData);
+                        
+                        // 📊 직렬화 결과 검증
+                        if (!serializedData || serializedData === '{}' || serializedData === '[]') {
+                            console.warn('⚠️ 빈 직렬화 결과 - 저장 건너뜀');
+                            return;
+                        }
                     } catch (jsonError) {
-                        console.error('JSON 직렬화 실패:', jsonError);
+                        console.error('❌ JSON 직렬화 실패:', jsonError);
+                        showNotification('차트 데이터 직렬화에 실패했습니다', 'error');
                         return;
+                    }
+                    
+                    // 📏 크기 제한 (1MB)
+                    if (serializedData.length > 1024 * 1024) {
+                        console.error('❌ 차트 데이터가 너무 큽니다:', serializedData.length);
+                        showNotification('차트 데이터가 너무 큽니다. 일부 드로잉을 제거해주세요.', 'warning');
+                        return;
+                    }
+                    
+                    // 🔐 체크섬 생성 (안전한 버전)
+                    let checksum;
+                    try {
+                        checksum = btoa(serializedData.slice(0, 100));
+                    } catch (checksumError) {
+                        console.warn('⚠️ 체크섬 생성 실패:', checksumError);
+                        checksum = null;
                     }
                     
                     const saveData = {
@@ -694,49 +805,111 @@ async function initializeTradingViewChart() {
                         updatedAt: now,
                         userId: window.currentUser.uid,
                         symbol: widget.activeChart()?.symbol() || 'BTCUSDT',
-                        interval: widget.activeChart()?.resolution() || '1h'
+                        interval: widget.activeChart()?.resolution() || '1h',
+                        version: '1.1', // 버전 정보 추가
+                        checksum: checksum, // 안전한 무결성 검사
+                        dataSize: serializedData.length // 데이터 크기 추가
                     };
                     
                     await window.db.collection('chartStates').doc(window.currentUser.uid).set(saveData);
                     lastSaveTime = now;
                     
-                    // 간단한 저장 알림
-                    const notification = document.createElement('div');
-                    notification.style.cssText = `
-                        position: fixed; top: 20px; right: 20px; z-index: 10000;
-                        background: #22c55e; color: white; padding: 6px 10px;
-                        border-radius: 4px; font-size: 11px; opacity: 0.9;
-                    `;
-                    notification.textContent = '💾 저장됨';
-                    document.body.appendChild(notification);
-                    
-                    setTimeout(() => {
-                        if (notification.parentNode) {
-                            notification.parentNode.removeChild(notification);
-                        }
-                    }, 1500);
+                    // 간단한 저장 알림 (최적화된 버전)
+                    showSaveNotification();
                     
                     console.log('✅ 차트 저장 완료 (크기:', serializedData.length, 'bytes)');
                 } catch (error) {
                     console.error('❌ 차트 저장 실패:', error);
+                    showNotification('차트 저장에 실패했습니다. 다시 시도해주세요.', 'error');
                 }
             };
             
-            // 디바운스된 자동 저장 함수
+            // 🎉 저장 알림 함수
+            const showSaveNotification = () => {
+                // 기존 알림 제거
+                const existingNotification = document.querySelector('.chart-save-notification');
+                if (existingNotification) {
+                    existingNotification.remove();
+                }
+                
+                const notification = document.createElement('div');
+                notification.className = 'chart-save-notification';
+                notification.style.cssText = `
+                    position: fixed; top: 20px; right: 20px; z-index: 10000;
+                    background: #22c55e; color: white; padding: 8px 12px;
+                    border-radius: 6px; font-size: 12px; opacity: 0.95;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                    transform: translateX(100%);
+                    transition: transform 0.3s ease;
+                `;
+                notification.innerHTML = '💾 차트가 저장되었습니다';
+                document.body.appendChild(notification);
+                
+                // 애니메이션 효과
+                setTimeout(() => {
+                    notification.style.transform = 'translateX(0)';
+                }, 10);
+                
+                setTimeout(() => {
+                    notification.style.transform = 'translateX(100%)';
+                    setTimeout(() => {
+                        if (notification.parentNode) {
+                            notification.parentNode.removeChild(notification);
+                        }
+                    }, 300);
+                }, 2000);
+            };
+            
+            // 디바운스된 자동 저장 함수 (최적화된 버전)
             const debouncedAutoSave = () => {
                 if (saveTimeout) clearTimeout(saveTimeout);
                 saveTimeout = setTimeout(() => {
-                    widget.save((layoutData) => {
-                        if (layoutData) {
-                            saveChartLayout(layoutData);
-                        }
-                    });
+                    // 사용자 로그인 상태 확인
+                    if (!window.currentUser) {
+                        console.log('❌ 사용자 미로그인 - 자동 저장 건너뜀');
+                        return;
+                    }
+                    
+                    // 위젯 상태 확인
+                    if (!widget) {
+                        console.log('❌ 위젯 없음 - 자동 저장 건너뜀');
+                        return;
+                    }
+                    
+                    try {
+                        widget.save((layoutData) => {
+                            if (layoutData) {
+                                saveChartLayout(layoutData);
+                            } else {
+                                console.warn('⚠️ 빈 차트 데이터 - 저장 건너뜀');
+                            }
+                        }, {
+                            // TradingView 공식 옵션
+                            includeDrawings: true,      // 드로잉 도구 포함
+                            saveStudyTemplates: true,   // 지표 템플릿 포함
+                            saveChartProperties: true   // 차트 속성 포함
+                        });
+                    } catch (error) {
+                        console.error('❌ 자동 저장 실패:', error);
+                        // 재시도 로직
+                        setTimeout(() => {
+                            try {
+                                widget.save((layoutData) => {
+                                    if (layoutData) {
+                                        saveChartLayout(layoutData);
+                                    }
+                                });
+                            } catch (retryError) {
+                                console.error('❌ 자동 저장 재시도 실패:', retryError);
+                            }
+                        }, 5000); // 5초 후 재시도
+                    }
                 }, 2000); // 2초 디바운스
             };
 
-            // 차트 이벤트 구독 (TradingView 공식 방법)
+            // 차트 이벤트 구독 (TradingView 공식 방법) - 최적화된 버전
             try {
-                // onAutoSaveNeeded 이벤트 구독 (TradingView 권장)
+                // onAutoSaveNeeded 이벤트 구독 (TradingView 권장 - 최우선)
                 if (widget.onAutoSaveNeeded) {
                     widget.onAutoSaveNeeded.subscribe(null, () => {
                         console.log('📊 TradingView onAutoSaveNeeded 이벤트');
@@ -755,6 +928,20 @@ async function initializeTradingViewChart() {
                     console.log('📊 간격 변경');
                     debouncedAutoSave();
                 });
+                
+                // 드로잉 및 스터디 이벤트 구독 (향상된 기능)
+                chart.onDataLoaded().subscribe(null, () => {
+                    console.log('📊 데이터 로드 완료');
+                    debouncedAutoSave();
+                });
+                
+                // 차트 상태 변경 이벤트 (추가 백업)
+                if (chart.onVisibleRangeChanged) {
+                    chart.onVisibleRangeChanged().subscribe(null, () => {
+                        console.log('📊 표시 범위 변경');
+                        debouncedAutoSave();
+                    });
+                }
                 
                 console.log('✅ 차트 이벤트 구독 완료');
             } catch (error) {
@@ -806,18 +993,77 @@ async function initializeTradingViewChart() {
                         const data = chartDoc.data();
                         if (data.content) {
                             try {
+                                // 📊 데이터 존재 여부 확인
+                                if (!data.content) {
+                                    console.log('❌ 차트 데이터가 비어있음');
+                                    return;
+                                }
+                                
                                 // JSON 문자열을 객체로 파싱
                                 const layoutData = typeof data.content === 'string' 
                                     ? JSON.parse(data.content) 
                                     : data.content;
                                 
-                                widget.load(layoutData);
+                                // 🔍 레이아웃 데이터 구조 검증
+                                if (!layoutData || typeof layoutData !== 'object') {
+                                    console.log('❌ 차트 레이아웃 데이터가 유효하지 않음');
+                                    return;
+                                }
+                                
+                                // 🔒 데이터 무결성 검사 (개선된 버전)
+                                if (data.checksum) {
+                                    try {
+                                        const contentForChecksum = typeof data.content === 'string' 
+                                            ? data.content 
+                                            : JSON.stringify(data.content);
+                                        const expectedChecksum = btoa(contentForChecksum.slice(0, 100));
+                                        if (data.checksum !== expectedChecksum) {
+                                            console.warn('⚠️ 차트 데이터 무결성 검사 실패');
+                                        }
+                                    } catch (checksumError) {
+                                        console.warn('⚠️ 체크섬 검증 중 오류:', checksumError);
+                                    }
+                                }
+                                
+                                // 🔄 차트 로드 with 개선된 타임아웃
+                                const loadPromise = new Promise((resolve, reject) => {
+                                    try {
+                                        widget.load(layoutData, (success) => {
+                                            if (success !== false) { // undefined도 성공으로 처리
+                                                resolve();
+                                            } else {
+                                                reject(new Error('차트 로드 실패'));
+                                            }
+                                        });
+                                    } catch (loadError) {
+                                        reject(new Error(`차트 로드 중 오류: ${loadError.message}`));
+                                    }
+                                });
+                                
+                                // 20초 타임아웃 설정 (더 여유롭게)
+                                await Promise.race([
+                                    loadPromise,
+                                    new Promise((_, reject) => 
+                                        setTimeout(() => reject(new Error('차트 로드 타임아웃 (20초)')), 20000)
+                                    )
+                                ]);
+                                
                                 chartRestored = true; // 복원 완료 플래그 설정
                                 showNotification('차트가 복원되었습니다', 'success');
                                 console.log('✅ 로그인 후 자동 저장 차트 복원 완료');
                                 return;
                             } catch (parseError) {
-                                console.error('차트 데이터 파싱 실패:', parseError);
+                                console.error('❌ 차트 데이터 파싱 실패:', parseError);
+                                
+                                // 🔍 구체적인 오류 메시지 제공
+                                let errorMessage = '차트 복원 중 오류가 발생했습니다';
+                                if (parseError.message.includes('timeout')) {
+                                    errorMessage = '차트 로드 시간이 초과되었습니다. 다시 시도해주세요.';
+                                } else if (parseError.message.includes('JSON')) {
+                                    errorMessage = '저장된 차트 데이터가 손상되었습니다.';
+                                }
+                                
+                                showNotification(errorMessage, 'warning');
                             }
                         }
                     }
@@ -882,30 +1128,61 @@ async function initializeTradingViewChart() {
                 }
             }, 60000);
 
-            // 페이지 종료 시 최종 저장
+            // 페이지 종료 시 최종 저장 (최적화된 버전)
             const handlePageExit = () => {
-                if (window.currentUser) {
-                    widget.save((layoutData) => {
-                        if (layoutData) {
-                            try {
-                                // JSON 직렬화
-                                const serializedData = JSON.stringify(layoutData);
-                                
-                                // 즉시 저장
-                                window.db.collection('chartStates')
-                                    .doc(window.currentUser.uid)
-                                    .set({
-                                        content: serializedData,
-                                        timestamp: new Date(),
-                                        updatedAt: Date.now(),
-                                        userId: window.currentUser.uid
+                if (window.currentUser && widget) {
+                    try {
+                        widget.save((layoutData) => {
+                            if (layoutData && typeof layoutData === 'object') {
+                                try {
+                                    // JSON 직렬화
+                                    const serializedData = JSON.stringify(layoutData);
+                                    
+                                    // 📏 크기 검사 (1MB 제한)
+                                    if (serializedData.length > 1024 * 1024) {
+                                        console.warn('⚠️ 페이지 종료 시 차트 데이터 크기 초과');
+                                        return;
+                                    }
+                                    
+                                    // 🚀 즉시 저장 (Promise 기반)
+                                    const savePromise = window.db.collection('chartStates')
+                                        .doc(window.currentUser.uid)
+                                        .set({
+                                            content: serializedData,
+                                            timestamp: new Date(),
+                                            updatedAt: Date.now(),
+                                            userId: window.currentUser.uid,
+                                            symbol: widget.activeChart()?.symbol() || 'BTCUSDT',
+                                            interval: widget.activeChart()?.resolution() || '1h',
+                                            version: '1.1',
+                                            exitSave: true // 페이지 종료 시 저장 플래그
+                                        });
+                                    
+                                    // 1초 내 완료 타임아웃
+                                    Promise.race([
+                                        savePromise,
+                                        new Promise((_, reject) => 
+                                            setTimeout(() => reject(new Error('저장 타임아웃')), 1000)
+                                        )
+                                    ]).then(() => {
+                                        console.log('🚪 페이지 종료 시 차트 저장 완료');
+                                    }).catch((error) => {
+                                        console.error('❌ 페이지 종료 시 저장 실패:', error);
                                     });
-                                console.log('🚪 페이지 종료 시 차트 저장 완료');
-                            } catch (error) {
-                                console.error('페이지 종료 시 저장 실패:', error);
+                                    
+                                } catch (serializationError) {
+                                    console.error('❌ 페이지 종료 시 직렬화 실패:', serializationError);
+                                }
                             }
-                        }
-                    });
+                        }, {
+                            // 페이지 종료 시 모든 데이터 포함
+                            includeDrawings: true,
+                            saveStudyTemplates: true,
+                            saveChartProperties: true
+                        });
+                    } catch (widgetError) {
+                        console.error('❌ 페이지 종료 시 위젯 오류:', widgetError);
+                    }
                 }
             };
             
@@ -999,7 +1276,7 @@ function setupIndicatorDoubleClickEvents() {
         console.log('🔥 지표 더블클릭 이벤트 설정 시작');
 
         // 차트 컨테이너 확인
-        const chartContainer = document.getElementById('chart-container');
+        const chartContainer = document.getElementById('tradingview_chart');
         if (!chartContainer) {
             console.error('차트 컨테이너를 찾을 수 없습니다.');
             return;
@@ -1116,7 +1393,7 @@ function setupCSSBasedIndicatorEvents() {
     console.log('🔥 CSS 기반 지표 이벤트 설정');
     
     // 차트 컨테이너에 전역 더블클릭 이벤트 추가
-    const chartContainer = document.getElementById('chart-container');
+    const chartContainer = document.getElementById('tradingview_chart');
     if (!chartContainer) return;
 
     chartContainer.addEventListener('dblclick', (event) => {
@@ -1145,256 +1422,9 @@ function setupCSSBasedIndicatorEvents() {
 }
 
 // TradingView 공식 API로 툴바에 AI 버튼들 추가
-let aiButtonsAdded = false; // 중복 추가 방지 플래그
+// AI 버튼 관련 변수가 삭제되었습니다
 
-function addAIButtonsToToolbar() {
-    try {
-        if (!widget) {
-            console.error('❌ TradingView widget이 준비되지 않았습니다');
-            return;
-        }
-
-        // 이미 추가된 경우 중복 방지
-        if (aiButtonsAdded) {
-            console.log('ℹ️ AI 버튼들이 이미 추가되어 있습니다');
-            return;
-        }
-
-        console.log('🔧 TradingView 공식 API로 AI 버튼들 추가 시작...');
-
-        // AI 버튼 설정 배열
-        const aiButtons = [
-            {
-                id: 'volume-alert-btn',
-                text: '🔔',
-                tooltip: '거래량 알람 설정',
-                onClick: () => {
-                    if (!window.currentUser) {
-                        showNotification('로그인이 필요합니다.', 'warning');
-                        return;
-                    }
-                    document.getElementById('volume-alert-modal').style.display = 'flex';
-                }
-            },
-            {
-                id: 'ai-analysis-btn', 
-                text: '🧠',
-                tooltip: 'AI 분석',
-                onClick: () => {
-                    if (!window.currentUser) {
-                        showNotification('로그인이 필요합니다.', 'warning');
-                        return;
-                    }
-                    document.getElementById('ai-analysis-modal').style.display = 'flex';
-                }
-            },
-            {
-                id: 'notification-settings-btn',
-                text: '⚙️',
-                tooltip: '알림 설정', 
-                onClick: () => {
-                    if (!window.currentUser) {
-                        showNotification('로그인이 필요합니다.', 'warning');
-                        return;
-                    }
-                    document.getElementById('notification-settings-modal').style.display = 'flex';
-                }
-            }
-        ];
-
-        // 각 AI 버튼을 TradingView 툴바에 추가
-        aiButtons.forEach((buttonConfig, index) => {
-            try {
-                // TradingView API 사용법 개선 - 왼쪽 정렬
-                const buttonElement = widget.createButton({
-                    align: 'right'
-                });
-                
-                // 반환된 객체가 DOM element인지 확인
-                if (!buttonElement || typeof buttonElement.style === 'undefined') {
-                    throw new Error('TradingView API가 유효한 DOM 요소를 반환하지 않음');
-                }
-
-                // 안전한 속성 설정
-                if (buttonElement.textContent !== undefined) {
-                    buttonElement.textContent = buttonConfig.text;
-                }
-                if (buttonElement.title !== undefined) {
-                    buttonElement.title = buttonConfig.tooltip;
-                }
-                if (typeof buttonElement.addEventListener === 'function') {
-                    buttonElement.addEventListener('click', buttonConfig.onClick);
-                } else if (buttonElement.onclick !== undefined) {
-                    buttonElement.onclick = buttonConfig.onClick;
-                }
-
-                // 안전한 스타일 설정
-                if (buttonElement.style) {
-                    try {
-                        Object.assign(buttonElement.style, {
-                            fontSize: '16px',
-                            minWidth: '32px',
-                            height: '32px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            margin: '0 2px',
-                            border: 'none',
-                            background: 'transparent',
-                            cursor: 'pointer',
-                            borderRadius: '4px',
-                            transition: 'all 0.2s ease'
-                        });
-                    } catch (styleError) {
-                        console.warn(`⚠️ ${buttonConfig.tooltip} 버튼 스타일 설정 실패:`, styleError);
-                    }
-                }
-
-                console.log(`✅ ${buttonConfig.tooltip} 버튼 추가 완료`);
-
-            } catch (buttonError) {
-                console.error(`❌ ${buttonConfig.tooltip} 버튼 추가 실패:`, buttonError);
-                // 개별 버튼 실패시 전체 폴백 모드로 전환
-                if (index === 0) {
-                    throw buttonError; // 첫 번째 버튼이 실패하면 전체 폴백 모드로
-                }
-            }
-        });
-
-        console.log('✅ 모든 AI 버튼들이 TradingView 툴바에 추가되었습니다');
-        aiButtonsAdded = true; // 성공 플래그 설정
-
-    } catch (error) {
-        console.error('❌ TradingView API로 AI 버튼 추가 실패:', error);
-        
-        // 폴백: 플로팅 버튼으로 추가
-        console.log('🔄 폴백 모드로 전환...');
-        addFallbackAIButtons();
-    }
-}
-
-// 폴백: 차트 위에 플로팅 AI 버튼들 추가
-function addFallbackAIButtons() {
-    const chartContainer = document.getElementById('chart-container');
-    if (!chartContainer) {
-        console.error('❌ 차트 컨테이너를 찾을 수 없습니다');
-        return;
-    }
-    
-    // 기존 폴백 버튼이 있으면 제거
-    const existingFallback = document.getElementById('ai-fallback-buttons');
-    if (existingFallback) {
-        existingFallback.remove();
-    }
-    
-    console.log('🔄 폴백 모드: 플로팅 AI 버튼들 추가...');
-    
-    // 차트 컨테이너를 relative로 설정
-    chartContainer.style.position = 'relative';
-    
-    const fallbackContainer = document.createElement('div');
-    fallbackContainer.id = 'ai-fallback-buttons';
-    fallbackContainer.style.cssText = `
-        position: absolute;
-        top: 15px;
-        right: 15px;
-        display: flex;
-        gap: 6px;
-        z-index: 1000;
-        background: rgba(255, 255, 255, 0.95);
-        backdrop-filter: blur(10px);
-        padding: 6px;
-        border-radius: 10px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        border: 1px solid rgba(240, 243, 250, 0.8);
-    `;
-    
-    const aiButtons = [
-        {
-            id: 'fallback-volume-alert-btn',
-            emoji: '🔔',
-            title: '거래량 알람 설정',
-            onClick: () => {
-                if (!window.currentUser) {
-                    showNotification('로그인이 필요합니다.', 'warning');
-                    return;
-                }
-                document.getElementById('volume-alert-modal').style.display = 'flex';
-            }
-        },
-        {
-            id: 'fallback-ai-analysis-btn',
-            emoji: '🧠',
-            title: 'AI 분석',
-            onClick: () => {
-                if (!window.currentUser) {
-                    showNotification('로그인이 필요합니다.', 'warning');
-                    return;
-                }
-                document.getElementById('ai-analysis-modal').style.display = 'flex';
-            }
-        },
-        {
-            id: 'fallback-notification-settings-btn',
-            emoji: '⚙️',
-            title: '알림 설정',
-            onClick: () => {
-                if (!window.currentUser) {
-                    showNotification('로그인이 필요합니다.', 'warning');
-                    return;
-                }
-                document.getElementById('notification-settings-modal').style.display = 'flex';
-            }
-        }
-    ];
-    
-    aiButtons.forEach(buttonConfig => {
-        const button = document.createElement('button');
-        button.id = buttonConfig.id;
-        button.title = buttonConfig.title;
-        button.innerHTML = buttonConfig.emoji;
-        button.addEventListener('click', buttonConfig.onClick);
-        
-        button.style.cssText = `
-            background: transparent;
-            color: #131722;
-            border: none;
-            padding: 6px;
-            cursor: pointer;
-            border-radius: 6px;
-            font-size: 16px;
-            min-width: 30px;
-            height: 30px;
-            transition: all 0.2s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        `;
-        
-        button.addEventListener('mouseenter', () => {
-            button.style.background = 'rgba(41, 98, 255, 0.1)';
-            button.style.transform = 'translateY(-1px) scale(1.05)';
-        });
-        
-        button.addEventListener('mouseleave', () => {
-            button.style.background = 'transparent';
-            button.style.transform = 'translateY(0) scale(1)';
-        });
-        
-        button.addEventListener('mousedown', () => {
-            button.style.transform = 'translateY(0) scale(0.95)';
-        });
-        
-        button.addEventListener('mouseup', () => {
-            button.style.transform = 'translateY(-1px) scale(1.05)';
-        });
-        
-        fallbackContainer.appendChild(button);
-    });
-    
-    chartContainer.appendChild(fallbackContainer);
-    console.log('✅ 폴백 AI 버튼들이 차트 위에 추가되었습니다');
-}
+// AI 버튼 관련 기능들이 삭제되었습니다
 
 // 코인 선택 모달 기능 제거됨 (TradingView 내장 기능 사용)
 

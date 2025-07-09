@@ -29,20 +29,35 @@ function connectWebSocket() {
     };
 
     websocket.onmessage = (event) => {
-        const data = JSON.parse(event.data);
-        if (data.e === 'kline') {
-            const subscription = activeSubscriptions.get(data.s);
-            if (subscription) {
-                const bar = {
-                    time: data.k.t,
-                    open: parseFloat(data.k.o),
-                    high: parseFloat(data.k.h),
-                    low: parseFloat(data.k.l),
-                    close: parseFloat(data.k.c),
-                    volume: parseFloat(data.k.v)
-                };
-                subscription.callback(bar);
+        try {
+            const data = JSON.parse(event.data);
+            if (data.e === 'kline') {
+                const subscription = activeSubscriptions.get(data.s);
+                if (subscription) {
+                    const currentTime = data.k.t;
+                    
+                    // 🔒 시간 순서 검증
+                    if (subscription.lastTime && currentTime <= subscription.lastTime) {
+                        console.warn(`⚠️ 시간 순서 위반 감지 [${data.s}]: 이전=${new Date(subscription.lastTime)}, 현재=${new Date(currentTime)}`);
+                        return; // 잘못된 순서의 데이터 무시
+                    }
+                    
+                    const bar = {
+                        time: currentTime,
+                        open: parseFloat(data.k.o),
+                        high: parseFloat(data.k.h),
+                        low: parseFloat(data.k.l),
+                        close: parseFloat(data.k.c),
+                        volume: parseFloat(data.k.v)
+                    };
+                    
+                    // 🔄 시간 검증 통과 후 콜백 실행
+                    subscription.lastTime = currentTime;
+                    subscription.callback(bar);
+                }
             }
+        } catch (error) {
+            console.error('❌ WebSocket 메시지 처리 오류:', error);
         }
     };
 }
@@ -66,7 +81,11 @@ function subscribeToSymbol(symbol, resolution, callback) {
         id: Date.now()
     };
 
-    activeSubscriptions.set(symbol, { resolution, callback });
+    activeSubscriptions.set(symbol, { 
+        resolution, 
+        callback, 
+        lastTime: null // 시간 순서 검증을 위한 마지막 시간 저장
+    });
     if (websocket.readyState === WebSocket.OPEN) {
         websocket.send(JSON.stringify(subscriptionMessage));
     }

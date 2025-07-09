@@ -1,0 +1,499 @@
+# 🚀 TradingView Charting Library Integration & Auto-Save Optimization Rules
+
+## 🎯 Core Architecture Overview
+
+### 📁 TradingView Library Structure
+```
+charting_library-master/
+├── charting_library/
+│   ├── charting_library.standalone.js    # Main library file
+│   ├── charting_library.d.ts            # TypeScript definitions
+│   └── bundles/                         # Localization bundles
+├── datafeeds/
+│   └── udf/                             # UDF (Universal Data Feed) adapter
+├── index.html                           # Basic integration example
+├── test.html                            # Advanced testing example
+├── themed.html                          # Theme customization example
+└── mobile_*.html                        # Mobile-optimized examples
+```
+
+### 🔧 Widget Constructor Pattern
+```javascript
+// Standard TradingView Widget Initialization
+const widget = new TradingView.widget({
+    // 🎯 Essential Configuration
+    container: 'tv_chart_container',
+    datafeed: new Datafeeds.UDFCompatibleDatafeed(datafeedUrl),
+    library_path: 'charting_library/',
+    
+    // 📊 Chart Settings
+    symbol: 'BTCUSDT',
+    interval: '1h',
+    fullscreen: true,
+    
+    // 🌍 Localization
+    locale: 'ko',
+    
+    // 💾 Auto-Save Configuration (CRITICAL)
+    auto_save_delay: 5,                   // Threshold delay in seconds
+    charts_storage_url: 'your-server-url',
+    charts_storage_api_version: '1.1',
+    client_id: 'your-site-url',
+    user_id: 'unique-user-id',
+    
+    // 🎨 UI Customization
+    disabled_features: [
+        'use_localstorage_for_settings',
+        'volume_force_overlay'
+    ],
+    enabled_features: [
+        'study_templates',
+        'move_logo_to_main_pane'
+    ],
+    
+    // 🎭 Theme & Styling
+    theme: 'dark',
+    overrides: {
+        'mainSeriesProperties.style': 1,
+        'paneProperties.background': '#1a1a1a'
+    }
+});
+```
+
+## 💾 Advanced Auto-Save Implementation
+
+### 🔄 TradingView Official Auto-Save Events
+```javascript
+// 🎯 PRIMARY: onAutoSaveNeeded Event (Recommended by TradingView)
+widget.onAutoSaveNeeded.subscribe(null, () => {
+    console.log('📊 TradingView onAutoSaveNeeded triggered');
+    debouncedAutoSave();
+});
+
+// 🔄 SECONDARY: Chart Change Events (Backup)
+const chart = widget.activeChart();
+chart.onSymbolChanged().subscribe(null, debouncedAutoSave);
+chart.onIntervalChanged().subscribe(null, debouncedAutoSave);
+```
+
+### ⚡ Optimized Auto-Save Function
+```javascript
+// 🚀 High-Performance Auto-Save with Debouncing
+let saveTimeout = null;
+let lastSaveTime = 0;
+const SAVE_COOLDOWN = 3000; // 3 seconds minimum between saves
+
+const debouncedAutoSave = () => {
+    if (saveTimeout) clearTimeout(saveTimeout);
+    saveTimeout = setTimeout(() => {
+        const now = Date.now();
+        if (now - lastSaveTime < SAVE_COOLDOWN) return;
+        
+        widget.save((layoutData) => {
+            if (layoutData && window.currentUser) {
+                saveChartLayout(layoutData);
+                lastSaveTime = now;
+            }
+        }, {
+            includeDrawings: true,  // Include drawing tools
+            saveStudyTemplates: true // Include indicators
+        });
+    }, 2000); // 2-second debounce
+};
+```
+
+### 📦 Secure Chart Data Storage
+```javascript
+const saveChartLayout = async (layoutData) => {
+    try {
+        // 🔒 Data Serialization with Error Handling
+        const serializedData = JSON.stringify(layoutData);
+        
+        const saveData = {
+            content: serializedData,
+            timestamp: new Date(),
+            userId: window.currentUser.uid,
+            symbol: widget.activeChart()?.symbol() || 'BTCUSDT',
+            interval: widget.activeChart()?.resolution() || '1h',
+            version: '1.1',
+            checksum: btoa(serializedData.slice(0, 100)) // Simple integrity check
+        };
+        
+        // 🗄️ Firebase Firestore Storage
+        await window.db.collection('chartStates').doc(window.currentUser.uid).set(saveData);
+        
+        // 🎉 Success Notification
+        showSaveNotification();
+        
+    } catch (error) {
+        console.error('❌ Chart save failed:', error);
+        showErrorNotification('Chart save failed');
+    }
+};
+```
+
+### 🔄 Intelligent Chart Restoration
+```javascript
+const restoreChart = async () => {
+    if (!window.currentUser || chartRestored) return;
+    
+    try {
+        // 🎯 Primary: Auto-saved charts
+        const chartDoc = await window.db.collection('chartStates')
+            .doc(window.currentUser.uid).get();
+            
+        if (chartDoc.exists) {
+            const data = chartDoc.data();
+            const layoutData = JSON.parse(data.content);
+            
+            await widget.load(layoutData);
+            chartRestored = true;
+            console.log('✅ Chart restored successfully');
+            return;
+        }
+        
+        // 🔄 Fallback: Manual saves
+        const manualSaves = await window.db.collection('chartLayouts')
+            .where('userId', '==', window.currentUser.uid)
+            .orderBy('timestamp', 'desc')
+            .limit(1)
+            .get();
+            
+        if (!manualSaves.empty) {
+            const latestSave = manualSaves.docs[0].data();
+            const layoutData = JSON.parse(latestSave.content);
+            
+            await widget.load(layoutData);
+            chartRestored = true;
+        }
+        
+    } catch (error) {
+        console.error('❌ Chart restoration failed:', error);
+    }
+};
+```
+
+## 🎛️ Advanced Event Handling
+
+### 🖱️ User Interaction Detection
+```javascript
+// 🎯 Comprehensive Interaction Monitoring
+const setupInteractionListeners = () => {
+    const chartContainer = document.getElementById('chart-container');
+    
+    // 🖱️ Mouse Events
+    ['mouseup', 'touchend', 'click'].forEach(eventType => {
+        chartContainer.addEventListener(eventType, debouncedAutoSave);
+    });
+    
+    // ⌨️ Keyboard Events (Drawing Tools)
+    document.addEventListener('keyup', (e) => {
+        if (['Delete', 'Backspace', 'Escape', 'Enter'].includes(e.key)) {
+            debouncedAutoSave();
+        }
+    });
+    
+    // 🎨 Drawing Tool Events
+    widget.subscribe('drawing_event', debouncedAutoSave);
+    widget.subscribe('study_event', debouncedAutoSave);
+};
+```
+
+### 🔧 Widget Configuration Optimization
+```javascript
+// 🚀 Performance-Optimized Widget Settings
+const optimizedWidgetConfig = {
+    // 📊 Core Settings
+    container: 'chart-container',
+    datafeed: createOptimizedDatafeed(),
+    library_path: '../charting_library-master/charting_library/',
+    
+    // ⚡ Performance Settings
+    auto_save_delay: 5,
+    debug: false, // Disable in production
+    
+    // 🎯 Feature Optimization
+    disabled_features: [
+        'use_localstorage_for_settings', // Use server storage instead
+        'volume_force_overlay',
+        'header_saveload' // Custom save/load implementation
+    ],
+    
+    enabled_features: [
+        'study_templates',
+        'move_logo_to_main_pane',
+        'chart_template_storage',
+        'saveload_separate_drawings_storage' // 🎯 CRITICAL for performance
+    ],
+    
+    // 🎨 Korean Localization
+    locale: 'ko',
+    
+    // 📱 Responsive Design
+    autosize: true,
+    
+    // 🌙 Theme Configuration
+    theme: 'dark',
+    custom_css_url: '../css/tradingview-custom.css'
+};
+```
+
+## 🔄 Data Management Best Practices
+
+### 📡 Datafeed Implementation
+```javascript
+const createOptimizedDatafeed = () => {
+    return {
+        onReady: (callback) => {
+            setTimeout(() => callback({
+                exchanges: [
+                    { value: 'Binance', name: 'Binance', desc: 'Binance Exchange' }
+                ],
+                symbols_types: [
+                    { name: 'crypto', value: 'crypto' }
+                ],
+                supported_resolutions: ['1', '5', '15', '30', '60', '240', '1D', '1W'],
+                supports_marks: false,
+                supports_timescale_marks: false,
+                supports_time: true
+            }), 0);
+        },
+        
+        searchSymbols: async (userInput, exchange, symbolType, onResult) => {
+            // 🔍 Implement symbol search logic
+            const symbols = await searchCryptoSymbols(userInput);
+            onResult(symbols);
+        },
+        
+        resolveSymbol: async (symbolName, onSymbolResolvedCallback, onResolveErrorCallback) => {
+            try {
+                const symbolInfo = await getSymbolInfo(symbolName);
+                onSymbolResolvedCallback(symbolInfo);
+            } catch (error) {
+                onResolveErrorCallback('Symbol not found');
+            }
+        },
+        
+        getBars: async (symbolInfo, resolution, periodParams, onHistoryCallback, onErrorCallback) => {
+            try {
+                const bars = await fetchHistoricalData(symbolInfo, resolution, periodParams);
+                onHistoryCallback(bars, { noData: bars.length === 0 });
+            } catch (error) {
+                onErrorCallback('Data fetch failed');
+            }
+        },
+        
+        subscribeBars: (symbolInfo, resolution, onRealtimeCallback, subscriberUID, onResetCacheNeededCallback) => {
+            // 📡 Implement real-time data subscription
+            subscribeToRealtimeData(symbolInfo, resolution, onRealtimeCallback);
+        },
+        
+        unsubscribeBars: (subscriberUID) => {
+            // 🔌 Clean up real-time subscription
+            unsubscribeFromRealtimeData(subscriberUID);
+        }
+    };
+};
+```
+
+### 🛡️ Error Handling & Recovery
+```javascript
+// 🚨 Comprehensive Error Handling
+const setupErrorHandling = () => {
+    // 📊 Widget Creation Error
+    try {
+        widget = new TradingView.widget(optimizedWidgetConfig);
+    } catch (error) {
+        console.error('❌ Widget creation failed:', error);
+        showFallbackChart();
+        return;
+    }
+    
+    // 🔄 Auto-Save Error Recovery
+    widget.onAutoSaveNeeded.subscribe(null, () => {
+        try {
+            debouncedAutoSave();
+        } catch (error) {
+            console.error('❌ Auto-save failed:', error);
+            // Implement retry logic
+            setTimeout(debouncedAutoSave, 5000);
+        }
+    });
+    
+    // 📡 Datafeed Error Handling
+    widget.onDatafeedError = (error) => {
+        console.error('❌ Datafeed error:', error);
+        showDatafeedErrorNotification();
+    };
+};
+```
+
+## 🎨 UI/UX Optimization
+
+### 📱 Responsive Design
+```javascript
+// 📱 Mobile-Optimized Configuration
+const getMobileOptimizedConfig = () => {
+    const isMobile = window.innerWidth <= 768;
+    
+    return {
+        ...optimizedWidgetConfig,
+        
+        disabled_features: [
+            ...optimizedWidgetConfig.disabled_features,
+            ...(isMobile ? [
+                'left_toolbar',
+                'header_widget',
+                'timeframes_toolbar',
+                'edit_buttons_in_legend',
+                'context_menus',
+                'control_bar'
+            ] : [])
+        ],
+        
+        overrides: {
+            ...optimizedWidgetConfig.overrides,
+            ...(isMobile ? {
+                'paneProperties.legendProperties.showStudyArguments': false,
+                'paneProperties.legendProperties.showStudyTitles': false
+            } : {})
+        }
+    };
+};
+```
+
+### 🎭 Theme Management
+```javascript
+// 🌙 Dynamic Theme Switching
+const updateChartTheme = () => {
+    const isDarkMode = document.documentElement.classList.contains('dark-mode');
+    
+    if (widget) {
+        widget.changeTheme(isDarkMode ? 'dark' : 'light');
+        
+        // 🎨 Apply custom overrides
+        widget.applyOverrides({
+            'paneProperties.background': isDarkMode ? '#1a1a1a' : '#ffffff',
+            'paneProperties.vertGridProperties.color': isDarkMode ? '#2d2d2d' : '#e0e0e0',
+            'paneProperties.horzGridProperties.color': isDarkMode ? '#2d2d2d' : '#e0e0e0',
+            'scalesProperties.textColor': isDarkMode ? '#e9ecef' : '#1a1a1a'
+        });
+    }
+};
+```
+
+## 🔐 Security & Performance
+
+### 🛡️ Data Validation
+```javascript
+// 🔒 Secure Data Handling
+const validateChartData = (layoutData) => {
+    if (!layoutData || typeof layoutData !== 'object') {
+        throw new Error('Invalid chart data format');
+    }
+    
+    // 📏 Size validation (prevent oversized saves)
+    const serialized = JSON.stringify(layoutData);
+    if (serialized.length > 1024 * 1024) { // 1MB limit
+        throw new Error('Chart data too large');
+    }
+    
+    return true;
+};
+
+// 🚀 Performance Monitoring
+const monitorPerformance = () => {
+    const startTime = performance.now();
+    
+    widget.onChartReady(() => {
+        const loadTime = performance.now() - startTime;
+        console.log(`📊 Chart loaded in ${loadTime.toFixed(2)}ms`);
+        
+        // 📈 Send performance metrics
+        if (window.gtag) {
+            gtag('event', 'chart_load_time', {
+                custom_parameter: loadTime
+            });
+        }
+    });
+};
+```
+
+### 🔄 Memory Management
+```javascript
+// 🧹 Cleanup and Memory Management
+const cleanupChart = () => {
+    if (widget) {
+        // 🔌 Unsubscribe from events
+        if (widget.onAutoSaveNeeded) {
+            widget.onAutoSaveNeeded.unsubscribe(null);
+        }
+        
+        // 🗑️ Clear timeouts
+        if (saveTimeout) {
+            clearTimeout(saveTimeout);
+            saveTimeout = null;
+        }
+        
+        // 💾 Final save before cleanup
+        widget.save((layoutData) => {
+            if (layoutData && window.currentUser) {
+                saveChartLayout(layoutData);
+            }
+        });
+        
+        // 🔥 Remove widget
+        widget.remove();
+        widget = null;
+    }
+};
+
+// 🚪 Page unload handling
+window.addEventListener('beforeunload', cleanupChart);
+```
+
+## 🎯 Implementation Checklist
+
+### ✅ Essential Setup
+- [ ] Include TradingView library files correctly
+- [ ] Set up proper container element
+- [ ] Configure datafeed with real data source
+- [ ] Implement auto-save with `onAutoSaveNeeded` event
+- [ ] Set up chart restoration on user login
+- [ ] Add proper error handling and fallbacks
+
+### ⚡ Performance Optimization
+- [ ] Enable `saveload_separate_drawings_storage` feature
+- [ ] Implement debounced auto-save (2-3 second delay)
+- [ ] Add save cooldown to prevent excessive saves
+- [ ] Use JSON serialization for data storage
+- [ ] Implement proper cleanup on page unload
+
+### 🎨 User Experience
+- [ ] Add save/load notifications
+- [ ] Implement responsive design for mobile
+- [ ] Set up theme synchronization
+- [ ] Add loading states and error messages
+- [ ] Ensure proper Korean localization
+
+### 🔐 Security & Reliability
+- [ ] Validate chart data before saving
+- [ ] Implement data size limits
+- [ ] Add integrity checks for saved data
+- [ ] Set up proper authentication checks
+- [ ] Implement retry logic for failed operations
+
+## 📚 Key References
+
+- **TradingView Documentation**: [charting-library-docs](https://www.tradingview.com/charting-library-docs/)
+- **Auto-Save API**: [Saving and Loading Charts](https://www.tradingview.com/charting-library-docs/latest/saving_loading/)
+- **Widget Constructor**: [ChartingLibraryWidgetOptions](https://www.tradingview.com/charting-library-docs/latest/api/interfaces/Charting_Library.ChartingLibraryWidgetOptions/)
+- **Datafeed API**: [Connecting Data](https://www.tradingview.com/charting-library-docs/latest/connecting_data/)
+
+---
+
+🚀 **Remember**: Always test auto-save functionality thoroughly across different browsers and devices. The `onAutoSaveNeeded` event is the most reliable method for triggering saves, but backup event listeners ensure comprehensive coverage of user interactions.
+description:
+globs:
+alwaysApply: false
+---
