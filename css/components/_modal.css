@@ -1,50 +1,371 @@
-/* Modal */
-.modal {
-  display: none;
+/* ========================================
+   🪟 MODAL COMPONENT
+   ======================================== */
+
+/* 🔥 Modal Overlay */
+.modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    z-index: var(--z-modal);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    visibility: hidden;
+    transition: all var(--transition-normal);
+}
+
+.modal-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* 🔥 Modal Container */
+.modal {
+    background-color: var(--card-bg);
+    border-radius: var(--radius-xl);
+    box-shadow: 0 20px 40px var(--shadow-color-dark);
+    max-width: 90vw;
+    max-height: 90vh;
   width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.8);
+    margin: var(--spacing-lg);
+    overflow: hidden;
+    transform: scale(0.95) translateY(20px);
+    transition: all var(--transition-normal);
+}
+
+.modal-overlay.active .modal {
+    transform: scale(1) translateY(0);
+}
+
+/* 🔥 Modal Sizes */
+.modal-sm {
+    max-width: 400px;
+}
+
+.modal-md {
+    max-width: 600px;
+}
+
+.modal-lg {
+    max-width: 800px;
+}
+
+.modal-xl {
+    max-width: 1000px;
+}
+
+.modal-full {
+    max-width: 95vw;
+    max-height: 95vh;
+}
+
+/* 🔥 Modal Header */
+.modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--spacing-xl);
+    border-bottom: 1px solid var(--border-color);
+    background-color: var(--bg-secondary-color);
+}
+
+.modal-title {
+    font-size: var(--font-size-xl);
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-color);
+    margin: 0;
+}
+
+.modal-close {
+    display: flex;
+    align-items: center;
   justify-content: center;
+    width: 32px;
+    height: 32px;
+    background: none;
+    border: none;
+    border-radius: var(--radius-md);
+    color: var(--text-color-secondary);
+    font-size: var(--font-size-lg);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.modal-close:hover {
+    background-color: var(--border-color);
+    color: var(--text-color);
+}
+
+/* 🔥 Modal Body */
+.modal-body {
+    padding: var(--spacing-xl);
+    overflow-y: auto;
+    max-height: calc(90vh - 120px);
+}
+
+.modal-body::-webkit-scrollbar {
+    width: 6px;
+}
+
+.modal-body::-webkit-scrollbar-track {
+    background: var(--bg-secondary-color);
+}
+
+.modal-body::-webkit-scrollbar-thumb {
+    background: var(--border-color-dark);
+    border-radius: var(--radius-sm);
+}
+
+.modal-body::-webkit-scrollbar-thumb:hover {
+    background: var(--text-color-tertiary);
+}
+
+/* 🔥 Modal Footer */
+.modal-footer {
+    display: flex;
   align-items: center;
-  z-index: 1000;
+    justify-content: flex-end;
+    gap: var(--spacing-md);
+    padding: var(--spacing-xl);
+    border-top: 1px solid var(--border-color);
+    background-color: var(--bg-secondary-color);
 }
 
-.modal-content {
-  background: var(--card-bg);
+.modal-footer-left {
+    margin-right: auto;
+}
+
+/* 🔥 Modal Content Variants */
+.modal-content-centered {
+    text-align: center;
+}
+
+.modal-content-form .form-group {
+    margin-bottom: var(--spacing-lg);
+}
+
+.modal-content-form label {
+    display: block;
+    margin-bottom: var(--spacing-sm);
+    font-weight: var(--font-weight-medium);
+    color: var(--text-color);
+}
+
+.modal-content-form input,
+.modal-content-form textarea,
+.modal-content-form select {
+    width: 100%;
+    padding: var(--spacing-sm) var(--spacing-md);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    background-color: var(--card-bg);
   color: var(--text-color);
-  border-radius: 12px;
-  padding: 32px 24px;
+    font-size: var(--font-size-sm);
+    transition: border-color var(--transition-fast);
 }
 
-.modal-content h2 {
-  margin-bottom: 20px;
+.modal-content-form input:focus,
+.modal-content-form textarea:focus,
+.modal-content-form select:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px var(--primary-light);
 }
 
-.modal-content p {
-  margin-bottom: 20px;
-  color: #CCCCCC;
+/* 🔥 Modal Animations */
+@keyframes modalSlideIn {
+    from {
+        transform: scale(0.95) translateY(20px);
+        opacity: 0;
+    }
+    to {
+        transform: scale(1) translateY(0);
+        opacity: 1;
+    }
 }
 
-.modal-content input {
-  background: var(--bg-color);
+@keyframes modalSlideOut {
+    from {
+        transform: scale(1) translateY(0);
+        opacity: 1;
+    }
+    to {
+        transform: scale(0.95) translateY(20px);
+        opacity: 0;
+    }
+}
+
+.modal-enter {
+    animation: modalSlideIn var(--transition-normal) ease-out;
+}
+
+.modal-exit {
+    animation: modalSlideOut var(--transition-normal) ease-out;
+}
+
+/* 🔥 Confirmation Modal */
+.modal-confirm {
+    max-width: 400px;
+}
+
+.modal-confirm .modal-body {
+    text-align: center;
+    padding: var(--spacing-2xl);
+}
+
+.modal-confirm-icon {
+    width: 64px;
+    height: 64px;
+    margin: 0 auto var(--spacing-lg);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--font-size-2xl);
+}
+
+.modal-confirm-icon.warning {
+    background-color: var(--warning-light);
+    color: var(--warning-color);
+}
+
+.modal-confirm-icon.error {
+    background-color: var(--error-light);
+    color: var(--error-color);
+}
+
+.modal-confirm-icon.success {
+    background-color: var(--success-light);
+    color: var(--success-color);
+}
+
+.modal-confirm-icon.info {
+    background-color: var(--info-light);
+    color: var(--info-color);
+}
+
+.modal-confirm-title {
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-semibold);
   color: var(--text-color);
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-  padding: 10px;
-  margin-bottom: 12px;
+    margin-bottom: var(--spacing-sm);
 }
 
-.modal-content button {
-  background: var(--primary-color);
-  color: #fff;
-  border-radius: 6px;
+.modal-confirm-message {
+    font-size: var(--font-size-sm);
+    color: var(--text-color-secondary);
+    line-height: 1.5;
 }
 
-.close {
-  float: right;
-  font-size: 24px;
-  cursor: pointer;
+/* 🔥 Loading Modal */
+.modal-loading {
+    max-width: 300px;
+}
+
+.modal-loading .modal-body {
+    text-align: center;
+    padding: var(--spacing-2xl);
+}
+
+.modal-loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid var(--border-color);
+    border-top: 3px solid var(--primary-color);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto var(--spacing-lg);
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.modal-loading-text {
+    font-size: var(--font-size-sm);
+    color: var(--text-color-secondary);
+}
+
+/* 🔥 Mobile Modal */
+@media (max-width: 768px) {
+    .modal {
+        margin: var(--spacing-md);
+        max-width: calc(100vw - 32px);
+        max-height: calc(100vh - 32px);
+    }
+    
+    .modal-header,
+    .modal-body,
+    .modal-footer {
+        padding: var(--spacing-lg);
+    }
+    
+    .modal-title {
+        font-size: var(--font-size-lg);
+    }
+    
+    .modal-footer {
+        flex-direction: column-reverse;
+        gap: var(--spacing-sm);
+    }
+    
+    .modal-footer .btn {
+        width: 100%;
+    }
+    
+    .modal-footer-left {
+        margin-right: 0;
+        margin-top: var(--spacing-sm);
+}
+
+    .modal-confirm .modal-body {
+        padding: var(--spacing-xl);
+    }
+    
+    .modal-confirm-icon {
+        width: 48px;
+        height: 48px;
+        font-size: var(--font-size-xl);
+    }
+}
+
+/* 🔥 Tablet Modal */
+@media (max-width: 1024px) {
+    .modal-lg,
+    .modal-xl {
+        max-width: 90vw;
+    }
+    
+    .modal-body {
+        max-height: calc(90vh - 100px);
+    }
+}
+
+/* 🔥 Accessibility */
+.modal-overlay[aria-hidden="true"] {
+    display: none;
+}
+
+.modal:focus {
+    outline: none;
+}
+
+.modal-close:focus {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+}
+
+/* 🔥 Dark Mode Support */
+:root.dark-mode .modal-overlay {
+    background-color: rgba(0, 0, 0, 0.7);
+}
+
+:root.dark-mode .modal {
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
 } 

@@ -1,19 +1,176 @@
-/* Reset and Base Styles */
+/* ========================================
+   🔄 CSS RESET
+   ======================================== */
+
+/* 🔥 Box Sizing Reset */
+*, *::before, *::after {
+    box-sizing: border-box;
+}
+
+/* 🔥 Remove Default Margins and Padding */
 * {
   margin: 0;
   padding: 0;
-  box-sizing: border-box;
-  font-family: 'Pretendard', sans-serif;
 }
 
+/* 🔥 HTML and Body Reset */
+html, body {
+    height: 100%;
+    scroll-behavior: smooth;
+}
+
+body {
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+}
+
+/* 🔥 Typography Reset */
+h1, h2, h3, h4, h5, h6 {
+    font-weight: inherit;
+    font-size: inherit;
+    line-height: inherit;
+}
+
+p, blockquote, pre, address, hr, table, fieldset, figure {
+    margin: 0;
+}
+
+/* 🔥 List Reset */
+ul, ol {
+    list-style: none;
+}
+
+/* 🔥 Link Reset */
 a {
-  text-decoration: none;
-  color: inherit;
+    color: inherit;
+    text-decoration: none;
 }
 
+a:hover, a:focus {
+  text-decoration: none;
+}
+
+/* 🔥 Button Reset */
 button {
+    background: none;
+    border: none;
+    padding: 0;
+    margin: 0;
+    font: inherit;
+    color: inherit;
   cursor: pointer;
+}
+
+button:focus {
+    outline: none;
+}
+
+/* 🔥 Form Element Reset */
+input, textarea, select {
+    font: inherit;
+    color: inherit;
+    background: none;
+    border: none;
+    outline: none;
+}
+
+input:focus, textarea:focus, select:focus {
+    outline: none;
+}
+
+/* 🔥 Table Reset */
+table {
+    border-collapse: collapse;
+    border-spacing: 0;
+}
+
+th, td {
+    text-align: left;
+    vertical-align: top;
+}
+
+/* 🔥 Image Reset */
+img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+}
+
+/* 🔥 SVG Reset */
+svg {
+    display: block;
+    max-width: 100%;
+    height: auto;
+}
+
+/* 🔥 HR Reset */
+hr {
+    border: none;
+    border-top: 1px solid var(--border-color);
+    margin: var(--spacing-lg) 0;
+}
+
+/* 🔥 Fieldset Reset */
+fieldset {
   border: none;
-  background: none;
-  font-family: inherit;
+    padding: 0;
+}
+
+/* 🔥 Legend Reset */
+legend {
+    padding: 0;
+}
+
+/* 🔥 Details Reset */
+details {
+    display: block;
+}
+
+summary {
+    display: list-item;
+    cursor: pointer;
+}
+
+/* 🔥 Hidden Attribute */
+[hidden] {
+    display: none !important;
+}
+
+/* 🔥 Focus Visible */
+:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+}
+
+/* 🔥 Selection */
+::selection {
+    background-color: var(--primary-light);
+    color: var(--text-color);
+}
+
+/* 🔥 Placeholder */
+::placeholder {
+    color: var(--text-color-tertiary);
+    opacity: 1;
+}
+
+/* 🔥 Scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--bg-secondary-color);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--border-color-dark);
+    border-radius: var(--radius-sm);
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--text-color-tertiary);
 } 

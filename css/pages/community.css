@@ -1,0 +1,464 @@
+/* ========================================
+   🏘️ COMMUNITY PAGE STYLES
+   ======================================== */
+
+/* 🔥 커뮤니티 페이지 기본 레이아웃 */
+body {
+    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    line-height: 1.6;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    overflow: hidden;
+}
+
+.main-container {
+    width: 100vw !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-sizing: border-box;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+/* 🔥 커뮤니티 레이아웃 */
+.community-layout {
+    display: flex;
+    height: calc(100vh - 80px);
+    width: 100%;
+    overflow: hidden;
+}
+
+.community-layout-inner {
+    display: flex;
+    width: 100%;
+    height: 100%;
+}
+
+/* 🔥 CSS 변수 */
+:root {
+    --primary-color: #3182f6;
+    --text-color: #1a1a1a;
+    --text-color-secondary: #666;
+    --bg-color: #f8f9fa;
+    --bg-secondary-color: #f1f3f5;
+    --card-bg: #ffffff;
+    --border-color: #e9ecef;
+    --shadow-color: rgba(0, 0, 0, 0.1);
+    --success-color: #22c55e;
+    --error-color: #ef4444;
+    --warning-color: #f59e0b;
+}
+
+:root.dark-mode {
+    --text-color: #e9ecef;
+    --text-color-secondary: #adb5bd;
+    --bg-color: #1a1a1a;
+    --bg-secondary-color: #2d2d2d;
+    --card-bg: #2d2d2d;
+    --border-color: #404040;
+    --shadow-color: rgba(0, 0, 0, 0.3);
+}
+
+/* 🔥 AI 분석 결과 상세 스타일 */
+.technical-details {
+    margin-top: 16px;
+    padding: 12px;
+    background: var(--bg-secondary-color);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}
+
+.technical-details h4, .technical-details h5 {
+    margin: 0 0 12px 0;
+    font-size: 14px;
+    color: var(--text-color);
+}
+
+.detail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.detail-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 8px;
+    background: var(--card-bg);
+    border-radius: 4px;
+    font-size: 12px;
+}
+
+.detail-label {
+    color: var(--text-color-secondary);
+    font-weight: 500;
+}
+
+.detail-value {
+    color: var(--text-color);
+    font-weight: 600;
+}
+
+.patterns-detected {
+    margin-top: 12px;
+}
+
+.pattern-item {
+    padding: 8px;
+    margin: 4px 0;
+    background: var(--card-bg);
+    border-radius: 4px;
+    border-left: 3px solid var(--primary-color);
+    font-size: 12px;
+}
+
+.pattern-item small {
+    color: var(--text-color-secondary);
+    font-size: 11px;
+}
+
+/* 🔥 방향/감정/액션별 색상 스타일 */
+.direction-상승, .sentiment-긍정적, .action-매수 {
+    color: var(--success-color);
+    font-weight: 600;
+}
+
+.direction-하락, .sentiment-부정적, .action-매도 {
+    color: var(--error-color);
+    font-weight: 600;
+}
+
+.direction-횡보, .sentiment-중립적, .action-관망 {
+    color: var(--warning-color);
+    font-weight: 600;
+}
+
+.risk-낮음 {
+    color: var(--success-color);
+    font-weight: 600;
+}
+
+.risk-중간 {
+    color: var(--warning-color);
+    font-weight: 600;
+}
+
+.risk-높음 {
+    color: var(--error-color);
+    font-weight: 600;
+}
+
+/* 🔥 신뢰도 바 개선 */
+.confidence-bar {
+    width: 100%;
+    height: 6px;
+    background: var(--bg-secondary-color);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-top: 4px;
+}
+
+.confidence-fill {
+    height: 100%;
+    background: var(--primary-color);
+    border-radius: 3px;
+    transition: width 0.3s ease;
+}
+
+/* 🔥 신호 분석 스타일 */
+.signal-summary {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.signal-item {
+    flex: 1;
+    padding: 8px 12px;
+    border-radius: 6px;
+    text-align: center;
+    font-size: 12px;
+}
+
+.signal-item.bullish {
+    background: rgba(34, 197, 94, 0.1);
+    border: 1px solid var(--success-color);
+}
+
+.signal-item.bearish {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid var(--error-color);
+}
+
+.signal-label {
+    display: block;
+    color: var(--text-color-secondary);
+    font-size: 11px;
+}
+
+.signal-value {
+    display: block;
+    font-weight: 600;
+    font-size: 14px;
+    margin-top: 2px;
+}
+
+/* 🔥 코인 선택 모달 UI */
+.coin-search-modal {
+    display: none;
+    position: fixed;
+    top: 0; left: 0;
+    width: 100vw; height: 100vh;
+    background: rgba(0,0,0,0.45);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+}
+
+.coin-search-modal.show {
+    display: flex !important;
+}
+
+.coin-search-content {
+    background: var(--card-bg, #fff);
+    border-radius: 18px;
+    width: 92vw;
+    max-width: 420px;
+    max-height: 80vh;
+    overflow: hidden;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.18);
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+}
+
+.coin-search-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 24px 12px 24px;
+    border-bottom: 1px solid var(--border-color);
+    background: var(--card-bg, #fff);
+}
+
+.coin-search-header h3 {
+    font-size: 1.15em;
+    font-weight: 700;
+    margin: 0;
+    color: var(--text-color);
+}
+
+.coin-search-close {
+    background: none;
+    border: none;
+    font-size: 1.7em;
+    color: var(--text-color-secondary);
+    cursor: pointer;
+    padding: 0 4px;
+    border-radius: 6px;
+    transition: background 0.15s;
+}
+
+.coin-search-close:hover {
+    background: var(--bg-secondary-color);
+}
+
+/* 🔥 AI 분석 모달 컴팩트 스타일 */
+.compact-analysis-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 12px 12px 0 0;
+    padding: 16px 20px;
+    color: white;
+}
+
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.analysis-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.analysis-title h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.analysis-icon {
+    font-size: 20px;
+}
+
+.signal-badge {
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    margin-left: 12px;
+}
+
+.signal-badge.bullish {
+    background-color: rgba(34, 197, 94, 0.2);
+    color: #22c55e;
+    border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.signal-badge.bearish {
+    background-color: rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.signal-badge.neutral {
+    background-color: rgba(251, 191, 36, 0.2);
+    color: #fbbf24;
+    border: 1px solid rgba(251, 191, 36, 0.3);
+}
+
+.confidence-compact {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.confidence-text {
+    font-size: 12px;
+    opacity: 0.9;
+}
+
+.confidence-bar-mini {
+    width: 60px;
+    height: 4px;
+    background-color: rgba(255, 255, 255, 0.2);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.confidence-fill-mini {
+    height: 100%;
+    background: linear-gradient(90deg, #22c55e, #16a34a);
+    border-radius: 2px;
+    transition: width 0.3s ease;
+}
+
+.compact-analysis-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 16px;
+    padding: 20px;
+}
+
+.compact-card {
+    background: white;
+    border-radius: 8px;
+    padding: 16px;
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* 🔥 태블릿 반응형 */
+@media (max-width: 1024px) {
+    .community-layout {
+        flex-direction: column;
+        height: calc(100vh - 80px);
+    }
+    
+    .community-layout-inner {
+        flex-direction: column;
+        height: 100%;
+    }
+    
+    .chart-section {
+        flex: 1;
+        min-height: 0;
+    }
+    
+    .chat-section {
+        width: 100%;
+        border-left: none;
+        border-top: 1px solid var(--border-color);
+        flex: 1;
+        min-height: 0;
+    }
+}
+
+/* 🔥 모바일 반응형 */
+@media (max-width: 768px) {
+    body {
+        overflow: hidden;
+        height: 100vh;
+    }
+    
+    .community-layout {
+        height: 100vh;
+        margin-top: 0;
+        padding-top: 56px;
+        box-sizing: border-box;
+    }
+    
+    .community-layout-inner {
+        flex-direction: column;
+        height: calc(100% - 56px);
+    }
+    
+    .chart-section {
+        flex: 1;
+        min-height: 0;
+        max-height: calc(50vh - 28px);
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .chat-section {
+        flex: 1;
+        min-height: 0;
+        max-height: calc(50vh - 28px);
+        display: flex;
+        flex-direction: column;
+        position: relative;
+    }
+    
+    .coin-search-content {
+        max-width: 98vw;
+        width: 98vw;
+        border-radius: 10px;
+        padding: 0;
+    }
+    
+    .coin-search-header {
+        padding-left: 10px;
+        padding-right: 10px;
+    }
+    
+    .analysis-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .signal-counts, .prediction-timeline {
+        flex-direction: column;
+        gap: 12px;
+    }
+    
+    .risk-reward {
+        flex-direction: column;
+        gap: 16px;
+    }
+    
+    .trading-signals, .model-details, .strategy-details, .trading-points {
+        grid-template-columns: 1fr;
+    }
+} 

@@ -1,0 +1,1004 @@
+/* ========================================
+   🔥 COMMUNITY REALTIME PAGE STYLES
+   ======================================== */
+
+/* 🔥 커뮤니티 레이아웃 */
+.community-layout {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 65px);
+    background: var(--bg-color);
+}
+
+.community-layout-inner {
+    display: flex;
+    flex: 1;
+    gap: 0;
+    overflow: hidden;
+}
+
+/* 🔥 분봉 선택 버튼 스타일 */
+.interval-selector {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    background: var(--bg-secondary-color);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 3px;
+}
+
+.interval-button {
+    background: transparent;
+    border: none;
+    color: var(--text-color);
+    font-size: 11px;
+    font-weight: 500;
+    padding: 6px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    min-width: 35px;
+    white-space: nowrap;
+}
+
+.interval-button:hover {
+    background: rgba(var(--primary-color-rgb, 59, 130, 246), 0.1);
+    color: var(--primary-color);
+}
+
+.interval-button.active {
+    background: var(--primary-color);
+    color: white;
+    font-weight: 600;
+}
+
+/* 🔥 차트 컨테이너 개선 */
+#chart-container-wrapper {
+    flex: 1;
+    position: relative;
+    min-height: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    background: var(--card-bg);
+}
+
+#tradingview_chart {
+    width: 100%;
+    height: 100%;
+    min-height: 300px;
+    background: var(--card-bg);
+    flex: 1;
+}
+
+/* 🔥 차트 로딩 인디케이터 */
+.chart-loading {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    z-index: 10;
+    display: none;
+}
+
+.chart-loading.show {
+    display: block;
+}
+
+/* 🔥 차트 스크롤바 스타일링 */
+.tv-lightweight-charts {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-color) transparent;
+}
+
+.tv-lightweight-charts::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.tv-lightweight-charts::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.tv-lightweight-charts::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 4px;
+}
+
+.tv-lightweight-charts::-webkit-scrollbar-thumb:hover {
+    background: var(--text-color-secondary);
+}
+
+/* 🔥 AI 분석 결과 상세 스타일 */
+.technical-details {
+    margin-top: 16px;
+    padding: 12px;
+    background: var(--bg-secondary-color);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}
+
+.technical-details h4, .technical-details h5 {
+    margin: 0 0 12px 0;
+    font-size: 14px;
+    color: var(--text-color);
+}
+
+.detail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.detail-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 8px;
+    background: var(--card-bg);
+    border-radius: 4px;
+    font-size: 12px;
+}
+
+.detail-label {
+    color: var(--text-color-secondary);
+    font-weight: 500;
+}
+
+.detail-value {
+    color: var(--text-color);
+    font-weight: 600;
+}
+
+.patterns-detected {
+    margin-top: 12px;
+}
+
+.pattern-item {
+    padding: 8px;
+    margin: 4px 0;
+    background: var(--card-bg);
+    border-radius: 4px;
+    border-left: 3px solid var(--primary-color);
+    font-size: 12px;
+}
+
+.pattern-item small {
+    color: var(--text-color-secondary);
+    font-size: 11px;
+}
+
+/* 🔥 방향/감정/액션별 색상 스타일 */
+.direction-상승, .sentiment-긍정적, .action-매수 {
+    color: var(--success-color);
+    font-weight: 600;
+}
+
+.direction-하락, .sentiment-부정적, .action-매도 {
+    color: var(--error-color);
+    font-weight: 600;
+}
+
+.direction-횡보, .sentiment-중립적, .action-관망 {
+    color: var(--warning-color);
+    font-weight: 600;
+}
+
+.risk-낮음 {
+    color: var(--success-color);
+    font-weight: 600;
+}
+
+.risk-중간 {
+    color: var(--warning-color);
+    font-weight: 600;
+}
+
+.risk-높음 {
+    color: var(--error-color);
+    font-weight: 600;
+}
+
+/* 🔥 신뢰도 바 개선 */
+.confidence-bar {
+    width: 100%;
+    height: 6px;
+    background: var(--bg-secondary-color);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-top: 4px;
+}
+
+.confidence-fill {
+    height: 100%;
+    background: var(--primary-color);
+    border-radius: 3px;
+    transition: width 0.3s ease;
+}
+
+/* 🔥 신호 분석 스타일 */
+.signal-summary {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.signal-item {
+    flex: 1;
+    padding: 8px 12px;
+    border-radius: 6px;
+    text-align: center;
+    font-size: 12px;
+}
+
+.signal-item.bullish {
+    background: rgba(34, 197, 94, 0.1);
+    border: 1px solid var(--success-color);
+}
+
+.signal-item.bearish {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid var(--error-color);
+}
+
+.signal-label {
+    display: block;
+    color: var(--text-color-secondary);
+    font-size: 11px;
+}
+
+.signal-value {
+    display: block;
+    font-weight: 600;
+    font-size: 14px;
+    margin-top: 2px;
+}
+
+.signal-strength {
+    margin: 8px 0;
+}
+
+.strength-item {
+    padding: 4px 8px;
+    margin: 2px 0;
+    background: var(--card-bg);
+    border-radius: 4px;
+    border-left: 3px solid var(--primary-color);
+    font-size: 11px;
+    font-weight: 500;
+}
+
+.pattern-confidence {
+    float: right;
+    background: var(--primary-color);
+    color: white;
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-size: 10px;
+    font-weight: 600;
+}
+
+.pattern-details {
+    margin-top: 12px;
+    padding: 8px;
+    background: var(--bg-secondary-color);
+    border-radius: 4px;
+    border-left: 3px solid var(--warning-color);
+}
+
+.pattern-details p {
+    margin: 0;
+    font-size: 12px;
+    color: var(--text-color);
+}
+
+/* 🔥 분석 카드 스타일 */
+.card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.card-header h4 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+.confidence-badge {
+    background: var(--primary-color);
+    color: white;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.pattern-list, .indicators-grid, .factors-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.pattern-item, .indicator-item, .factor-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px;
+    background: var(--bg-secondary-color);
+    border-radius: 8px;
+    border-left: 3px solid var(--border-color);
+}
+
+.pattern-item.bullish, .indicator-item .indicator-signal.강세 {
+    border-left-color: var(--success-color);
+}
+
+.pattern-item.bearish, .indicator-item .indicator-signal.약세 {
+    border-left-color: var(--error-color);
+}
+
+.indicator-name, .factor-name {
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+.indicator-value, .factor-impact {
+    font-weight: 500;
+}
+
+.indicator-signal {
+    font-size: 12px;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-weight: 600;
+}
+
+.factor-impact.high {
+    color: var(--error-color);
+}
+
+.factor-impact.medium {
+    color: var(--warning-color);
+}
+
+.factor-impact.low {
+    color: var(--success-color);
+}
+
+.trading-signals, .model-details, .strategy-details, .trading-points {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+}
+
+.signal-item, .model-item, .strategy-item, .point-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 12px;
+    background: var(--bg-secondary-color);
+    border-radius: 8px;
+}
+
+.signal-label, .model-label, .strategy-label, .point-label {
+    font-size: 12px;
+    color: var(--text-color-secondary);
+    font-weight: 500;
+}
+
+.signal-value, .model-value, .strategy-value, .point-value {
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+.point-item.entry {
+    border-left: 3px solid var(--primary-color);
+}
+
+.point-item.stop {
+    border-left: 3px solid var(--error-color);
+}
+
+.point-item.target {
+    border-left: 3px solid var(--success-color);
+}
+
+.keyword-cloud {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.keyword-tag {
+    padding: 6px 12px;
+    border-radius: 16px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.keyword-tag.positive {
+    background: rgba(34, 197, 94, 0.1);
+    color: var(--success-color);
+}
+
+.keyword-tag.negative {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--error-color);
+}
+
+.keyword-tag.neutral {
+    background: var(--bg-secondary-color);
+    color: var(--text-color);
+}
+
+.sentiment-trend, .market-metrics, .timeframe-analysis {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.trend-item, .metric-item, .timeframe-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.trend-item:last-child, .metric-item:last-child, .timeframe-item:last-child {
+    border-bottom: none;
+}
+
+.trend-value.positive, .timeframe-signal.bullish {
+    color: var(--success-color);
+}
+
+.trend-value.negative, .timeframe-signal.bearish {
+    color: var(--error-color);
+}
+
+.news-summary, .recommendation-reasoning {
+    line-height: 1.6;
+}
+
+.reason-item {
+    margin-bottom: 16px;
+}
+
+.reason-item h5 {
+    margin: 0 0 8px 0;
+    font-size: 14px;
+    color: var(--text-color);
+}
+
+.reason-item p {
+    margin: 0;
+    font-size: 13px;
+    color: var(--text-color-secondary);
+}
+
+.error-message {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--error-color);
+}
+
+.error-message i {
+    font-size: 48px;
+    margin-bottom: 16px;
+    opacity: 0.7;
+}
+
+.error-message h4 {
+    margin: 0 0 12px 0;
+    font-size: 18px;
+}
+
+.retry-btn {
+    margin-top: 16px;
+    padding: 8px 16px;
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+/* 🔥 코인 선택 모달 UI */
+.coin-search-modal {
+    display: none;
+    position: fixed;
+    top: 0; left: 0;
+    width: 100vw; height: 100vh;
+    background: rgba(0,0,0,0.45);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+}
+
+.coin-search-modal.show {
+    display: flex !important;
+}
+
+.coin-search-content {
+    background: var(--card-bg, #fff);
+    border-radius: 18px;
+    width: 92vw;
+    max-width: 420px;
+    max-height: 80vh;
+    overflow: hidden;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.18);
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+}
+
+.coin-search-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 24px 12px 24px;
+    border-bottom: 1px solid var(--border-color);
+    background: var(--card-bg, #fff);
+}
+
+.coin-search-header h3 {
+    font-size: 1.15em;
+    font-weight: 700;
+    margin: 0;
+    color: var(--text-color);
+}
+
+.coin-search-close {
+    background: none;
+    border: none;
+    font-size: 1.7em;
+    color: var(--text-color-secondary);
+    cursor: pointer;
+    padding: 0 4px;
+    border-radius: 6px;
+    transition: background 0.15s;
+}
+
+.coin-search-close:hover {
+    background: var(--bg-secondary-color);
+}
+
+.coin-search-input-wrapper {
+    padding: 16px 24px 8px 24px;
+    border-bottom: 1px solid var(--border-color);
+    background: var(--card-bg, #fff);
+}
+
+.coin-search-input {
+    width: 100%;
+    height: 40px;
+    padding: 0 16px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--bg-secondary-color);
+    color: var(--text-color);
+    font-size: 15px;
+    outline: none;
+    box-sizing: border-box;
+}
+
+.coin-search-input:focus {
+    border-color: var(--primary-color);
+    background: var(--card-bg);
+}
+
+.coin-search-tabs {
+    display: flex;
+    padding: 0 24px;
+    border-bottom: 1px solid var(--border-color);
+    background: var(--card-bg, #fff);
+}
+
+.coin-search-tab {
+    flex: 1;
+    padding: 12px 0;
+    border: none;
+    background: none;
+    color: var(--text-color-secondary);
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: color 0.15s, border-bottom 0.15s;
+}
+
+.coin-search-tab.active {
+    color: var(--primary-color);
+    border-bottom: 2px solid var(--primary-color);
+}
+
+.coin-search-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px 0;
+    background: var(--card-bg, #fff);
+}
+
+.coin-search-item {
+    display: flex;
+    align-items: center;
+    padding: 14px 24px;
+    cursor: pointer;
+    transition: background 0.18s;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.coin-search-item:last-child {
+    border-bottom: none;
+}
+
+.coin-search-item:hover {
+    background: var(--bg-secondary-color);
+}
+
+.coin-search-item-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    margin-right: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    color: white;
+    font-weight: bold;
+}
+
+.coin-search-item-info {
+    flex: 1;
+}
+
+.coin-search-item-symbol {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+.coin-search-item-name {
+    font-size: 13px;
+    color: var(--text-color-secondary);
+}
+
+.coin-search-item-price {
+    text-align: right;
+}
+
+.coin-search-item-price-value {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text-color);
+}
+
+.coin-search-item-price-change {
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.coin-search-item-price-change.positive {
+    color: #22c55e;
+}
+
+.coin-search-item-price-change.negative {
+    color: #ef4444;
+}
+
+/* 🔥 차트 헤더 코인 선택기 */
+.coin-selector {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 8px 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-width: 120px;
+}
+
+.coin-selector:hover {
+    background: var(--bg-secondary-color);
+    border-color: var(--primary-color);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.coin-selector .coin-icon {
+    font-size: 16px;
+    font-weight: bold;
+    color: var(--primary-color);
+}
+
+.coin-selector #selected-coin-text {
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--text-color);
+}
+
+.coin-selector .fa-chevron-down {
+    font-size: 12px;
+    color: var(--text-color-secondary);
+    transition: transform 0.2s ease;
+}
+
+.coin-selector:hover .fa-chevron-down {
+    transform: rotate(180deg);
+}
+
+/* 🔥 코인 가격 표시 */
+.coin-price-display {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+}
+
+.coin-price {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-color);
+    transition: all 0.3s ease;
+}
+
+.coin-change-container {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+}
+
+.coin-change, .coin-change-percent {
+    font-size: 12px;
+    font-weight: 600;
+    transition: color 0.3s ease;
+}
+
+.coin-change.positive, .coin-change-percent.positive {
+    color: var(--success-color);
+}
+
+.coin-change.negative, .coin-change-percent.negative {
+    color: var(--error-color);
+}
+
+/* 🔥 AI 분석 모달 컴팩트 스타일 */
+.compact-analysis-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 12px 12px 0 0;
+    padding: 16px 20px;
+    color: white;
+}
+
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.analysis-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.analysis-title h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.analysis-icon {
+    font-size: 20px;
+}
+
+.signal-badge {
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    margin-left: 12px;
+}
+
+.signal-badge.bullish {
+    background-color: rgba(34, 197, 94, 0.2);
+    color: #22c55e;
+    border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.signal-badge.bearish {
+    background-color: rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.signal-badge.neutral {
+    background-color: rgba(251, 191, 36, 0.2);
+    color: #fbbf24;
+    border: 1px solid rgba(251, 191, 36, 0.3);
+}
+
+.confidence-compact {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.confidence-text {
+    font-size: 12px;
+    opacity: 0.9;
+}
+
+.confidence-bar-mini {
+    width: 60px;
+    height: 4px;
+    background-color: rgba(255, 255, 255, 0.2);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.confidence-fill-mini {
+    height: 100%;
+    background: linear-gradient(90deg, #22c55e, #16a34a);
+    border-radius: 2px;
+    transition: width 0.3s ease;
+}
+
+.compact-analysis-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 16px;
+    padding: 20px;
+}
+
+.compact-card {
+    background: white;
+    border-radius: 8px;
+    padding: 16px;
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* 🔥 모바일 반응형 */
+@media (max-width: 768px) {
+    .community-layout {
+        height: 100vh;
+        margin-top: 0;
+        padding-top: 56px;
+        box-sizing: border-box;
+    }
+    
+    .community-layout-inner {
+        flex-direction: column;
+        height: calc(100% - 56px);
+    }
+    
+    .chart-section {
+        flex: 1;
+        min-height: 0;
+        max-height: calc(50vh - 28px);
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .chat-section {
+        flex: 1;
+        min-height: 0;
+        max-height: calc(50vh - 28px);
+        display: flex;
+        flex-direction: column;
+        position: relative;
+    }
+    
+    .interval-selector {
+        gap: 2px;
+        padding: 2px;
+    }
+    
+    .interval-button {
+        font-size: 10px;
+        padding: 4px 6px;
+        min-width: 28px;
+    }
+    
+    #tradingview_chart {
+        min-height: 200px;
+    }
+    
+    #chart-container-wrapper {
+        overflow: hidden;
+        border-radius: 0;
+    }
+    
+    .coin-selector {
+        min-width: 100px;
+        padding: 6px 10px;
+        gap: 6px;
+    }
+    
+    .coin-selector #selected-coin-text {
+        font-size: 13px;
+    }
+    
+    .coin-price-display {
+        align-items: flex-start;
+    }
+    
+    .coin-price {
+        font-size: 14px;
+    }
+    
+    .coin-change, .coin-change-percent {
+        font-size: 11px;
+    }
+    
+    .analysis-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .signal-counts, .prediction-timeline {
+        flex-direction: column;
+        gap: 12px;
+    }
+    
+    .risk-reward {
+        flex-direction: column;
+        gap: 16px;
+    }
+    
+    .trading-signals, .model-details, .strategy-details, .trading-points {
+        grid-template-columns: 1fr;
+    }
+    
+    .coin-search-content {
+        max-width: 98vw;
+        width: 98vw;
+        border-radius: 10px;
+        padding: 0;
+    }
+    
+    .coin-search-header, .coin-search-input-wrapper, .coin-search-tabs {
+        padding-left: 10px;
+        padding-right: 10px;
+    }
+    
+    .coin-search-item {
+        padding: 12px 10px;
+    }
+}
+
+/* 🔥 다크 모드 지원 */
+:root.dark-mode .compact-card {
+    background: var(--card-bg);
+    border-color: var(--border-color);
+    color: var(--text-color);
+}
+
+:root.dark-mode .coin-search-content {
+    background: var(--card-bg);
+}
+
+:root.dark-mode .coin-search-header,
+:root.dark-mode .coin-search-input-wrapper,
+:root.dark-mode .coin-search-tabs,
+:root.dark-mode .coin-search-list {
+    background: var(--card-bg);
+} 

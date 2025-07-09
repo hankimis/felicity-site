@@ -1,3 +1,36 @@
+/* ========================================
+   📊 CHART COMPONENT STYLES
+   ======================================== */
+
+/* 🔥 차트 섹션 기본 레이아웃 */
+.chart-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 600px;
+    background: var(--card-bg);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+#chart-container-wrapper {
+    flex: 1;
+    position: relative;
+    min-height: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+#tradingview_chart {
+    width: 100%;
+    height: 100%;
+    min-height: 300px;
+    background: var(--card-bg);
+    flex: 1;
+}
+
 /* 🔥 차트 레이아웃 헤더 */
 .chart-layout-header {
     display: flex;
@@ -8,6 +41,7 @@
     padding: 0 16px;
     position: relative;
     z-index: 100;
+    background: var(--card-bg);
 }
 
 /* 🔥 레이아웃 버튼 그룹 */
@@ -29,6 +63,7 @@
     justify-content: center;
     min-width: 32px;
     height: 28px;
+    color: var(--text-color);
 }
 
 .layout-btn:hover {
@@ -37,8 +72,8 @@
 }
 
 .layout-btn.active {
-    background: #4a90e2;
-    border-color: #4a90e2;
+    background: var(--primary-color);
+    border-color: var(--primary-color);
     color: white;
 }
 
@@ -150,8 +185,15 @@
     overflow: hidden;
     background: white;
     min-height: 300px;
+    transition: all 0.2s ease;
 }
 
+.chart-container:hover {
+    border-color: var(--primary-color);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* 🔥 차트 로딩 인디케이터 */
 .chart-loading {
     position: absolute;
     top: 50%;
@@ -163,61 +205,75 @@
     gap: 8px;
     color: #6c757d;
     font-size: 14px;
-    z-index: 5;
+    z-index: 1001;
     pointer-events: none;
 }
 
-.chart-loading i {
-    font-size: 18px;
-    color: #4a90e2;
-    pointer-events: none;
-}
-
-
-
-.chart-loading {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
+.chart-loading.show {
     display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 8px;
-    color: #6c757d;
-    font-size: 14px;
-    z-index: 1001; /* 오버레이보다 위에 */
-    pointer-events: none;
 }
 
 .chart-loading i {
     font-size: 18px;
-    color: #4a90e2;
+    color: var(--primary-color);
     pointer-events: none;
 }
 
-/* 🔥 반응형 디자인 */
+/* 🔥 차트 설정 모달 */
+.chart-settings-btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.chart-settings-btn {
+    background: var(--primary-color);
+    color: white;
+}
+
+.chart-settings-btn.secondary {
+    background: var(--bg-secondary-color);
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+}
+
+.chart-settings-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.chart-style-btn {
+    padding: 8px 16px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background: var(--card-bg);
+    color: var(--text-color);
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.chart-style-btn.active {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+.chart-style-btn:hover {
+    background: var(--bg-secondary-color);
+    border-color: var(--primary-color);
+}
+
+/* 🔥 태블릿 반응형 */
 @media (max-width: 1024px) {
     .chart-layout-header {
         padding: 8px 16px;
         min-height: 50px;
-    }
-    
-    .chart-header-left {
-        gap: 12px;
-    }
-    
-    .symbol-name {
-        font-size: 16px;
-    }
-    
-    .current-price {
-        font-size: 14px;
-    }
-    
-    .price-change {
-        font-size: 12px;
-        padding: 2px 6px;
     }
     
     .layout-buttons-group {
@@ -234,10 +290,26 @@
         height: 12px;
     }
     
+    .chart-section {
+        min-height: 400px;
+    }
     
+    #tradingview_chart {
+        min-height: 250px;
+    }
 }
 
+/* 🔥 모바일 반응형 */
 @media (max-width: 768px) {
+    .chart-section {
+        flex: 1;
+        min-height: 0;
+        max-height: 50vh;
+        border-radius: 0;
+        border: none;
+        border-bottom: 1px solid var(--border-color);
+    }
+    
     .chart-layout-header {
         flex-direction: column;
         gap: 12px;
@@ -245,22 +317,11 @@
         min-height: auto;
     }
     
-    .chart-header-left {
+    .layout-buttons-group {
         width: 100%;
         justify-content: center;
-        flex-direction: column;
-        align-items: center;
-        gap: 12px;
-    }
-    
-    .chart-market-data {
-        justify-content: center;
-        gap: 12px;
-    }
-    
-    .chart-header-right {
-        width: 100%;
-        justify-content: center;
+        flex-wrap: wrap;
+        gap: 4px;
     }
     
     .chart-main-container.layout-2,
@@ -277,6 +338,15 @@
     .chart-container {
         min-height: 250px;
     }
+    
+    #chart-container-wrapper {
+        overflow: hidden;
+        border-radius: 0;
+    }
+    
+    #tradingview_chart {
+        min-height: 200px;
+    }
 }
 
 @media (max-width: 480px) {
@@ -284,21 +354,10 @@
         padding: 8px;
     }
     
-    .chart-header-left {
-        flex-direction: column;
-        gap: 8px;
-    }
-    
-    .chart-price-info {
-        gap: 8px;
-    }
-    
     .layout-buttons-group {
         flex-wrap: wrap;
         gap: 4px;
     }
-    
-
     
     .chart-container {
         min-height: 200px;
@@ -307,46 +366,38 @@
 
 /* 🔥 다크 모드 지원 */
 .dark-mode .chart-layout-header {
-    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-    border-bottom-color: #334155;
-}
-
-.dark-mode .chart-layout-header .symbol-name,
-.dark-mode .chart-layout-header .current-price,
-.dark-mode .chart-layout-header .market-value {
-    color: #f1f5f9;
-}
-
-.dark-mode .chart-layout-header .symbol-exchange,
-.dark-mode .chart-layout-header .market-label,
-.dark-mode .chart-layout-header .countdown {
-    color: #94a3b8;
-}
-
-.dark-mode .chart-layout-header .symbol-exchange {
-    background: rgba(148, 163, 184, 0.1);
-}
-
-.dark-mode .chart-layout-header .layout-buttons-group {
-    background: rgba(30, 41, 59, 0.5);
-    border-color: #475569;
-}
-
-.dark-mode .chart-layout-header .chart-box {
-    background: #94a3b8;
+    background: var(--card-bg);
+    border-bottom-color: var(--border-color);
 }
 
 .dark-mode .chart-main-container {
-    background: #0f172a;
+    background: var(--bg-color);
 }
 
 .dark-mode .chart-container {
-    background: #1e293b;
-    border-color: #334155;
+    background: var(--card-bg);
+    border-color: var(--border-color);
 }
 
 .dark-mode .chart-container:hover {
-    border-color: #475569;
+    border-color: var(--primary-color);
+}
+
+.dark-mode .layout-btn {
+    background: var(--bg-secondary-color);
+    border-color: var(--border-color);
+    color: var(--text-color);
+}
+
+.dark-mode .layout-btn:hover {
+    background: var(--bg-color);
+    border-color: var(--primary-color);
+}
+
+.dark-mode .layout-btn.active {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+    color: white;
 }
 
 /* 🔥 애니메이션 */
@@ -378,43 +429,14 @@
     animation: fadeIn 0.5s ease-out;
 }
 
-/* 🔥 스크롤바 스타일링 */
-.chart-main-container::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
-}
-
-.chart-main-container::-webkit-scrollbar-track {
-    background: #1e293b;
-    border-radius: 3px;
-}
-
-.chart-main-container::-webkit-scrollbar-thumb {
-    background: #475569;
-    border-radius: 3px;
-}
-
-.chart-main-container::-webkit-scrollbar-thumb:hover {
-    background: #64748b;
-}
-
-/* 🔥 전체화면 모드 */
-.chart-layout-header:fullscreen {
-    border-radius: 0;
-}
-
-.chart-main-container:fullscreen {
-    border-radius: 0;
-}
-
 /* 🔥 접근성 개선 */
 .layout-btn:focus {
-    outline: 2px solid #3b82f6;
+    outline: 2px solid var(--primary-color);
     outline-offset: 2px;
 }
 
 .layout-btn:focus-visible {
-    outline: 2px solid #3b82f6;
+    outline: 2px solid var(--primary-color);
     outline-offset: 2px;
 }
 
@@ -426,105 +448,4 @@
 
 .chart-loading {
     will-change: opacity;
-} 
-
-/* 🔥 차트 컨테이너 스타일 */
-.chart-container {
-    position: relative;
-    background: var(--card-bg);
-    border-radius: 8px;
-    overflow: hidden;
-    min-height: 400px;
-    transition: all 0.2s ease;
-    cursor: pointer;
-    border: 2px solid transparent;
-    z-index: 1;
-}
-
-.chart-container::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 1;
-    pointer-events: none;
-}
-
-.chart-container:hover {
-    border-color: var(--primary-color);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-.chart-container.active {
-    border-color: var(--primary-color);
-    box-shadow: 0 4px 20px rgba(74, 144, 226, 0.3);
-}
-
-.chart-container.active::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 3px;
-    background: var(--primary-color);
-    z-index: 10;
-} 
-
-/* 🔥 차트 헤더 바 스타일 */
-.chart-header-bar {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 32px;
-    background: rgba(0, 0, 0, 0.1);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 12px;
-    z-index: 10;
-    cursor: pointer;
-    transition: background 0.2s ease;
-}
-
-.chart-header-bar:hover {
-    background: rgba(0, 0, 0, 0.2);
-}
-
-.chart-number {
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--text-color);
-    opacity: 0.8;
-}
-
-.chart-status {
-    display: flex;
-    align-items: center;
-}
-
-.chart-status i {
-    font-size: 8px;
-    color: #666;
-    transition: color 0.2s ease;
-}
-
-.chart-status i.active {
-    color: var(--primary-color);
-}
-
-.chart-container.active .chart-status i {
-    color: var(--primary-color);
-}
-
-.chart-container.active .chart-header-bar {
-    background: rgba(74, 144, 226, 0.2);
-}
-
-.chart-container.active .chart-number {
-    color: var(--primary-color);
-    opacity: 1;
 } 
