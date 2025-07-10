@@ -118,6 +118,7 @@ function initializeNewsUI() {
             filterNews(source);
         });
     });
+
 }
 
 // 무한스크롤 상태 리셋

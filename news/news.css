@@ -9,6 +9,92 @@
     text-align: left;
 }
 
+/* Tab Navigation */
+.tab-navigation {
+    display: flex;
+    gap: 0;
+    margin: 0 auto 2rem auto;
+    padding: 0 1rem;
+    max-width: 1000px;
+    border-bottom: 2px solid var(--border-color);
+}
+
+.tab-btn {
+    padding: 12px 24px;
+    background: transparent;
+    border: none;
+    border-bottom: 3px solid transparent;
+    color: var(--text-color-secondary);
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+    position: relative;
+    margin-bottom: -2px;
+}
+
+.tab-btn:hover {
+    color: var(--text-color);
+    background: var(--bg-secondary-color);
+}
+
+.tab-btn.active {
+    color: var(--text-color);
+    border-bottom-color: var(--text-color);
+    background: var(--bg-color);
+}
+
+.tab-btn.active::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--bg-color);
+}
+
+/* Tab Content */
+.tab-content {
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Economic Calendar Tab Content */
+.calendar-container {
+    width: 100%;
+    min-height: 600px;
+    background: var(--bg-color);
+    padding: 0 1rem;
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.tradingview-widget-container {
+    width: 100%;
+    height: 600px;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    background: #fff;
+}
+
+.tradingview-widget-container__widget {
+    width: 100%;
+    height: 100%;
+}
+
 /* News Filters */
 .news-filters {
     display: flex;
@@ -199,6 +285,38 @@
 
 /* 반응형 디자인 */
 @media (max-width: 768px) {
+    .page-title {
+        font-size: 1.3rem;
+        margin: 1.5rem auto 1rem auto;
+    }
+    
+    .tab-navigation {
+        margin: 0 auto 1.5rem auto;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+    }
+    
+    .tab-navigation::-webkit-scrollbar {
+        display: none;
+    }
+    
+    .tab-btn {
+        padding: 10px 20px;
+        font-size: 0.9rem;
+        flex-shrink: 0;
+    }
+    
+    .calendar-container {
+        min-height: 500px;
+        padding: 0 0.5rem;
+    }
+    
+    .tradingview-widget-container {
+        height: 500px;
+    }
+
     .news-filters {
         gap: 8px;
         justify-content: flex-start;
@@ -261,6 +379,25 @@
 }
 
 @media (max-width: 480px) {
+    .page-title {
+        font-size: 1.2rem;
+        margin: 1rem auto 0.5rem auto;
+    }
+    
+    .tab-btn {
+        padding: 8px 16px;
+        font-size: 0.85rem;
+    }
+    
+    .calendar-container {
+        min-height: 400px;
+        padding: 0 0.25rem;
+    }
+    
+    .tradingview-widget-container {
+        height: 400px;
+    }
+
     .news-filters {
         gap: 6px;
         padding: 0 0.5rem 0.5rem 0.5rem;

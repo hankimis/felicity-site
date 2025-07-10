@@ -39,23 +39,50 @@
     <main class="main-container">
         <h1 class="page-title">뉴스</h1>
         
-        <div class="news-filters">
-            <button class="filter-btn active" data-source="all">전체</button>
-            <button class="filter-btn" data-source="cointelegraph">코인텔레그래프</button>
-            <button class="filter-btn" data-source="tokenpost">토큰포스트</button>
-            <button class="filter-btn" data-source="blockmedia">블록미디어</button>
-            <button class="filter-btn" data-source="blockstreet">블록스트리트</button>
-            <button class="filter-btn" data-source="cryptonews">Cryptonews</button>
-            <button class="filter-btn" data-source="cryptodnes">Cryptodnes</button>
-            <button class="filter-btn" data-source="bloomingbit">블루밍비트</button>
-            <button class="filter-btn" data-source="investing">Investing</button>
-            <button class="filter-btn" data-source="zdnet">ZDNet Korea</button>
+        <!-- Tab Navigation -->
+        <div class="tab-navigation">
+            <button class="tab-btn active" data-tab="news">뉴스</button>
+            <button class="tab-btn" data-tab="economic-calendar">경제 캘린더</button>
         </div>
 
-        <div class="news-list" id="newsGrid">
-            <div class="loading">뉴스를 불러오는 중...</div>
+        <!-- News Tab Content -->
+        <div class="tab-content" id="newsTab">
+            <div class="news-filters">
+                <button class="filter-btn active" data-source="all">전체</button>
+                <button class="filter-btn" data-source="cointelegraph">코인텔레그래프</button>
+                <button class="filter-btn" data-source="tokenpost">토큰포스트</button>
+                <button class="filter-btn" data-source="blockmedia">블록미디어</button>
+                <button class="filter-btn" data-source="blockstreet">블록스트리트</button>
+                <button class="filter-btn" data-source="cryptonews">Cryptonews</button>
+                <button class="filter-btn" data-source="cryptodnes">Cryptodnes</button>
+                <button class="filter-btn" data-source="bloomingbit">블루밍비트</button>
+                <button class="filter-btn" data-source="investing">Investing</button>
+                <button class="filter-btn" data-source="zdnet">ZDNet Korea</button>
+            </div>
+
+            <div class="news-list" id="newsGrid">
+                <div class="loading">뉴스를 불러오는 중...</div>
+            </div>
+        </div>
+
+        <!-- Economic Calendar Tab Content -->
+        <div class="tab-content" id="economicCalendarTab" style="display: none;">
+            <div class="calendar-container">
+                <div class="tradingview-widget-container">
+                    <div class="tradingview-widget-container__widget">
+                        <div class="loading-widget">
+                            <div style="text-align: center; padding: 50px; color: var(--text-color-secondary);">
+                                <i class="fas fa-spinner fa-spin" style="font-size: 2rem; margin-bottom: 1rem;"></i>
+                                <p>TradingView 경제 캘린더를 불러오는 중...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </main>
+
+
 
     <!-- Footer -->
     <div id="footer-placeholder"></div>
@@ -63,6 +90,7 @@
     <!-- Auth Modals are now in _header.html -->
 
     <script src="/js/news.js"></script>
+    <script src="/js/economic-calendar.js"></script>
     <script src="/js/footer-loader.js" defer></script>
 </body>
 </html> 
