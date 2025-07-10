@@ -23,7 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (currentPath.includes('/event/') || currentPath.includes('/event-board/') || 
         currentPath.includes('/community/') || currentPath.includes('/news/') || 
         currentPath.includes('/affiliated/') || currentPath.includes('/notice-board/') || 
-        currentPath.includes('/my-account/')) {
+        currentPath.includes('/my-account/') || currentPath.includes('/admin/')) {
         headerPath = '../_header.html';
     }
     

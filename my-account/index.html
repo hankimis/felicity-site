@@ -15,26 +15,30 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="/css/style.css" />
-    <link rel="stylesheet" href="/auth.css" />
-    <link rel="stylesheet" href="/my-account.css" />
-    <link rel="stylesheet" href="/toast.css" />
+    <link rel="stylesheet" href="../css/style.css" />
+    <link rel="stylesheet" href="../auth.css" />
+    <link rel="stylesheet" href="my-account.css" />
+    <link rel="stylesheet" href="../mobile-menu.css" />
+    <link rel="stylesheet" href="../toast.css" />
     
     <!-- Common Scripts -->
-    <script src="/js/auth.js"></script>
+    <script src="../js/auth.js"></script>
     <!-- Cloudflare Turnstile -->
     <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
     <!-- Unified Header Loader -->
-    <script src="/js/header-loader.js" defer></script>
+    <script src="../js/header-loader.js" defer></script>
 </head>
 <body>
+    <!-- 헤더 포함 -->
+    <div id="header-placeholder"></div>
+    
     <!-- Main Content -->
     <main class="main-container">
         <div class="account-container">
             <h1>계정 설정</h1>
             <div class="profile-card">
                 <div class="profile-picture-section">
-                    <img id="profile-picture-preview" src="/assets/@default-profile.png" alt="프로필 사진">
+                    <img id="profile-picture-preview" src="../assets/@default-profile.png" alt="프로필 사진">
                     <input type="file" id="profile-picture-input" accept="image/*" style="display: none;">
                     <button id="change-picture-btn" class="secondary-btn">사진 변경</button>
                     <div id="upload-status" class="upload-status"></div>
@@ -110,9 +114,9 @@
     <div id="footer-placeholder"></div>
 
     <!-- Scripts -->
-    <script src="/script.js"></script>
-    <script src="/js/footer-loader.js" defer></script>
-    <script type="module" src="/js/auth.js"></script>
-    <script type="module" src="/my-account.js"></script>
+    <script src="../script.js"></script>
+    <script src="../js/footer-loader.js" defer></script>
+    <script type="module" src="../js/auth.js"></script>
+    <script type="module" src="my-account.js"></script>
 </body>
 </html> 

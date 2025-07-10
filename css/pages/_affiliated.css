@@ -208,7 +208,7 @@ main.main-container.affiliated-page {
   padding: 0 20px !important;
   box-sizing: border-box !important;
   width: 100% !important;
-}
+  }
 
 /* affiliated 페이지의 모든 섹션이 컨테이너 전체 너비를 사용하도록 */
 main.main-container.affiliated-page .pre-check-section,

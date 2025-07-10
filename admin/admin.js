@@ -1,8 +1,8 @@
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore, collection, getDocs, doc, getDoc, deleteDoc, updateDoc, addDoc, serverTimestamp, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { firebaseConfig } from './firebase-config.js';
+import { firebaseConfig } from '../firebase-config.js';
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { AdminAuthManager } from './js/admin-auth-manager.js';
+import adminAuthManager from '../js/admin-auth-manager.js';
 
 console.log("admin.js started");
 
@@ -19,7 +19,6 @@ const userSearch = document.getElementById('user-search');
 const refreshBtn = document.querySelector('.refresh-btn');
 
 let allUsers = [];
-let adminAuthManager = null;
 let currentUser = null;
 let isAdmin = false;
 
@@ -30,25 +29,22 @@ let mutedUsers = [];
 
 // 🔒 AdminAuthManager 초기화 및 인증 상태 감지
 async function initializeAdminAuth() {
-    adminAuthManager = new AdminAuthManager(auth, db);
-    
     // 어드민 상태 변경 감지
-    adminAuthManager.onAuthStateChanged((authState) => {
-        currentUser = authState.user;
-        isAdmin = authState.isAdmin;
+    adminAuthManager.onAuthStateChange((user, isAdminUser) => {
+        currentUser = user;
+        isAdmin = isAdminUser;
         
-        if (authState.user && authState.isAdmin) {
+        if (user && isAdminUser) {
             console.log("🔐 관리자 페이지 접근 허용:", {
-                user: authState.user.email,
-                securityLevel: authState.securityLevel,
-                lastValidated: authState.lastValidated
+                user: user.email,
+                isAdmin: isAdminUser
             });
             
             adminDashboard.style.display = 'block';
             accessDenied.style.display = 'none';
             loadDashboardData();
-            updateAdminSecurityUI(authState);
-        } else if (authState.user && !authState.isAdmin) {
+            updateAdminSecurityUI(user, isAdminUser);
+        } else if (user && !isAdminUser) {
             console.log("🔐 관리자 페이지 접근 거부: 권한 없음");
             showAccessDenied("관리자 계정이 아닙니다.");
         } else {
@@ -89,7 +85,7 @@ function showAccessDenied(message) {
 }
 
 // 🔒 관리자 보안 UI 업데이트 함수
-function updateAdminSecurityUI(authState) {
+function updateAdminSecurityUI(user, isAdminUser) {
     // 기존 보안 상태 표시 제거
     const existingSecurityInfo = document.querySelector('.admin-security-info');
     if (existingSecurityInfo) {
@@ -103,11 +99,11 @@ function updateAdminSecurityUI(authState) {
         <i class="fas fa-shield-alt"></i>
         <div class="security-details">
             <div class="security-main">
-                <strong>관리자 인증 완료</strong> - ${authState.user.email}
+                <strong>관리자 인증 완료</strong> - ${user.email}
             </div>
             <div class="security-meta">
-                보안 레벨: ${authState.securityLevel} | 세션 ID: ${authState.sessionId?.substring(0, 8)}... | 
-                마지막 검증: ${new Date(authState.lastValidated).toLocaleTimeString()}
+                보안 레벨: ${isAdminUser ? '관리자' : '일반 사용자'} | 세션 ID: ${user.uid?.substring(0, 8)}... | 
+                마지막 검증: ${new Date(user.metadata.lastSignInTime).toLocaleTimeString()}
             </div>
         </div>
     `;
@@ -339,9 +335,9 @@ document.getElementById('nickname-form')?.addEventListener('submit', async (e) =
     e.preventDefault();
     
     // 🔒 보안 강화된 권한 확인
-    const authResult = await adminAuthManager.checkAdminPermission();
-    if (!authResult.success) {
-        alert(authResult.message || '관리자 권한이 필요합니다.');
+    const isAdminUser = await adminAuthManager.isAdminUser();
+    if (!isAdminUser) {
+        alert('관리자 권한이 필요합니다.');
         return;
     }
     
@@ -376,8 +372,7 @@ document.getElementById('nickname-form')?.addEventListener('submit', async (e) =
         console.log('🔒 닉네임 변경 완료:', {
             targetUserId: uid,
             newNickname: newName,
-            adminUser: currentUser.email,
-            securityLevel: authResult.securityLevel
+            adminUser: currentUser.email
         });
     } catch (error) {
         alert('닉네임 변경 중 오류가 발생했습니다.');
@@ -509,9 +504,9 @@ async function openUserDetailModal(uid) {
 // 🔒 보안 강화된 사용자 삭제 처리
 async function handleDeleteUser(uid) {
     // 실시간 권한 재확인
-    const authResult = await adminAuthManager.checkAdminPermission();
-    if (!authResult.success) {
-        alert(authResult.message || '관리자 권한이 필요합니다.');
+    const isAdminUser = await adminAuthManager.isAdminUser();
+    if (!isAdminUser) {
+        alert('관리자 권한이 필요합니다.');
         return;
     }
     
@@ -535,8 +530,7 @@ async function handleDeleteUser(uid) {
             
             console.log('🔒 사용자 삭제 완료:', {
                 targetUserId: uid,
-                adminUser: currentUser.email,
-                securityLevel: authResult.securityLevel
+                adminUser: currentUser.email
             });
         } catch (error) {
             console.error("Error deleting user: ", error);
@@ -566,9 +560,9 @@ document.getElementById('points-form')?.addEventListener('submit', async (e) => 
     e.preventDefault();
     
     // 🔒 보안 강화된 권한 확인
-    const authResult = await adminAuthManager.checkAdminPermission();
-    if (!authResult.success) {
-        alert(authResult.message || '관리자 권한이 필요합니다.');
+    const isAdminUser = await adminAuthManager.isAdminUser();
+    if (!isAdminUser) {
+        alert('관리자 권한이 필요합니다.');
         return;
     }
     
@@ -607,7 +601,7 @@ document.getElementById('points-form')?.addEventListener('submit', async (e) => 
             points: newPoints
         });
         
-        // 포인트 히스토리 추가 (보안 메타데이터 포함)
+        // 포인트 히스토리 추가
         await addDoc(collection(db, 'pointHistory'), {
             userId: uid,
             action: 'admin_adjustment',
@@ -615,9 +609,7 @@ document.getElementById('points-form')?.addEventListener('submit', async (e) => 
             timestamp: serverTimestamp(),
             description: `관리자 조정: ${reason}`,
             adminId: currentUser?.uid,
-            adminEmail: currentUser?.email,
-            securityLevel: authResult.securityLevel,
-            sessionId: authResult.sessionId
+            adminEmail: currentUser?.email
         });
         
         showToast(`포인트가 ${amount > 0 ? '+' : ''}${amount} 조정되었습니다. (사유: ${reason})`);
@@ -629,8 +621,7 @@ document.getElementById('points-form')?.addEventListener('submit', async (e) => 
             targetUserId: uid,
             pointsChange: amount,
             reason: reason,
-            adminUser: currentUser.email,
-            securityLevel: authResult.securityLevel
+            adminUser: currentUser.email
         });
         
         // 사용자 데이터 새로고침 (실시간 반영)
@@ -648,9 +639,9 @@ document.getElementById('role-form')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     
     // 🔒 보안 강화된 권한 확인
-    const authResult = await adminAuthManager.checkAdminPermission();
-    if (!authResult.success) {
-        alert(authResult.message || '관리자 권한이 필요합니다.');
+    const isAdminUser = await adminAuthManager.isAdminUser();
+    if (!isAdminUser) {
+        alert('관리자 권한이 필요합니다.');
         return;
     }
     
@@ -694,8 +685,7 @@ document.getElementById('role-form')?.addEventListener('submit', async (e) => {
             targetUserId: uid,
             previousRole: previousRole,
             newRole: newRole,
-            adminUser: currentUser.email,
-            securityLevel: authResult.securityLevel
+            adminUser: currentUser.email
         });
     } catch (error) {
         console.error('권한 변경 오류:', error);
@@ -889,9 +879,9 @@ document.getElementById('block-user-form')?.addEventListener('submit', async fun
     e.preventDefault();
     
     // 🔒 보안 강화된 권한 확인
-    const authResult = await adminAuthManager.checkAdminPermission();
-    if (!authResult.success) {
-        alert(authResult.message || '관리자 권한이 필요합니다.');
+    const isAdminUser = await adminAuthManager.isAdminUser();
+    if (!isAdminUser) {
+        alert('관리자 권한이 필요합니다.');
         return;
     }
     
@@ -923,9 +913,7 @@ document.getElementById('block-user-form')?.addEventListener('submit', async fun
             unit: duration === 'permanent' || duration === 'delete' ? null : 'days',
             timestamp: serverTimestamp(),
             adminId: currentUser?.uid,
-            adminEmail: currentUser?.email,
-            securityLevel: authResult.securityLevel,
-            sessionId: authResult.sessionId
+            adminEmail: currentUser?.email
         };
 
         await setDoc(doc(db, 'bannedUsers', userId), blockData);
@@ -937,8 +925,7 @@ document.getElementById('block-user-form')?.addEventListener('submit', async fun
             targetUserId: userId,
             reason: finalReason,
             duration: duration,
-            adminUser: currentUser.email,
-            securityLevel: authResult.securityLevel
+            adminUser: currentUser.email
         });
     } catch (error) {
         console.error('차단 실패:', error);
@@ -949,9 +936,9 @@ document.getElementById('block-user-form')?.addEventListener('submit', async fun
 // 🔒 보안 강화된 차단/금지 해제
 async function unblockUser(uid, type) {
     // 🔒 보안 강화된 권한 확인
-    const authResult = await adminAuthManager.checkAdminPermission();
-    if (!authResult.success) {
-        alert(authResult.message || '관리자 권한이 필요합니다.');
+    const isAdminUser = await adminAuthManager.isAdminUser();
+    if (!isAdminUser) {
+        alert('관리자 권한이 필요합니다.');
         return;
     }
     
@@ -973,8 +960,7 @@ async function unblockUser(uid, type) {
         console.log('🔒 사용자 차단 해제 완료:', {
             targetUserId: uid,
             blockType: type,
-            adminUser: currentUser.email,
-            securityLevel: authResult.securityLevel
+            adminUser: currentUser.email
         });
     } catch (error) {
         console.error('해제 실패:', error);

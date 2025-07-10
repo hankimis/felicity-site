@@ -539,7 +539,7 @@ function createMobileMenuIfNeeded() {
         </nav>
         <div class="mobile-menu-actions">
           <div class="mobile-action-grid">
-            <a href="/admin.html" class="mobile-action-btn" id="mobile-admin-link" style="display: none;">
+            <a href="/admin/" class="mobile-action-btn" id="mobile-admin-link" style="display: none;">
               <i class="fas fa-shield-alt"></i>
               <span>관리자</span>
             </a>

@@ -1,8 +1,8 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { getFirestore, collection, addDoc, serverTimestamp, query, orderBy, onSnapshot, doc, getCountFromServer, getDocs, limit, startAfter } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-import { firebaseConfig } from './firebase-config.js';
-import adminAuthManager from './js/admin-auth-manager.js';
+import { firebaseConfig } from '../firebase-config.js';
+import adminAuthManager from '../js/admin-auth-manager.js';
 
 // 🔥 LEGACY CODE REMOVED - Using AdminAuthManager instead
 // const ADMIN_EMAIL = "admin@site.com";
@@ -79,7 +79,7 @@ function renderNotices(notices = allNotices) {
                         notice.category === 'update' ? '업데이트' : '공지';
     
     return `
-      <a href="notice-post.html?id=${notice.id}" class="notice-item" data-id="${notice.id}">
+      <a href="../notice-post.html?id=${notice.id}" class="notice-item" data-id="${notice.id}">
         <span class="notice-category ${notice.category}">${categoryText}</span>
         <div class="notice-content">
           <div class="notice-title">${notice.title}</div>
