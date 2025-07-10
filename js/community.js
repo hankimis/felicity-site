@@ -161,6 +161,12 @@ async function initializeSingleChart() {
                 loadingIndicator.style.display = 'none';
             }
             
+            // 🔥 차트 저장 관리자 초기화
+            if (window.chartSaveManager) {
+                window.chartSaveManager.initialize(widget);
+                console.log('✅ 차트 저장 관리자 연결 완료');
+            }
+            
             // 🔥 헤더 준비 완료 후 추가 설정
             widget.headerReady().then(() => {
                 console.log('✅ 차트 헤더 준비 완료');
@@ -299,7 +305,7 @@ function saveChartStateWithOptions() {
     if (!widget || !chartStorage || !window.currentUser || !isChartReady) {
         return;
     }
-
+    
     try {
         // 🔥 TradingView 공식 저장 옵션 (지표/그림 포함)
         const saveOptions = {
@@ -355,7 +361,7 @@ function updateChartTheme() {
                 widget.changeTheme(newTheme);
                 console.log(`🎨 단일 차트 테마 변경: ${newTheme}`);
                 themeChanged = true;
-            } catch (error) {
+    } catch (error) {
                 console.warn('⚠️ 단일 차트 테마 변경 실패:', error);
             }
         }
@@ -368,7 +374,7 @@ function updateChartTheme() {
                         chartWidget.changeTheme(newTheme);
                         console.log(`🎨 레이아웃 차트 ${index + 1} 테마 변경: ${newTheme}`);
                         themeChanged = true;
-                    } catch (error) {
+    } catch (error) {
                         console.warn(`⚠️ 레이아웃 차트 ${index + 1} 테마 변경 실패:`, error);
                     }
                 }
@@ -441,7 +447,7 @@ async function setupAuthListener() {
         firebase.auth().onAuthStateChanged(onAuthStateChanged);
         
         console.log('✅ Firebase 인증 리스너 설정 완료');
-    } catch (error) {
+        } catch (error) {
         console.error('❌ Firebase 인증 리스너 설정 실패:', error);
     }
 }
@@ -483,7 +489,7 @@ function handlePageUnload() {
                 saveStudyTemplates: true,
                 saveChartProperties: true
             });
-        } catch (error) {
+                } catch (error) {
             console.error('❌ 페이지 종료 시 저장 실패:', error);
         }
     }
@@ -495,14 +501,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     try {
         // Firebase 초기화 대기
-        await waitForFirebase();
-        
+    await waitForFirebase();
+    
         // 인증 리스너 설정
         await setupAuthListener();
-        
-        // 모달 리스너 설정
-        setupModalListeners();
-        
+    
+    // 모달 리스너 설정
+    setupModalListeners();
+    
         // 🔥 TradingView 차트 초기화
         if (typeof TradingView !== 'undefined') {
             await initializeTradingViewChart();

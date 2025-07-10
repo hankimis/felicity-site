@@ -42,6 +42,7 @@
     position: relative;
     z-index: 100;
     background: var(--card-bg);
+    flex-direction: row-reverse;
 }
 
 /* 🔥 레이아웃 버튼 그룹 */
@@ -52,8 +53,8 @@
 }
 
 .layout-btn {
-    background: #2d2d2d;
-    border: 1px solid #444;
+    background: var(--primary-color);
+    border: 1px var(--primary-color);
     border-radius: 6px;
     padding: 6px 8px;
     cursor: pointer;
@@ -63,12 +64,12 @@
     justify-content: center;
     min-width: 32px;
     height: 28px;
-    color: var(--text-color);
+    color: white;
 }
 
 .layout-btn:hover {
-    background: #3d3d3d;
-    border-color: #555;
+    background: white;
+    border-color: white;
 }
 
 .layout-btn.active {

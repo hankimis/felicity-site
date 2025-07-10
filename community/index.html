@@ -59,6 +59,7 @@
     <script src="../js/chart-storage.js"></script>
     <script src="../js/chart-layout-manager.js"></script>
     <script src="../js/market-data-manager.js"></script>
+    <script src="../js/chart-save-manager.js"></script>
     
     <!-- Common Scripts -->
     <script src="../js/auth.js"></script>
@@ -283,6 +284,31 @@
         </div>
     </div>
 
+    <!-- 차트 저장 관리 모달 -->
+    <div id="chart-save-modal" class="auth-modal">
+        <div class="auth-modal-content" style="max-width: 600px;">
+            <span class="auth-modal-close" data-action="close-modal">&times;</span>
+            <div style="padding: 20px;">
+                <h2 style="margin: 0 0 20px 0; font-size: 18px;">
+                    <i class="fas fa-save"></i> 차트 저장 관리
+                </h2>
+                
+                <div style="margin-bottom: 20px;">
+                    <button id="manual-save-btn" class="chart-settings-btn" style="margin-right: 10px;">
+                        <i class="fas fa-save"></i> 수동 저장
+                    </button>
+                    <button id="refresh-charts-btn" class="chart-settings-btn secondary">
+                        <i class="fas fa-sync"></i> 목록 새로고침
+                    </button>
+                </div>
+                
+                <div id="saved-charts-list" style="max-height: 400px; overflow-y: auto;">
+                    <!-- 저장된 차트 목록이 여기에 표시됩니다 -->
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Coin Search Modal -->
     <div id="coin-search-modal" class="coin-search-modal">
         <div class="coin-search-content">
@@ -327,6 +353,118 @@
                 mobileMenu.classList.remove('is-open');
                 body.classList.remove('mobile-menu-open');
             });
+        }
+
+        // 차트 저장 관리 모달 이벤트
+        const chartSaveModal = document.getElementById('chart-save-modal');
+        const manualSaveBtn = document.getElementById('manual-save-btn');
+        const refreshChartsBtn = document.getElementById('refresh-charts-btn');
+        const savedChartsList = document.getElementById('saved-charts-list');
+
+        // 수동 저장 버튼
+        if (manualSaveBtn) {
+            manualSaveBtn.addEventListener('click', async () => {
+                if (window.chartSaveManager) {
+                    const success = await window.chartSaveManager.manualSave();
+                    if (success) {
+                        refreshSavedChartsList();
+                    }
+                }
+            });
+        }
+
+        // 목록 새로고침 버튼
+        if (refreshChartsBtn) {
+            refreshChartsBtn.addEventListener('click', refreshSavedChartsList);
+        }
+
+        // 저장된 차트 목록 새로고침
+        async function refreshSavedChartsList() {
+            if (!window.chartSaveManager || !savedChartsList) return;
+
+            try {
+                const charts = await window.chartSaveManager.getSavedCharts();
+                
+                if (charts.length === 0) {
+                    savedChartsList.innerHTML = `
+                        <div style="text-align: center; padding: 40px; color: var(--text-color-secondary);">
+                            <i class="fas fa-chart-line" style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;"></i>
+                            <p>저장된 차트가 없습니다.</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                savedChartsList.innerHTML = charts.map(chart => `
+                    <div class="saved-chart-item" style="
+                        display: flex; 
+                        align-items: center; 
+                        justify-content: space-between; 
+                        padding: 12px; 
+                        border: 1px solid var(--border-color); 
+                        border-radius: 8px; 
+                        margin-bottom: 8px;
+                        background: var(--card-bg);
+                    ">
+                        <div>
+                            <div style="font-weight: 600; color: var(--text-color);">
+                                ${chart.symbol} (${chart.interval})
+                            </div>
+                            <div style="font-size: 12px; color: var(--text-color-secondary);">
+                                ${chart.timestamp ? chart.timestamp.toLocaleString() : '알 수 없음'}
+                            </div>
+                        </div>
+                        <div>
+                            <button class="chart-settings-btn secondary" onclick="loadSavedChart('${chart.id}')" style="margin-right: 8px;">
+                                <i class="fas fa-download"></i> 불러오기
+                            </button>
+                            <button class="chart-settings-btn" onclick="deleteSavedChart('${chart.id}')" style="background: var(--error-color);">
+                                <i class="fas fa-trash"></i> 삭제
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('차트 목록 새로고침 실패:', error);
+                savedChartsList.innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: var(--error-color);">
+                        <i class="fas fa-exclamation-triangle" style="font-size: 48px; margin-bottom: 16px;"></i>
+                        <p>목록을 불러올 수 없습니다.</p>
+                    </div>
+                `;
+            }
+        }
+
+        // 전역 함수로 등록
+        window.loadSavedChart = async (chartId) => {
+            // 구현 예정
+            console.log('차트 불러오기:', chartId);
+        };
+
+        window.deleteSavedChart = async (chartId) => {
+            if (confirm('정말 삭제하시겠습니까?')) {
+                if (window.chartSaveManager) {
+                    const success = await window.chartSaveManager.deleteSavedChart(chartId);
+                    if (success) {
+                        refreshSavedChartsList();
+                    }
+                }
+            }
+        };
+
+        // 모달이 열릴 때 목록 새로고침
+        const observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
+                    if (chartSaveModal && chartSaveModal.style.display !== 'none') {
+                        refreshSavedChartsList();
+                    }
+                }
+            });
+        });
+
+        if (chartSaveModal) {
+            observer.observe(chartSaveModal, { attributes: true });
         }
       });
     </script>
