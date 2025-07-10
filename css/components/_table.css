@@ -402,10 +402,14 @@
 
 /* ===================== Full Exchange Table Section ===================== */
 .full-exchange-table-section {
-  max-width: 1200px;
   margin: 50px auto 60px;
-  padding: 0 20px;
+  /* max-width 제거 - main-container에서 관리 */
   box-sizing: border-box;
+}
+
+/* affiliated 페이지에서만 패딩 제거 */
+.affiliated-page .full-exchange-table-section {
+  padding: 0;
 }
 
 /* ===================== 태그 뱃지/카드/이미지/부스트 뱃지 이미지 크기 강제 ===================== */

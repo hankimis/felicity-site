@@ -15,10 +15,43 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 현재 경로에 따라 헤더 파일 경로 결정
     const currentPath = window.location.pathname;
-    const headerPath = currentPath.includes('/event/') || currentPath.includes('/event-board/') || 
-                       currentPath.includes('/community/') || currentPath.includes('/news/') || 
-                       currentPath.includes('/affiliated/') || currentPath.includes('/notice-board/') || 
-                       currentPath.includes('/my-account/') ? '../_header.html' : '_header.html';
+    
+    // 경로별 헤더 파일 경로 결정
+    let headerPath = '_header.html'; // 기본값
+    
+    // 1단계 하위 디렉토리 (/event/, /community/ 등)
+    if (currentPath.includes('/event/') || currentPath.includes('/event-board/') || 
+        currentPath.includes('/community/') || currentPath.includes('/news/') || 
+        currentPath.includes('/affiliated/') || currentPath.includes('/notice-board/') || 
+        currentPath.includes('/my-account/')) {
+        headerPath = '../_header.html';
+    }
+    
+    // 2단계 하위 디렉토리 (/affiliated/exchange-guide/, /affiliated/payback-calculator/ 등)
+    if (currentPath.includes('/affiliated/exchange-guide/') || 
+        currentPath.includes('/affiliated/payback-calculator/') ||
+        currentPath.includes('/affiliated/bitget/') ||
+        currentPath.includes('/affiliated/bitmex/') ||
+        currentPath.includes('/affiliated/lbank/') ||
+        currentPath.includes('/affiliated/okx/')) {
+        headerPath = '../../_header.html';
+    }
+    
+    // 3단계 하위 디렉토리 (/affiliated/exchange-guide/bitget-guide/ 등)
+    if (currentPath.includes('/affiliated/exchange-guide/bitget-guide/') ||
+        currentPath.includes('/affiliated/exchange-guide/bitmex-guide/') ||
+        currentPath.includes('/affiliated/exchange-guide/lbank-guide/')) {
+        headerPath = '../../../_header.html';
+    }
+    
+    // 4단계 하위 디렉토리 (/affiliated/exchange-guide/bitget-guide/kyc/ 등)
+    if (currentPath.includes('/affiliated/exchange-guide/bitget-guide/kyc/') ||
+        currentPath.includes('/affiliated/exchange-guide/bitget-guide/regi/') ||
+        currentPath.includes('/affiliated/exchange-guide/bitget-guide/trade/')) {
+        headerPath = '../../../../_header.html';
+    }
+    
+    console.log(`Header loader: Current path: ${currentPath}, Header path: ${headerPath}`);
     
     fetch(headerPath)
         .then(response => {

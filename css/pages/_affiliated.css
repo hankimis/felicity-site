@@ -1,10 +1,6 @@
 .affiliate-section {
     margin-bottom: 70px;
-    max-width: 1200px;
-    margin-left: auto;
-    margin-right: auto;
-    padding-left: 20px;
-    padding-right: 20px;
+    /* max-width와 padding 제거 - main-container에서 관리 */
     box-sizing: border-box;
   }
   
@@ -47,23 +43,15 @@
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 28px;
-    max-width: 1200px;
-    margin-left: auto;
-    margin-right: auto;
-    padding-left: 20px;
-    padding-right: 20px;
+    /* max-width와 padding 제거 - main-container에서 관리 */
     box-sizing: border-box;
   }
   
   /* Pre-check Section */
   .pre-check-section {
     margin-bottom: 50px;
-    max-width: 1200px;
-    margin-left: auto;
-    margin-right: auto;
-    padding-left: 20px;
-    padding-right: 20px;
     padding-top: 20px;
+    /* max-width와 padding 제거 - main-container에서 관리 */
     box-sizing: border-box;
   }
   .pre-check-section .section-title {
@@ -214,12 +202,28 @@
   }
   
   /* ===================== 메인 컨테이너 ===================== */
-  .main-container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 0 20px;
-    box-sizing: border-box;
-  }
+main.main-container.affiliated-page {
+  max-width: 1200px !important;
+  margin: 0 auto !important;
+  padding: 0 20px !important;
+  box-sizing: border-box !important;
+  width: 100% !important;
+}
+
+/* affiliated 페이지의 모든 섹션이 컨테이너 전체 너비를 사용하도록 */
+main.main-container.affiliated-page .pre-check-section,
+main.main-container.affiliated-page .full-exchange-table-section,
+main.main-container.affiliated-page .affiliate-section,
+main.main-container.affiliated-page .partner-slider-section {
+  width: 100% !important;
+  max-width: none !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+/* 기존 중복 규칙 제거 - main-container에서 이미 관리됨 */
   
    /* Hide old swiper section and its styles */
    .partner-swiper-section { display: none; }

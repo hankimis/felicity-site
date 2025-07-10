@@ -18,7 +18,7 @@
 @import url('components/_cards.css');
 @import url('components/_table.css');
 @import url('components/_modal.css');
-@import url('components/_chat.css');
+@import url('components/chat.css');
 
 /* 5. Pages (특정 페이지만을 위한 스타일) */
 @import url('pages/_home.css');

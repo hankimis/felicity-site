@@ -1,30 +1,30 @@
 /* 1. Base (변수, 리셋, 기본 스타일) */
-@import url('base/_variables.css');
-@import url('base/_reset.css');
-@import url('base/_base.css');
+@import url('css/base/_variables.css');
+@import url('css/base/_reset.css');
+@import url('css/base/_base.css');
 
 /* 2. Utils (애니메이션, 헬퍼 클래스) */
-@import url('utils/_animations.css');
-@import url('utils/_helpers.css');
+@import url('css/utils/_animations.css');
+@import url('css/utils/_helpers.css');
 
 /* 3. Layout (메인 레이아웃) */
-@import url('layout/_main.css');
-@import url('layout/_header.css');
+@import url('css/layout/_main.css');
+@import url('css/layout/_header.css');
 
 /* 4. Components (재사용 가능한 UI 요소들) */
-@import url('components/_buttons.css');
-@import url('components/_navbar.css');
-@import url('components/_footer.css');
-@import url('components/_cards.css');
-@import url('components/_table.css');
-@import url('components/_modal.css');
-@import url('components/_chat.css');
-@import url('components/_level.css');
+@import url('css/components/_buttons.css');
+@import url('css/components/_navbar.css');
+@import url('css/components/_footer.css');
+@import url('css/components/_cards.css');
+@import url('css/components/_table.css');
+@import url('css/components/_modal.css');
+@import url('css/components/chat.css');
+@import url('css/components/_level.css');
 
 /* 5. Pages (특정 페이지만을 위한 스타일) */
-@import url('pages/_home.css');
-@import url('pages/_affiliated.css');
-@import url('pages/_community.css');
+@import url('css/pages/_home.css');
+@import url('css/pages/_affiliated.css');
+@import url('css/pages/_community.css');
 
 /*
   참고: @import는 CSS 파일의 최상단에 위치해야 합니다.
