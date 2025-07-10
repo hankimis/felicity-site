@@ -229,12 +229,32 @@
   width: 32px;
   height: 32px;
   border-radius: 50%;
+  object-fit: contain;
+  display: block;
+  margin: 0 auto; /* 중앙 정렬 */
 }
 
 .large-table .exchange-logo {
   width: 40px;
   height: 40px;
   border-radius: 50%;
+  object-fit: contain;
+  display: block;
+  margin: 0 auto; /* 중앙 정렬 */
+}
+
+/* exchange-info 컨테이너 내에서 exchange-logo 중앙 정렬 */
+.exchange-table-wrapper .exchange-info {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 12px;
+  padding-left: 10px;
+}
+
+.exchange-table-wrapper .exchange-info .exchange-logo {
+  flex-shrink: 0;
+  margin: 0; /* exchange-info 내에서는 기본 마진 사용 */
 }
 
 /* ===================== 태그/버튼/뱃지 스타일 ===================== */

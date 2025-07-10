@@ -526,3 +526,28 @@ main.main-container.affiliated-page .partner-slider-section {
   background: none;
   box-shadow: none;
 }
+
+/* ===================== 개별 거래소 페이지 exchange-logo 중앙 정렬 ===================== */
+.lbank-detail-page .exchange-intro-card .exchange-logo,
+.exchange-intro-card .exchange-logo {
+  display: block !important;
+  margin: 0 auto 18px auto !important;
+  object-fit: contain !important;
+}
+
+/* payback-calculator 페이지 exchange-logo 중앙 정렬 */
+.calculator-container .exchange-logo,
+.payback-calculator .exchange-logo {
+  display: block !important;
+  margin: 0 auto !important;
+  object-fit: contain !important;
+}
+
+/* exchange-guide 페이지 exchange-logo 중앙 정렬 */
+.guide-container .exchange-logo,
+.faq-container .exchange-logo,
+.faq-header .avatar {
+  display: block !important;
+  margin: 0 auto !important;
+  object-fit: contain !important;
+}
