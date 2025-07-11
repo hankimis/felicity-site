@@ -1,0 +1,1300 @@
+/* 🔥 Bitcoin Page Styles - CoinCorp 스타일 참고 */
+
+/* 전체 레이아웃 */
+.main-container {
+    background: var(--bg-color);
+    min-height: 100vh;
+    padding-top: 0;
+}
+
+/* 비트코인 헤더 섹션 */
+.bitcoin-header {
+    background: white;
+    color: var(--text-color);
+    padding: 1rem 0;
+    margin-bottom: 1rem;
+}
+
+.bitcoin-header .container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 1800px;
+    margin: 0 auto;
+    padding: 0 1rem;
+}
+
+.coin-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.coin-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+}
+
+.coin-details h1 {
+    font-size: 24px;
+    font-weight: 700;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text-color);
+}
+
+.coin-symbol {
+    font-size: 18px;
+    opacity: 0.8;
+    font-weight: 400;
+    color: var(--text-color-secondary);
+}
+
+.coin-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.25rem;
+    font-size: 14px;
+    opacity: 0.9;
+    color: var(--text-color-secondary);
+}
+
+.rank {
+    background: var(--primary-color);
+    color: white;
+    padding: 0.2rem 0.5rem;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 12px;
+}
+
+.price-section {
+    text-align: right;
+}
+
+.current-price {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    justify-content: flex-end;
+}
+
+.price {
+    font-size: 24px;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--text-color);
+}
+
+.price-change {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 16px;
+    font-weight: 600;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    background: var(--bg-secondary-color);
+    border: 1px solid var(--border-color);
+}
+
+.price-change.positive {
+    color: var(--primary-color);
+}
+
+.price-change.negative {
+    color: #f87171;
+}
+
+.price-krw {
+    font-size: 16px;
+    opacity: 0.8;
+    margin-top: 0.5rem;
+    color: var(--text-color-secondary);
+}
+
+/* 상세 통계 정보 섹션 */
+.detailed-stats {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    margin-bottom: 2rem;
+    padding: 1.5rem 0;
+}
+
+.detailed-stats .container {
+    max-width: 1800px;
+    margin: 0 auto;
+    padding: 0 1rem;
+}
+
+.stats-row {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 1rem;
+    padding: 0 1rem;
+}
+
+.stat-item {
+    padding: 0.75rem;
+    border-right: 1px solid var(--border-color);
+}
+
+.stat-item:last-child {
+    border-right: none;
+}
+
+.stat-title {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin-bottom: 0.5rem;
+}
+
+.stat-label {
+    font-size: 12px;
+    color: var(--text-color-secondary);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.time-badge {
+    background: var(--border-color);
+    color: var(--text-color-secondary);
+    padding: 0.1rem 0.3rem;
+    border-radius: 3px;
+    font-size: 10px;
+    font-weight: 500;
+}
+
+.stat-tooltip {
+    position: relative;
+    cursor: help;
+    color: var(--text-color-tertiary);
+    font-size: 12px;
+}
+
+.stat-tooltip:hover::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 125%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--text-color);
+    color: var(--card-bg);
+    padding: 0.5rem;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    white-space: nowrap;
+    z-index: 1000;
+    max-width: 200px;
+    white-space: normal;
+    width: max-content;
+}
+
+.stat-tooltip:hover::before {
+    content: '';
+    position: absolute;
+    bottom: 115%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-top-color: var(--text-color);
+    z-index: 1000;
+}
+
+.stat-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.stat-main-value {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-color);
+    margin: 0;
+    line-height: 1.2;
+}
+
+.stat-sub-value {
+    font-size: 11px;
+    color: var(--text-color-secondary);
+    font-weight: 500;
+}
+
+.supply-info {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.supply-percentage {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-color);
+    background: var(--bg-secondary-color);
+    padding: 0.15rem 0.3rem;
+    border-radius: 3px;
+}
+
+.progress-bar-container {
+    width: 100%;
+    height: 4px;
+    background: var(--border-color);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-top: 0.5rem;
+}
+
+.progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary-color), var(--primary-hover));
+    border-radius: 2px;
+    transition: width 0.3s ease;
+}
+
+
+
+/* 메인 콘텐츠 레이아웃 */
+.main-content {
+    max-width: 1800px;
+    margin: 0 auto;
+    padding: 0 1rem;
+}
+
+.main-content .container {
+    max-width: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+.content-layout {
+    display: grid;
+    grid-template-columns: 1fr 420px;
+    gap: 2rem;
+    max-width: 1800px;
+    margin: 0 auto;
+}
+
+.main-section {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+/* 차트 섹션 */
+.chart-section {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 2rem;
+}
+
+.chart-header {
+    padding: 1rem;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.chart-header h2 {
+    font-size: 18px;
+    font-weight: 700;
+    margin: 0;
+    color: var(--text-color);
+}
+
+.time-periods {
+    display: flex;
+    gap: 0.4rem;
+}
+
+.period-btn {
+    padding: 0.4rem 0.8rem;
+    border: 1px solid var(--border-color);
+    background: transparent;
+    color: var(--text-secondary);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.period-btn:hover {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+.period-btn.active {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+.chart-container {
+    height: 500px;
+    position: relative;
+}
+
+#tradingview_chart {
+    width: 100%;
+    height: 100%;
+}
+
+.chart-loading {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: var(--card-background);
+    color: var(--text-secondary);
+    gap: 1rem;
+}
+
+.loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid var(--border-color);
+    border-top: 3px solid var(--primary-color);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* 수익률 섹션 */
+.returns-section {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 1.5rem;
+}
+
+.returns-section h3 {
+    font-size: 18px;
+    font-weight: 700;
+    margin: 0 0 1rem 0;
+    color: var(--text-color);
+}
+
+.returns-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+}
+
+.return-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem;
+    background: var(--bg-secondary-color);
+    border-radius: 8px;
+}
+
+.return-period {
+    font-size: 14px;
+    color: var(--text-color-secondary);
+}
+
+.return-value {
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.return-value.positive {
+    color: var(--primary-color);
+}
+
+.return-value.negative {
+    color: #f87171;
+}
+
+/* 비트코인 정보 섹션 */
+.bitcoin-info {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 1.5rem;
+}
+
+.bitcoin-info h3 {
+    font-size: 18px;
+    font-weight: 700;
+    margin: 0 0 1rem 0;
+    color: var(--text-color);
+}
+
+.bitcoin-info h4 {
+    font-size: 16px;
+    font-weight: 600;
+    margin: 1.5rem 0 0.75rem 0;
+    color: var(--primary-color);
+}
+
+.bitcoin-info p {
+    line-height: 1.6;
+    color: var(--text-color-secondary);
+    margin-bottom: 1rem;
+}
+
+.bitcoin-info ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.bitcoin-info li {
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--border-color);
+    line-height: 1.5;
+}
+
+.bitcoin-info li:last-child {
+    border-bottom: none;
+}
+
+.tech-specs {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.spec-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 1rem;
+    background: var(--bg-secondary-color);
+    border-radius: 8px;
+}
+
+.spec-label {
+    color: var(--text-color-secondary);
+    font-size: 0.85rem;
+    margin-bottom: 0.5rem;
+}
+
+.spec-value {
+    font-weight: 700;
+    color: var(--text-color);
+    font-size: 1.1rem;
+}
+
+/* 가격 요약 섹션 */
+.price-summary {
+    background: var(--bg-secondary-color);
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    border: 1px solid var(--border-color);
+}
+
+.price-summary p {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+.price-summary span {
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+.price-summary .positive {
+    color: var(--primary-color);
+}
+
+.price-summary .negative {
+    color: #ef4444;
+}
+
+/* 블록 탐색기 링크 */
+.explorer-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 8px;
+    margin-bottom: 20px;
+    list-style: none;
+    padding: 0;
+}
+
+.explorer-list li {
+    list-style: none;
+    margin: 0;
+}
+
+.explorer-list a {
+    display: block;
+    padding: 8px 12px;
+    background: var(--bg-secondary-color);
+    color: var(--primary-color);
+    text-decoration: none;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    transition: all 0.3s ease;
+    font-size: 13px;
+}
+
+.explorer-list a:hover {
+    background: var(--primary-color);
+    color: white;
+    transform: translateY(-1px);
+}
+
+/* 확장 가능한 콘텐츠 */
+.expandable-content {
+    position: relative;
+}
+
+.content-preview {
+    margin-bottom: 15px;
+}
+
+.content-preview h4 {
+    margin-bottom: 8px;
+}
+
+.content-preview p {
+    margin: 0;
+    color: var(--text-color-secondary);
+}
+
+.content-full {
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* 토글 버튼 */
+.toggle-content-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 12px;
+    background: var(--bg-secondary-color);
+    color: var(--text-color);
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    margin-top: 15px;
+}
+
+.toggle-content-btn:hover {
+    background: var(--primary-hover);
+    transform: translateY(-1px);
+
+}
+
+.toggle-content-btn i {
+    transition: transform 0.3s ease;
+}
+
+.toggle-content-btn.expanded i {
+    transform: rotate(180deg);
+}
+
+/* 커뮤니티 링크 */
+.community-links {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 10px;
+    margin-left: 0;
+    list-style: none;
+    padding: 0;
+}
+
+.community-links li {
+    list-style: none;
+    margin: 0;
+}
+
+.community-links a {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 15px;
+    background: var(--bg-secondary-color);
+    color: var(--text-color);
+    text-decoration: none;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    transition: all 0.3s ease;
+    font-size: 14px;
+}
+
+.community-links a:hover {
+    background: var(--primary-color);
+    color: white;
+    transform: translateY(-1px);
+}
+
+.community-links i {
+    font-size: 16px;
+}
+
+/* 기술적 세부사항 섹션 */
+.tech-details {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 20px;
+}
+
+.tech-details h3 {
+    font-size: 18px;
+    font-weight: 700;
+    margin: 0 0 1rem 0;
+    color: var(--text-color);
+}
+
+/* 자주 묻는 질문 섹션 */
+.faq-section {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 20px;
+}
+
+.faq-section h3 {
+    font-size: 18px;
+    font-weight: 700;
+    margin: 0 0 1rem 0;
+    color: var(--text-color);
+}
+
+.faq-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.faq-item {
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.faq-item:hover {
+    border-color: var(--primary-color);
+}
+
+.faq-question {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    background: var(--bg-secondary-color);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+.faq-question:hover {
+    background: var(--primary-color);
+    color: white;
+}
+
+.faq-question i {
+    transition: transform 0.3s ease;
+    font-size: 14px;
+}
+
+.faq-question.active i {
+    transform: rotate(180deg);
+}
+
+.faq-answer {
+    padding: 0 1rem;
+    max-height: 0;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    background: var(--card-bg);
+}
+
+.faq-answer.active {
+    padding: 1rem;
+    max-height: 500px;
+}
+
+.faq-answer p {
+    margin: 0 0 1rem 0;
+    line-height: 1.6;
+    color: var(--text-color-secondary);
+}
+
+.faq-answer p:last-child {
+    margin-bottom: 0;
+}
+
+.faq-link {
+    color: var(--primary-color);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.faq-link:hover {
+    text-decoration: underline;
+}
+
+.faq-exchange-list {
+    list-style: none;
+    padding: 0;
+    margin: 1rem 0;
+}
+
+.faq-exchange-list li {
+    padding: 0.25rem 0;
+}
+
+.faq-exchange-list a {
+    color: var(--primary-color);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.faq-exchange-list a:hover {
+    text-decoration: underline;
+}
+
+/* 관련 링크 섹션 */
+.related-links {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 1.5rem;
+}
+
+.related-links h3 {
+    font-size: 18px;
+    font-weight: 700;
+    margin: 0 0 1rem 0;
+    color: var(--text-color);
+}
+
+.links-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+}
+
+.link-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem;
+    background: var(--bg-secondary-color);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    text-decoration: none;
+    color: var(--text-color);
+    transition: all 0.3s ease;
+}
+
+.link-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    border-color: var(--primary-color);
+}
+
+.link-item i {
+    font-size: 1.2rem;
+    color: var(--primary-color);
+}
+
+/* 사이드바 */
+.sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+/* 환전 계산기 스타일 */
+.converter-widget {
+    padding: 0 !important;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.money-change {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color) !important;
+    border-radius: 12px;
+    margin-bottom: 0 !important;
+    display: flex;
+    flex-direction: column;
+}
+
+.money-change .item {
+    padding: 1rem !important;
+    border-bottom: 1px solid var(--border-color);
+    transition: background-color 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.money-change .item:last-child {
+    border-bottom: none;
+}
+
+.money-change .item:hover {
+    background: var(--bg-secondary-color);
+}
+
+.item-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
+.money-change .item .d-flex {
+    display: flex;
+    align-items: center;
+    flex: 1;
+}
+
+.item-name {
+    margin-left: 0.75rem !important;
+    min-width: 60px;
+    flex: 1;
+}
+
+.item-name span:first-child {
+    font-size: 0.9rem;
+    color: var(--text-color);
+    font-weight: 500;
+    margin-bottom: 0.25rem !important;
+}
+
+.item-name .h5 {
+    font-size: 0.8rem !important;
+    color: var(--text-color-secondary);
+    font-weight: 600;
+    margin: 0 !important;
+    margin-top: -0.125rem !important;
+}
+
+.coin-convertor {
+    background: transparent !important;
+    border: none !important;
+    color: var(--text-color) !important;
+    font-size: 1.1rem !important;
+    font-weight: 600;
+    text-align: right;
+    outline: none;
+    padding: 0.25rem 0;
+    width: 120px;
+    flex-shrink: 0;
+}
+
+.coin-convertor:focus {
+    color: var(--primary-color) !important;
+}
+
+.coin-convertor::placeholder {
+    color: var(--text-color-secondary);
+    opacity: 0.7;
+}
+
+/* 다크 모드 지원 */
+.dark-mode .money-change .item-name span:first-child {
+    color: var(--text-color);
+}
+
+.dark-mode .money-change .item-name .h5 {
+    color: var(--text-color-secondary);
+}
+
+.dark-mode .coin-convertor {
+    color: var(--text-color) !important;
+}
+
+.dark-mode .coin-convertor:focus {
+    color: var(--primary-color) !important;
+}
+
+.widget {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 1.5rem;
+}
+
+.sidebar .widget {
+    padding: 0;
+    background: none;
+    border: none;
+}
+
+.widget h3 {
+    font-size: 18px;
+    font-weight: 700;
+    margin: 0 0 1rem 0;
+    color: var(--text-color);
+}
+
+/* 뉴스 위젯 */
+.news-widget {
+    background: var(--card-bg) !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: 12px;
+    padding: 1.5rem !important;
+}
+
+.news-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.news-item {
+    padding: 1rem;
+    background: var(--bg-secondary-color);
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.news-item:hover {
+    background: var(--border-color);
+}
+
+.news-content h4 {
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin: 0 0 0.5rem 0;
+    line-height: 1.4;
+    color: var(--text-color);
+}
+
+.news-content p {
+    font-size: 0.75rem;
+    color: var(--text-color-secondary);
+    line-height: 1.4;
+    margin: 0 0 0.5rem 0;
+}
+
+.news-time {
+    font-size: 0.8rem;
+    color: var(--text-color-tertiary);
+}
+
+/* 시장 통계 위젯 */
+.market-stats {
+    background: var(--card-bg) !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: 12px;
+    padding: 1.5rem !important;
+}
+
+.stats-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.stat-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem;
+    background: var(--bg-secondary-color);
+    border-radius: 6px;
+}
+
+.stat-name {
+    font-size: 0.9rem;
+    color: var(--text-color-secondary);
+}
+
+.stat-value {
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+/* 광고 위젯 */
+.ad-widget {
+    background: var(--card-bg) !important;
+    color: white;
+    text-align: center;
+    border: 1px solid var(--border-color) !important;
+    border-radius: 12px;
+    padding: 1.5rem !important;
+}
+
+.ad-content h4 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin: 0 0 0.5rem 0;
+}
+
+.ad-content p {
+    font-size: 0.9rem;
+    opacity: 0.9;
+    margin: 0 0 1rem 0;
+    line-height: 1.4;
+}
+
+.ad-button {
+    display: inline-block;
+    padding: 0.75rem 1.5rem;
+    background: white;
+    color: var(--primary-color);
+    text-decoration: none;
+    border-radius: 6px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.ad-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+
+
+@media (max-width: 768px) {
+    .bitcoin-header .container {
+        flex-direction: column;
+        gap: 1.5rem;
+        text-align: center;
+    }
+    
+    .price-section {
+        text-align: center;
+    }
+    
+    .current-price {
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+    
+    .price {
+        font-size: 2.5rem;
+    }
+    
+    .stats-row {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.5rem;
+        padding: 0;
+    }
+    
+    .stat-item {
+        border-right: none;
+        border-bottom: 1px solid var(--border-color);
+        padding: 0.5rem;
+    }
+    
+    .stat-item:last-child {
+        border-bottom: none;
+    }
+    
+    .chart-header {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: flex-start;
+    }
+    
+    .time-periods {
+        flex-wrap: wrap;
+    }
+    
+    .returns-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .links-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    /* 환전 계산기 모바일 최적화 */
+    .money-change .item {
+        padding: 0.75rem !important;
+    }
+    
+    .item-icon {
+        width: 28px;
+        height: 28px;
+    }
+    
+    .item-name {
+        margin-left: 0.5rem !important;
+    }
+    
+    .coin-convertor {
+        font-size: 1rem !important;
+    }
+    
+    /* 기술적 세부사항 모바일 최적화 */
+    .tech-specs {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.75rem;
+    }
+    
+    .spec-item {
+        padding: 0.75rem;
+    }
+    
+    .spec-value {
+        font-size: 1rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .bitcoin-header {
+        padding: 1.5rem 0;
+    }
+    
+    .coin-details h1 {
+        font-size: 1.5rem;
+    }
+    
+    .price {
+        font-size: 2rem;
+    }
+    
+    .price-change {
+        font-size: 1rem;
+        padding: 0.4rem 0.8rem;
+    }
+    
+    .stats-row {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.25rem;
+    }
+    
+    .stat-item {
+        padding: 0.25rem;
+    }
+    
+    .stat-main-value {
+        font-size: 12px;
+    }
+    
+    .stat-sub-value {
+        font-size: 10px;
+    }
+    
+    .widget {
+        padding: 1rem;
+    }
+    
+    .returns-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    /* 기술적 세부사항 작은 모바일 최적화 */
+    .tech-specs {
+        grid-template-columns: 1fr;
+        gap: 0.5rem;
+    }
+    
+    .spec-item {
+        padding: 0.5rem;
+    }
+    
+    .spec-label {
+        font-size: 0.8rem;
+        margin-bottom: 0.25rem;
+    }
+    
+    .spec-value {
+        font-size: 0.95rem;
+    }
+}
+
+/* 다크 모드 지원 */
+.dark-mode .bitcoin-header {
+    background: linear-gradient(135deg, #1e40af 0%, #7c3aed 100%);
+}
+
+.dark-mode .chart-loading {
+    background: var(--card-bg);
+}
+
+.dark-mode .loading-spinner {
+    border-color: var(--border-color);
+    border-top-color: var(--primary-color);
+}
+
+/* 애니메이션 */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.widget,
+.chart-section,
+.returns-section,
+.bitcoin-info,
+.related-links {
+    animation: fadeInUp 0.6s ease-out;
+}
+
+/* 호버 효과 */
+.widget:hover {
+    border-color: var(--primary-color);
+}
+
+.news-item:hover {
+    cursor: pointer;
+}
+
+/* 스크롤바 스타일링 */
+.news-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.news-list::-webkit-scrollbar-track {
+    background: var(--background-color);
+}
+
+.news-list::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 3px;
+}
+
+.news-list::-webkit-scrollbar-thumb:hover {
+    background: var(--text-secondary);
+} 

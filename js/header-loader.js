@@ -19,21 +19,23 @@ document.addEventListener('DOMContentLoaded', () => {
     // 경로별 헤더 파일 경로 결정
     let headerPath = '_header.html'; // 기본값
     
-    // 1단계 하위 디렉토리 (/event/, /community/ 등)
+    // 1단계 하위 디렉토리 (/event/, /community/, /bitcoin/ 등)
     if (currentPath.includes('/event/') || currentPath.includes('/event-board/') || 
         currentPath.includes('/community/') || currentPath.includes('/news/') || 
         currentPath.includes('/affiliated/') || currentPath.includes('/notice-board/') || 
-        currentPath.includes('/my-account/') || currentPath.includes('/admin/')) {
+        currentPath.includes('/my-account/') || currentPath.includes('/admin/') ||
+        currentPath.includes('/bitcoin/')) {
         headerPath = '../_header.html';
     }
     
-    // 2단계 하위 디렉토리 (/affiliated/exchange-guide/, /affiliated/payback-calculator/ 등)
+    // 2단계 하위 디렉토리 (/affiliated/exchange-guide/, /affiliated/payback-calculator/, /currencies/bitcoin/ 등)
     if (currentPath.includes('/affiliated/exchange-guide/') || 
         currentPath.includes('/affiliated/payback-calculator/') ||
         currentPath.includes('/affiliated/bitget/') ||
         currentPath.includes('/affiliated/bitmex/') ||
         currentPath.includes('/affiliated/lbank/') ||
-        currentPath.includes('/affiliated/okx/')) {
+        currentPath.includes('/affiliated/okx/') ||
+        currentPath.includes('/currencies/bitcoin/')) {
         headerPath = '../../_header.html';
     }
     

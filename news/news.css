@@ -55,6 +55,22 @@
     background: var(--bg-color);
 }
 
+/* 속보 탭 특별 스타일 */
+.tab-btn[data-tab="breaking"] {
+    color: #dc2626;
+    font-weight: 600;
+}
+
+.tab-btn[data-tab="breaking"]:hover {
+    color: #b91c1c;
+    background: rgba(220, 38, 38, 0.05);
+}
+
+.tab-btn[data-tab="breaking"].active {
+    color: #dc2626;
+    border-bottom-color: #dc2626;
+}
+
 /* Tab Content */
 .tab-content {
     animation: fadeIn 0.3s ease-in-out;
@@ -214,7 +230,80 @@
 
 .news-time {
     opacity: 0.7;
+    display: flex;
+    align-items: center;
+    gap: 6px;
 }
+
+/* 뉴스 중요도 별 아이콘 (자동 분석 결과 표시) */
+.news-importance {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    cursor: default;
+    transition: all 0.2s ease;
+    padding: 2px 4px;
+    border-radius: 4px;
+    user-select: none;
+    position: relative;
+}
+
+.news-importance:hover {
+    background: var(--bg-secondary-color);
+}
+
+.news-importance .star {
+    font-size: 14px;
+    color: #ddd;
+    transition: all 0.2s ease;
+    text-shadow: 0 0 2px rgba(0,0,0,0.1);
+}
+
+.news-importance .star.filled {
+    color: #ffd700;
+    text-shadow: 0 0 4px rgba(255, 215, 0, 0.3);
+}
+
+.news-importance .star:hover {
+    color: #ffd700;
+}
+
+.news-importance .star.filled:hover {
+    color: #ffed4a;
+    text-shadow: 0 0 6px rgba(255, 215, 0, 0.5);
+}
+
+/* 중요도 레벨별 스타일 */
+.news-importance[data-importance="1"] .star:nth-child(1) { color: #ffd700; }
+.news-importance[data-importance="2"] .star:nth-child(-n+2) { color: #ffd700; }
+.news-importance[data-importance="3"] .star:nth-child(-n+3) { color: #ffd700; }
+.news-importance[data-importance="4"] .star:nth-child(-n+4) { color: #ffd700; }
+.news-importance[data-importance="5"] .star:nth-child(-n+5) { color: #ffd700; }
+
+/* 중요도 툴팁 */
+.news-importance::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+    z-index: 1000;
+}
+
+.news-importance:hover::after {
+    opacity: 1;
+}
+
+
 
 .news-title {
     font-size: 18px;
@@ -281,6 +370,34 @@
     color: var(--text-color-secondary);
     font-size: 16px;
     font-weight: 500;
+}
+
+/* 로딩 스피너 애니메이션 */
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.loading-spinner {
+    display: inline-block;
+    width: 40px;
+    height: 40px;
+    border: 3px solid var(--border-color);
+    border-top: 3px solid var(--primary-color);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 1rem;
+}
+
+/* 빠른 로딩 피드백 */
+.loading-fast {
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 0.6; }
+    50% { opacity: 1; }
+    100% { opacity: 0.6; }
 }
 
 /* 반응형 디자인 */
@@ -372,6 +489,16 @@
         font-size: 12px;
     }
 
+    /* 태블릿에서 별 아이콘 크기 조정 */
+    .news-importance .star {
+        font-size: 13px;
+    }
+
+    .news-importance {
+        padding: 2px 3px;
+        gap: 1px;
+    }
+
     .news-list {
         gap: 15px;
         padding: 0 15px;
@@ -441,6 +568,21 @@
 
     .news-meta {
         font-size: 11px;
+    }
+
+    /* 모바일에서 별 아이콘 크기 조정 */
+    .news-importance .star {
+        font-size: 12px;
+    }
+
+    .news-importance {
+        padding: 1px 2px;
+        gap: 1px;
+    }
+
+    /* 모바일에서 툴팁 숨기기 */
+    .news-importance::after {
+        display: none;
     }
 
     .news-list {

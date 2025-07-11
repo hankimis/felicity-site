@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>비트코인 (BTC) - 실시간 가격 및 차트 | 셀퍼럴</title>
+    <meta name="description" content="비트코인(BTC) 실시간 가격, 차트, 뉴스 및 분석 정보를 제공합니다. 전문적인 암호화폐 거래 정보를 확인하세요." />
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <!-- Fonts -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" />
+    
+    <!-- Base CSS -->
+    <link rel="stylesheet" href="../../css/base/_variables.css" />
+    <link rel="stylesheet" href="../../css/base/_reset.css" />
+    <link rel="stylesheet" href="../../css/base/_base.css" />
+    
+    <!-- Layout CSS -->
+    <link rel="stylesheet" href="../../css/layout/_header.css" />
+    <link rel="stylesheet" href="../../css/layout/_main.css" />
+    
+    <!-- Component CSS -->
+    <link rel="stylesheet" href="../../css/components/_navbar.css" />
+    <link rel="stylesheet" href="../../css/components/_modal.css" />
+    <link rel="stylesheet" href="../../css/components/_cards.css" />
+    <link rel="stylesheet" href="../../css/components/chart.css" />
+    
+    <!-- Bitcoin Page CSS -->
+    <link rel="stylesheet" href="bitcoin.css" />
+    
+    <!-- Auth CSS -->
+    <link rel="stylesheet" href="../../auth.css" />
+    
+    <!-- Icons -->
+    <link rel="icon" type="image/png" href="/onbit/favicon-96x96.png" sizes="96x96" />
+    <link rel="icon" type="image/svg+xml" href="/onbit/favicon.svg" />
+    <link rel="shortcut icon" href="/onbit/favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/onbit/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-title" content="Onbit" />
+    <link rel="manifest" href="/onbit/site.webmanifest" />
+    
+    <!-- TradingView Charting Library -->
+    <script type="text/javascript" src="../../charting_library-master/charting_library/charting_library.standalone.js"></script>
+    <script type="text/javascript" src="../../charting_library-master/datafeeds/udf/dist/bundle.js"></script>
+    
+    <!-- Chart Scripts -->
+    <script src="../../js/binance-datafeed.js"></script>
+    <script src="../../js/chart-storage.js"></script>
+    <script src="../../js/market-data-manager.js"></script>
+    
+    <!-- Common Scripts -->
+    <script src="../../js/auth.js"></script>
+    <script src="../../js/header-loader.js" defer></script>
+    <script src="../../js/footer-loader.js" defer></script>
+    
+    <!-- Bitcoin Page Scripts -->
+    <script src="bitcoin.js" defer></script>
+</head>
+<body>
+    <header class="navbar">
+        <a href="../../index.html" class="logo">
+            <img id="main-logo" src="../../assets/lightlogo.png" alt="Onbit Logo" height="40"/>
+        </a>
+        <nav>
+            <ul>
+                <li><a href="../../affiliated/">제휴 거래소</a></li>
+                <li><a href="../../community/">실시간 채팅</a></li>
+                <li class="dropdown">
+                    <a href="#" class="dropdown-toggle">커뮤니티 <i class="fas fa-caret-down"></i></a>
+                    <ul class="dropdown-menu">
+                        <li><a href="../../community-board.html">자유 게시판</a></li>
+                        <li><a href="../../attendance.html">출석체크</a></li>
+                        <li><a href="../../event-board.html">이벤트</a></li>
+                    </ul>
+                </li>
+                <li><a href="../../notice-board/">공지사항</a></li>
+            </ul>
+        </nav>
+        <div class="header-right">
+            <aside class="auth-buttons">
+                <a href="#" class="login" data-action="open-login">로그인</a>
+                <a href="#" class="signup" data-action="open-signup">회원가입</a>
+            </aside>
+            <div class="user-info" id="user-profile" style="display: none;">
+                <span id="user-display-name"></span>
+                <span id="user-level"></span>
+                <a href="../../admin/" id="admin-page-link" style="display: none;" title="관리자 페이지">
+                    <i class="fas fa-shield-alt"></i>
+                </a>
+                <button id="logout-btn" data-action="logout"><i class="fas fa-sign-out-alt"></i></button>
+            </div>
+            <a href="../../my-account/" id="my-page-link" class="icon-button" data-action="my-page" aria-label="마이페이지"><i class="fas fa-user-circle"></i></a>
+            <button class="theme-button" id="theme-toggle" data-action="toggle-theme"><i class="fas fa-sun"></i></button>
+        </div>
+        <button class="mobile-menu-button" id="mobile-menu-button" data-action="open-mobile-menu" aria-label="메뉴 열기">
+            <i class="fas fa-bars"></i>
+        </button>
+    </header>
+
+    <main class="main-container">
+        <!-- 비트코인 헤더 섹션 -->
+        <section class="bitcoin-header">
+            <div class="container">
+                <div class="bitcoin-title">
+                    <div class="coin-info">
+                        <img src="../../assets/logoicon/bitcoin.png" alt="Bitcoin" class="coin-icon" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMTYiIGN5PSIxNiIgcj0iMTYiIGZpbGw9IiNGNzkzMUEiLz4KPHBhdGggZD0iTTIzLjE4OSAxNC4wMkMyMy43NjUgMTAuOTI5IDIxLjQ4NiA5LjE4NyAxOC4zNTMgOC4xMDVMMTkuMjQgNS4yNzJMMTcuMzQ3IDQuODE2TDE2LjQ5NCA3LjU5QzE2LjAyNSA3LjQ3NiAxNS41NDMgNy4zNjggMTUuMDY1IDcuMjYyTDE1LjkyNSA0LjQ3MkwxNC4wMzIgNC4wMTZMMTMuMTQ1IDYuODQ5QzEyLjczNyA2Ljc2MSAxMi4zMzYgNi42NzQgMTEuOTQ3IDYuNTgzTDExLjk0OSA2LjU3NUw5LjM1IDUuODk1TDguODQgNy45MjJDOC44NCA3LjkyMiAxMC4xODEgOC4yMTggMTAuMTUzIDguMjM1QzEwLjg0MyA4LjQxNyAxMC45NzMgOC44NzIgMTAuOTUzIDkuMjM5TDEwLjAzNCAxMi4zNzNDMTAuMDg4IDEyLjM4NyAxMC4xNTggMTIuNDA4IDEwLjIzNyAxMi40NDBDMTAuMTcgMTIuNDI0IDEwLjEgMTIuNDA3IDEwLjAyNyAxMi4zODlMOC43NjUgMTYuNzc0QzguNjY0IDE3LjAwNyA4LjQxNyAxNy4zNzEgNy45MjYgMTcuMjU5QzcuOTQzIDE3LjI4NSA2LjYwNiAxNi45MzEgNi42MDYgMTYuOTMxTDUuNjU0IDE5LjA5M0w4LjEwNSAxOS43MjlDOC41MzggMTkuODM3IDguOTYzIDE5Ljk0OSA5LjM4MiAyMC4wNTdMOC40ODcgMjIuOTI5TDEwLjM3OSAyMy4zODVMMTEuMjY2IDIwLjU1MkMxMS43NTEgMjAuNjc5IDEyLjIyMiAyMC44IDEyLjY4NCAyMC45MTVMMTEuNzk5IDIzLjczN0wxMy42OTIgMjQuMTkzTDE0LjU4NyAyMS4zMjVDMTguMjggMjIuMDQ2IDIxLjA0NyAyMS43NTggMjIuMTI2IDE4LjQyNUMyMi45NjMgMTUuNzYgMjEuOTc0IDE0LjI0MyAxOS45NjMgMTMuMjQ4QzIxLjQ4NiAxMi45MDMgMjIuNjE4IDExLjk0NCAyMy4xODkgMTQuMDJaTTE5LjE4NCAxNy4xQzE4LjU5NyAxOS42NDMgMTQuODU3IDE4LjM3NyAxMy42NTUgMTguMDRMMTQuNzM0IDEzLjk1M0MxNS45MzYgMTQuMjkgMTkuNzk2IDE0LjQ3NiAxOS4xODQgMTcuMVpNMTkuNzc1IDEzLjk4NkMxOS4yNTEgMTYuMjc1IDE2LjE5NSAxNS4yMDUgMTUuMjA0IDE0LjkyN0wxNi4yMDEgMTEuMjU4QzE3LjE5MiAxMS41MzYgMjAuMzIgMTEuNjI1IDE5Ljc3NSAxMy45ODZaIiBmaWxsPSJ3aGl0ZSIvPgo8L3N2Zz4K'">
+                        <div class="coin-details">
+                            <h1>비트코인 <span class="coin-symbol">BTC</span></h1>
+                            <div class="coin-meta">
+                                <span class="rank">#1</span>
+                                <span class="market-cap-rank">시가총액 순위</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="price-section">
+                    <div class="current-price">
+                        <span class="price" id="btc-price">로딩 중...</span>
+                        <span class="price-change positive" id="btc-change">
+                            <i class="fas fa-arrow-up"></i>
+                            <span>+0.00%</span>
+                        </span>
+                    </div>
+                    <div class="price-krw" id="btc-price-krw">₩0</div>
+                    <div class="last-update-time" style="font-size: 0.8rem; opacity: 0.7; margin-top: 0.25rem;">데이터 로딩 중...</div>
+                </div>
+            </div>
+        </section>
+
+
+
+        <!-- 상세 통계 정보 섹션 -->
+        <section class="detailed-stats">
+            <div class="container">
+                <div class="stats-row">
+                    <div class="stat-item">
+                        <div class="stat-title">
+                            <span class="stat-label">시가총액</span>
+                            <span class="stat-tooltip" data-tooltip="암호화폐 유통 시장의 전체 시장 가치. 시가총액 = 현재 가격 × 유통 공급량">
+                                <i class="fas fa-info-circle"></i>
+                            </span>
+                        </div>
+                        <div class="stat-content">
+                            <h4 class="stat-main-value" id="detailed-market-cap">로딩 중...</h4>
+                            <div class="stat-sub-value" id="detailed-market-cap-btc">0 BTC</div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-item">
+                        <div class="stat-title">
+                            <span class="stat-label">완전 희석된 시가</span>
+                            <span class="stat-tooltip" data-tooltip="최대 공급량이 전부 유통 중인 경우의 시가총액. 완전 희석된 시가총액 = 가격 × 최대 공급량">
+                                <i class="fas fa-info-circle"></i>
+                            </span>
+                        </div>
+                        <div class="stat-content">
+                            <h4 class="stat-main-value" id="detailed-fdmc">로딩 중...</h4>
+                            <div class="stat-sub-value" id="detailed-fdmc-btc">21,000,000 BTC</div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-item">
+                        <div class="stat-title">
+                            <span class="stat-label">거래량</span>
+                            <span class="time-badge">24시간</span>
+                            <span class="stat-tooltip" data-tooltip="지난 24시간 동안 얼마나 많은 암호화폐가 거래되었는지를 측정합니다.">
+                                <i class="fas fa-info-circle"></i>
+                            </span>
+                        </div>
+                        <div class="stat-content">
+                            <h4 class="stat-main-value" id="detailed-volume">로딩 중...</h4>
+                            <div class="stat-sub-value" id="detailed-volume-btc">0 BTC</div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-item">
+                        <div class="stat-title">
+                            <span class="stat-label">유통 공급량</span>
+                            <span class="stat-tooltip" data-tooltip="시중에 유통되고 있는 코인의 양. 이는 주식시장에서 주식이 움직이는 것과 유사합니다.">
+                                <i class="fas fa-info-circle"></i>
+                            </span>
+                        </div>
+                        <div class="stat-content">
+                            <div class="supply-info">
+                                <h4 class="stat-main-value" id="detailed-circulating">로딩 중...</h4>
+                                <span class="supply-percentage" id="detailed-circulating-percent">94.24%</span>
+                            </div>
+                            <div class="progress-bar-container">
+                                <div class="progress-bar" id="detailed-progress-bar" style="width: 94.24%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-item">
+                        <div class="stat-title">
+                            <span class="stat-label">최대 공급량</span>
+                            <span class="stat-tooltip" data-tooltip="암호화폐가 평생 동안 존재할 수 있는 최대 코인의 양. 이는 주식시장에서 완전히 희석된 주식과 유사합니다.">
+                                <i class="fas fa-info-circle"></i>
+                            </span>
+                        </div>
+                        <div class="stat-content">
+                            <h4 class="stat-main-value" id="detailed-max-supply">21,000,000 BTC</h4>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-item">
+                        <div class="stat-title">
+                            <span class="stat-label">총 공급량</span>
+                            <span class="stat-tooltip" data-tooltip="이미 만들어진 코인 수에서 소각된 코인을 뺀 양. 이는 주식 시장에서 발행주식과 비슷합니다.">
+                                <i class="fas fa-info-circle"></i>
+                            </span>
+                        </div>
+                        <div class="stat-content">
+                            <h4 class="stat-main-value" id="detailed-total-supply">로딩 중...</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 메인 콘텐츠 영역 -->
+        <div class="main-content">
+            <div class="container">
+                <div class="content-layout">
+                    <!-- 왼쪽 메인 콘텐츠 -->
+                    <div class="main-section">
+                        <!-- 차트 섹션 -->
+                        <section class="chart-section">
+                            <div class="chart-header">
+                                <h2>비트코인 (BTC) 차트</h2>
+                                <div class="chart-controls">
+                                    <div class="time-periods">
+                                        <button class="period-btn active" data-period="1D">1일</button>
+                                        <button class="period-btn" data-period="1W">1주</button>
+                                        <button class="period-btn" data-period="1M">1개월</button>
+                                        <button class="period-btn" data-period="3M">3개월</button>
+                                        <button class="period-btn" data-period="1Y">1년</button>
+                                        <button class="period-btn" data-period="ALL">전체</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="chart-container">
+                                <div id="tradingview_chart"></div>
+                                <div class="chart-loading" id="chart-loading">
+                                    <div class="loading-spinner"></div>
+                                    <span>차트 로딩 중...</span>
+                                </div>
+                            </div>
+                        </section>
+
+                        <!-- 수익률 섹션 -->
+                        <section class="returns-section">
+                            <h3>기간별 수익률</h3>
+                            <div class="returns-grid">
+                                <div class="return-item">
+                                    <span class="return-period">1시간</span>
+                                    <span class="return-value positive">+0.29%</span>
+                                </div>
+                                <div class="return-item">
+                                    <span class="return-period">24시간</span>
+                                    <span class="return-value positive">+2.11%</span>
+                                </div>
+                                <div class="return-item">
+                                    <span class="return-period">7일</span>
+                                    <span class="return-value positive">+1.68%</span>
+                                </div>
+                                <div class="return-item">
+                                    <span class="return-period">30일</span>
+                                    <span class="return-value positive">+1.68%</span>
+                                </div>
+                                <div class="return-item">
+                                    <span class="return-period">90일</span>
+                                    <span class="return-value positive">+20.43%</span>
+                                </div>
+                                <div class="return-item">
+                                    <span class="return-period">1년</span>
+                                    <span class="return-value positive">+52.26%</span>
+                                </div>
+                            </div>
+                        </section>
+
+                        <!-- 비트코인 정보 섹션 -->
+                        <section class="bitcoin-info">
+                            <h3>비트코인 (BTC) 가격 지금</h3>
+                            <div class="info-content">
+                                <div class="price-summary">
+                                    <p>현재 Bitcoin 가격은 <span id="current-btc-price">$113,412</span>이며 24시간 거래량은 <span id="current-btc-volume">$17,972,897,721</span>입니다. BTC 가격은 지난 24시간 동안 <span id="current-btc-change" class="positive">3.86%</span> 상승했습니다. <span id="current-btc-supply">19.89Mil</span> BTC 코인의 순환 공급량이 있습니다. 이고 최대 공급량은 21Mil입니다.</p>
+                                </div>
+                                
+                                <h4>블록 탐색기</h4>
+                                <p>주소 및 거래를 탐색하기 위해 다음과 같은 블록 탐색기를 사용할 수 있습니다.</p>
+                                <ul class="explorer-list">
+                                    <li><a href="https://blockchain.info" target="_blank" rel="noopener">blockchain.info</a></li>
+                                    <li><a href="https://live.blockcypher.com" target="_blank" rel="noopener">live.blockcypher.com</a></li>
+                                    <li><a href="https://mempool.space" target="_blank" rel="noopener">mempool.space</a></li>
+                                    <li><a href="https://blockchair.com" target="_blank" rel="noopener">blockchair.com</a></li>
+                                    <li><a href="https://explorer.viabtc.com" target="_blank" rel="noopener">explorer.viabtc.com</a></li>
+                                    <li><a href="https://www.oklink.com" target="_blank" rel="noopener">www.oklink.com</a></li>
+                                    <li><a href="https://btc.tokenview.io" target="_blank" rel="noopener">btc.tokenview.io</a></li>
+                                </ul>
+
+                                <div class="expandable-content">
+                                    <div class="content-preview">
+                                        <h4>비트코인의 역사</h4>
+                                        <p>2008년 10월 31일에 사토시 나카모토라는 가명을 쓴 사람이 온라인 포럼에 올린 논문에서 처음 소개되었습니다...</p>
+                                    </div>
+                                    
+                                    <div class="content-full" style="display: none;">
+                                        <h4>비트코인의 역사</h4>
+                                        <p>2008년 10월 31일에 사토시 나카모토라는 가명을 쓴 사람이 온라인 포럼에 올린 논문에서 처음 소개되었습니다. 이 논문에서는 비트코인의 개념과 작동 원리를 설명하였으며, 2009년 1월 3일에 첫 번째 비트코인 블록(제네시스 블록)이 생성되었습니다. 이후 비트코인은 점차 성장하고 발전하면서 전 세계적으로 관심과 인기를 얻게 되었습니다.</p>
+
+                                        <h4>비트코인의 특징</h4>
+                                        <ul>
+                                            <li><strong>분산화:</strong> 비트코인은 중앙기관이나 중개자가 없이 네트워크 참여자들이 공동으로 거래를 관리하고 비트코인의 발행을 조절합니다. 이는 비트코인이 어떤 국가나 단체의 영향을 받지 않고 자율적으로 운영된다는 것을 의미합니다.</li>
+                                            <li><strong>익명성:</strong> 비트코인은 거래를 할 때 실명이나 개인정보를 요구하지 않습니다. 대신에 각 사용자는 하나 이상의 비트코인 주소를 가지고 거래를 합니다. 비트코인 주소는 알파벳과 숫자로 이루어진 임의의 문자열로, 거래마다 새로운 주소를 생성할 수 있습니다. 이는 비트코인 사용자의 신원을 보호하고 개인정보 유출을 방지합니다.</li>
+                                            <li><strong>투명성:</strong> 비트코인은 모든 거래내역이 블록체인이라는 공공원장에 기록되고 모두에게 공개되는 시스템입니다. 블록체인은 시간적 순서와 암호학적 규칙에 따라 거래를 검증하고 보안합니다. 또한 블록체인은 거래가 승인된 후에는 변경이 불가능하므로, 거래의 신뢰성과 정확성을 보장합니다.</li>
+                                            <li><strong>저렴성:</strong> 비트코인은 전통적인 결제수단에 비해 수수료가 낮거나 없습니다. 이는 비트코인이 중개자가 없이 직접 거래를 하기 때문입니다. 또한 비트코인은 국경을 넘어서도 쉽고 빠르게 송금할 수 있습니다.</li>
+                                        </ul>
+
+                                        <h4>비트코인 발행처 및 발행 방식</h4>
+                                        <p>비트코인은 기존 화폐와 달리 정부나 중앙은행, 금융기관의 개입없이 개인 간(P2P) 빠르고 안전한 거래가 가능하며, 금처럼 유통량이 한정되어 있다는 특징을 가지고 있습니다. 비트코인 거래는 암호화에 의해 보호되어 비트코인은 사용자가 소유한 가상자산에 대해 높은 수준의 통제권과 보안을 보장할 수 있습니다. 비트코인을 이용해 사용자는 기존 금융기관보다 더 안전하고 빠르게 송금할 수 있습니다.</p>
+
+                                        <h4>비트코인 (BTC) 커뮤니티</h4>
+                                        <ul class="community-links">
+                                            <li><a href="https://www.facebook.com/buy.bitcoin.news" target="_blank" rel="noopener"><i class="fab fa-facebook"></i> Facebook</a></li>
+                                            <li><a href="https://twitter.com/BTCTN" target="_blank" rel="noopener"><i class="fab fa-twitter"></i> Twitter</a></li>
+                                            <li><a href="https://www.reddit.com/r/Bitcoin" target="_blank" rel="noopener"><i class="fab fa-reddit"></i> Reddit</a></li>
+                                            <li><a href="https://t.me/www_Bitcoin_com" target="_blank" rel="noopener"><i class="fab fa-telegram"></i> Telegram</a></li>
+                                        </ul>
+                                    </div>
+                                    
+                                    <button class="toggle-content-btn" onclick="toggleContent(this)">
+                                        <span class="btn-text">더 읽기</span>
+                                        <i class="fas fa-chevron-down"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </section>
+
+                        <!-- 기술적 세부사항 섹션 -->
+                        <section class="tech-details">
+                            <h3>기술적 세부사항</h3>
+                            <div class="tech-specs">
+                                <div class="spec-item">
+                                    <span class="spec-label">블록 생성 시간</span>
+                                    <span class="spec-value">약 10분</span>
+                                </div>
+                                <div class="spec-item">
+                                    <span class="spec-label">합의 알고리즘</span>
+                                    <span class="spec-value">작업 증명 (PoW)</span>
+                                </div>
+                                <div class="spec-item">
+                                    <span class="spec-label">해시 함수</span>
+                                    <span class="spec-value">SHA-256</span>
+                                </div>
+                                <div class="spec-item">
+                                    <span class="spec-label">블록 보상</span>
+                                    <span class="spec-value">6.25 BTC</span>
+                                </div>
+                            </div>
+                        </section>
+
+                        <!-- 자주 묻는 질문 섹션 -->
+                        <section class="faq-section">
+                            <h3>비트코인 자주 묻는 질문</h3>
+                            <div class="faq-list">
+                                <div class="faq-item">
+                                    <div class="faq-question" onclick="toggleFAQ(this)">
+                                        <span>비트코인 가격?</span>
+                                        <i class="fas fa-chevron-down"></i>
+                                    </div>
+                                    <div class="faq-answer">
+                                        <p>대한민국 원화에 대한 비트코인의 오늘 환율: 1비트코인=155,705,471 KRW , 실시간으로 <a href="#" class="faq-link">Bitcoin (BTC)가격</a>을 업데이트하고 전 세계 여러 암호화폐 거래소에서 <a href="#" class="faq-link">Bitcoin (BTC)가격</a> 보기를 지원합니다.</p>
+                                    </div>
+                                </div>
+
+                                <div class="faq-item">
+                                    <div class="faq-question" onclick="toggleFAQ(this)">
+                                        <span>비트코인사는법?</span>
+                                        <i class="fas fa-chevron-down"></i>
+                                    </div>
+                                    <div class="faq-answer">
+                                        <p>암호화폐 거래소(CEX 또는 DEX) 또는 일부 암호화폐 지갑에서 Bitcoin (BTC) 코인을 구매할 수 있습니다. 일반적으로 우리는 암호화폐 거래소에서 구매를 선택합니다. 대부분의 거래소에서는 비트코인 코인을 구매하기 전에 계정을 만들고 신원을 확인해야 합니다. 현재 비트코인 거래를 지원하는 암호화폐 거래소는 주로 다음과 같습니다.</p>
+                                        <ul class="faq-exchange-list">
+                                            <li><a href="#" class="faq-link">Coinbase</a></li>
+                                            <li><a href="#" class="faq-link">OKX(OKEx)</a></li>
+                                            <li><a href="#" class="faq-link">Crypto.com Exchange</a></li>
+                                            <li><a href="#" class="faq-link">Gemini</a></li>
+                                            <li><a href="#" class="faq-link">MEXC Global</a></li>
+                                        </ul>
+                                        <p>위에 나열된 암호화폐 거래소에 오류가 있을 수 있습니다. 손실을 피하기 위해 거래하기 전에 통화 이름, 약어, 로고 또는 계약 주소를 확인하십시오. 오류가 있으면 hello@coincarp.com으로 알려주세요. 비트코인 구매 및 판매에는 높은 위험이 수반됩니다. 사기를 당하지 않으려면 반드시 자체 조사(DYOR라고도 함)를 수행해야 합니다.</p>
+                                    </div>
+                                </div>
+
+                                <div class="faq-item">
+                                    <div class="faq-question" onclick="toggleFAQ(this)">
+                                        <span>비트코인의 최고 가격?</span>
+                                        <i class="fas fa-chevron-down"></i>
+                                    </div>
+                                    <div class="faq-answer">
+                                        <p>Bitcoin (BTC)의 역사적 최고 가격은 2025-07-10에 발생한 113,430 USD입니다.CoinCarp는 매일 비트코인의 OHLC 시장 데이터를 기록했습니다. 더 많은 <a href="#" class="faq-link">Bitcoin (BTC) 과거 가격</a> 데이터를 보려면 클릭하세요.</p>
+                                    </div>
+                                </div>
+
+                                <div class="faq-item">
+                                    <div class="faq-question" onclick="toggleFAQ(this)">
+                                        <span>비트코인 코인 전망?</span>
+                                        <i class="fas fa-chevron-down"></i>
+                                    </div>
+                                    <div class="faq-answer">
+                                        <p>앞으로 Bitcoin이(가) 얼마나 상승할지 예측할 수 없습니다. 암호화폐 시장은 불안정하며 미국 달러 정책, 정부 규제, 기술 진보, 시장 정서, Bitcoin의 순환 공급 및 프로젝트의 생태계 발전을 포함한 많은 요인의 영향을 받을 것입니다. 따라서 Bitcoin의 향후 가격을 정확하게 예측하는 것은 불가능합니다.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+
+                        <!-- 관련 링크 섹션 -->
+                        <section class="related-links">
+                            <h3>관련 링크</h3>
+                            <div class="links-grid">
+                                <a href="https://bitcoin.org" target="_blank" class="link-item">
+                                    <i class="fas fa-globe"></i>
+                                    <span>공식 웹사이트</span>
+                                </a>
+                                <a href="https://github.com/bitcoin/bitcoin" target="_blank" class="link-item">
+                                    <i class="fab fa-github"></i>
+                                    <span>GitHub</span>
+                                </a>
+                                <a href="https://bitcointalk.org" target="_blank" class="link-item">
+                                    <i class="fas fa-comments"></i>
+                                    <span>BitcoinTalk</span>
+                                </a>
+                                <a href="https://blockchair.com/bitcoin" target="_blank" class="link-item">
+                                    <i class="fas fa-search"></i>
+                                    <span>블록 익스플로러</span>
+                                </a>
+                            </div>
+                        </section>
+                    </div>
+
+                    <!-- 오른쪽 사이드바 -->
+                    <aside class="sidebar">
+                        <!-- 환전 계산기 -->
+                        <div class="widget converter-widget">
+                            <div class="card money-change border mb-20">
+                                <div class="item d-flex align-items-center p-2">
+                                    <img src="https://s1.coincarp.com/logo/1/bitcoin.png?style=72" alt="Bitcoin's Logo" class="rounded-circle item-icon">
+                                    <div class="item-name ml-2 text-nowrap">
+                                        <span class="d-block mb-1" id="srcname">비트코인</span>
+                                        <span class="d-block h5 mb-0 mt-n1 text-dark">BTC</span>
+                                    </div>
+                                    <input type="number" id="src-coin" aria-labelledby="srcname" value="1" data-direction="0" class="coin-convertor item-input border-0 w-100 text-right h3 text-dark">
+                                </div>
+                                <div class="item d-flex align-items-center p-2">
+                                    <img src="https://s1.coincarp.com/logo/faits/usd.svg" id="converted-logo" class="item-icon" alt="USD">
+                                    <div class="item-name ml-2 text-nowrap">
+                                        <span class="d-block mb-1" id="converted-symbol">USD</span>
+                                        <span class="d-block h5 mb-0 mt-n1" id="converted-name">US Dollar</span>
+                                    </div>
+                                    <input type="number" id="des-coin" aria-labelledby="converted-name" data-direction="1" data-fiat="True" data-symbol="USD" value="112610.01" class="coin-convertor item-input border-0 w-100 text-right h3 text-dark">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 실시간 뉴스 -->
+                        <div class="widget news-widget">
+                            <h3>비트코인 뉴스</h3>
+                            <div class="news-list" id="bitcoin-news">
+                                <div class="news-item">
+                                    <div class="news-content">
+                                        <h4>비트코인, 11만 달러 돌파 후 조정</h4>
+                                        <p>비트코인이 사상 최고가를 경신한 후 소폭 조정을 받고 있습니다...</p>
+                                        <span class="news-time">2시간 전</span>
+                                    </div>
+                                </div>
+                                <div class="news-item">
+                                    <div class="news-content">
+                                        <h4>기관 투자자들의 비트코인 관심 증가</h4>
+                                        <p>주요 기관들이 비트코인 투자를 늘리고 있어 시장 전망이 밝습니다...</p>
+                                        <span class="news-time">4시간 전</span>
+                                    </div>
+                                </div>
+                                <div class="news-item">
+                                    <div class="news-content">
+                                        <h4>비트코인 ETF 승인 기대감 상승</h4>
+                                        <p>미국 SEC의 비트코인 ETF 승인 가능성이 높아지고 있습니다...</p>
+                                        <span class="news-time">6시간 전</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 시장 통계 -->
+                        <div class="widget market-stats">
+                            <h3>시장 통계</h3>
+                            <div class="stats-list">
+                                <div class="stat-row">
+                                    <span class="stat-name">공포 탐욕 지수</span>
+                                    <span class="stat-value">74 (탐욕)</span>
+                                </div>
+                                <div class="stat-row">
+                                    <span class="stat-name">도미넌스</span>
+                                    <span class="stat-value">58.2%</span>
+                                </div>
+                                <div class="stat-row">
+                                    <span class="stat-name">활성 주소</span>
+                                    <span class="stat-value">1,234,567</span>
+                                </div>
+                                <div class="stat-row">
+                                    <span class="stat-name">거래 수수료</span>
+                                    <span class="stat-value">$12.34</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 광고 위젯 -->
+                        <div class="widget ad-widget">
+                            <div class="ad-content">
+                                <h4>제휴 거래소</h4>
+                                <p>안전하고 신뢰할 수 있는 거래소에서 비트코인을 거래하세요</p>
+                                <a href="../../affiliated/" class="ad-button">거래소 보기</a>
+                            </div>
+                        </div>
+                    </aside>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 모달들 -->
+    <div id="login-modal" class="auth-modal">
+        <div class="auth-modal-content">
+            <span class="auth-modal-close" data-action="close-modal">&times;</span>
+            <form id="login-form" class="auth-form">
+                <h2>로그인</h2>
+                <p id="login-error-message" class="error-message"></p>
+                <div class="input-group">
+                    <i class="fas fa-envelope"></i>
+                    <input type="email" name="login-email" placeholder="이메일" required>
+                </div>
+                <div class="input-group">
+                    <i class="fas fa-lock"></i>
+                    <input type="password" name="login-password" placeholder="비밀번호" required>
+                </div>
+                <button type="submit" class="submit-btn">로그인</button>
+                <p class="auth-form-switch">계정이 없으신가요? <a href="#" id="show-signup">회원가입</a></p>
+            </form>
+        </div>
+    </div>
+
+    <div id="signup-modal" class="auth-modal">
+        <div class="auth-modal-content">
+            <span class="auth-modal-close" data-action="close-modal">&times;</span>
+            <form id="signup-form" class="auth-form">
+                <h2>회원가입</h2>
+                <p id="signup-error-message" class="error-message"></p>
+                <div class="input-group">
+                    <i class="fas fa-user"></i>
+                    <input type="text" name="signup-name" placeholder="닉네임" required>
+                </div>
+                <div class="input-group">
+                    <i class="fas fa-envelope"></i>
+                    <input type="email" name="signup-email" placeholder="이메일" required>
+                </div>
+                <div class="input-group">
+                    <i class="fas fa-lock"></i>
+                    <input type="password" name="signup-password" placeholder="비밀번호" required>
+                </div>
+                <div class="input-group">
+                    <i class="fas fa-check-circle"></i>
+                    <input type="password" name="signup-confirm-password" placeholder="비밀번호 확인" required>
+                </div>
+                <button type="submit" class="submit-btn">회원가입</button>
+                <p class="auth-form-switch">이미 계정이 있으신가요? <a href="#" id="show-login">로그인</a></p>
+            </form>
+        </div>
+    </div>
+
+    <!-- 푸터 플레이스홀더 -->
+    <div id="footer-placeholder"></div>
+</body>
+</html> 

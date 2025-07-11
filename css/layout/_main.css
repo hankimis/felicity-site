@@ -146,7 +146,7 @@
     gap: var(--spacing-xl);
 }
 
-.sidebar {
+.sidebar-layout .sidebar {
     flex: 0 0 280px;
     background-color: var(--card-bg);
     border: 1px solid var(--border-color);
@@ -248,7 +248,7 @@
         flex-direction: column;
     }
 
-    .sidebar {
+    .sidebar-layout .sidebar {
         flex: none;
         order: 2;
     }
@@ -282,7 +282,7 @@
         grid-template-columns: repeat(2, 1fr);
     }
     
-    .sidebar {
+    .sidebar-layout .sidebar {
         flex: 0 0 240px;
     }
 } 

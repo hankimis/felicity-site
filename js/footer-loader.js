@@ -13,7 +13,27 @@ async function loadFooter() {
             document.body.appendChild(placeholder);
         }
         
-        const response = await fetch('/_footer.html');
+        // 현재 페이지의 경로에 따라 footer 경로 결정
+        const currentPath = window.location.pathname;
+        let footerPath = '/_footer.html';
+        
+        // 하위 디렉토리에 있는 경우 상위 경로로 조정
+        if (currentPath.includes('/bitcoin/') || 
+            currentPath.includes('/affiliated/') || 
+            currentPath.includes('/community/') || 
+            currentPath.includes('/news/') || 
+            currentPath.includes('/event/') || 
+            currentPath.includes('/notice-board/') || 
+            currentPath.includes('/my-account/')) {
+            footerPath = '../_footer.html';
+        }
+        
+        // 2단계 하위 디렉토리 (/currencies/bitcoin/ 등)
+        if (currentPath.includes('/currencies/bitcoin/')) {
+            footerPath = '../../_footer.html';
+        }
+        
+        const response = await fetch(footerPath);
         if (!response.ok) {
             throw new Error(`풋터 로드 실패: ${response.status}`);
         }

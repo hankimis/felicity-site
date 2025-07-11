@@ -3,6 +3,11 @@ document.addEventListener('DOMContentLoaded', function() {
     initializePage();
 });
 
+// 뉴스 중요도 시스템 전역 변수
+let newsImportanceData = {}; // 뉴스 중요도 데이터 캐시
+const IMPORTANCE_CACHE_KEY = 'newsImportanceCache';
+const IMPORTANCE_CACHE_DURATION = 24 * 60 * 60 * 1000; // 24시간
+
 // 전역 변수 추가
 let currentDisplayCount = 10; // 현재 표시된 뉴스 개수
 const loadMoreCount = 10; // 한 번에 더 로드할 개수
@@ -12,7 +17,11 @@ let hasMoreNews = true; // 더 불러올 뉴스가 있는지
 function initializePage() {
     initializeNewsUI();
     initializeInfiniteScroll();
+    loadNewsImportanceData();
     loadNewsFeeds();
+    
+    // 기본 탭을 뉴스로 설정
+    switchTab('news');
 }
 
 // 무한스크롤 초기화
@@ -29,17 +38,30 @@ function initializeInfiniteScroll() {
         threshold: 0.1
     });
 
-    // 로딩 트리거 요소 생성
-    const loadingTrigger = document.createElement('div');
-    loadingTrigger.id = 'loading-trigger';
-    loadingTrigger.style.height = '20px';
-    loadingTrigger.style.margin = '20px 0';
+    // 뉴스 그리드용 로딩 트리거 요소 생성
+    const newsLoadingTrigger = document.createElement('div');
+    newsLoadingTrigger.id = 'news-loading-trigger';
+    newsLoadingTrigger.style.height = '20px';
+    newsLoadingTrigger.style.margin = '20px 0';
+    
+    // 속보 그리드용 로딩 트리거 요소 생성
+    const breakingLoadingTrigger = document.createElement('div');
+    breakingLoadingTrigger.id = 'breaking-loading-trigger';
+    breakingLoadingTrigger.style.height = '20px';
+    breakingLoadingTrigger.style.margin = '20px 0';
     
     // 뉴스 그리드 뒤에 추가
     const newsGrid = document.getElementById('newsGrid');
     if (newsGrid && newsGrid.parentNode) {
-        newsGrid.parentNode.insertBefore(loadingTrigger, newsGrid.nextSibling);
-        observer.observe(loadingTrigger);
+        newsGrid.parentNode.insertBefore(newsLoadingTrigger, newsGrid.nextSibling);
+        observer.observe(newsLoadingTrigger);
+    }
+    
+    // 속보 그리드 뒤에 추가
+    const breakingGrid = document.getElementById('breakingGrid');
+    if (breakingGrid && breakingGrid.parentNode) {
+        breakingGrid.parentNode.insertBefore(breakingLoadingTrigger, breakingGrid.nextSibling);
+        observer.observe(breakingLoadingTrigger);
     }
 }
 
@@ -49,17 +71,42 @@ function loadMoreNews() {
     
     isLoading = true;
     
+    // 현재 활성 탭 확인
+    const activeTabBtn = document.querySelector('.tab-btn.active');
+    const currentTab = activeTabBtn?.getAttribute('data-tab') || 'news';
+    
+    // 현재 활성 필터 확인
+    const activeTabContent = document.querySelector('.tab-content:not([style*="display: none"])');
+    const activeFilter = activeTabContent?.querySelector('.filter-btn.active');
+    const source = activeFilter?.getAttribute('data-source') || 'all';
+    
     // 로딩 인디케이터 표시
     showLoadingIndicator();
     
     // 약간의 지연 후 뉴스 추가 (실제 로딩 시뮬레이션)
     setTimeout(() => {
-        const totalNews = window.newsItems.length;
+        // 현재 탭에 맞는 필터링된 뉴스 가져오기
+        let filteredNews;
+        if (currentTab === 'breaking') {
+            filteredNews = window.newsItems.filter(item => {
+                const importance = getNewsImportance(item);
+                const sourceMatch = source === 'all' || item.source === source;
+                return importance === 5 && sourceMatch;
+            });
+        } else {
+            if (source === 'all') {
+                filteredNews = window.newsItems;
+            } else {
+                filteredNews = window.newsItems.filter(item => item.source === source);
+            }
+        }
+        
+        const totalNews = filteredNews.length;
         const newDisplayCount = Math.min(currentDisplayCount + loadMoreCount, totalNews);
         
         if (newDisplayCount > currentDisplayCount) {
             currentDisplayCount = newDisplayCount;
-            displayNews(window.newsItems, false); // 기존 뉴스 유지하면서 추가
+            displayNews(filteredNews, false, currentTab); // 기존 뉴스 유지하면서 추가
             
             // 더 불러올 뉴스가 있는지 확인
             hasMoreNews = currentDisplayCount < totalNews;
@@ -70,23 +117,32 @@ function loadMoreNews() {
         hideLoadingIndicator();
         isLoading = false;
         
-        console.log(`📰 추가 로드: ${currentDisplayCount}/${totalNews} 뉴스 표시`);
+        const tabLabel = currentTab === 'breaking' ? '속보' : '뉴스';
+        console.log(`📰 ${tabLabel} 추가 로드: ${currentDisplayCount}/${totalNews} 표시`);
     }, 500);
 }
 
 // 로딩 인디케이터 표시
 function showLoadingIndicator() {
-    let indicator = document.getElementById('loading-more-indicator');
+    // 현재 활성 탭 확인
+    const activeTabBtn = document.querySelector('.tab-btn.active');
+    const currentTab = activeTabBtn?.getAttribute('data-tab') || 'news';
+    
+    const indicatorId = currentTab === 'breaking' ? 'breaking-loading-more-indicator' : 'news-loading-more-indicator';
+    const triggerSelector = currentTab === 'breaking' ? '#breaking-loading-trigger' : '#news-loading-trigger';
+    
+    let indicator = document.getElementById(indicatorId);
     if (!indicator) {
         indicator = document.createElement('div');
-        indicator.id = 'loading-more-indicator';
+        indicator.id = indicatorId;
+        const contentType = currentTab === 'breaking' ? '속보' : '뉴스';
         indicator.innerHTML = `
             <div style="text-align: center; padding: 20px; color: var(--text-color-secondary);">
-                <i class="fas fa-spinner fa-spin"></i> 더 많은 뉴스를 불러오는 중...
+                <i class="fas fa-spinner fa-spin"></i> 더 많은 ${contentType}를 불러오는 중...
             </div>
         `;
         
-        const loadingTrigger = document.getElementById('loading-trigger');
+        const loadingTrigger = document.querySelector(triggerSelector);
         if (loadingTrigger) {
             loadingTrigger.parentNode.insertBefore(indicator, loadingTrigger);
         }
@@ -96,21 +152,45 @@ function showLoadingIndicator() {
 
 // 로딩 인디케이터 숨기기
 function hideLoadingIndicator() {
-    const indicator = document.getElementById('loading-more-indicator');
-    if (indicator) {
-        indicator.style.display = 'none';
+    // 모든 로딩 인디케이터 숨기기
+    const newsIndicator = document.getElementById('news-loading-more-indicator');
+    const breakingIndicator = document.getElementById('breaking-loading-more-indicator');
+    
+    if (newsIndicator) {
+        newsIndicator.style.display = 'none';
+    }
+    if (breakingIndicator) {
+        breakingIndicator.style.display = 'none';
     }
 }
 
 // 뉴스 페이지 UI 초기화
 function initializeNewsUI() {
-    // 뉴스 필터 버튼
+    // 모든 탭 버튼 초기화 (통합 관리)
+    const tabButtons = document.querySelectorAll('.tab-btn');
+    tabButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            const tabName = button.getAttribute('data-tab');
+            switchTab(tabName);
+        });
+    });
+
+    // 뉴스 필터 버튼 (모든 탭에서 공통 사용)
     const filterButtons = document.querySelectorAll('.filter-btn');
     filterButtons.forEach(button => {
         button.addEventListener('click', () => {
-            // 활성 버튼 변경
-            filterButtons.forEach(btn => btn.classList.remove('active'));
-            button.classList.add('active');
+            // 현재 활성 탭의 필터 버튼만 변경
+            const currentTab = document.querySelector('.tab-content:not([style*="display: none"])');
+            if (currentTab) {
+                const currentTabFilters = currentTab.querySelectorAll('.filter-btn');
+                currentTabFilters.forEach(btn => btn.classList.remove('active'));
+                
+                // 같은 탭 내의 해당 버튼 활성화
+                const targetButton = currentTab.querySelector(`[data-source="${button.getAttribute('data-source')}"]`);
+                if (targetButton) {
+                    targetButton.classList.add('active');
+                }
+            }
 
             // 뉴스 필터링 (무한스크롤 리셋)
             const source = button.getAttribute('data-source');
@@ -118,7 +198,6 @@ function initializeNewsUI() {
             filterNews(source);
         });
     });
-
 }
 
 // 무한스크롤 상태 리셋
@@ -133,7 +212,7 @@ function resetInfiniteScroll() {
 async function loadNewsFeeds() {
     const newsGrid = document.getElementById('newsGrid');
     const CACHE_KEY = 'newsFeedsCache';
-    const CACHE_DURATION_MS = 5 * 60 * 1000; // 5분 캐시
+    const CACHE_DURATION_MS = 3 * 60 * 1000; // 3분 캐시 (더 자주 업데이트)
 
     // 1. 캐시 확인 및 즉시 표시 (빠른 로딩)
     try {
@@ -142,14 +221,18 @@ async function loadNewsFeeds() {
             const cacheData = JSON.parse(cached);
             const age = Date.now() - cacheData.timestamp;
             
-            if (age < CACHE_DURATION_MS && cacheData.data && cacheData.data.length > 0) {
-                // 캐시된 데이터 즉시 표시
+            // 캐시가 있으면 즉시 표시 (만료되어도 일단 표시)
+            if (cacheData.data && cacheData.data.length > 0) {
+                console.log('📰 캐시된 뉴스 즉시 표시');
                 window.newsItems = cacheData.data;
                 resetInfiniteScroll();
                 displayNews(cacheData.data);
                 
-                // 백그라운드에서 새 데이터 가져오기 (비동기)
-                setTimeout(() => loadFreshNews(), 100);
+                // 캐시가 만료되었으면 백그라운드에서 새 데이터 가져오기
+                if (age >= CACHE_DURATION_MS) {
+                    console.log('📰 캐시 만료, 백그라운드에서 새 데이터 로딩');
+                    setTimeout(() => loadFreshNews(true), 100);
+                }
                 return;
             }
         }
@@ -157,45 +240,62 @@ async function loadNewsFeeds() {
         console.warn('캐시 읽기 실패:', e);
     }
     
-    // 로딩 메시지 표시
-    newsGrid.innerHTML = '<div class="loading">최신 뉴스를 불러오는 중...</div>';
-    await loadFreshNews();
+    // 캐시가 없으면 로딩 메시지 표시하고 새 데이터 로드
+    newsGrid.innerHTML = `
+        <div class="loading">
+            <div style="text-align: center; padding: 2rem;">
+                <div class="loading-spinner" style="width: 40px; height: 40px; border: 3px solid var(--border-color); border-top: 3px solid var(--primary-color); border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 1rem;"></div>
+                <p style="color: var(--text-color-secondary); margin: 0;">최신 뉴스를 불러오는 중...</p>
+                <p style="color: var(--text-color-tertiary); font-size: 0.9rem; margin: 0.5rem 0 0 0;">잠시만 기다려주세요</p>
+            </div>
+        </div>
+    `;
+    await loadFreshNews(false);
 }
 
-async function loadFreshNews() {
+async function loadFreshNews(isBackgroundUpdate = false) {
     const newsGrid = document.getElementById('newsGrid');
     const CACHE_KEY = 'newsFeedsCache';
     
     try {
         const feeds = [
-            // 한국 암호화폐 뉴스 소스 (우선순위 순)
+            // 한국 암호화폐 뉴스 소스 (우선순위 순 - 빠른 소스 우선)
             { url: 'https://kr.cointelegraph.com/rss', source: 'cointelegraph' },
             { url: 'https://www.tokenpost.kr/rss', source: 'tokenpost' },
             { url: 'https://www.blockmedia.co.kr/feed', source: 'blockmedia' },
+            { url: 'https://bloomingbit.io/rss.xml', source: 'bloomingbit' },
+            { url: 'https://kr.investing.com/rss/news.rss', source: 'investing' },
             { url: 'https://www.blockstreet.co.kr/feed', source: 'blockstreet' },
             { url: 'https://cryptonews.com/kr/feed/', source: 'cryptonews' },
             { url: 'https://cryptodnes.bg/kr/feed/', source: 'cryptodnes' },
-            { url: 'https://bloomingbit.io/rss.xml', source: 'bloomingbit' },
-            { url: 'https://kr.investing.com/rss/news.rss', source: 'investing' },
             { url: 'https://zdnet.co.kr/feed', source: 'zdnet' }
         ];
 
-        // 병렬 처리로 모든 피드 동시 요청
-        const feedPromises = feeds.map(feed => 
-            fetchAndParseFeed(feed).catch(error => {
-                console.warn(`${feed.source} 피드 로딩 실패:`, error);
+        // 빠른 로딩을 위한 단계별 처리
+        const fastFeeds = feeds.slice(0, 4); // 빠른 피드 4개
+        const slowFeeds = feeds.slice(4); // 나머지 피드
+
+        // 1단계: 빠른 피드들 먼저 로드 (2초 타임아웃)
+        const fastPromises = fastFeeds.map(feed => 
+            Promise.race([
+                fetchAndParseFeed(feed),
+                new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error('Timeout')), 2000)
+                )
+            ]).catch(error => {
+                console.warn(`${feed.source} 피드 로딩 실패:`, error.message);
                 return []; // 실패한 피드는 빈 배열 반환
             })
         );
 
-        // Promise.allSettled 대신 Promise.all 사용 (더 빠름)
-        const results = await Promise.all(feedPromises);
-
+        const fastResults = await Promise.all(fastPromises);
+        
         let allNews = [];
         let successCount = 0;
         
-        results.forEach((result, index) => {
-            const feedName = feeds[index].source;
+        // 빠른 피드 결과 처리
+        fastResults.forEach((result, index) => {
+            const feedName = fastFeeds[index].source;
             if (result && result.length > 0) {
                 allNews.push(...result);
                 successCount++;
@@ -203,51 +303,108 @@ async function loadFreshNews() {
             }
         });
 
-        // 최소 하나의 피드라도 성공하면 표시
+        // 빠른 피드 결과가 있으면 즉시 표시 (백그라운드 업데이트가 아닌 경우)
+        if (allNews.length > 0 && !isBackgroundUpdate) {
+            // 중복 제거 및 정렬
+            const uniqueNews = removeDuplicateNews(allNews);
+            uniqueNews.sort((a, b) => new Date(b.pubDate) - new Date(a.pubDate));
+            
+            // 캐시 저장
+            const cacheData = {
+                timestamp: Date.now(),
+                data: uniqueNews
+            };
+            localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
+            
+            window.newsItems = uniqueNews;
+            resetInfiniteScroll();
+            displayNews(uniqueNews);
+            
+            console.log(`📰 빠른 로딩 완료: ${successCount}개 소스에서 ${uniqueNews.length}개 뉴스`);
+        }
+
+        // 2단계: 나머지 피드들 백그라운드에서 로드 (3초 타임아웃)
+        const slowPromises = slowFeeds.map(feed => 
+            Promise.race([
+                fetchAndParseFeed(feed),
+                new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error('Timeout')), 3000)
+                )
+            ]).catch(error => {
+                console.warn(`${feed.source} 피드 로딩 실패:`, error.message);
+                return [];
+            })
+        );
+
+        const slowResults = await Promise.all(slowPromises);
+        
+        // 나머지 피드 결과 처리
+        slowResults.forEach((result, index) => {
+            const feedName = slowFeeds[index].source;
+            if (result && result.length > 0) {
+                allNews.push(...result);
+                successCount++;
+                console.log(`✅ ${feedName}: ${result.length}개 뉴스 로드`);
+            }
+        });
+
+        // 최종 결과 처리
         if (allNews.length === 0) {
             throw new Error('모든 뉴스 피드를 가져오는데 실패했습니다.');
         }
 
-        // 중복 제거 최적화 (Map 사용)
-        const uniqueNewsMap = new Map();
-        allNews.forEach(item => {
-            if (item.link && !uniqueNewsMap.has(item.link)) {
-                uniqueNewsMap.set(item.link, item);
-            }
-        });
-        
-        const uniqueNews = Array.from(uniqueNewsMap.values());
-
-        // 최신순 정렬
+        // 중복 제거 및 정렬
+        const uniqueNews = removeDuplicateNews(allNews);
         uniqueNews.sort((a, b) => new Date(b.pubDate) - new Date(a.pubDate));
         
-        // 캐시 저장 (비동기)
-        setTimeout(() => {
-            try {
-                const cacheData = {
-                    timestamp: Date.now(),
-                    data: uniqueNews
-                };
-                localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
-            } catch(e) {
-                console.warn('캐시 저장 실패:', e);
-            }
-        }, 0);
+        // 캐시 저장
+        const cacheData = {
+            timestamp: Date.now(),
+            data: uniqueNews
+        };
+        localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
 
-        window.newsItems = uniqueNews;
-        resetInfiniteScroll();
-        displayNews(uniqueNews);
+        // 백그라운드 업데이트가 아닌 경우에만 UI 업데이트
+        if (!isBackgroundUpdate) {
+            window.newsItems = uniqueNews;
+            resetInfiniteScroll();
+            displayNews(uniqueNews);
+        } else {
+            // 백그라운드 업데이트인 경우 새 데이터로 교체
+            window.newsItems = uniqueNews;
+            console.log(`📰 백그라운드 업데이트 완료: ${uniqueNews.length}개 뉴스`);
+        }
         
         console.log(`📰 뉴스 로딩 완료: ${successCount}/${feeds.length} 소스 성공, ${uniqueNews.length}개 뉴스`);
 
     } catch (error) {
         console.error('뉴스 로딩 실패:', error);
-        newsGrid.innerHTML = `
-            <div class="loading">
-                뉴스를 불러오는데 실패했습니다. 잠시 후 다시 시도해주세요.
-            </div>
-        `;
+        if (!isBackgroundUpdate) {
+            newsGrid.innerHTML = `
+                <div class="loading">
+                    <div style="text-align: center; padding: 2rem;">
+                        <i class="fas fa-exclamation-triangle" style="font-size: 2rem; color: #f59e0b; margin-bottom: 1rem;"></i>
+                        <p style="color: var(--text-color-secondary); margin: 0;">뉴스를 불러오는데 실패했습니다.</p>
+                        <p style="color: var(--text-color-tertiary); font-size: 0.9rem; margin: 0.5rem 0 0 0;">잠시 후 다시 시도해주세요.</p>
+                        <button onclick="loadNewsFeeds()" style="margin-top: 1rem; padding: 0.5rem 1rem; background: var(--primary-color); color: white; border: none; border-radius: 6px; cursor: pointer;">
+                            다시 시도
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
     }
+}
+
+// 중복 뉴스 제거 함수
+function removeDuplicateNews(newsArray) {
+    const uniqueNewsMap = new Map();
+    newsArray.forEach(item => {
+        if (item.link && !uniqueNewsMap.has(item.link)) {
+            uniqueNewsMap.set(item.link, item);
+        }
+    });
+    return Array.from(uniqueNewsMap.values());
 }
 
 
@@ -459,12 +616,14 @@ function findImageInItem(item) {
 }
 
 // 뉴스 표시 (최적화된 이미지 로딩)
-function displayNews(news, isInitialLoad = true) {
-    const newsGrid = document.getElementById('newsGrid');
+function displayNews(news, isInitialLoad = true, currentTab = 'news') {
+    const gridId = currentTab === 'breaking' ? 'breakingGrid' : 'newsGrid';
+    const newsGrid = document.getElementById(gridId);
     
     if (!newsGrid || !news || news.length === 0) {
         if (newsGrid) {
-            newsGrid.innerHTML = '<div class="loading">뉴스를 불러올 수 없습니다.</div>';
+            const message = currentTab === 'breaking' ? '속보가 없습니다.' : '뉴스를 불러올 수 없습니다.';
+            newsGrid.innerHTML = `<div class="loading">${message}</div>`;
         }
         return;
     }
@@ -492,11 +651,15 @@ function displayNews(news, isInitialLoad = true) {
         const relativeTime = getRelativeTime(item.pubDate);
         const sourceName = getSourceDisplayName(item.source);
         
+        // 뉴스 중요도 자동 분석 및 별 아이콘 생성
+        const starRating = createStarRating(item);
+        const importance = getNewsImportance(item);
+        
         // 이미지가 있는지 확인
         const hasImage = item.image && item.image !== '/img/default-news.jpg' && item.image.startsWith('http');
         
         const newsItem = document.createElement('div');
-        newsItem.className = `news-item ${hasImage ? 'has-image' : 'no-image'}`;
+        newsItem.className = `news-item ${hasImage ? 'has-image' : 'no-image'} importance-${importance}`;
         
         // 이미지 HTML 생성 (이미지가 있을 때만)
         const imageHtml = hasImage ? `
@@ -510,17 +673,23 @@ function displayNews(news, isInitialLoad = true) {
             <div class="news-body">
                 <div class="news-meta">
                     <span class="news-source">${sourceName}</span>
-                    <span class="news-time">${relativeTime}</span>
+                    <span class="news-time">
+                        ${relativeTime}
+                        ${starRating}
+                    </span>
                 </div>
                 <h3 class="news-title">${item.title}</h3>
                 <p class="news-desc">${item.contentSnippet}</p>
             </div>
         `;
         
-        // 클릭 이벤트 추가
-        newsItem.addEventListener('click', () => {
-            if (item.link) {
-                window.open(item.link, '_blank', 'noopener,noreferrer');
+        // 뉴스 아이템 클릭 이벤트 추가 (별 아이콘은 클릭 불가)
+        newsItem.addEventListener('click', (event) => {
+            // 별 아이콘 영역은 클릭 무시
+            if (!event.target.closest('.news-importance')) {
+                if (item.link) {
+                    window.open(item.link, '_blank', 'noopener,noreferrer');
+                }
             }
         });
         
@@ -533,29 +702,160 @@ function displayNews(news, isInitialLoad = true) {
     if (!hasMoreNews && isInitialLoad) {
         const completeMessage = document.createElement('div');
         completeMessage.className = 'loading';
-        completeMessage.innerHTML = `총 ${news.length}개의 뉴스를 모두 불러왔습니다.`;
+        const contentType = currentTab === 'breaking' ? '속보' : '뉴스';
+        completeMessage.innerHTML = `총 ${news.length}개의 ${contentType}를 모두 불러왔습니다.`;
         newsGrid.appendChild(completeMessage);
     }
 }
 
-// 뉴스 필터링
-function filterNews(source) {
+// 통합 탭 전환 함수
+function switchTab(tabName) {
+    // 모든 탭 버튼 비활성화
+    const tabButtons = document.querySelectorAll('.tab-btn');
+    tabButtons.forEach(btn => btn.classList.remove('active'));
+    
+    // 모든 탭 컨텐츠 숨기기
+    const tabContents = document.querySelectorAll('.tab-content');
+    tabContents.forEach(content => content.style.display = 'none');
+    
+    // 선택된 탭 활성화
+    const selectedTabBtn = document.querySelector(`[data-tab="${tabName}"]`);
+    const selectedTabContent = document.getElementById(`${tabName}Tab`);
+    
+    if (selectedTabBtn) selectedTabBtn.classList.add('active');
+    if (selectedTabContent) selectedTabContent.style.display = 'block';
+    
+    // 탭별 특별 처리
+    if (tabName === 'news' || tabName === 'breaking') {
+        // 뉴스 관련 탭
+        if (window.newsItems) {
+            // 현재 활성 필터 가져오기
+            const activeFilter = selectedTabContent?.querySelector('.filter-btn.active');
+            const source = activeFilter?.getAttribute('data-source') || 'all';
+            
+            resetInfiniteScroll();
+            filterNews(source, tabName);
+        }
+    } else if (tabName === 'economic-calendar') {
+        // 경제 캘린더 탭 - 약간의 지연 후 로드
+        setTimeout(() => {
+            loadEconomicCalendar();
+        }, 100);
+    }
+    
+    console.log(`📑 탭 전환: ${tabName}`);
+}
+
+// 경제 캘린더 로드 함수
+function loadEconomicCalendar() {
+    // 경제 캘린더가 이미 로드되었는지 확인
+    if (window.isEconomicCalendarLoaded) {
+        console.log('📊 경제 캘린더 이미 로드됨');
+        return;
+    }
+
+    // economic-calendar.js의 TabNavigation 클래스 사용
+    if (window.TabNavigation) {
+        const calendarManager = new window.TabNavigation();
+        calendarManager.loadTradingViewCalendar();
+        window.isEconomicCalendarLoaded = true;
+        console.log('📊 경제 캘린더 로드 완료 (TabNavigation 사용)');
+    } else {
+        console.error('TabNavigation 클래스를 찾을 수 없습니다.');
+        showCalendarError();
+    }
+}
+
+// 경제 캘린더 관련 함수들은 economic-calendar.js에서 처리
+
+// 캘린더 오류 메시지 표시
+function showCalendarError() {
+    const widgetContainer = document.querySelector('.tradingview-widget-container__widget');
+    if (!widgetContainer) return;
+
+    widgetContainer.innerHTML = `
+        <div style="
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 600px;
+            color: var(--text-color-secondary);
+            text-align: center;
+            padding: 20px;
+            background: #fff;
+            border-radius: 8px;
+        ">
+            <i class="fas fa-exclamation-triangle" style="font-size: 3rem; margin-bottom: 1rem; color: #ff6b6b;"></i>
+            <h3 style="margin: 0 0 1rem 0; color: var(--text-color);">경제 캘린더를 불러올 수 없습니다</h3>
+            <p style="margin: 0 0 1rem 0; line-height: 1.5; color: var(--text-color-secondary);">
+                네트워크 연결을 확인하고 다시 시도해주세요.<br>
+                또는 아래 링크를 통해 직접 확인하세요.
+            </p>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;">
+                <button onclick="loadEconomicCalendar()" style="
+                    padding: 10px 20px;
+                    background: #2962ff;
+                    color: white;
+                    border: none;
+                    border-radius: 5px;
+                    cursor: pointer;
+                    font-size: 0.9rem;
+                    margin: 5px;
+                ">다시 시도</button>
+                <a href="https://kr.tradingview.com/economic-calendar/" 
+                   target="_blank" 
+                   style="
+                       display: inline-block;
+                       padding: 10px 20px;
+                       background: #007bff;
+                       color: white;
+                       text-decoration: none;
+                       border-radius: 5px;
+                       font-size: 0.9rem;
+                       margin: 5px;
+                   ">TradingView 사이트로</a>
+            </div>
+        </div>
+    `;
+}
+
+// 뉴스 필터링 (탭별 처리)
+function filterNews(source, currentTab = null) {
     if (!window.newsItems) return;
     
+    // 현재 탭 확인
+    if (!currentTab) {
+        const activeTabBtn = document.querySelector('.tab-btn.active');
+        currentTab = activeTabBtn?.getAttribute('data-tab') || 'news';
+    }
+    
     let filteredNews;
-    if (source === 'all') {
-        filteredNews = window.newsItems;
+    
+    // 속보 탭인 경우 중요도 5점만 필터링
+    if (currentTab === 'breaking') {
+        filteredNews = window.newsItems.filter(item => {
+            const importance = getNewsImportance(item);
+            const sourceMatch = source === 'all' || item.source === source;
+            return importance === 5 && sourceMatch;
+        });
     } else {
-        filteredNews = window.newsItems.filter(item => item.source === source);
+        // 일반 뉴스 탭
+        if (source === 'all') {
+            filteredNews = window.newsItems;
+        } else {
+            filteredNews = window.newsItems.filter(item => item.source === source);
+        }
     }
     
     // 무한스크롤 상태 리셋
     resetInfiniteScroll();
     
     // 필터링된 뉴스 표시
-    displayNews(filteredNews, true);
+    displayNews(filteredNews, true, currentTab);
     
-    console.log(`🔍 필터링 완료: ${source} (${filteredNews.length}개 뉴스)`);
+    const tabLabel = currentTab === 'breaking' ? '속보' : '뉴스';
+    console.log(`🔍 ${tabLabel} 필터링 완료: ${source} (${filteredNews.length}개)`);
 }
 
 // 상대적 시간 표시 함수
@@ -594,4 +894,323 @@ function getSourceDisplayName(source) {
     };
     
     return sourceNames[source] || source;
+}
+
+// ===================================================================
+// 뉴스 중요도 자동 분석 시스템
+// ===================================================================
+
+// 암호화폐 시장 영향도 키워드 데이터베이스
+const IMPORTANCE_KEYWORDS = {
+    // 매우 높음 (5점) - 시장 전체에 큰 영향
+    5: {
+        keywords: ['규제', '금지', '승인', '상장', '상장폐지', 'SEC', '연준', '금리', '비트코인 ETF', 'ETF 승인', '해킹', '파산', '폐쇄', '중단', '긴급', '경고', '위험', '폭락', '급등', '사상 최고', '사상 최저', '반감기', '포크', '업그레이드', '메인넷', '런칭'],
+        weight: 5,
+        sources: ['SEC', 'Fed', '연준', '금융위', '정부', '청와대', '국회', '법원', '검찰']
+    },
+    // 높음 (4점) - 특정 코인이나 섹터에 큰 영향
+    4: {
+        keywords: ['투자', '펀딩', '파트너십', '제휴', '인수', '합병', '신규', '출시', '베타', '알파', '테스트넷', '로드맵', '개발', '업데이트', '보안', '취약점', '버그', '수정', '개선', '확장', '통합', '지원', '추가'],
+        weight: 4,
+        sources: ['거래소', '바이낸스', '코인베이스', '업비트', '빗썸', '후오비', 'FTX', 'OKX']
+    },
+    // 보통 (3점) - 일반적인 시장 뉴스
+    3: {
+        keywords: ['분석', '예측', '전망', '리포트', '보고서', '연구', '조사', '설문', '인터뷰', '발언', '의견', '코멘트', '논평', '평가', '검토', '검토', '고려', '계획', '준비', '검토중', '논의'],
+        weight: 3,
+        sources: ['분석가', '전문가', '애널리스트', '연구소', '기관', '은행', '투자회사']
+    },
+    // 낮음 (2점) - 참고 정보
+    2: {
+        keywords: ['이벤트', '컨퍼런스', '세미나', '워크샵', '교육', '강의', '설명', '소개', '가이드', '튜토리얼', '기본', '초보', '입문', '시작', '방법', '팁', '노하우', '경험', '후기', '리뷰'],
+        weight: 2,
+        sources: ['커뮤니티', '블로그', '유튜브', '트위터', '텔레그램', '디스코드']
+    },
+    // 매우 낮음 (1점) - 일반 정보
+    1: {
+        keywords: ['소식', '뉴스', '정보', '알림', '공지', '안내', '공유', '게시', '업로드', '포스팅', '글', '기사', '내용', '자료', '데이터', '통계', '수치', '지표', '차트', '그래프'],
+        weight: 1,
+        sources: ['뉴스', '미디어', '언론', '매체', '신문', '방송']
+    }
+};
+
+// 특별 키워드 (추가 가중치)
+const SPECIAL_KEYWORDS = {
+    // 긍정적 영향 (+0.5점)
+    positive: ['상승', '증가', '성장', '확대', '개선', '혁신', '발전', '성공', '달성', '돌파', '기록', '최고', '우수', '뛰어난', '탁월한', '혁신적'],
+    // 부정적 영향 (+0.5점)
+    negative: ['하락', '감소', '축소', '악화', '문제', '이슈', '우려', '위험', '실패', '좌절', '지연', '연기', '취소', '중단', '최저', '부족', '어려움'],
+    // 시급성 (+0.3점)
+    urgent: ['긴급', '즉시', '당장', '오늘', '내일', '이번주', '곧', '빠른', '신속', '급한', '중요', '필수', '반드시', '꼭'],
+    // 대형 기업/기관 (+0.2점)
+    major: ['삼성', '애플', '구글', '마이크로소프트', '테슬라', '메타', '아마존', '넷플릭스', '엔비디아', '블랙록', '피델리티', '골드만삭스', 'JP모건']
+};
+
+// 뉴스 중요도 데이터 로드
+async function loadNewsImportanceData() {
+    try {
+        // 캐시에서 먼저 확인
+        const cached = localStorage.getItem(IMPORTANCE_CACHE_KEY);
+        if (cached) {
+            const cacheData = JSON.parse(cached);
+            const age = Date.now() - cacheData.timestamp;
+            
+            if (age < IMPORTANCE_CACHE_DURATION) {
+                newsImportanceData = cacheData.data || {};
+                console.log('📊 뉴스 중요도 데이터 캐시에서 로드됨');
+                return;
+            }
+        }
+
+        // Firebase에서 중요도 데이터 로드
+        if (typeof firebase !== 'undefined' && firebase.firestore) {
+            const db = firebase.firestore();
+            const snapshot = await db.collection('newsImportance').get();
+            
+            newsImportanceData = {};
+            snapshot.forEach(doc => {
+                newsImportanceData[doc.id] = doc.data();
+            });
+            
+            // 캐시에 저장
+            localStorage.setItem(IMPORTANCE_CACHE_KEY, JSON.stringify({
+                data: newsImportanceData,
+                timestamp: Date.now()
+            }));
+            
+            console.log('📊 뉴스 중요도 데이터 Firebase에서 로드됨');
+        }
+    } catch (error) {
+        console.warn('뉴스 중요도 데이터 로드 실패:', error);
+        newsImportanceData = {};
+    }
+}
+
+// 뉴스 중요도 자동 분석
+function analyzeNewsImportance(newsItem) {
+    const title = newsItem.title || '';
+    const content = newsItem.contentSnippet || newsItem.content || '';
+    const source = newsItem.source || '';
+    const pubDate = newsItem.pubDate || '';
+    
+    // 분석할 텍스트 통합
+    const fullText = `${title} ${content}`.toLowerCase();
+    
+    let score = 0;
+    let matchedKeywords = [];
+    let analysisDetails = {
+        keywordMatches: [],
+        sourceBonus: 0,
+        timeBonus: 0,
+        specialBonus: 0,
+        finalScore: 0
+    };
+    
+    // 1. 키워드 분석
+    for (const [level, data] of Object.entries(IMPORTANCE_KEYWORDS)) {
+        const levelScore = parseInt(level);
+        let keywordMatches = 0;
+        
+        for (const keyword of data.keywords) {
+            if (fullText.includes(keyword.toLowerCase())) {
+                keywordMatches++;
+                matchedKeywords.push({keyword, level: levelScore});
+                analysisDetails.keywordMatches.push({keyword, level: levelScore});
+            }
+        }
+        
+        // 키워드 매칭 점수 계산 (매칭된 키워드 수에 따라 가중치 적용)
+        if (keywordMatches > 0) {
+            const keywordScore = Math.min(keywordMatches * 0.3, 1.0) * levelScore;
+            score += keywordScore;
+        }
+    }
+    
+    // 2. 소스 신뢰도 보너스
+    for (const [level, data] of Object.entries(IMPORTANCE_KEYWORDS)) {
+        for (const sourceKeyword of data.sources) {
+            if (fullText.includes(sourceKeyword.toLowerCase()) || source.toLowerCase().includes(sourceKeyword.toLowerCase())) {
+                const sourceBonus = parseInt(level) * 0.2;
+                score += sourceBonus;
+                analysisDetails.sourceBonus += sourceBonus;
+                break;
+            }
+        }
+    }
+    
+    // 3. 특별 키워드 보너스
+    for (const [type, keywords] of Object.entries(SPECIAL_KEYWORDS)) {
+        for (const keyword of keywords) {
+            if (fullText.includes(keyword.toLowerCase())) {
+                let bonus = 0;
+                switch(type) {
+                    case 'positive':
+                    case 'negative':
+                        bonus = 0.5;
+                        break;
+                    case 'urgent':
+                        bonus = 0.3;
+                        break;
+                    case 'major':
+                        bonus = 0.2;
+                        break;
+                }
+                score += bonus;
+                analysisDetails.specialBonus += bonus;
+                break;
+            }
+        }
+    }
+    
+    // 4. 시간 가중치 (최신 뉴스일수록 높은 점수)
+    if (pubDate) {
+        const newsDate = new Date(pubDate);
+        const now = new Date();
+        const hoursDiff = (now - newsDate) / (1000 * 60 * 60);
+        
+        if (hoursDiff < 1) {
+            score += 0.5; // 1시간 이내
+            analysisDetails.timeBonus = 0.5;
+        } else if (hoursDiff < 6) {
+            score += 0.3; // 6시간 이내
+            analysisDetails.timeBonus = 0.3;
+        } else if (hoursDiff < 24) {
+            score += 0.1; // 24시간 이내
+            analysisDetails.timeBonus = 0.1;
+        }
+    }
+    
+    // 5. 최종 점수 정규화 (1-5점)
+    const finalScore = Math.max(1, Math.min(5, Math.round(score)));
+    analysisDetails.finalScore = finalScore;
+    
+    // 분석 결과 로그
+    if (matchedKeywords.length > 0) {
+        console.log(`🤖 뉴스 분석 완료: "${title.substring(0, 50)}..." = ${finalScore}점`);
+        console.log(`   매칭 키워드: ${matchedKeywords.map(k => k.keyword).join(', ')}`);
+    }
+    
+    return {
+        score: finalScore,
+        details: analysisDetails,
+        matchedKeywords: matchedKeywords
+    };
+}
+
+// 뉴스 중요도 저장 (분석 결과 포함)
+async function saveNewsImportance(newsId, importance, analysisDetails = null) {
+    try {
+        if (typeof firebase !== 'undefined' && firebase.firestore) {
+            const db = firebase.firestore();
+            const data = {
+                importance: importance,
+                timestamp: Date.now(),
+                updatedAt: new Date().toISOString(),
+                isAnalyzed: true
+            };
+            
+            // 분석 세부사항 추가
+            if (analysisDetails) {
+                data.analysisDetails = analysisDetails;
+            }
+            
+            await db.collection('newsImportance').doc(newsId).set(data);
+            
+            // 로컬 캐시 업데이트
+            newsImportanceData[newsId] = data;
+            
+            // 캐시 저장
+            localStorage.setItem(IMPORTANCE_CACHE_KEY, JSON.stringify({
+                data: newsImportanceData,
+                timestamp: Date.now()
+            }));
+            
+            console.log(`🤖 뉴스 중요도 자동 분석 저장됨: ${newsId} = ${importance}점`);
+        }
+    } catch (error) {
+        console.error('뉴스 중요도 저장 실패:', error);
+    }
+}
+
+// 뉴스 중요도 가져오기 (캐시 우선, 없으면 분석)
+function getNewsImportance(newsItem) {
+    const newsId = generateNewsId(newsItem);
+    if (!newsId) return 1;
+    
+    // 캐시에서 확인
+    const cached = newsImportanceData[newsId];
+    if (cached && cached.importance) {
+        return cached.importance;
+    }
+    
+    // 캐시에 없으면 자동 분석
+    const analysis = analyzeNewsImportance(newsItem);
+    
+    // 백그라운드에서 저장 (비동기)
+    setTimeout(() => {
+        saveNewsImportance(newsId, analysis.score, analysis.details);
+    }, 100);
+    
+    return analysis.score;
+}
+
+// 뉴스 ID 생성 (URL 기반)
+function generateNewsId(newsItem) {
+    if (!newsItem.link) return null;
+    
+    try {
+        // URL을 기반으로 고유 ID 생성
+        const url = new URL(newsItem.link);
+        const path = url.pathname.replace(/[^a-zA-Z0-9]/g, '');
+        const source = newsItem.source || 'unknown';
+        
+        return `${source}_${path}`.substring(0, 100);
+    } catch (error) {
+        // URL 파싱 실패 시 제목 기반 ID 생성
+        const title = newsItem.title || 'untitled';
+        const source = newsItem.source || 'unknown';
+        const cleanTitle = title.replace(/[^a-zA-Z0-9가-힣]/g, '').substring(0, 50);
+        
+        return `${source}_${cleanTitle}`.substring(0, 100);
+    }
+}
+
+// 별 아이콘 HTML 생성 (자동 분석 결과 표시)
+function createStarRating(newsItem) {
+    const newsId = generateNewsId(newsItem);
+    if (!newsId) return '';
+    
+    const importance = getNewsImportance(newsItem);
+    const analysis = analyzeNewsImportance(newsItem);
+    
+    const stars = [];
+    for (let i = 1; i <= 5; i++) {
+        const filled = i <= importance ? 'filled' : '';
+        stars.push(`<span class="star ${filled}">★</span>`);
+    }
+    
+    // 분석 근거 툴팁 생성
+    let tooltipText = `AI 분석: ${importance}점`;
+    if (analysis.matchedKeywords.length > 0) {
+        const keywords = analysis.matchedKeywords.slice(0, 3).map(k => k.keyword).join(', ');
+        tooltipText += ` (${keywords})`;
+    }
+    
+    return `
+        <div class="news-importance" data-news-id="${newsId}" data-importance="${importance}" data-tooltip="${tooltipText}">
+            ${stars.join('')}
+        </div>
+    `;
+}
+
+// 뉴스 중요도 재분석 (필요시)
+async function reanalyzeNewsImportance(newsItem) {
+    const newsId = generateNewsId(newsItem);
+    if (!newsId) return;
+    
+    const analysis = analyzeNewsImportance(newsItem);
+    await saveNewsImportance(newsId, analysis.score, analysis.details);
+    
+    console.log(`🔄 뉴스 재분석 완료: ${newsId} = ${analysis.score}점`);
+    return analysis.score;
 } 

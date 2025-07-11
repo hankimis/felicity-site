@@ -1,0 +1,453 @@
+# 🏠 INDEX PAGE ARCHITECTURE RULES
+## Felicity-Site 메인 페이지 최적화 가이드
+
+---
+
+## 📋 **목차**
+1. [🎯 핵심 원칙](#핵심-원칙)
+2. [🏗️ 구조 및 아키텍처](#구조-및-아키텍처)
+3. [🎨 CSS 관리 규칙](#css-관리-규칙)
+4. [⚡ 성능 최적화](#성능-최적화)
+5. [📱 반응형 디자인](#반응형-디자인)
+6. [🚀 JavaScript 최적화](#javascript-최적화)
+7. [🔧 유지보수 가이드](#유지보수-가이드)
+
+---
+
+## 🎯 **핵심 원칙**
+
+### ✅ **DO (권장사항)**
+- **CSS 분리**: 모든 스타일은 `css/pages/_index.css`에 분리하여 관리
+- **모듈화**: 각 섹션별로 명확한 CSS 클래스 네이밍 사용
+- **성능 우선**: Critical CSS만 인라인으로 유지
+- **반응형 우선**: 모바일 퍼스트 접근법 적용
+- **접근성**: ARIA 라벨과 시맨틱 HTML 사용
+- **캐싱 최적화**: 뉴스/이벤트 데이터 캐싱 전략 활용
+
+### ❌ **DON'T (금지사항)**
+- 인라인 스타일 남용 금지
+- 중복 CSS 코드 작성 금지
+- 하드코딩된 값 사용 금지 (CSS 변수 활용)
+- 불필요한 DOM 조작 금지
+- 동기식 API 호출 금지
+
+---
+
+## 🏗️ **구조 및 아키텍처**
+
+### 📁 **파일 구조**
+```
+index.html                 # 메인 HTML (최소한의 인라인 CSS만)
+css/pages/_index.css       # 메인 페이지 전용 CSS
+js/
+├── analysis/             # 분석 관련 모듈
+├── compound-calculator.js # 복리 계산기
+├── header-loader.js      # 헤더 로딩
+├── footer-loader.js      # 푸터 로딩
+└── ...
+```
+
+### 🎯 **섹션별 구조**
+```html
+<!-- 1. 메인 배너 -->
+<section class="main-banner">
+  <video class="banner-video">
+  <div class="banner-content">
+    <div class="banner-text">
+    <div class="banner-cta">
+    <div class="banner-exchanges">
+
+<!-- 2. 실시간 추적 섹션 -->
+<section class="realtime-section">
+  <div class="realtime-grid">
+    <div class="longshort-container">
+    <div class="whale-container">
+    <div class="compound-calculator-container">
+
+<!-- 3. 대시보드 섹션 -->
+<section class="dashboard-section">
+  <div class="dashboard-grid">
+    <div class="chart-container">
+    <div class="news-container">
+    <div class="indices-container">
+
+<!-- 4. 코인 테이블 섹션 -->
+<section class="crypto-table-section">
+  <div class="crypto-table-wrapper">
+```
+
+---
+
+## 🎨 **CSS 관리 규칙**
+
+### 🏷️ **네이밍 컨벤션**
+```css
+/* 섹션 레벨 */
+.main-banner { }
+.realtime-section { }
+.dashboard-section { }
+.crypto-table-section { }
+
+/* 컨테이너 레벨 */
+.banner-content { }
+.realtime-grid { }
+.dashboard-grid { }
+.crypto-table-wrapper { }
+
+/* 컴포넌트 레벨 */
+.news-item { }
+.event-item { }
+.coin-info { }
+.chart-controls { }
+
+/* 상태 클래스 */
+.loading { }
+.active { }
+.disabled { }
+.positive { }
+.negative { }
+```
+
+### 🎨 **CSS 변수 활용**
+```css
+:root {
+  /* 색상 시스템 */
+  --bg-primary: #ffffff;
+  --text-primary: #1f2937;
+  --accent-blue: #3b82f6;
+  
+  /* 간격 시스템 */
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
+  
+  /* 그림자 시스템 */
+  --shadow-light: rgba(0, 0, 0, 0.08);
+  --shadow-medium: rgba(0, 0, 0, 0.12);
+}
+```
+
+### 📱 **반응형 브레이크포인트**
+```css
+/* 데스크톱 우선 */
+@media (max-width: 1024px) { /* 태블릿 */ }
+@media (max-width: 768px)  { /* 모바일 */ }
+@media (max-width: 360px)  { /* 초소형 모바일 */ }
+
+/* 특별 케이스 */
+@media (min-width: 768px) and (max-width: 1024px) { /* 태블릿만 */ }
+@media (prefers-reduced-motion: reduce) { /* 애니메이션 비활성화 */ }
+```
+
+---
+
+## ⚡ **성능 최적화**
+
+### 🚀 **Critical CSS 전략**
+```html
+<!-- 인라인 Critical CSS (Above-the-fold 콘텐츠만) -->
+<style>
+  /* CSS 변수 */
+  :root { --bg-primary: #ffffff; }
+  
+  /* 기본 레이아웃 */
+  * { box-sizing: border-box; }
+  body { background: var(--bg-primary); }
+  
+  /* 메인 배너 (Above-the-fold) */
+  .main-banner { height: 500px; }
+  .loading-skeleton { animation: loading 1.5s infinite; }
+</style>
+
+<!-- 나머지 CSS는 외부 파일로 -->
+<link rel="stylesheet" href="css/pages/_index.css">
+```
+
+### 📊 **뉴스 로딩 최적화**
+```javascript
+// 단계별 로딩 전략
+async loadFreshNews(isBackgroundUpdate = false) {
+  // 1단계: 빠른 피드 4개 (2초 타임아웃)
+  const fastFeeds = feeds.slice(0, 4);
+  const fastResults = await Promise.all(fastPromises);
+  
+  // 즉시 표시
+  if (allNews.length > 0 && !isBackgroundUpdate) {
+    this.displayNews(cacheData.data);
+  }
+  
+  // 2단계: 나머지 피드 백그라운드 로딩 (3초 타임아웃)
+  const slowFeeds = feeds.slice(4);
+  const slowResults = await Promise.all(slowPromises);
+}
+```
+
+### 🎯 **이미지 최적화**
+```css
+/* 지연 로딩 */
+.news-image img,
+.event-image img {
+  loading: lazy;
+  decoding: async;
+}
+
+/* 폴백 처리 */
+.news-image img {
+  onerror="this.parentElement.style.display='none'";
+}
+```
+
+---
+
+## 📱 **반응형 디자인**
+
+### 🎯 **모바일 우선 전략**
+```css
+/* 모바일에서 불필요한 섹션 숨기기 */
+@media (max-width: 768px) {
+  .realtime-section {
+    display: none; /* 복잡한 실시간 데이터는 모바일에서 제외 */
+  }
+  
+  .main-banner .exchange-item:nth-child(n+3) {
+    display: none; /* 3번째 이후 거래소 로고 숨김 */
+  }
+}
+```
+
+### 📊 **테이블 반응형 처리**
+```css
+/* 모바일 테이블 스크롤 */
+@media (max-width: 768px) {
+  .crypto-table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .crypto-table {
+    min-width: 900px; /* 최소 너비 보장 */
+  }
+  
+  /* 스크롤 힌트 */
+  .crypto-table-wrapper::after {
+    content: "← 좌우로 스크롤하여 더 많은 정보를 확인하세요 →";
+  }
+}
+```
+
+---
+
+## 🚀 **JavaScript 최적화**
+
+### 🎯 **모듈 로딩 전략**
+```javascript
+// 지연 로딩
+document.addEventListener('DOMContentLoaded', function() {
+  // 즉시 필요한 것만 로딩
+  initializeTradingViewChart('BTCUSDT');
+  
+  // 나머지는 지연 로딩
+  setTimeout(() => {
+    dashboard = new Dashboard();
+  }, 1000);
+  
+  setTimeout(() => {
+    cryptoTable = new CryptoTable();
+  }, 2000);
+});
+```
+
+### 📊 **캐싱 전략**
+```javascript
+// 뉴스 캐싱
+const CACHE_KEY = 'indexNewsFeedsCache';
+const CACHE_DURATION_MS = 3 * 60 * 1000; // 3분
+
+// 캐시 우선 표시
+if (cached && cacheData.data.length > 0) {
+  this.displayNews(cacheData.data); // 즉시 표시
+  
+  // 만료된 경우 백그라운드 업데이트
+  if (age >= CACHE_DURATION_MS) {
+    setTimeout(() => this.loadFreshNews(true), 100);
+  }
+}
+```
+
+### 🔄 **에러 처리**
+```javascript
+// 안전한 API 호출
+async fetchAndParseFeed({ url, source }) {
+  for (let retry = 0; retry <= maxRetries; retry++) {
+    try {
+      // API 호출 로직
+      return processedItems;
+    } catch (error) {
+      if (retry === maxRetries) {
+        console.warn(`❌ ${source}: 최종 실패 - ${error.message}`);
+        return []; // 빈 배열 반환으로 안전 처리
+      }
+      
+      // 재시도 대기
+      await new Promise(resolve => 
+        setTimeout(resolve, 500 * (retry + 1))
+      );
+    }
+  }
+}
+```
+
+---
+
+## 🔧 **유지보수 가이드**
+
+### 🎯 **새 섹션 추가 시**
+1. **HTML 구조 생성**
+```html
+<section class="new-section">
+  <div class="new-section-container">
+    <div class="section-header">
+      <h3 class="section-title">새 섹션</h3>
+    </div>
+    <div class="section-content">
+      <!-- 콘텐츠 -->
+    </div>
+  </div>
+</section>
+```
+
+2. **CSS 추가** (`css/pages/_index.css`)
+```css
+/* ===================================================================
+ * NEW SECTION
+ * ================================================================= */
+.new-section {
+  margin: 2rem 0;
+  padding: 0 1rem;
+  max-width: 1800px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.new-section-container {
+  background: var(--bg-primary);
+  border-radius: 12px;
+  box-shadow: 0 4px 20px var(--shadow-light);
+  overflow: hidden;
+}
+
+/* 반응형 */
+@media (max-width: 768px) {
+  .new-section {
+    padding: 0 0.5rem;
+  }
+}
+```
+
+3. **JavaScript 추가**
+```javascript
+class NewSectionManager {
+  constructor() {
+    this.init();
+  }
+  
+  init() {
+    this.bindEvents();
+    this.loadData();
+  }
+  
+  async loadData() {
+    try {
+      // 데이터 로딩 로직
+    } catch (error) {
+      console.error('New section 로딩 실패:', error);
+      this.displayFallback();
+    }
+  }
+}
+```
+
+### 🎨 **스타일 수정 시**
+```css
+/* 기존 스타일 수정 시 주석 추가 */
+.existing-class {
+  /* 기존 속성 */
+  color: var(--text-primary);
+  
+  /* 2024-01-15: 새로운 요구사항으로 추가 */
+  font-weight: 600;
+  
+  /* 2024-01-15: 성능 개선을 위해 수정 */
+  transition: all 0.2s ease; /* 기존: 0.3s */
+}
+```
+
+### 🔍 **디버깅 가이드**
+```javascript
+// 개발 모드에서만 디버깅 로그
+if (process.env.NODE_ENV === 'development') {
+  console.log('📰 뉴스 로딩 상태:', {
+    cached: !!cached,
+    newsCount: allNews.length,
+    successfulFeeds: successCount
+  });
+}
+
+// 성능 모니터링
+performance.mark('news-load-start');
+await this.loadFreshNews();
+performance.mark('news-load-end');
+performance.measure('news-load-time', 'news-load-start', 'news-load-end');
+```
+
+---
+
+## 📊 **성능 지표 목표**
+
+### 🎯 **Core Web Vitals**
+- **LCP (Largest Contentful Paint)**: < 2.5초
+- **FID (First Input Delay)**: < 100ms
+- **CLS (Cumulative Layout Shift)**: < 0.1
+
+### 📱 **모바일 최적화**
+- **First Paint**: < 1초
+- **뉴스 로딩**: < 2초 (캐시 사용 시 즉시)
+- **차트 로딩**: < 3초
+
+### 🔄 **캐싱 효율성**
+- **뉴스 캐시 히트율**: > 80%
+- **이미지 로딩 성공률**: > 95%
+- **API 실패율**: < 5%
+
+---
+
+## 🚨 **주의사항**
+
+### ⚠️ **Critical Issues**
+1. **CSS 분리 필수**: 인라인 스타일 최소화
+2. **성능 우선**: 불필요한 리소스 로딩 금지
+3. **에러 처리**: 모든 API 호출에 적절한 fallback 제공
+4. **반응형**: 모든 디바이스에서 정상 작동 보장
+
+### 🔒 **보안 고려사항**
+- 외부 API 호출 시 CORS 프록시 사용
+- 사용자 입력 데이터 검증
+- XSS 방지를 위한 HTML 이스케이핑
+
+---
+
+## 🎉 **결론**
+
+이 규칙을 따라 index.html을 관리하면:
+- ✅ **성능**: 빠른 로딩과 반응성
+- ✅ **유지보수**: 명확한 구조와 모듈화
+- ✅ **확장성**: 새로운 기능 추가 용이성
+- ✅ **안정성**: 에러 처리와 fallback 보장
+
+**Remember**: 성능과 사용자 경험이 최우선! 🚀
+description:
+globs:
+alwaysApply: false
+---
