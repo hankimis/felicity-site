@@ -754,19 +754,376 @@ function loadEconomicCalendar() {
         return;
     }
 
-    // economic-calendar.js의 TabNavigation 클래스 사용
-    if (window.TabNavigation) {
-        const calendarManager = new window.TabNavigation();
-        calendarManager.loadTradingViewCalendar();
+    const widgetContainer = document.querySelector('.tradingview-widget-container__widget');
+    if (!widgetContainer) {
+        console.error('TradingView 위젯 컨테이너를 찾을 수 없습니다.');
+        return;
+    }
+
+    console.log('📊 TradingView 경제 캘린더 로드 시작');
+
+    // 로딩 메시지 표시
+    widgetContainer.innerHTML = `
+        <div style="
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 600px;
+            color: var(--text-color-secondary);
+            text-align: center;
+            padding: 20px;
+            background: #fff;
+            border-radius: 8px;
+        ">
+            <div>
+                <i class="fas fa-spinner fa-spin" style="font-size: 2rem; margin-bottom: 1rem; color: #2962ff;"></i>
+                <p style="margin: 0; font-size: 1rem;">경제 캘린더를 불러오는 중...</p>
+            </div>
+        </div>
+    `;
+
+    // 직접 iframe 방식으로 로드 (안정적)
+    setTimeout(() => {
+        loadTradingViewCalendar();
+    }, 500);
+}
+
+// TradingView 경제 캘린더 로드 (직접 iframe 방식)
+function loadTradingViewCalendar() {
+    const widgetContainer = document.querySelector('.tradingview-widget-container__widget');
+    if (!widgetContainer) {
+        console.error('TradingView 위젯 컨테이너를 찾을 수 없습니다.');
+        return;
+    }
+
+    console.log('📊 TradingView 경제 캘린더 iframe 로드');
+
+    try {
+        // 직접 iframe으로 TradingView 경제 캘린더 로드
+        widgetContainer.innerHTML = `
+            <div style="height: 600px; width: 100%; background: #fff; border-radius: 8px; overflow: hidden;">
+                <iframe 
+                    src="https://www.tradingview.com/embed-widget/events/?locale=ko&importanceFilter=-1%2C0%2C1&countryFilter=us%2Ceu%2Cjp%2Ccn%2Ckr%2Cgb%2Cca%2Cau%2Cde%2Cfr%2Cit%2Ces%2Cbr%2Cin%2Cru%2Cmx%2Cza%2Ctr%2Csg%2Chk%2Ctw%2Cth%2Cmy%2Cid%2Cph%2Cvn&currencyFilter=USD%2CEUR%2CJPY%2CGBP%2CCHF%2CAUD%2CCAD%2CNZD%2CCNY%2CKRW%2CBTC%2CETH&utm_source=&utm_medium=widget&utm_campaign=events&utm_term="
+                    width="100%"
+                    height="600"
+                    frameborder="0"
+                    scrolling="no"
+                    allowfullscreen="true"
+                    sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+                    referrerpolicy="no-referrer-when-downgrade"
+                    style="
+                        border: none;
+                        width: 100%;
+                        height: 600px;
+                        background: #fff;
+                        border-radius: 8px;
+                    "
+                    loading="lazy">
+                </iframe>
+            </div>
+        `;
+
         window.isEconomicCalendarLoaded = true;
-        console.log('📊 경제 캘린더 로드 완료 (TabNavigation 사용)');
-    } else {
-        console.error('TabNavigation 클래스를 찾을 수 없습니다.');
-        showCalendarError();
+        console.log('📊 TradingView 경제 캘린더 iframe 설정 완료');
+
+        // 5초 후 로드 상태 확인
+        setTimeout(() => {
+            checkCalendarLoad();
+        }, 5000);
+
+    } catch (error) {
+        console.error('TradingView 경제 캘린더 로드 중 오류:', error);
+        loadFallbackCalendar();
     }
 }
 
-// 경제 캘린더 관련 함수들은 economic-calendar.js에서 처리
+// 캘린더 로드 상태 확인
+function checkCalendarLoad() {
+    const iframe = document.querySelector('.tradingview-widget-container__widget iframe');
+    if (!iframe) {
+        console.log('iframe이 없어서 대체 캘린더 로드');
+        loadFallbackCalendar();
+        return;
+    }
+
+    // iframe이 정상적으로 로드되었는지 확인
+    const rect = iframe.getBoundingClientRect();
+    if (rect.width > 0 && rect.height > 0) {
+        console.log('📊 TradingView 경제 캘린더 정상 작동 중');
+    } else {
+        console.log('캘린더 로드 실패, 대체 캘린더 로드');
+        loadFallbackCalendar();
+    }
+}
+
+// 대체 캘린더 로드
+function loadFallbackCalendar() {
+    const widgetContainer = document.querySelector('.tradingview-widget-container__widget');
+    if (!widgetContainer) {
+        console.error('위젯 컨테이너를 찾을 수 없습니다.');
+        return;
+    }
+
+    console.log('📊 대체 경제 캘린더 로드');
+
+    // 한국 투자 정보 사이트의 경제 캘린더
+    widgetContainer.innerHTML = `
+        <div style="height: 600px; width: 100%; background: #fff; border-radius: 8px; overflow: hidden; position: relative;">
+            <div style="
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                padding: 15px;
+                text-align: center;
+                font-weight: bold;
+                z-index: 10;
+                font-size: 1.1rem;
+            ">
+                📊 경제 캘린더 - 주요 경제 지표 및 이벤트
+            </div>
+            <iframe 
+                src="https://kr.investing.com/economic-calendar/"
+                width="100%"
+                height="560"
+                frameborder="0"
+                scrolling="yes"
+                allowfullscreen="true"
+                sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+                referrerpolicy="no-referrer-when-downgrade"
+                style="
+                    border: none;
+                    width: 100%;
+                    height: 560px;
+                    background: #fff;
+                    margin-top: 40px;
+                "
+                loading="lazy">
+            </iframe>
+        </div>
+    `;
+
+    console.log('📊 대체 경제 캘린더 설정 완료');
+
+    // 10초 후에도 로드되지 않으면 정적 캘린더 표시
+    setTimeout(() => {
+        checkFallbackCalendarLoad();
+    }, 10000);
+}
+
+// 대체 캘린더 로드 상태 확인
+function checkFallbackCalendarLoad() {
+    const iframe = document.querySelector('.tradingview-widget-container__widget iframe');
+    if (!iframe) {
+        console.log('대체 캘린더도 없어서 정적 캘린더 표시');
+        showStaticCalendar();
+        return;
+    }
+
+    // iframe이 정상적으로 로드되었는지 확인
+    const rect = iframe.getBoundingClientRect();
+    if (rect.width > 0 && rect.height > 0) {
+        console.log('📊 대체 경제 캘린더 정상 작동 중');
+    } else {
+        console.log('대체 캘린더 로드 실패, 정적 캘린더 표시');
+        showStaticCalendar();
+    }
+}
+
+// 정적 경제 캘린더 표시
+function showStaticCalendar() {
+    const widgetContainer = document.querySelector('.tradingview-widget-container__widget');
+    if (!widgetContainer) return;
+
+    const today = new Date();
+    const todayStr = today.toLocaleDateString('ko-KR', { 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric',
+        weekday: 'long'
+    });
+
+    widgetContainer.innerHTML = `
+        <div style="
+            height: 600px;
+            width: 100%;
+            background: #fff;
+            border-radius: 8px;
+            padding: 20px;
+            box-sizing: border-box;
+            overflow-y: auto;
+        ">
+            <div style="
+                text-align: center;
+                margin-bottom: 30px;
+                padding-bottom: 20px;
+                border-bottom: 2px solid #e9ecef;
+            ">
+                <h2 style="
+                    color: #2962ff;
+                    margin: 0 0 10px 0;
+                    font-size: 1.8rem;
+                ">📊 경제 캘린더</h2>
+                <p style="
+                    color: #666;
+                    margin: 0;
+                    font-size: 1.1rem;
+                ">${todayStr}</p>
+            </div>
+
+            <div style="margin-bottom: 30px;">
+                <h3 style="
+                    color: #333;
+                    margin: 0 0 15px 0;
+                    font-size: 1.3rem;
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                ">
+                    <span style="color: #ff6b6b;">🔴</span>
+                    주요 경제 지표
+                </h3>
+                <div style="
+                    display: grid;
+                    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+                    gap: 15px;
+                ">
+                    <div style="
+                        background: #f8f9fa;
+                        padding: 15px;
+                        border-radius: 8px;
+                        border-left: 4px solid #ff6b6b;
+                    ">
+                        <h4 style="margin: 0 0 5px 0; color: #333;">🇺🇸 미국 CPI</h4>
+                        <p style="margin: 0; color: #666; font-size: 0.9rem;">소비자물가지수</p>
+                    </div>
+                    <div style="
+                        background: #f8f9fa;
+                        padding: 15px;
+                        border-radius: 8px;
+                        border-left: 4px solid #ffa500;
+                    ">
+                        <h4 style="margin: 0 0 5px 0; color: #333;">🇺🇸 FOMC</h4>
+                        <p style="margin: 0; color: #666; font-size: 0.9rem;">연방공개시장위원회</p>
+                    </div>
+                    <div style="
+                        background: #f8f9fa;
+                        padding: 15px;
+                        border-radius: 8px;
+                        border-left: 4px solid #28a745;
+                    ">
+                        <h4 style="margin: 0 0 5px 0; color: #333;">🇰🇷 한국 기준금리</h4>
+                        <p style="margin: 0; color: #666; font-size: 0.9rem;">한국은행 금통위</p>
+                    </div>
+                    <div style="
+                        background: #f8f9fa;
+                        padding: 15px;
+                        border-radius: 8px;
+                        border-left: 4px solid #007bff;
+                    ">
+                        <h4 style="margin: 0 0 5px 0; color: #333;">🇪🇺 ECB 정책금리</h4>
+                        <p style="margin: 0; color: #666; font-size: 0.9rem;">유럽중앙은행</p>
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 30px;">
+                <h3 style="
+                    color: #333;
+                    margin: 0 0 15px 0;
+                    font-size: 1.3rem;
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                ">
+                    <span style="color: #2962ff;">💼</span>
+                    암호화폐 관련 이벤트
+                </h3>
+                <div style="
+                    background: #f8f9fa;
+                    padding: 20px;
+                    border-radius: 8px;
+                    border: 1px solid #e9ecef;
+                ">
+                    <p style="
+                        margin: 0 0 10px 0;
+                        color: #333;
+                        font-weight: bold;
+                    ">🚀 주요 암호화폐 이벤트</p>
+                    <ul style="
+                        margin: 0;
+                        padding-left: 20px;
+                        color: #666;
+                    ">
+                        <li>비트코인 ETF 승인 관련 소식</li>
+                        <li>주요 거래소 상장/상폐 공지</li>
+                        <li>메이저 프로젝트 업데이트</li>
+                        <li>규제 관련 발표</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div style="
+                text-align: center;
+                padding: 20px;
+                background: #f8f9fa;
+                border-radius: 8px;
+                border: 1px solid #e9ecef;
+            ">
+                <p style="
+                    margin: 0 0 15px 0;
+                    color: #666;
+                    font-size: 0.9rem;
+                ">더 자세한 경제 캘린더는 아래 링크에서 확인하세요</p>
+                <div style="
+                    display: flex;
+                    gap: 10px;
+                    justify-content: center;
+                    flex-wrap: wrap;
+                ">
+                    <a href="https://kr.tradingview.com/economic-calendar/" 
+                       target="_blank" 
+                       style="
+                           display: inline-block;
+                           padding: 10px 20px;
+                           background: #2962ff;
+                           color: white;
+                           text-decoration: none;
+                           border-radius: 5px;
+                           font-size: 0.9rem;
+                           margin: 5px;
+                       ">TradingView 캘린더</a>
+                    <a href="https://kr.investing.com/economic-calendar/" 
+                       target="_blank" 
+                       style="
+                           display: inline-block;
+                           padding: 10px 20px;
+                           background: #28a745;
+                           color: white;
+                           text-decoration: none;
+                           border-radius: 5px;
+                           font-size: 0.9rem;
+                           margin: 5px;
+                       ">Investing.com 캘린더</a>
+                    <button onclick="loadEconomicCalendar()" style="
+                        padding: 10px 20px;
+                        background: #007bff;
+                        color: white;
+                        border: none;
+                        border-radius: 5px;
+                        cursor: pointer;
+                        font-size: 0.9rem;
+                        margin: 5px;
+                    ">캘린더 다시 로드</button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    console.log('📊 정적 경제 캘린더 표시 완료');
+}
 
 // 캘린더 오류 메시지 표시
 function showCalendarError() {

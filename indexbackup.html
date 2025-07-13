@@ -29,8 +29,6 @@
       --shadow-light: rgba(0, 0, 0, 0.08);
     }
 
-    /* 라이트 모드 */
-
     [data-theme="dark"] {
       --bg-primary: #1a1a1a;
       --bg-secondary: #2a2a2a;
@@ -65,41 +63,20 @@
       animation: loading 1.5s infinite;
     }
 
-    /* Critical Main Banner - UIKit 스타일 */
+    /* Critical Main Banner */
     .main-banner {
+      height: 500px;
       width: 100%;
-      padding: 40px 0 40px;
-      background: var(--bg-secondary);
+      background: #2a2a2a;
+      color: #ffffff;
+      margin-bottom: 40px;
       position: relative;
       overflow: hidden;
-    }
-
-    .banner-container {
-      width: 90%;
-      max-width: 1400px;
-      height: 580px;
-      margin: 0 auto;
-      position: relative;
-      background: #ffffff;
-      border-radius: 20px;
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-      overflow: hidden;
-    }
-    
-    @keyframes float {
-      0%, 100% { transform: translateY(0px); }
-      50% { transform: translateY(-10px); }
-    }
-    
-    @keyframes pulse {
-      0% { transform: scale(1); }
-      50% { transform: scale(1.1); }
-      100% { transform: scale(1); }
     }
     </style>
   
   <!-- Index Page Specific CSS -->
-  <link rel="stylesheet" href="_testindex.css">
+  <link rel="stylesheet" href="css/pages/_index.css">
 
   </style>
   
@@ -134,10 +111,20 @@
 <body>
   <!-- Header placeholder -->
   <div id="header-placeholder"></div>
-
+  
+  <!-- 메인 배너 섹션 -->
   <section class="main-banner">
+    <video class="banner-video" autoplay muted loop playsinline>
+      <source src="/assets/mainbannerbackground/Video_Ready_White_Particle_Loop.mp4" type="video/mp4">
+    </video>
     <div class="banner-content">
       <div class="banner-text">
+        <h1 class="banner-title">
+          <span class="highlight">페이백</span>으로 더 많은 수익을!
+        </h1>
+        <p class="banner-subtitle">
+          제휴 거래소 이용 시 거래 수수료의 일부를 페이백으로 돌려받으세요
+        </p>
         <div class="banner-features">
           <div class="feature-item">
             <i class="fas fa-percentage"></i>
@@ -152,13 +139,6 @@
             <span>안전한 거래 보장</span>
           </div>
         </div>
-        <h1 class="banner-title">
-          암호화폐 커뮤니티의 새로운 <span class="highlight">표준</span>
-          <br><span class="highlight">온비트</span><span class="black-text">에서 시작하세요</span>
-        </h1>
-        <p class="banner-subtitle">
-          제휴 거래소 이용 시 거래 수수료의 일부를 페이백으로 돌려받으세요
-        </p>
         <div class="banner-cta">
           <a href="/affiliated/" class="cta-button primary">
             <i class="fas fa-rocket"></i>
@@ -169,9 +149,6 @@
             페이백 계산하기
           </a>
         </div>
-      </div>
-      <div class="banner-image">
-        <img src="/assets/mainbanner/mainbanner.png" alt="온비트 메인 배너" loading="lazy">
       </div>
       <div class="banner-exchanges">
         <div class="exchanges-grid">
@@ -187,6 +164,10 @@
             <img src="/assets/logoicon/okx.png" alt="OKX" class="exchange-logo">
             <span class="exchange-name">OKX</span>
           </a>
+          <a href="/affiliated/bitmex/" class="exchange-item">
+            <img src="/assets/logoicon/bitmex.png" alt="BitMEX" class="exchange-logo">
+            <span class="exchange-name">BitMEX</span>
+          </a>
           <a href="/affiliated/lbank/" class="exchange-item">
             <img src="/assets/logoicon/lbank.png" alt="LBank" class="exchange-logo">
             <span class="exchange-name">LBank</span>
@@ -196,55 +177,208 @@
     </div>
   </section>
   
-  <!-- 서비스 카드 그리드 섹션 -->
-  <section class="service-cards-section">
-    <div class="service-cards-container">
-      <div class="service-card">
-        <div class="service-card-image">
-          <img src="/assets/service-cards/거래소 페이백.png" alt="서비스 타이틀" loading="lazy">
+    <!-- 실시간 추적 섹션 -->
+    <section class="realtime-section">
+      <div class="realtime-grid">
+        <!-- 실시간 롱숏 비율 -->
+        <div class="longshort-container">
+          <div class="section-header">
+            <h3 class="section-title">
+              <i class="fas fa-chart-pie"></i>
+              실시간 롱숏 비율
+            </h3>
+            <div class="longshort-controls">
+              <select id="longshort-symbol" class="symbol-select">
+                <option value="BTCUSDT">BTC/USDT</option>
+                <option value="ETHUSDT">ETH/USDT</option>
+                <option value="ADAUSDT">ADA/USDT</option>
+                <option value="SOLUSDT">SOL/USDT</option>
+                <option value="XRPUSDT">XRP/USDT</option>
+              </select>
+              </div>
+            </div>
+          <div class="longshort-content">
+            <div class="longshort-ratio-display">
+              <div class="ratio-circle" id="ratio-circle">
+                <div class="ratio-text">
+                  <span class="long-ratio" id="long-ratio">52%</span>
+                  <span class="vs">vs</span>
+                  <span class="short-ratio" id="short-ratio">48%</span>
+              </div>
+            </div>
+            </div>
+            <div class="longshort-details">
+              <div class="position-info long-info">
+                <div class="position-label">
+                  <i class="fas fa-arrow-up"></i>
+                  <span>롱 포지션</span>
+                </div>
+                <div class="position-value" id="long-percentage">52.3%</div>
+                <div class="position-amount" id="long-amount">$1,234,567</div>
+              </div>
+              <div class="position-info short-info">
+                <div class="position-label">
+                  <i class="fas fa-arrow-down"></i>
+                  <span>숏 포지션</span>
+                </div>
+                <div class="position-value" id="short-percentage">47.7%</div>
+                <div class="position-amount" id="short-amount">$987,654</div>
+              </div>
+            </div>
+          </div>
         </div>
-        <div class="service-card-content">
-          <h3 class="service-card-title">페이백</h3>
-          <p class="service-card-description">거래 수수료, 온비트로 돌려받으세요</p>
-          <a href="#" class="service-card-button">페이백 받기</a>
+        
+        <!-- 실시간 고래 거래 -->
+        <div class="whale-container">
+          <div class="section-header">
+            <h3 class="section-title">
+              <i class="fas fa-fish"></i>
+              실시간 고래 거래
+            </h3>
+            <div class="whale-controls">
+              <span class="whale-status">연결 중...</span>
+              <button class="whale-settings-btn" id="whale-settings-btn">
+                <i class="fas fa-cog"></i>
+              </button>
+            </div>
+          </div>
+          <div class="whale-trades-container" id="whale-trades-container">
+            <div class="whale-trades-list">
+              <!-- 고래 거래 데이터가 여기에 동적으로 추가됩니다 -->
+            </div>
+          </div>
+        </div>
+        
+        <!-- 복리 계산기 -->
+        <div class="compound-calculator-container">
+          <div class="section-header">
+            <h3 class="section-title">
+              <i class="fas fa-calculator"></i>
+              복리 계산기
+            </h3>
+          </div>
+          <div class="compound-calculator-content">
+            <div class="calculator-form">
+              <div class="form-row">
+                <label for="initial-amount">초기 금액 (₩)</label>
+                <input type="text" id="initial-amount" value="1,000,000" placeholder="1,000,000">
+              </div>
+              <div class="form-row">
+                <label for="investment-years">복리 횟수 (기간)</label>
+                <input type="number" id="investment-years" value="20" min="1" max="50">
+              </div>
+              <div class="form-row">
+                <label for="annual-return">수익률 (%)</label>
+                <input type="text" id="annual-return" value="5%" placeholder="5%">
+              </div>
+              <button class="calculate-btn" id="calculate-btn">
+                계산하기
+              </button>
+            </div>
+          </div>
         </div>
       </div>
-      
-      <div class="service-card">
-        <div class="service-card-image">
-          <img src="/assets/service-cards/트레이딩뷰 차트.png" alt="트레이딩뷰 차트" loading="lazy">
-        </div>
-        <div class="service-card-content">
-          <h3 class="service-card-title">트레이딩뷰 차트</h3>
-          <p class="service-card-description">실시간 차트 분석, 한눈에 보기 쉽게</p>
-          <a href="#" class="service-card-button">차트 보기</a>
-        </div>
-      </div>
-      
-      <div class="service-card">
-        <div class="service-card-image">
-          <img src="/assets/service-cards/실시간 커뮤니티.png" alt="실시간 커뮤니티" loading="lazy">
-        </div>
-        <div class="service-card-content">
-          <h3 class="service-card-title">실시간 커뮤니티</h3>
-          <p class="service-card-description">트레이더들과 자유 바로 소통하세요</p>
-          <a href="#" class="service-card-button">지금 소통하기</a>
-        </div>
-      </div>
-      
-      <div class="service-card">
-        <div class="service-card-image">
-          <img src="/assets/service-cards/코인 뉴스.png" alt="코인 뉴스" loading="lazy">
-        </div>
-        <div class="service-card-content">
-          <h3 class="service-card-title">코인 뉴스</h3>
-          <p class="service-card-description">빠르고 정확한 암호화폐 뉴스 요약</p>
-          <a href="#" class="service-card-button">뉴스 보기</a>
-        </div>
-      </div>
-    </div>
-  </section>
+    </section>
 
+    <!-- 차트 및 정보 섹션 -->
+    <section class="dashboard-section">
+      <div class="dashboard-grid">
+        <!-- 차트 영역 -->
+        <div class="chart-container">
+          <div class="section-header">
+            <h3 class="section-title">실시간 차트</h3>
+            <div class="chart-controls">
+              <select id="chart-symbol" class="chart-select">
+                <option value="BTCUSDT">Bitcoin (BTC)</option>
+                <option value="ETHUSDT">Ethereum (ETH)</option>
+                <option value="BNBUSDT">BNB (BNB)</option>
+                <option value="SOLUSDT">Solana (SOL)</option>
+                <option value="ADAUSDT">Cardano (ADA)</option>
+                <option value="XRPUSDT">XRP (XRP)</option>
+                <option value="DOGEUSDT">Dogecoin (DOGE)</option>
+                <option value="AVAXUSDT">Avalanche (AVAX)</option>
+                <option value="DOTUSDT">Polkadot (DOT)</option>
+                <option value="MATICUSDT">Polygon (MATIC)</option>
+                <option value="LINKUSDT">Chainlink (LINK)</option>
+                <option value="UNIUSDT">Uniswap (UNI)</option>
+                <option value="LTCUSDT">Litecoin (LTC)</option>
+                <option value="BCHUSDT">Bitcoin Cash (BCH)</option>
+                <option value="ATOMUSDT">Cosmos (ATOM)</option>
+              </select>
+              <select id="chart-timeframe" class="chart-select timeframe-select">
+                <option value="1">1분</option>
+                <option value="5">5분</option>
+                <option value="15">15분</option>
+                <option value="60" selected>1시간</option>
+                <option value="240">4시간</option>
+                <option value="1D">1일</option>
+              </select>
+            </div>
+          </div>
+          <div class="tradingview-widget-container">
+          <div id="tradingview_chart">
+            <!-- 차트 로딩 중 표시 -->
+            <div id="chart-loading" style="display: flex; align-items: center; justify-content: center; height: 400px; background: var(--card-bg); border-radius: 8px; color: var(--text-secondary);">
+              <div style="text-align: center;">
+                <div class="loading-spinner" style="width: 40px; height: 40px; border: 3px solid var(--border-color); border-top: 3px solid var(--primary-color); border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 1rem;"></div>
+                <div>차트 로딩중...</div>
+              </div>
+            </div>
+          </div>
+          </div>
+        </div>
+        
+        <!-- 뉴스 영역 -->
+        <div class="news-container">
+          <div class="section-header">
+            <h3 class="section-title">
+              <i class="fas fa-newspaper"></i>
+              크립토 뉴스
+            </h3>
+            <div class="news-header-controls">
+              <button class="refresh-news-btn" id="refresh-news" title="뉴스 새로고침">
+              <i class="fas fa-sync-alt"></i>
+            </button>
+              <a href="news/" class="view-all-news-btn" title="모든 뉴스 보기">
+                <i class="fas fa-external-link-alt"></i>
+                전체보기
+              </a>
+            </div>
+          </div>
+          <div class="news-list" id="news-list">
+            <div class="loading-news">
+              <div class="loading-spinner"></div>
+              <span>최신 뉴스 로딩 중...</span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 실시간 이벤트 카드 영역 -->
+        <div class="indices-container">
+          <div class="section-header">
+            <h3 class="section-title">
+              <i class="fas fa-calendar-alt"></i>
+              실시간 이벤트
+            </h3>
+            <div class="news-header-controls">
+              <button class="refresh-indices-btn" id="refresh-events">
+              <i class="fas fa-sync-alt"></i>
+            </button>
+              <a href="event-board.html" class="view-all-news-btn" title="모든 이벤트 보기">
+                <i class="fas fa-external-link-alt"></i>
+                전체보기
+              </a>
+          </div>
+          </div>
+          <div class="indices-content" id="events-content">
+            <div class="loading-indices">
+              <div class="loading-spinner"></div>
+              <span>이벤트 데이터 로딩 중...</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
 
   <!-- 실시간 코인 시세 테이블 섹션 -->
     <section class="crypto-table-section">
@@ -322,53 +456,6 @@
       </div>
     </div>
   </div>
-
-  <!-- 공식 파트너 슬라이드 시작 -->
-  <section class="partner-slider-section">
-    <div class="partner-grid-header">
-        <p class="partner-grid-pre-title">주요 파트너사들과 공식계약 체결</p>
-        <h2 class="partner-grid-title">세계 최고의 가상 자산 거래소들과<br>함께하는 ONBit</h2>
-    </div>
-    <div class="partner-slider">
-        <div class="partner-track" id="track1">
-            <div class="partner-logo-item"><img src="assets/partner/lbank.png" alt="Lbank"></div>
-            <div class="partner-logo-item"><img src="assets/partner/bitget.png" alt="Bitget"></div>
-            <div class="partner-logo-item"><img src="assets/partner/bitmex.png" alt="Bitmex"></div>
-            <div class="partner-logo-item"><img src="assets/partner/okx.png" alt="OKX"></div>
-            <div class="partner-logo-item"><img src="assets/partner/tradingview.png" alt="TradingView"></div>
-            <div class="partner-logo-item"><img src="assets/partner/onbit.png" alt="Onbit"></div>
-            <div class="partner-logo-item"><img src="assets/partner/binance.png" alt="Binance"></div>
-            <div class="partner-logo-item"><img src="assets/partner/lbank.png" alt="Lbank"></div>
-            <div class="partner-logo-item"><img src="assets/partner/bitget.png" alt="Bitget"></div>
-            <div class="partner-logo-item"><img src="assets/partner/bitmex.png" alt="Bitmex"></div>
-            <div class="partner-logo-item"><img src="assets/partner/okx.png" alt="OKX"></div>
-            <div class="partner-logo-item"><img src="assets/partner/tradingview.png" alt="TradingView"></div>
-            <div class="partner-logo-item"><img src="assets/partner/onbit.png" alt="Onbit"></div>
-            <div class="partner-logo-item"><img src="assets/partner/binance.png" alt="Binance"></div>
-            <div class="partner-logo-item"><img src="assets/partner/lbank.png" alt="Lbank"></div>
-            <div class="partner-logo-item"><img src="assets/partner/bitget.png" alt="Bitget"></div>
-        </div>
-        <div class="partner-track" id="track2">
-            <div class="partner-logo-item"><img src="assets/partner/lbank.png" alt="Lbank"></div>
-            <div class="partner-logo-item"><img src="assets/partner/bitget.png" alt="Bitget"></div>
-            <div class="partner-logo-item"><img src="assets/partner/bitmex.png" alt="Bitmex"></div>
-            <div class="partner-logo-item"><img src="assets/partner/okx.png" alt="OKX"></div>
-            <div class="partner-logo-item"><img src="assets/partner/tradingview.png" alt="TradingView"></div>
-            <div class="partner-logo-item"><img src="assets/partner/onbit.png" alt="Onbit"></div>
-            <div class="partner-logo-item"><img src="assets/partner/binance.png" alt="Binance"></div>
-            <div class="partner-logo-item"><img src="assets/partner/lbank.png" alt="Lbank"></div>
-            <div class="partner-logo-item"><img src="assets/partner/bitget.png" alt="Bitget"></div>
-            <div class="partner-logo-item"><img src="assets/partner/bitmex.png" alt="Bitmex"></div>
-            <div class="partner-logo-item"><img src="assets/partner/okx.png" alt="OKX"></div>
-            <div class="partner-logo-item"><img src="assets/partner/tradingview.png" alt="TradingView"></div>
-            <div class="partner-logo-item"><img src="assets/partner/onbit.png" alt="Onbit"></div>
-            <div class="partner-logo-item"><img src="assets/partner/binance.png" alt="Binance"></div>
-            <div class="partner-logo-item"><img src="assets/partner/lbank.png" alt="Lbank"></div>
-            <div class="partner-logo-item"><img src="assets/partner/bitget.png" alt="Bitget"></div>
-        </div>
-    </div>
-</section>
-
 
   <!-- Footer placeholder -->
   <div id="footer-placeholder"></div>
@@ -1902,6 +1989,5 @@
       }
     });
   </script>
-
 </body>
 </html>

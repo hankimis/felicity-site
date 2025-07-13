@@ -3,3 +3,205 @@ description:
 globs:
 alwaysApply: false
 ---
+# Exchange Page Design System Rules
+
+## Core Design Principles
+
+### CRITICAL DESIGN CONSISTENCY REQUIREMENTS
+**MANDATORY**: All exchange detail pages MUST follow the exact design pattern established in [affiliated/lbank/index.html](mdc:affiliated/lbank/index.html). This is the MASTER TEMPLATE for all exchange pages.
+
+### Design Pattern Enforcement Protocol
+```
+IF creating/editing exchange page:
+  THEN copy exact structure from lbank template
+  AND modify ONLY content-specific elements
+  AND preserve ALL styling patterns
+  AND maintain identical section hierarchy
+```
+
+## Mandatory Page Structure (NON-NEGOTIABLE)
+
+### 1. Header Section Pattern
+```html
+<section class="exchange-intro-card info-card" style="text-align:center; margin-top:40px;">
+  <img src="../../assets/tradelogo/[EXCHANGE]logo.png" alt="[EXCHANGE] 로고" class="exchange-logo" style="width:110px; height:110px; border-radius:24px; background:#fff; object-fit:contain; margin-bottom:18px;" />
+  <h1 class="exchange-title" style="font-size:2.2em; font-weight:900; letter-spacing:2px; margin-bottom:8px;">[EXCHANGE_NAME]</h1>
+  <p class="exchange-desc" style="font-size:1.13em; color:var(--text-color-secondary); margin-bottom:30px;">[EXCHANGE_DESCRIPTION]</p>
+  <a href="[AFFILIATE_LINK]" target="_blank" class="lbank-join-btn signup-button filled" style="font-size:1.15em; padding:14px 38px; margin-bottom:0;">가입하기</a>
+</section>
+```
+
+### 2. Benefits Section Pattern (EXACT STYLING REQUIRED)
+```html
+<section class="exchange-benefit-card info-card" style="margin-top:32px;">
+  <h2 class="section-title" style="margin-bottom:18px;">주요 혜택</h2>
+  <ul style="list-style:none; padding:0; display:flex; flex-direction:column; gap:12px;">
+    <!-- MANDATORY: Use exact icon and text structure -->
+    <li style="display:flex;align-items:center;gap:10px;">
+      <i class="fas fa-fire" style="color:#ff5252;"></i> 
+      <b style="color:#3182f6;">[CASHBACK_RATE] 페이백</b> 
+      <span style="color:var(--text-color-secondary);">(해당 링크 가입 유저)</span>
+    </li>
+  </ul>
+</section>
+```
+
+### 3. Fee Information Section (CRITICAL STYLING)
+```html
+<section class="exchange-fee-card info-card" style="margin-top:32px;">
+  <h2 class="section-title" style="margin-bottom:18px;">수수료 안내</h2>
+  <div style="display:flex; flex-direction:column; gap:14px; align-items:flex-start; margin-bottom:10px;">
+    <div style="display:flex; align-items:center; gap:14px; font-size:1.18em;">
+      <span style="min-width:60px; color:var(--text-color-secondary); font-weight:700;">지정가</span>
+      <span style="color:#888; text-decoration:line-through; font-weight:600; margin-right:6px;">[ORIGINAL_MAKER_FEE]</span>
+      <span style="color:#3182f6; font-weight:700; font-size:1.13em;">[DISCOUNTED_MAKER_FEE]</span>
+    </div>
+    <div style="display:flex; align-items:center; gap:14px; font-size:1.18em;">
+      <span style="min-width:60px; color:var(--text-color-secondary); font-weight:700;">시장가</span>
+      <span style="color:#888; text-decoration:line-through; font-weight:600; margin-right:6px;">[ORIGINAL_TAKER_FEE]</span>
+      <span style="color:#3182f6; font-weight:700; font-size:1.13em;">[DISCOUNTED_TAKER_FEE]</span>
+    </div>
+  </div>
+</section>
+```
+
+## Exchange-Specific Content Guidelines
+
+### Content Customization Matrix
+| Exchange | Cashback Rate | Primary Feature | Service Focus |
+|----------|---------------|-----------------|---------------|
+| Lbank    | 50%          | Global Exchange | Spot/Margin/IEO/Staking |
+| Bitget   | 20%          | Copy Trading    | Spot/Futures/Copy/Options |
+| OKX      | 20%          | DeFi Services   | Spot/Futures/Options/Earn |
+
+### Fee Calculation Rules
+```
+MAKER_FEE_DISCOUNTED = ORIGINAL_MAKER_FEE × (1 - CASHBACK_RATE/100)
+TAKER_FEE_DISCOUNTED = ORIGINAL_TAKER_FEE × (1 - CASHBACK_RATE/100)
+
+Example for 20% cashback:
+0.04% → 0.032% (Maker)
+0.06% → 0.048% (Taker)
+```
+
+## Styling Consistency Rules
+
+### CSS Variable Usage (MANDATORY)
+- `var(--text-color-secondary)` for secondary text
+- `var(--bg-tertiary-color)` for service card backgrounds
+- `#3182f6` for primary accent color (fees, highlights)
+- `#ff5252` for fire icons
+- `#ffd700` for gift icons
+
+### Icon Color Coding System
+```
+Fire (Cashback): #ff5252
+Gift (Bonus): #ffd700
+Rocket (Speed): #8b5cf6
+Globe (Global): #06b6d4
+Coins (Trading): #f59e0b
+Speed (Engine): #22c55e
+Mobile (App): #8b5cf6
+Support (24/7): #ef4444
+```
+
+## File Naming and Structure
+
+### Directory Structure
+```
+affiliated/
+├── index.html (main listing)
+├── lbank/
+│   └── index.html (MASTER TEMPLATE)
+├── bitget/
+│   └── index.html
+├── okx/
+│   └── index.html
+└── [new-exchange]/
+    └── index.html
+```
+
+### Asset Requirements
+- Logo: `../../assets/tradelogo/[exchange]logo.png`
+- Size: 110px × 110px minimum
+- Format: PNG with transparent background
+- Background: White (#fff) for consistency
+
+## Link Management Protocol
+
+### Affiliate Link Integration
+```html
+<!-- ALL buttons and CTAs must use target="_blank" -->
+<a href="[AFFILIATE_LINK]" target="_blank" class="lbank-join-btn signup-button filled">
+```
+
+### Navigation Consistency
+```html
+<!-- Back button (EXACT styling required) -->
+<button class="back-btn-modern" style="margin:40px 0 32px 0;" onclick="window.location.href='../'">
+  <i class='fas fa-arrow-left'></i> 거래소 목록으로
+</button>
+```
+
+## Quality Assurance Checklist
+
+### Pre-Launch Validation
+- [ ] Exact CSS styling matches lbank template
+- [ ] All sections present and properly ordered
+- [ ] Fee calculations accurate with cashback applied
+- [ ] Affiliate links functional with target="_blank"
+- [ ] Logo displays correctly at 110px size
+- [ ] Mobile responsiveness maintained
+- [ ] Dark mode compatibility preserved
+- [ ] Korean text properly displayed
+
+### Performance Requirements
+- [ ] Page loads under 2 seconds
+- [ ] Images optimized for web
+- [ ] CSS variables properly utilized
+- [ ] No console errors
+- [ ] Responsive design functional
+
+## Error Prevention Protocols
+
+### FORBIDDEN Modifications
+- ❌ NEVER change the section order
+- ❌ NEVER modify core CSS styling patterns
+- ❌ NEVER remove the back button
+- ❌ NEVER use different color schemes
+- ❌ NEVER change font sizes or weights
+- ❌ NEVER modify the grid layouts
+
+### Required Modifications Only
+- ✅ Exchange name and description
+- ✅ Logo source path
+- ✅ Affiliate link URL
+- ✅ Fee percentages (with proper calculation)
+- ✅ Service-specific features
+- ✅ Exchange-specific benefits
+
+## Advanced Implementation Notes
+
+### Dynamic Content Integration
+When creating new exchange pages, use this decision tree:
+```
+IF exchange has copy trading:
+  THEN highlight in benefits section
+  AND include in services grid
+
+IF cashback rate > 30%:
+  THEN emphasize in benefits
+  AND use fire icon with enhanced styling
+
+IF exchange has unique features:
+  THEN adapt services grid
+  BUT maintain 4-column layout
+```
+
+### Accessibility Compliance
+- All images require proper alt text
+- Color contrast ratios must meet WCAG standards
+- Focus states properly implemented
+- Screen reader compatibility maintained
+
+This design system ensures perfect consistency across all exchange pages while allowing for exchange-specific customization within defined parameters.

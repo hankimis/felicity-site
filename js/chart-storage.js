@@ -247,6 +247,7 @@ class ChartStorage {
             const drawingKey = this._getDrawingKey(layoutId, chartId);
             
             ;
+            
 
             // Firestore에서 불러오기
             const doc = await window.db.collection('chartDrawings').doc(drawingKey).get();
