@@ -1,0 +1,694 @@
+# 🐋 Real-Time Whale Trading Tracker System - Cursor Rules
+
+## 🎯 **SYSTEM OVERVIEW**
+
+> **Mission**: Build ultra-responsive, enterprise-grade whale trading detection system that monitors large cryptocurrency transactions across multiple exchanges in real-time with pixel-perfect UI and institutional-level performance.
+
+### Core Architecture Components
+- **WebSocket Multi-Exchange Connector** → Real-time data streams from 6+ exchanges
+- **Smart Trade Detection Engine** → AI-powered whale threshold analysis  
+- **Pixel Trading Feed** → AGGR.trade-style live visualization
+- **Settings Management Panel** → Per-exchange threshold configuration
+- **Audio Alert System** → Sound notifications for mega trades
+- **Test Data Generator** → Fallback when live connections fail
+
+---
+
+## 🏗️ **ARCHITECTURE BLUEPRINT**
+
+### 1. **Class Structure Design**
+```typescript
+class WhaleTracker {
+    // Core Properties
+    defaultMarkets: ExchangeMarket[]     // Exchange configurations
+    settings: TrackingSettings          // User preferences
+    trades: WhaleTradeData[]            // Live trade buffer
+    connections: WebSocketConnections   // Exchange connections
+    exchangeStats: ExchangeStatistics   // Performance metrics
+    
+    // Real-time Processing
+    recentTradeIds: Set<string>         // Duplicate prevention
+    audioContext: AudioContext         // Sound system
+    thresholds: TradeThreshold[]        // Whale detection levels
+    
+    // Methods
+    init() → setupAudio() + connectWebSockets() + start()
+    addTrade(trade) → validateTrade() + updateDisplay() + playAudio()
+    connectWebSockets() → Multi-exchange connection management
+    updateDisplay() → Real-time UI rendering
+}
+```
+
+### 2. **Exchange Integration Matrix**
+```javascript
+SUPPORTED_EXCHANGES = {
+    BINANCE: {
+        spot: 'wss://stream.binance.com:9443/ws/{symbol}@aggTrade',
+        futures: 'wss://fstream.binance.com/ws/{symbol}@aggTrade'
+    },
+    BYBIT: {
+        linear: 'wss://stream.bybit.com/v5/public/linear',
+        inverse: 'wss://stream.bybit.com/v5/public/inverse'
+    },
+    OKX: {
+        spot: 'wss://ws.okx.com:8443/ws/v5/public',
+        futures: 'wss://ws.okx.com:8443/ws/v5/public'
+    },
+    BITGET: {
+        spot: 'wss://ws.bitget.com/spot/v1/stream',
+        futures: 'wss://ws.bitget.com/mix/v1/stream'
+    },
+    MEXC: {
+        spot: 'wss://wbs.mexc.com/ws'
+    }
+}
+```
+
+### 3. **Trade Detection Algorithm**
+```javascript
+WHALE_THRESHOLDS = [
+    { amount: 1000000, level: 4, colors: { buy: '#81FFB0', sell: '#FE8E8E' } },  // Mega Whale
+    { amount: 500000,  level: 3, colors: { buy: '#ABFECA', sell: '#FFADAD' } },  // Super Whale
+    { amount: 250000,  level: 2, colors: { buy: '#C3FFD9', sell: '#FDCBCB' } },  // Large Whale
+    { amount: 100000,  level: 1, colors: { buy: '#E1FFEC', sell: '#FFE0E0' } }   // Whale
+]
+
+// Detection Logic
+validateTrade(trade) {
+    const market = findMarketConfig(trade.exchange, trade.symbol)
+    const threshold = Math.max(market.threshold, 100000) // Minimum $100K
+    const value = trade.price * trade.quantity
+    
+    return value >= threshold ? WHALE_DETECTED : IGNORE_TRADE
+}
+```
+
+---
+
+## 🎨 **UI/UX DESIGN SYSTEM**
+
+### 1. **Layout Structure**
+```html
+<!-- Main Container -->
+<div class="whale-container">
+    <div class="section-header">
+        <h3 class="section-title">
+            <i class="fas fa-fish"></i> 실시간 고래 거래
+        </h3>
+        <div class="whale-controls">
+            <span class="whale-status">연결 중...</span>
+            <button class="whale-settings-btn" id="whale-settings-btn">
+                <i class="fas fa-cog"></i>
+            </button>
+        </div>
+    </div>
+    <div class="whale-trades-container" id="whale-trades-container">
+        <div class="whale-trades-list">
+            <!-- Dynamic trade items rendered here -->
+        </div>
+    </div>
+</div>
+```
+
+### 2. **Trade Item Design Pattern**
+```javascript
+createTradeHTML(trade) {
+    const { side, exchange, symbol, price, value, timestamp } = trade
+    const level = determineWhaleLevel(value)
+    const arrow = side === 'buy' ? '▲' : '▼'
+    const timeAgo = formatTimeAgo(timestamp)
+    
+    return `
+        <div class="whale-trade-pixel level-${level} ${side}">
+            <span class="trade-arrow">${arrow}</span>
+            <span class="trade-exchange-icon">${getExchangeIcon(exchange)}</span>
+            <span class="trade-price">${formatPrice(price)}</span>
+            <span class="trade-amount">${formatValue(value)}</span>
+            <span class="trade-time">${timeAgo}</span>
+        </div>
+    `
+}
+```
+
+### 3. **Visual Hierarchy System**
+```css
+/* Whale Level Color Coding */
+.whale-trade-pixel.level-1 { background: linear-gradient(90deg, #E1FFEC, #FEF1F1); }
+.whale-trade-pixel.level-2 { background: linear-gradient(90deg, #C3FFD9, #FDCBCB); }
+.whale-trade-pixel.level-3 { background: linear-gradient(90deg, #ABFECA, #FFADAD); }
+.whale-trade-pixel.level-4 { 
+    background: linear-gradient(90deg, #81FFB0, #FE8E8E);
+    border-left: 4px solid #4ade80;
+    font-weight: 700;
+}
+
+/* Exchange Icons */
+.trade-exchange-icon { 
+    width: 16px; 
+    height: 16px; 
+    border-radius: 50%;
+}
+
+/* Responsive Typography */
+.trade-price { font-weight: 700; font-size: 15px; }
+.trade-amount { font-weight: 700; color: var(--accent-color); }
+.trade-time { color: var(--text-muted); font-size: 13px; }
+```
+
+---
+
+## ⚡ **REAL-TIME PERFORMANCE OPTIMIZATION**
+
+### 1. **WebSocket Connection Management**
+```javascript
+connectWebSockets() {
+    this.closeAllConnections()
+    
+    const prioritizedMarkets = [
+        { exchange: 'Binance', type: 'Spot', symbol: 'BTCUSDT', priority: 1 },
+        { exchange: 'Binance', type: 'Futures', symbol: 'BTCUSDT', priority: 2 },
+        { exchange: 'Bybit', type: 'Linear', symbol: 'BTCUSDT', priority: 3 }
+    ]
+    
+    prioritizedMarkets.forEach(market => {
+        if (market.enabled) {
+            const connector = this[`connect${market.exchange}${market.type}`]
+            connector?.call(this, market)
+        }
+    })
+}
+
+// Auto-reconnection Strategy
+ws.onclose = (event) => {
+    if (this.isTracking && event.code !== 1000) {
+        setTimeout(() => this.reconnectMarket(market), 5000)
+    }
+}
+```
+
+### 2. **Trade Processing Pipeline**
+```javascript
+addTrades(trades) {
+    const validTrades = trades
+        .filter(trade => !this.recentTradeIds.has(trade.id))
+        .filter(trade => this.validateTradeThreshold(trade))
+        .map(trade => this.enrichTradeData(trade))
+    
+    if (validTrades.length === 0) return
+    
+    // Update internal state
+    this.trades.unshift(...validTrades.sort((a, b) => b.timestamp - a.timestamp))
+    this.trades = this.trades.slice(0, 50) // Keep latest 50
+    
+    // Update UI (debounced)
+    this.debounceUpdateDisplay()
+    
+    // Audio alerts for largest trade
+    const largestTrade = validTrades.reduce((max, t) => t.value > max.value ? t : max)
+    this.playAudioAlert(largestTrade)
+}
+```
+
+### 3. **Memory Management**
+```javascript
+// Circular buffer for trade IDs
+manageDuplicatePrevention() {
+    this.recentTradeIds.add(trade.id)
+    this.tradeIdQueue.push(trade.id)
+    
+    while (this.tradeIdQueue.length > this.maxRecentIds) {
+        const oldId = this.tradeIdQueue.shift()
+        this.recentTradeIds.delete(oldId)
+    }
+}
+
+// Exchange statistics cleanup
+logExchangeStats() {
+    Object.entries(this.exchangeStats).forEach(([exchange, stats]) => {
+        console.log(`${exchange}: ${stats.count} trades, $${stats.totalValue.toLocaleString()}`)
+    })
+    this.exchangeStats = {} // Reset
+}
+```
+
+---
+
+## 🔧 **SETTINGS & CONFIGURATION SYSTEM**
+
+### 1. **Settings Modal Architecture**
+```html
+<div id="whale-settings-modal" class="modal-overlay">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>고래 거래 추적 설정</h2>
+            <button class="modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div id="whale-settings-list">
+                <!-- Dynamic market settings -->
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button id="save-whale-settings" class="btn btn-primary">설정 저장</button>
+        </div>
+    </div>
+</div>
+```
+
+### 2. **Market Configuration Generator**
+```javascript
+generateMarketSettings() {
+    return this.markets.map(market => `
+        <div class="market-setting-item" data-market-id="${market.id}">
+            <div class="market-info">
+                <span class="exchange-name">${market.exchange}</span>
+                <span class="market-type">${market.type}</span>
+                <span class="market-symbol">${market.symbol}</span>
+            </div>
+            <div class="market-controls">
+                <div class="threshold-slider">
+                    <label>최소금액: <span class="threshold-value">$${market.threshold/1000}k</span></label>
+                    <input type="range" min="10000" max="1000000" step="10000" value="${market.threshold}">
+                </div>
+                <label class="switch">
+                    <input type="checkbox" ${market.enabled ? 'checked' : ''}>
+                    <span class="slider round"></span>
+                </label>
+            </div>
+        </div>
+    `).join('')
+}
+```
+
+### 3. **Persistent Settings Storage**
+```javascript
+updateSettings(newMarkets) {
+    this.markets = newMarkets
+    localStorage.setItem('whaleTrackerMarkets', JSON.stringify(this.markets))
+    this.connectWebSockets() // Reconnect with new settings
+}
+
+loadSettings() {
+    const savedMarkets = localStorage.getItem('whaleTrackerMarkets')
+    this.markets = savedMarkets ? JSON.parse(savedMarkets) : this.defaultMarkets
+}
+```
+
+---
+
+## 🔊 **AUDIO ALERT SYSTEM**
+
+### 1. **Audio Context Setup**
+```javascript
+setupAudio() {
+    try {
+        this.audioContext = new (window.AudioContext || window.webkitAudioContext)()
+        this.audioGain = this.audioContext.createGain()
+        this.audioGain.connect(this.audioContext.destination)
+        this.audioGain.gain.value = this.muted ? 0 : this.audioVolume
+    } catch (error) {
+        this.audioContext = null // Fallback for unsupported browsers
+    }
+}
+```
+
+### 2. **Dynamic Sound Generation**
+```javascript
+playAudioAlert(trade) {
+    if (!this.audioContext || this.muted || trade.value < this.audioThreshold) return
+    
+    const oscillator = this.audioContext.createOscillator()
+    const gainNode = this.audioContext.createGain()
+    
+    // Frequency based on trade size
+    const frequency = trade.value >= 1000000 ? 800 : 
+                     trade.value >= 500000 ? 600 : 400
+    
+    oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime)
+    oscillator.type = 'sine'
+    
+    // Volume based on trade size  
+    const volume = Math.min(trade.value / 1000000, 1) * this.audioVolume
+    gainNode.gain.setValueAtTime(volume, this.audioContext.currentTime)
+    gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.5)
+    
+    oscillator.connect(gainNode)
+    gainNode.connect(this.audioGain)
+    oscillator.start()
+    oscillator.stop(this.audioContext.currentTime + 0.5)
+}
+```
+
+---
+
+## 🛡️ **ERROR HANDLING & RESILIENCE**
+
+### 1. **Connection Failure Management**
+```javascript
+checkConnections() {
+    const connectedCount = Object.values(this.connections)
+        .filter(ws => ws && ws.readyState === WebSocket.OPEN).length
+    
+    if (connectedCount === 0) {
+        console.warn('🔌 All WebSocket connections failed, starting test data generation')
+        this.startTestDataGeneration()
+    } else {
+        console.log(`✅ ${connectedCount} exchanges connected successfully`)
+    }
+}
+```
+
+### 2. **Test Data Generation (Fallback)**
+```javascript
+startTestDataGeneration() {
+    if (this.testDataInterval) return
+    
+    this.updateConnectionStatus() // Show "Test Data" status
+    
+    this.testDataInterval = setInterval(() => {
+        if (!this.isTracking) {
+            clearInterval(this.testDataInterval)
+            return
+        }
+        
+        const testTrade = this.generateRealisticWhaleData()
+        this.addTrade(testTrade)
+    }, 3000) // Every 3 seconds
+}
+
+generateRealisticWhaleData() {
+    const exchanges = ['Binance', 'Bybit', 'OKX']
+    const symbols = ['BTCUSDT', 'ETHUSDT', 'SOLUSDT']
+    const basePrices = { BTCUSDT: 95000, ETHUSDT: 3500, SOLUSDT: 200 }
+    
+    const symbol = symbols[Math.floor(Math.random() * symbols.length)]
+    const price = basePrices[symbol] * (0.98 + Math.random() * 0.04) // ±2% variation
+    
+    // Weighted trade size distribution
+    const rand = Math.random()
+    const value = rand < 0.1 ? 1000000 + Math.random() * 1000000 :  // 10% mega whale
+                  rand < 0.25 ? 500000 + Math.random() * 500000 :   // 15% super whale  
+                  rand < 0.5 ? 250000 + Math.random() * 250000 :    // 25% large whale
+                  100000 + Math.random() * 150000                   // 50% whale
+    
+    return {
+        id: `test_${Date.now()}_${Math.random()}`,
+        price,
+        quantity: value / price,
+        value,
+        side: Math.random() > 0.5 ? 'buy' : 'sell',
+        timestamp: Date.now(),
+        exchange: exchanges[Math.floor(Math.random() * exchanges.length)],
+        symbol,
+        type: 'Test'
+    }
+}
+```
+
+### 3. **Safe WebSocket Message Handling**
+```javascript
+// Binance WebSocket Handler with Safety Checks
+ws.onmessage = (event) => {
+    try {
+        const data = JSON.parse(event.data)
+        if (!data || !data.p || !data.q || !data.a) return
+        
+        const trade = {
+            id: data.a.toString(),
+            price: parseFloat(data.p),
+            quantity: parseFloat(data.q),
+            value: parseFloat(data.p) * parseFloat(data.q),
+            side: data.m ? 'sell' : 'buy',
+            timestamp: data.T || Date.now(),
+            exchange: 'Binance',
+            symbol: market.symbol
+        }
+        
+        // Validate numeric values
+        if (isNaN(trade.price) || isNaN(trade.quantity) || trade.value <= 0) return
+        
+        this.addTrade(trade)
+    } catch (error) {
+        console.warn(`Binance message parsing error:`, error)
+    }
+}
+
+ws.onerror = (error) => {
+    console.error(`Binance WebSocket error:`, error)
+}
+```
+
+---
+
+## 📱 **RESPONSIVE DESIGN SYSTEM**
+
+### 1. **Mobile-First CSS Architecture**
+```css
+/* Base Mobile Layout */
+.whale-trades-container {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    color: var(--text-primary);
+    padding: 0;
+    margin: 0;
+    overflow: hidden;
+    background-color: var(--bg-primary);
+}
+
+.whale-trade-pixel {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border-light);
+    font-size: 14px;
+    font-weight: 500;
+    min-height: 48px; /* Touch-friendly */
+}
+
+/* Tablet Breakpoint */
+@media (min-width: 768px) {
+    .whale-trade-pixel {
+        padding: 6px 16px;
+        font-size: 15px;
+        min-height: 40px;
+    }
+}
+
+/* Desktop Breakpoint */
+@media (min-width: 1024px) {
+    .whale-trade-pixel {
+        padding: 4px 20px;
+        font-size: 16px;
+        min-height: 36px;
+    }
+}
+```
+
+### 2. **Dark/Light Theme Support**
+```css
+/* CSS Variables for Theme Switching */
+:root {
+    --long-color: #16a34a;
+    --long-bg: rgba(22, 163, 74, 0.15);
+    --short-color: #dc2626;
+    --short-bg: rgba(220, 38, 38, 0.15);
+}
+
+[data-theme="dark"] {
+    --bg-primary: #1a1a1a;
+    --text-primary: #ffffff;
+    --border-light: #2a2a2a;
+}
+
+[data-theme="light"] {
+    --bg-primary: #ffffff;
+    --text-primary: #1f2937;
+    --border-light: #f3f4f6;
+    --long-color: #166534;
+    --short-color: #991b1b;
+}
+```
+
+---
+
+## 🚀 **INITIALIZATION & LIFECYCLE**
+
+### 1. **Main Page Integration**
+```html
+<!-- Script Loading Order -->
+<script src="js/analysis/whale-tracker.js" type="module"></script>
+<script type="module">
+    import { WhaleTracker } from './js/analysis/whale-tracker.js'
+    
+    document.addEventListener('DOMContentLoaded', () => {
+        setTimeout(() => {
+            try {
+                window.whaleTracker = new WhaleTracker()
+                console.log('🐋 Whale Tracker initialized successfully')
+            } catch (error) {
+                console.error('❌ Whale Tracker initialization failed:', error)
+            }
+        }, 1000)
+    })
+</script>
+```
+
+### 2. **Lifecycle Management**
+```javascript
+class WhaleTracker {
+    async init() {
+        this.setupAudio()
+        this.connectWebSockets()
+        this.start()
+        
+        // Health check after 2 seconds
+        setTimeout(() => this.updateConnectionStatus(), 2000)
+    }
+    
+    start() {
+        this.isTracking = true
+        this.showLoadingState()
+        this.connectWebSockets()
+        
+        // Statistics logging every 10 seconds
+        this.statsInterval = setInterval(() => {
+            this.logExchangeStats()
+        }, 10000)
+        
+        // Connection health check every 5 seconds
+        setTimeout(() => this.checkConnections(), 5000)
+    }
+    
+    stop() {
+        this.isTracking = false
+        this.closeAllConnections()
+        
+        if (this.statsInterval) {
+            clearInterval(this.statsInterval)
+            this.statsInterval = null
+        }
+        
+        if (this.testDataInterval) {
+            clearInterval(this.testDataInterval)
+            this.testDataInterval = null
+        }
+    }
+}
+```
+
+---
+
+## 🎯 **IMPLEMENTATION CHECKLIST**
+
+### ✅ **Core Features**
+- [ ] Multi-exchange WebSocket connections (Binance, Bybit, OKX, Bitget, MEXC)
+- [ ] Real-time whale trade detection ($100K+ threshold)
+- [ ] 4-level whale classification system (100K, 250K, 500K, 1M+)
+- [ ] Live trading feed with buy/sell indicators
+- [ ] Exchange-specific threshold configuration
+- [ ] Audio alert system for large trades
+- [ ] Test data generation fallback
+- [ ] Duplicate trade prevention
+- [ ] Memory-efficient circular buffers
+
+### ✅ **UI/UX Components**  
+- [ ] Pixel-style trade feed rendering
+- [ ] Settings modal with per-exchange controls
+- [ ] Connection status indicators
+- [ ] Responsive design (mobile/tablet/desktop)
+- [ ] Dark/light theme support
+- [ ] Exchange icons and branding
+- [ ] Time-ago formatting
+- [ ] Value formatting (K/M abbreviations)
+
+### ✅ **Performance & Reliability**
+- [ ] WebSocket auto-reconnection
+- [ ] Error handling for all connections
+- [ ] Safe JSON parsing with validation
+- [ ] Debounced UI updates
+- [ ] Memory management for long-running sessions
+- [ ] Connection health monitoring
+- [ ] Graceful degradation when exchanges fail
+
+### ✅ **Advanced Features**
+- [ ] Exchange statistics tracking
+- [ ] Settings persistence in localStorage
+- [ ] Audio context with dynamic frequency/volume
+- [ ] Real-time status updates
+- [ ] Test data with realistic market simulation
+- [ ] Modular exchange connector architecture
+- [ ] Theme-aware CSS variables
+
+---
+
+## 💡 **DEVELOPMENT BEST PRACTICES**
+
+### 1. **Code Organization**
+```javascript
+// ✅ DO: Modular connector methods
+connectBinanceSpot(market) { /* specific implementation */ }
+connectBybitLinear(market) { /* specific implementation */ }
+
+// ❌ AVOID: Monolithic connection handler
+connectAllExchanges() { /* handles everything */ }
+```
+
+### 2. **Error Handling**
+```javascript
+// ✅ DO: Graceful error handling
+ws.onmessage = (event) => {
+    try {
+        const data = JSON.parse(event.data)
+        if (this.validateTradeData(data)) {
+            this.processTrade(data)
+        }
+    } catch (error) {
+        console.warn(`${exchange} parsing error:`, error)
+    }
+}
+
+// ❌ AVOID: Unhandled exceptions
+ws.onmessage = (event) => {
+    const data = JSON.parse(event.data) // Can throw
+    this.processTrade(data) // Can fail
+}
+```
+
+### 3. **Performance Optimization**
+```javascript
+// ✅ DO: Debounced UI updates
+debounceUpdateDisplay() {
+    if (this.updateTimer) clearTimeout(this.updateTimer)
+    this.updateTimer = setTimeout(() => this.updateDisplay(), 100)
+}
+
+// ❌ AVOID: Excessive DOM manipulation
+addTrade(trade) {
+    this.updateDisplay() // Called for every trade
+}
+```
+
+---
+
+## 🌟 **SUCCESS METRICS**
+
+### Performance Targets
+- **Connection Latency**: < 100ms to major exchanges
+- **UI Update Rate**: 60 FPS smooth animations
+- **Memory Usage**: < 50MB after 24h continuous operation
+- **Trade Detection Accuracy**: 99.9% valid whale trades
+- **Reconnection Time**: < 5 seconds after connection loss
+
+### User Experience Goals
+- **Visual Clarity**: Instant whale level recognition
+- **Audio Feedback**: Contextual sound alerts
+- **Mobile Responsiveness**: Full functionality on all devices
+- **Settings Flexibility**: Per-exchange threshold control
+- **Reliability**: 99% uptime with graceful fallbacks
+
+---
+
+*🚀 This Cursor Rule provides the complete blueprint for building a production-ready whale trading tracker. Follow the patterns, implement the features checklist, and maintain the performance standards for optimal results.*
+description:
+globs:
+alwaysApply: false
+---

@@ -10,12 +10,18 @@ class ChartSaveManager {
         this.chartRestored = false;
         this.widget = null;
         this.isInitialized = false;
+        this.initializationAttempts = 0;
+        this.maxInitAttempts = 10;
+        this.backupInterval = null;
+        this.periodicSaveInterval = null;
+        this.domObserver = null;
         
         // 설정값
         this.SAVE_COOLDOWN = 3000; // 3초 쿨다운
         this.DEBOUNCE_DELAY = 2000; // 2초 디바운스
         this.BACKUP_INTERVAL = 60000; // 1분 백업 간격
-        this.RESTORE_RETRY_DELAY = 3000; // 3초 후 복원 재시도
+        this.RESTORE_RETRY_DELAY = 2000; // 2초 후 복원 재시도
+        this.API_CHECK_INTERVAL = 500; // API 준비 상태 확인 간격
         
         // 컬렉션 이름
         this.CHART_STATES_COLLECTION = 'chartStates';
@@ -27,16 +33,23 @@ class ChartSaveManager {
     /**
      * 위젯 초기화 및 이벤트 구독
      */
-    initialize(widget) {
+    async initialize(widget) {
         if (this.isInitialized) {
             console.warn('⚠️ ChartSaveManager가 이미 초기화됨');
             return;
         }
 
         this.widget = widget;
-        this.isInitialized = true;
-        
         console.log('🔄 ChartSaveManager 초기화 시작...');
+        
+        // Widget이 완전히 준비될 때까지 대기
+        const isReady = await this.waitForWidgetReady();
+        if (!isReady) {
+            console.error('❌ Widget 초기화 타임아웃');
+            return;
+        }
+        
+        this.isInitialized = true;
         
         // 이벤트 구독
         this.subscribeToEvents();
@@ -48,9 +61,60 @@ class ChartSaveManager {
         this.startPeriodicBackup();
         
         // 페이지 종료 시 저장
-        this.setupPageExitHandlers();
+        this.setupBeforeUnload();
         
         console.log('✅ ChartSaveManager 초기화 완료');
+    }
+
+    /**
+     * Widget이 완전히 준비될 때까지 대기
+     */
+    async waitForWidgetReady(maxWaitTime = 30000) {
+        const startTime = Date.now();
+        
+        while (Date.now() - startTime < maxWaitTime) {
+            if (this.isWidgetFullyReady()) {
+                console.log('✅ TradingView Widget 완전 준비됨');
+                return true;
+            }
+            
+            console.log('🔄 Widget 준비 대기 중...', Math.floor((Date.now() - startTime) / 1000) + 's');
+            await this.delay(this.API_CHECK_INTERVAL);
+        }
+        
+        return false;
+    }
+
+    /**
+     * Widget이 완전히 준비되었는지 확인 (개선된 버전)
+     */
+    isWidgetFullyReady() {
+        try {
+            if (!this.widget) {
+                return false;
+            }
+
+            // 1. 기본 Widget 객체 확인
+            if (typeof this.widget.onChartReady !== 'function') {
+                return false;
+            }
+
+            // 2. Chart API 접근 확인
+            if (!this.widget.chart) {
+                return false;
+            }
+
+            // 3. 내부 API 확인 (더 안전한 방식)
+            try {
+                const hasActiveChart = this.widget.chart() !== null;
+                return hasActiveChart;
+            } catch (e) {
+                return false;
+            }
+
+        } catch (error) {
+            return false;
+        }
     }
 
     /**
@@ -133,6 +197,26 @@ class ChartSaveManager {
     }
 
     /**
+     * 디바운스된 저장 (이벤트 기반)
+     */
+    debouncedSave(eventType = 'unknown') {
+        if (this.saveTimeout) {
+            clearTimeout(this.saveTimeout);
+        }
+        
+        this.saveTimeout = setTimeout(() => {
+            if (this.isWidgetFullyReady() && window.currentUser) {
+                console.log(`💾 차트 자동 저장 (${eventType})`);
+                this.widget.save((layoutData) => {
+                    if (layoutData) {
+                        this.saveChartLayout(layoutData, false);
+                    }
+                });
+            }
+        }, this.DEBOUNCE_DELAY);
+    }
+
+    /**
      * 수동 저장 (사용자 요청)
      */
     async manualSave() {
@@ -158,27 +242,27 @@ class ChartSaveManager {
      * 차트 복원
      */
     async restoreChart() {
-        if (!window.currentUser) {
-            console.log('❌ 사용자 미로그인 - 차트 복원 건너뜀');
+        if (this.chartRestored || !window.currentUser) {
             return false;
-        }
-
-        if (this.chartRestored) {
-            console.log('ℹ️ 차트가 이미 복원됨');
-            return true;
         }
 
         try {
             const userId = window.currentUser.uid;
             console.log('🔄 차트 복원 시작...', userId);
 
-            // 1단계: 자동 저장된 차트 확인
+            // 1단계: 임시 저장된 차트 확인
+            const tempChart = await this.loadTempChart(userId);
+            if (tempChart) {
+                return true;
+            }
+
+            // 2단계: 자동 저장된 차트 확인
             const autoSavedChart = await this.loadAutoSavedChart(userId);
             if (autoSavedChart) {
                 return true;
             }
 
-            // 2단계: 수동 저장된 차트 확인
+            // 3단계: 수동 저장된 차트 확인
             const manualSavedChart = await this.loadManualSavedChart(userId);
             if (manualSavedChart) {
                 return true;
@@ -189,6 +273,36 @@ class ChartSaveManager {
 
         } catch (error) {
             console.error('❌ 차트 복원 실패:', error);
+            return false;
+        }
+    }
+
+    /**
+     * 임시 저장된 차트 로드
+     */
+    async loadTempChart(userId) {
+        try {
+            const tempStateStr = localStorage.getItem('tempChartState');
+            if (tempStateStr) {
+                const tempState = JSON.parse(tempStateStr);
+                if (tempState.userId === userId && tempState.content) {
+                    const layoutData = this.parseLayoutData(tempState.content);
+                    if (layoutData) {
+                        const success = await this.safeLoadChart(layoutData);
+                        if (success) {
+                            this.chartRestored = true;
+                            this.showRestoreNotification('임시 저장된 차트가 복원되었습니다');
+                            console.log('✅ 임시 저장 차트 복원 완료');
+                            // 임시 데이터 삭제
+                            localStorage.removeItem('tempChartState');
+                            return true;
+                        }
+                    }
+                }
+            }
+            return false;
+        } catch (error) {
+            console.error('❌ 임시 저장 차트 로드 실패:', error);
             return false;
         }
     }
@@ -205,11 +319,13 @@ class ChartSaveManager {
                 if (data.content) {
                     const layoutData = this.parseLayoutData(data.content);
                     if (layoutData) {
-                        this.widget.load(layoutData);
-                        this.chartRestored = true;
-                        this.showRestoreNotification('자동 저장된 차트가 복원되었습니다');
-                        console.log('✅ 자동 저장 차트 복원 완료');
-                        return true;
+                        const success = await this.safeLoadChart(layoutData);
+                        if (success) {
+                            this.chartRestored = true;
+                            this.showRestoreNotification('자동 저장된 차트가 복원되었습니다');
+                            console.log('✅ 자동 저장 차트 복원 완료');
+                            return true;
+                        }
                     }
                 }
             }
@@ -218,6 +334,56 @@ class ChartSaveManager {
             console.error('❌ 자동 저장 차트 로드 실패:', error);
             return false;
         }
+    }
+
+    /**
+     * 안전한 차트 로드 (개선된 버전)
+     */
+    async safeLoadChart(layoutData, maxRetries = 3) {
+        for (let i = 0; i < maxRetries; i++) {
+            try {
+                // Widget 완전 준비 상태 재확인
+                if (!this.isWidgetFullyReady()) {
+                    console.warn(`⚠️ Widget이 아직 준비되지 않음, 재시도 중... ${i + 1}/${maxRetries}`);
+                    await this.delay(1000);
+                    continue;
+                }
+
+                // 차트 로드 시도
+                return new Promise((resolve) => {
+                    try {
+                        this.widget.load(layoutData);
+                        console.log('✅ 차트 로드 성공');
+                        resolve(true);
+                    } catch (loadError) {
+                        console.error(`❌ 차트 로드 실패 (시도 ${i + 1}):`, loadError);
+                        resolve(false);
+                    }
+                });
+
+            } catch (error) {
+                console.error(`❌ 차트 로드 오류 (시도 ${i + 1}):`, error);
+                if (i === maxRetries - 1) {
+                    return false;
+                }
+                await this.delay(1000);
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Widget이 준비되었는지 확인 (레거시 호환)
+     */
+    isWidgetReady() {
+        return this.isWidgetFullyReady();
+    }
+
+    /**
+     * 지연 함수
+     */
+    delay(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
     }
 
     /**
@@ -232,17 +398,17 @@ class ChartSaveManager {
                 .get();
 
             if (!layoutSnapshot.empty) {
-                const latestDoc = layoutSnapshot.docs[0];
-                const data = latestDoc.data();
-                
-                if (data.content) {
-                    const layoutData = this.parseLayoutData(data.content);
+                const latestLayout = layoutSnapshot.docs[0].data();
+                if (latestLayout.content) {
+                    const layoutData = this.parseLayoutData(latestLayout.content);
                     if (layoutData) {
-                        this.widget.load(layoutData);
-                        this.chartRestored = true;
-                        this.showRestoreNotification('수동 저장된 차트가 복원되었습니다');
-                        console.log('✅ 수동 저장 차트 복원 완료');
-                        return true;
+                        const success = await this.safeLoadChart(layoutData);
+                        if (success) {
+                            this.chartRestored = true;
+                            this.showRestoreNotification(`"${latestLayout.name}" 차트가 복원되었습니다`);
+                            console.log('✅ 수동 저장 차트 복원 완료');
+                            return true;
+                        }
                     }
                 }
             }
@@ -266,39 +432,173 @@ class ChartSaveManager {
     }
 
     /**
-     * 이벤트 구독
+     * 이벤트 구독 (TradingView 공식 API 호환)
      */
     subscribeToEvents() {
+        if (!this.widget) return;
+
         try {
-            // TradingView 공식 이벤트
+            console.log('📊 TradingView 이벤트 구독 시작');
+
+            // 1. TradingView 공식 자동 저장 이벤트
             if (this.widget.onAutoSaveNeeded) {
                 this.widget.onAutoSaveNeeded.subscribe(null, () => {
-                    console.log('📊 TradingView onAutoSaveNeeded 이벤트');
-                    this.debouncedAutoSave();
+                    console.log('💾 TradingView onAutoSaveNeeded 이벤트');
+                    this.debouncedSave('auto_save_needed');
                 });
                 console.log('✅ onAutoSaveNeeded 이벤트 구독 완료');
             }
 
-            // 차트 변경 이벤트
-            const chart = this.widget.activeChart();
-            if (chart) {
-                chart.onSymbolChanged().subscribe(null, () => {
-                    console.log('📊 심볼 변경');
-                    this.debouncedAutoSave();
-                });
+            // 2. 차트 준비 완료 후 추가 이벤트 구독
+            this.widget.onChartReady(() => {
+                console.log('📊 차트 준비 완료, 추가 이벤트 구독 시작');
                 
-                chart.onIntervalChanged().subscribe(null, () => {
-                    console.log('📊 간격 변경');
-                    this.debouncedAutoSave();
+                try {
+                    const chart = this.widget.chart();
+                    if (chart) {
+                        // 심볼 변경 이벤트
+                        if (typeof chart.onSymbolChanged === 'function') {
+                            chart.onSymbolChanged().subscribe(null, () => {
+                                console.log('🔄 심볼 변경됨');
+                                this.debouncedSave('symbol_changed');
+                            });
+                        }
+                        
+                        // 간격 변경 이벤트
+                        if (typeof chart.onIntervalChanged === 'function') {
+                            chart.onIntervalChanged().subscribe(null, () => {
+                                console.log('🔄 간격 변경됨');
+                                this.debouncedSave('interval_changed');
+                            });
+                        }
+
+                        console.log('✅ 차트 기본 이벤트 구독 완료');
+                    }
+                } catch (chartError) {
+                    console.warn('⚠️ 차트 이벤트 구독 실패:', chartError.message);
+                }
+
+                // 3. 사용자 상호작용 기반 저장 트리거
+                this.setupUserInteractionEvents();
+            });
+
+            // 4. 위젯 레벨 이벤트 구독
+            this.setupWidgetEvents();
+            
+            console.log('✅ 모든 이벤트 구독 설정 완료');
+            
+        } catch (error) {
+            console.error('❌ 이벤트 구독 실패:', error);
+        }
+    }
+
+    /**
+     * 사용자 상호작용 이벤트 설정
+     */
+    setupUserInteractionEvents() {
+        try {
+            // TradingView 공식 이벤트 구독 방식
+            if (this.widget.subscribe) {
+                // 드로잉/지표 추가 이벤트
+                this.widget.subscribe('study_added', () => {
+                    console.log('📈 지표 추가됨');
+                    this.debouncedSave('study_added');
+                });
+
+                // 드로잉/지표 제거 이벤트  
+                this.widget.subscribe('study_removed', () => {
+                    console.log('📉 지표 제거됨');
+                    this.debouncedSave('study_removed');
+                });
+
+                // 드로잉 도구 이벤트
+                this.widget.subscribe('drawing_event', () => {
+                    console.log('✏️ 드로잉 변경됨');
+                    this.debouncedSave('drawing_changed');
                 });
             }
 
-            // 사용자 상호작용 이벤트
-            this.subscribeToUserInteractions();
+            // 대체 방법: DOM 이벤트 기반 감지
+            this.setupDOMBasedDetection();
 
-            console.log('✅ 차트 이벤트 구독 완료');
+            console.log('✅ 사용자 상호작용 이벤트 설정 완료');
         } catch (error) {
-            console.error('❌ 차트 이벤트 구독 실패:', error);
+            console.warn('⚠️ 사용자 상호작용 이벤트 설정 실패:', error.message);
+            // 대체 방법으로 DOM 기반 감지 시도
+            this.setupDOMBasedDetection();
+        }
+    }
+
+    /**
+     * DOM 기반 변경 감지 (대체 방법)
+     */
+    setupDOMBasedDetection() {
+        try {
+            // MutationObserver로 차트 영역의 변화 감지
+            const chartContainer = document.getElementById('chart-container') || 
+                                 document.querySelector('.chart-container') ||
+                                 document.querySelector('[id*="chart"]');
+
+            if (chartContainer) {
+                const observer = new MutationObserver((mutations) => {
+                    const relevantChanges = mutations.some(mutation => {
+                        // 드로잉이나 지표 관련 DOM 변화 감지
+                        return mutation.type === 'childList' && 
+                               (mutation.addedNodes.length > 0 || mutation.removedNodes.length > 0);
+                    });
+
+                    if (relevantChanges && this.isWidgetFullyReady()) {
+                        console.log('🔍 DOM 변화 감지, 저장 트리거');
+                        this.debouncedSave('dom_change_detected');
+                    }
+                });
+
+                observer.observe(chartContainer, {
+                    childList: true,
+                    subtree: true,
+                    attributes: false
+                });
+
+                this.domObserver = observer;
+                console.log('✅ DOM 기반 변경 감지 설정 완료');
+            }
+        } catch (error) {
+            console.warn('⚠️ DOM 기반 감지 설정 실패:', error.message);
+        }
+    }
+
+    /**
+     * 위젯 레벨 이벤트 설정
+     */
+    setupWidgetEvents() {
+        try {
+            // 주기적 저장 (백업용)
+            this.periodicSaveInterval = setInterval(() => {
+                if (this.isWidgetFullyReady() && window.currentUser) {
+                    console.log('🔄 주기적 백업 저장');
+                    this.debouncedSave('periodic_backup');
+                }
+            }, 30000); // 30초마다
+
+            // 포커스 상실 시 저장
+            window.addEventListener('blur', () => {
+                if (this.isWidgetFullyReady() && window.currentUser) {
+                    console.log('👁️ 윈도우 포커스 상실, 저장 시도');
+                    this.quickSave();
+                }
+            });
+
+            // 페이지 가시성 변경 시 저장
+            document.addEventListener('visibilitychange', () => {
+                if (document.hidden && this.isWidgetFullyReady() && window.currentUser) {
+                    console.log('👁️ 페이지 숨김, 저장 시도');
+                    this.quickSave();
+                }
+            });
+
+            console.log('✅ 위젯 레벨 이벤트 설정 완료');
+        } catch (error) {
+            console.warn('⚠️ 위젯 레벨 이벤트 설정 실패:', error.message);
         }
     }
 
@@ -327,27 +627,42 @@ class ChartSaveManager {
     }
 
     /**
-     * 복원 스케줄링
+     * 복원 스케줄링 (개선된 버전)
      */
     scheduleRestore() {
-        // 즉시 복원 시도
-        setTimeout(() => this.restoreChart(), 100);
+        // 즉시 첫 번째 복원 시도
+        setTimeout(async () => {
+            console.log('🔄 첫 번째 차트 복원 시도');
+            await this.restoreChart();
+        }, 500);
         
         // 백업 복원 시도
-        setTimeout(() => {
+        setTimeout(async () => {
             if (!this.chartRestored) {
                 console.log('🔄 백업 차트 복원 시도');
-                this.restoreChart();
+                await this.restoreChart();
             }
         }, this.RESTORE_RETRY_DELAY);
+        
+        // 최종 복원 시도
+        setTimeout(async () => {
+            if (!this.chartRestored) {
+                console.log('🔄 최종 차트 복원 시도');
+                await this.restoreChart();
+            }
+        }, this.RESTORE_RETRY_DELAY * 2);
     }
 
     /**
      * 주기적 백업 시작
      */
     startPeriodicBackup() {
-        setInterval(() => {
-            if (window.currentUser && this.widget) {
+        if (this.backupInterval) {
+            clearInterval(this.backupInterval);
+        }
+        
+        this.backupInterval = setInterval(() => {
+            if (this.isWidgetFullyReady() && window.currentUser) {
                 console.log('⏰ 주기적 백업 저장');
                 this.debouncedAutoSave();
             }
@@ -355,38 +670,75 @@ class ChartSaveManager {
     }
 
     /**
+     * 모든 인터벌과 이벤트 리스너 정리
+     */
+    cleanup() {
+        try {
+            // 인터벌 정리
+            if (this.saveTimeout) {
+                clearTimeout(this.saveTimeout);
+                this.saveTimeout = null;
+            }
+            
+            if (this.backupInterval) {
+                clearInterval(this.backupInterval);
+                this.backupInterval = null;
+            }
+            
+            if (this.periodicSaveInterval) {
+                clearInterval(this.periodicSaveInterval);
+                this.periodicSaveInterval = null;
+            }
+
+            // DOM Observer 정리
+            if (this.domObserver) {
+                this.domObserver.disconnect();
+                this.domObserver = null;
+            }
+            
+            console.log('✅ ChartSaveManager 정리 완료');
+        } catch (error) {
+            console.error('❌ ChartSaveManager 정리 실패:', error);
+        }
+    }
+
+    /**
      * 페이지 종료 시 저장 설정
      */
-    setupPageExitHandlers() {
-        const handlePageExit = () => {
-            if (window.currentUser && this.widget) {
-                this.widget.save((layoutData) => {
-                    if (layoutData) {
-                        try {
-                            const serializedData = JSON.stringify(layoutData);
-                            
-                            // 즉시 저장 (동기)
-                            window.db.collection(this.CHART_STATES_COLLECTION)
-                                .doc(window.currentUser.uid)
-                                .set({
-                                    content: serializedData,
-                                    timestamp: new Date(),
-                                    updatedAt: Date.now(),
-                                    userId: window.currentUser.uid,
-                                    symbol: this.getCurrentSymbol(),
-                                    interval: this.getCurrentInterval()
-                                });
-                            console.log('🚪 페이지 종료 시 차트 저장 완료');
-                        } catch (error) {
-                            console.error('❌ 페이지 종료 시 저장 실패:', error);
-                        }
-                    }
-                });
+    setupBeforeUnload() {
+        window.addEventListener('beforeunload', () => {
+            if (this.isInitialized && this.widget) {
+                try {
+                    // 동기적으로 빠른 저장 시도
+                    this.quickSave();
+                } catch (error) {
+                    console.error('❌ 페이지 종료 시 저장 실패:', error);
+                }
             }
-        };
+        });
+    }
 
-        window.addEventListener('beforeunload', handlePageExit);
-        window.addEventListener('pagehide', handlePageExit);
+    /**
+     * 빠른 저장 (동기적)
+     */
+    quickSave() {
+        if (!this.isWidgetFullyReady() || !window.currentUser) return;
+
+        try {
+            this.widget.save((state) => {
+                if (state && state.content) {
+                    // localStorage에 임시 저장
+                    localStorage.setItem('tempChartState', JSON.stringify({
+                        content: state.content,
+                        timestamp: Date.now(),
+                        userId: window.currentUser.uid
+                    }));
+                    console.log('💾 임시 차트 상태 저장 완료');
+                }
+            });
+        } catch (error) {
+            console.error('❌ 빠른 저장 실패:', error);
+        }
     }
 
     /**

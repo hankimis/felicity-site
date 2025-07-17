@@ -50,6 +50,7 @@ class WhaleTracker {
     }
 
     connectWebSockets() {
+        console.log('🔗 WhaleTracker WebSocket 연결 시작...');
         // Connect to various exchange WebSockets
         this.connectBinance();
         this.connectBybit();
@@ -126,8 +127,16 @@ class WhaleTracker {
     addTrade(exchange, price, amount, side) {
         const tradeAmount = price * amount;
         
+        // 디버깅: 수신된 거래 로그
+        console.log(`📊 ${exchange} 거래 수신: $${tradeAmount.toLocaleString()} (${side})`);
+        
         // Only show trades above threshold
-        if (tradeAmount < this.tradeThreshold) return;
+        if (tradeAmount < this.tradeThreshold) {
+            console.log(`⚡ 임계값 미달: $${tradeAmount.toLocaleString()} < $${this.tradeThreshold.toLocaleString()}`);
+            return;
+        }
+        
+        console.log(`🐋 고래 거래 추가: ${exchange} $${tradeAmount.toLocaleString()} ${side}`);
 
         // Add to recent trades for L/S ratio
         this.recentTrades.push({
@@ -239,28 +248,51 @@ class WhaleTracker {
 
     // WebSocket connection methods
     connectBinance() {
+        console.log('🟡 Binance WebSocket 연결 시도...');
         const ws = new WebSocket('wss://stream.binance.com:9443/ws/btcusdt@trade');
         
+        ws.onopen = () => {
+            console.log('✅ Binance WebSocket 연결 성공');
+        };
+        
         ws.onmessage = (event) => {
-            const trade = JSON.parse(event.data);
-            const amount = parseFloat(trade.q);
-            const price = parseFloat(trade.p);
-            
-            // Binance uses 'm' (isMaker) flag - true for SELL, false for BUY
-            this.addTrade('BINANCE', price, amount, 
-                trade.m ? 'SELL' : 'BUY');
+            try {
+                const trade = JSON.parse(event.data);
+                console.log('🔵 Binance 메시지 수신:', trade);
+                
+                if (trade.q && trade.p && trade.m !== undefined) {
+                    const amount = parseFloat(trade.q);
+                    const price = parseFloat(trade.p);
+                    
+                    if (!isNaN(amount) && !isNaN(price)) {
+                        // Binance uses 'm' (isMaker) flag - true for SELL, false for BUY
+                        this.addTrade('BINANCE', price, amount, 
+                            trade.m ? 'SELL' : 'BUY');
+                    }
+                } else {
+                    console.log('🔵 Binance 메시지 무시 (필드 누락):', trade);
+                }
+            } catch (error) {
+                console.error('Binance WebSocket message error:', error);
+            }
         };
 
         ws.onclose = () => {
-            console.log('Binance WebSocket closed. Reconnecting...');
+            console.log('❌ Binance WebSocket 연결 종료. 재연결 중...');
             setTimeout(() => this.connectBinance(), 1000);
+        };
+        
+        ws.onerror = (error) => {
+            console.error('❌ Binance WebSocket 오류:', error);
         };
     }
 
     connectBybit() {
+        console.log('🟡 Bybit WebSocket 연결 시도...');
         const ws = new WebSocket('wss://stream.bybit.com/v5/public/spot');
         
         ws.onopen = () => {
+            console.log('✅ Bybit WebSocket 연결 성공');
             ws.send(JSON.stringify({
                 "op": "subscribe",
                 "args": ["trade.BTCUSDT"]
@@ -268,15 +300,23 @@ class WhaleTracker {
         };
         
         ws.onmessage = (event) => {
-            const data = JSON.parse(event.data);
-            if (data.data) {
-                const trade = data.data[0];
-                // Bybit uses 'S' field directly as 'Buy' or 'Sell'
-                const side = trade.S.toUpperCase();
-                this.addTrade('BYBIT', 
-                    parseFloat(trade.p),
-                    parseFloat(trade.v),
-                    side);
+            try {
+                const data = JSON.parse(event.data);
+                if (data.data && data.data[0]) {
+                    const trade = data.data[0];
+                    // Bybit uses 'S' field directly as 'Buy' or 'Sell'
+                    if (trade.S && trade.p && trade.v) {
+                        const side = trade.S.toString().toUpperCase();
+                        const price = parseFloat(trade.p);
+                        const volume = parseFloat(trade.v);
+                        
+                        if (!isNaN(price) && !isNaN(volume)) {
+                            this.addTrade('BYBIT', price, volume, side);
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Bybit WebSocket message error:', error);
             }
         };
 
@@ -287,9 +327,11 @@ class WhaleTracker {
     }
 
     connectOKX() {
+        console.log('🟡 OKX WebSocket 연결 시도...');
         const ws = new WebSocket('wss://ws.okx.com:8443/ws/v5/public');
         
         ws.onopen = () => {
+            console.log('✅ OKX WebSocket 연결 성공');
             ws.send(JSON.stringify({
                 "op": "subscribe",
                 "args": [{
@@ -300,15 +342,23 @@ class WhaleTracker {
         };
         
         ws.onmessage = (event) => {
-            const data = JSON.parse(event.data);
-            if (data.data) {
-                const trade = data.data[0];
-                // OKX uses 'side' field directly
-                const side = trade.side.toUpperCase();
-                this.addTrade('OKX',
-                    parseFloat(trade.px),
-                    parseFloat(trade.sz),
-                    side);
+            try {
+                const data = JSON.parse(event.data);
+                if (data.data && data.data[0]) {
+                    const trade = data.data[0];
+                    // OKX uses 'side' field directly
+                    if (trade.side && trade.px && trade.sz) {
+                        const side = trade.side.toString().toUpperCase();
+                        const price = parseFloat(trade.px);
+                        const volume = parseFloat(trade.sz);
+                        
+                        if (!isNaN(price) && !isNaN(volume)) {
+                            this.addTrade('OKX', price, volume, side);
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('OKX WebSocket message error:', error);
             }
         };
 
@@ -333,15 +383,23 @@ class WhaleTracker {
         };
         
         ws.onmessage = (event) => {
-            const data = JSON.parse(event.data);
-            if (data.data) {
-                const trade = data.data[0];
-                // Bitget uses 'side' field directly
-                const side = trade.side.toUpperCase();
-                this.addTrade('BITGET',
-                    parseFloat(trade.price),
-                    parseFloat(trade.size),
-                    side);
+            try {
+                const data = JSON.parse(event.data);
+                if (data.data && data.data[0]) {
+                    const trade = data.data[0];
+                    // Bitget uses 'side' field directly
+                    if (trade.side && trade.price && trade.size) {
+                        const side = trade.side.toString().toUpperCase();
+                        const price = parseFloat(trade.price);
+                        const volume = parseFloat(trade.size);
+                        
+                        if (!isNaN(price) && !isNaN(volume)) {
+                            this.addTrade('BITGET', price, volume, side);
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Bitget WebSocket message error:', error);
             }
         };
 
@@ -396,5 +454,9 @@ class WhaleTracker {
     }
 }
 
-// Export the WhaleTracker class
-export default WhaleTracker; 
+// Export the WhaleTracker class for different environments
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = WhaleTracker;
+} else if (typeof window !== 'undefined') {
+    window.WhaleTracker = WhaleTracker;
+} 

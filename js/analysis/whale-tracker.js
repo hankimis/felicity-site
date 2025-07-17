@@ -3,7 +3,7 @@
  * 실시간 암호화폐 고래 거래 추적 시스템
  */
 
-export class WhaleTracker {
+class WhaleTracker {
     constructor(settings = {}) {
         this.defaultMarkets = [
             // BINANCE_FUTURES btcusdt (btcusd_perp는 존재하지 않음)
@@ -584,7 +584,7 @@ export class WhaleTracker {
         }
 
         // 최신 거래부터 표시 (위에서 아래로 떨어지는 효과)
-        const recentTrades = this.trades.slice(0, 15); // 최신 15개만 표시
+        const recentTrades = this.trades.slice(0, 50); // 최신 50개 표시
         container.innerHTML = recentTrades.map(trade => this.createTradeHTML(trade)).join('');
         
         this.updateStats();
@@ -1198,4 +1198,7 @@ function updateConnectionStatus() {
 
 // 주기적 업데이트 시작
 setInterval(updateWhaleStats, 1000);
-setInterval(updateConnectionStatus, 2000); 
+setInterval(updateConnectionStatus, 2000);
+
+// Export the WhaleTracker class for different environments
+export { WhaleTracker }; 

@@ -93,7 +93,40 @@ class LayoutManager {
             setTimeout(() => toast.remove(), 300);
         }, 3000);
     }
+
+    /**
+     * 단일 차트 생성 (ChartLayoutManager 호환성)
+     */
+    createSingleChart() {
+        console.log('🔄 단일 차트 생성 시작');
+        
+        // TradingView 차트 초기화 함수 호출
+        if (typeof initializeSingleChart === 'function') {
+            initializeSingleChart();
+        } else if (typeof initializeTradingViewChart === 'function') {
+            // 폴백: 전역 초기화 함수 사용
+            initializeTradingViewChart();
+        } else {
+            console.warn('⚠️ 차트 초기화 함수를 찾을 수 없습니다');
+        }
+    }
+
+    /**
+     * 다중 차트 생성 (ChartLayoutManager 호환성)
+     */
+    createMultipleCharts(layout) {
+        console.log(`🔄 ${layout}개 다중 차트 생성 시작`);
+        
+        // 현재는 단일 차트만 지원하므로 단일 차트로 폴백
+        // 추후 다중 차트 지원 시 확장 가능
+        this.createSingleChart();
+        
+        console.warn(`⚠️ 다중 차트(${layout}개)는 아직 구현되지 않음. 단일 차트로 폴백됨.`);
+    }
 }
 
 // 전역으로 내보내기
-window.LayoutManager = LayoutManager; 
+window.LayoutManager = LayoutManager;
+
+// 전역 인스턴스 생성 (차트 레이아웃 관리자에서 사용)
+window.layoutManager = new LayoutManager(); 
