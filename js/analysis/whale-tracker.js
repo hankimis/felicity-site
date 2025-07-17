@@ -583,9 +583,37 @@ class WhaleTracker {
             return;
         }
 
+        // 🔥 이전 거래 개수 저장
+        const previousTradeCount = this.previousTradeCount || 0;
+        this.previousTradeCount = this.trades.length;
+
         // 최신 거래부터 표시 (위에서 아래로 떨어지는 효과)
         const recentTrades = this.trades.slice(0, 50); // 최신 50개 표시
-        container.innerHTML = recentTrades.map(trade => this.createTradeHTML(trade)).join('');
+        
+        // 🔥 새로운 거래인지 확인하여 애니메이션 클래스 추가
+        const tradesHTML = recentTrades.map((trade, index) => {
+            const tradeHTML = this.createTradeHTML(trade);
+            
+            // 🔥 맨 위 거래(index 0)이고 새로 추가된 거래인 경우에만 애니메이션 적용
+            if (index === 0 && this.trades.length > previousTradeCount) {
+                return tradeHTML.replace(
+                    'class="whale-trade-pixel',
+                    'class="whale-trade-pixel new-trade-flash'
+                );
+            }
+            
+            return tradeHTML;
+        }).join('');
+        
+        container.innerHTML = tradesHTML;
+        
+        // 🔥 애니메이션 완료 후 클래스 제거
+        setTimeout(() => {
+            const newTradeElement = container.querySelector('.new-trade-flash');
+            if (newTradeElement) {
+                newTradeElement.classList.remove('new-trade-flash');
+            }
+        }, 800); // simpleFlash 애니메이션 시간과 동일 (0.8초)
         
         this.updateStats();
     }
@@ -605,9 +633,23 @@ class WhaleTracker {
         
         const sideClass = side === 'sell' ? 'sell' : '';
         const levelClass = `level-${level}`;
+        
+        // 🔥 1M 이상 거래에 랜덤 GIF 클래스 추가
+        let randomGifClass = '';
+        if (level === 4) {
+            if (side === 'sell') {
+                // 숏 거래: 3개 GIF 중 랜덤 선택
+                const shortGifs = ['short-gif-1', 'short-gif-2', 'short-gif-3'];
+                randomGifClass = shortGifs[Math.floor(Math.random() * shortGifs.length)];
+            } else {
+                // 롱 거래: 2개 GIF 중 랜덤 선택
+                const longGifs = ['long-gif-1', 'long-gif-2'];
+                randomGifClass = longGifs[Math.floor(Math.random() * longGifs.length)];
+            }
+        }
 
         return `
-            <div class="whale-trade-pixel ${levelClass} ${sideClass}">
+            <div class="whale-trade-pixel ${levelClass} ${sideClass} ${randomGifClass}">
                 <span class="trade-arrow">${arrow}</span>
                 <span class="trade-exchange-icon">${exchangeIcon}</span>
                 <span class="trade-price">${price.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}</span>
@@ -618,19 +660,33 @@ class WhaleTracker {
     }
 
     getExchangeIcon(exchange) {
-        const icons = {
-            'Binance': 'BN',
-            'Bybit': 'BY',
-            'OKX': 'OK',
+        // 🔥 SVG 아이콘 경로 매핑 (URL 인코딩 적용)
+        const iconPaths = {
+            'Binance': '/assets/whale%20icon/BINANCE.5c4cb14.svg',
+            'Binance Futures': '/assets/whale%20icon/BINANCE_FUTURES.5c4cb14.svg',
+            'Bybit': '/assets/whale%20icon/BYBIT.5c4cb14.svg',
+            'OKX': '/assets/whale%20icon/OKEX.5c4cb14.svg',
+            'OKEX': '/assets/whale%20icon/OKEX.5c4cb14.svg',
+            'BitMEX': '/assets/whale%20icon/BITMEX.5c4cb14.svg',
+            'Deribit': '/assets/whale%20icon/DERIBIT.5c4cb14.svg'
+        };
+
+        // 텍스트 아이콘 (SVG가 없는 거래소용)
+        const textIcons = {
             'Bitget': 'BG',
             'MEXC': 'MX',
-            'BitMEX': 'BM',
             'Coinbase': 'CB',
-            'Deribit': 'DB',
             'Bitfinex': 'BF',
             'Bitstamp': 'BS'
         };
-        return icons[exchange] || exchange.substring(0, 2).toUpperCase();
+
+        // SVG 아이콘이 있으면 이미지로 표시
+        if (iconPaths[exchange]) {
+            return `<img src="${iconPaths[exchange]}" alt="${exchange}" class="exchange-svg-icon" onerror="this.style.display='none'; this.parentNode.innerHTML='${exchange.substring(0, 2).toUpperCase()}'" />`;
+        }
+        
+        // SVG가 없으면 텍스트 아이콘 사용
+        return textIcons[exchange] || exchange.substring(0, 2).toUpperCase();
     }
 
     formatValue(value) {

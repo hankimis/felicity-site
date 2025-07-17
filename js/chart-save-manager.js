@@ -542,14 +542,25 @@ class ChartSaveManager {
             if (chartContainer) {
                 const observer = new MutationObserver((mutations) => {
                     const relevantChanges = mutations.some(mutation => {
-                        // 드로잉이나 지표 관련 DOM 변화 감지
-                        return mutation.type === 'childList' && 
-                               (mutation.addedNodes.length > 0 || mutation.removedNodes.length > 0);
+                        // 차트 관련 변화만 감지 (오더북 등 분석 콘텐츠 제외)
+                        if (mutation.type !== 'childList') return false;
+                        
+                        // 분석 콘텐츠의 변화는 무시
+                        const target = mutation.target;
+                        if (target.closest('.analysis-content') || 
+                            target.closest('.orderbook-container') ||
+                            target.closest('.whale-trades-container')) {
+                            return false;
+                        }
+                        
+                        // 차트 관련 변화만 허용
+                        return (mutation.addedNodes.length > 0 || mutation.removedNodes.length > 0) &&
+                               target.closest('#tradingview_chart');
                     });
 
                     if (relevantChanges && this.isWidgetFullyReady()) {
-                        console.log('🔍 DOM 변화 감지, 저장 트리거');
-                        this.debouncedSave('dom_change_detected');
+                        console.log('🔍 차트 DOM 변화 감지, 저장 트리거');
+                        this.debouncedSave('chart_dom_change');
                     }
                 });
 

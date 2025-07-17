@@ -49,19 +49,9 @@ class ChartLayoutManager {
             existingHeader.remove();
         }
 
-        // 헤더 HTML 생성 (탭과 레이아웃 버튼 포함)
+        // 헤더 HTML 생성 (레이아웃 버튼만 포함)
         const headerHTML = `
             <div class="chart-layout-header">
-                <div class="tab-buttons-group">
-                    <button class="tab-btn active" data-tab="chart" title="차트">
-                        <i class="fas fa-chart-line"></i>
-                        <span>차트</span>
-                    </button>
-                    <button class="tab-btn" data-tab="analysis" title="분석">
-                        <i class="fas fa-analytics"></i>
-                        <span>분석</span>
-                    </button>
-                </div>
                 <div class="layout-buttons-group">
                     <button class="layout-btn active" data-layout="1" title="1개 차트">
                         <div class="layout-icon layout-1">
@@ -107,370 +97,6 @@ class ChartLayoutManager {
                 this.changeLayout(layout);
             });
         });
-
-        // 탭 버튼 이벤트 설정
-        const tabButtons = document.querySelectorAll('.tab-btn');
-        
-        tabButtons.forEach(button => {
-            button.addEventListener('click', (e) => {
-                const tab = e.currentTarget.dataset.tab;
-                this.changeTab(tab);
-            });
-        });
-    }
-
-    // 🔥 탭 변경
-    changeTab(tab) {
-        console.log(`🔄 탭 변경: ${tab}`);
-
-        // 탭 버튼 활성화 상태 업데이트
-        this.updateActiveTabButton(tab);
-        
-        // 탭 콘텐츠 업데이트
-        this.updateTabContent(tab);
-    }
-
-    // 🔥 활성 탭 버튼 업데이트
-    updateActiveTabButton(tab) {
-        const buttons = document.querySelectorAll('.tab-btn');
-        buttons.forEach(btn => {
-            btn.classList.remove('active');
-            if (btn.dataset.tab === tab) {
-                btn.classList.add('active');
-            }
-        });
-    }
-
-    // 🔥 탭 콘텐츠 업데이트
-    updateTabContent(tab) {
-        const chartContainer = document.getElementById('tradingview_chart');
-        const chartWrapper = document.getElementById('chart-container-wrapper');
-
-        if (tab === 'chart') {
-            this.showChartContent();
-        } else if (tab === 'analysis') {
-            this.showAnalysisContent();
-        }
-    }
-
-    // 🔥 차트 콘텐츠 표시
-    showChartContent() {
-        const chartContainer = document.getElementById('tradingview_chart');
-        if (!chartContainer) return;
-
-        // 기존 분석 콘텐츠 숨기기
-        const analysisContent = document.querySelector('.analysis-content');
-        if (analysisContent) {
-            analysisContent.style.display = 'none';
-        }
-
-        // 차트 컨테이너 표시
-        chartContainer.style.display = 'block';
-
-        // 차트 초기화 (단일 차트만)
-        this.initializeSingleChart();
-    }
-
-    // 🔥 분석 콘텐츠 표시
-    showAnalysisContent() {
-        const chartContainer = document.getElementById('tradingview_chart');
-        if (!chartContainer) return;
-
-        // 차트 컨테이너 숨기기
-        chartContainer.style.display = 'none';
-
-        // 기존 분석 콘텐츠가 있는지 확인
-        let analysisContent = document.querySelector('.analysis-content');
-        
-        if (!analysisContent) {
-            // 분석 콘텐츠 생성
-            analysisContent = this.createAnalysisContent();
-            chartContainer.parentNode.appendChild(analysisContent);
-        }
-
-        // 분석 콘텐츠 표시
-        analysisContent.style.display = 'block';
-
-        // 고래 추적기 초기화
-        this.initializeWhaleTracker();
-        
-        // 오더북 초기화
-        this.initializeOrderbook();
-        }
-
-    // 🔥 분석 콘텐츠 생성
-    createAnalysisContent() {
-        const analysisDiv = document.createElement('div');
-        analysisDiv.className = 'analysis-content';
-        analysisDiv.innerHTML = `
-            <div class="analysis-layout">
-                <div class="analysis-left-section">
-                    <div class="analysis-grid">
-                        <div class="analysis-card orderbook-card">
-                            <div class="analysis-card-header">
-                                <div class="card-header-left">
-                                    <h4><i class="fas fa-layer-group"></i> 실시간 오더북</h4>
-                                    <span class="orderbook-status">연결 중...</span>
-                        </div>
-                                <div class="card-header-right">
-                                    <div class="orderbook-type-icons">
-                                        <div class="icon-group">
-                                            <div class="icon-item active" data-view="combined" title="결합형">
-                                                <div class="icon-squares">
-                                                    <div class="square red"></div>
-                                                    <div class="square red"></div>
-                                                    <div class="square red"></div>
-                                                    <div class="square green"></div>
-                                                    <div class="square green"></div>
-                                                    <div class="square green"></div>
-                    </div>
-                        </div>
-                                            <div class="icon-item" data-view="bids-only" title="매수만">
-                                                <div class="icon-squares">
-                                                    <div class="square green"></div>
-                                                    <div class="square green"></div>
-                                                    <div class="square green"></div>
-                                                    <div class="square green"></div>
-                                                    <div class="square green"></div>
-                                                    <div class="square green"></div>
-                    </div>
-                </div>
-                                            <div class="icon-item" data-view="asks-only" title="매도만">
-                                                <div class="icon-squares">
-                                                    <div class="square red"></div>
-                                                    <div class="square red"></div>
-                                                    <div class="square red"></div>
-                                                    <div class="square red"></div>
-                                                    <div class="square red"></div>
-                                                    <div class="square red"></div>
-                        </div>
-                                </div>
-                            </div>
-                        </div>
-                                    <div class="precision-dropdown">
-                                        <select class="precision-select">
-                                            <option value="0.01">10</option>
-                                            <option value="0.1" selected>100</option>
-                                            <option value="1">1000</option>
-                                        </select>
-                                        <span class="dropdown-arrow">▼</span>
-                    </div>
-                        </div>
-                            </div>
-                            <div class="orderbook-container" id="orderbook-container">
-                                <div class="orderbook-loading">
-                                    <i class="fas fa-spinner fa-spin"></i>
-                                    <span>오더북 데이터 로딩 중...</span>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="analysis-card placeholder-card">
-                            <div class="analysis-card-header">
-                                <h4><i class="fas fa-chart-area"></i> 기술지표</h4>
-                    </div>
-                            <div class="card-placeholder">
-                                <i class="fas fa-chart-bar"></i>
-                                <p>곧 추가될 예정</p>
-                            </div>
-                        </div>
-                        
-                        <div class="analysis-card placeholder-card">
-                        <div class="analysis-card-header">
-                                <h4><i class="fas fa-balance-scale"></i> 롱숏 비율</h4>
-                        </div>
-                            <div class="card-placeholder">
-                                <i class="fas fa-chart-pie"></i>
-                                <p>곧 추가될 예정</p>
-                            </div>
-                        </div>
-                        
-                        <div class="analysis-card placeholder-card">
-                            <div class="analysis-card-header">
-                                <h4><i class="fas fa-fire"></i> 청산 맵</h4>
-                    </div>
-                            <div class="card-placeholder">
-                                <i class="fas fa-map"></i>
-                                <p>곧 추가될 예정</p>
-                            </div>
-                        </div>
-                        
-                        <div class="analysis-card placeholder-card">
-                        <div class="analysis-card-header">
-                                <h4><i class="fas fa-heartbeat"></i> 실시간 거래</h4>
-                        </div>
-                            <div class="card-placeholder">
-                                <i class="fas fa-exchange-alt"></i>
-                                <p>곧 추가될 예정</p>
-                                </div>
-                            </div>
-                        
-                        <div class="analysis-card placeholder-card">
-                            <div class="analysis-card-header">
-                                <h4><i class="fas fa-thermometer-half"></i> 마켓 히트맵</h4>
-                        </div>
-                            <div class="card-placeholder">
-                                <i class="fas fa-th"></i>
-                                <p>곧 추가될 예정</p>
-                    </div>
-                </div>
-                        
-                        <div class="analysis-card placeholder-card">
-                            <div class="analysis-card-header">
-                                <h4><i class="fas fa-brain"></i> 감정 분석</h4>
-            </div>
-                            <div class="card-placeholder">
-                                <i class="fas fa-smile"></i>
-                                <p>곧 추가될 예정</p>
-                            </div>
-                        </div>
-                        
-                        <div class="analysis-card placeholder-card">
-                            <div class="analysis-card-header">
-                                <h4><i class="fas fa-calculator"></i> 포지션 계산기</h4>
-                            </div>
-                            <div class="card-placeholder">
-                                <i class="fas fa-calculator"></i>
-                                <p>곧 추가될 예정</p>
-                            </div>
-                        </div>
-                        
-                        <div class="analysis-card placeholder-card">
-                            <div class="analysis-card-header">
-                                <h4><i class="fas fa-coins"></i> 미결제 약정</h4>
-                            </div>
-                            <div class="card-placeholder">
-                                <i class="fas fa-coins"></i>
-                                <p>곧 추가될 예정</p>
-                            </div>
-                        </div>
-                        
-                        <div class="analysis-card placeholder-card">
-                            <div class="analysis-card-header">
-                                <h4><i class="fas fa-volume-up"></i> 거래량 프로파일</h4>
-                            </div>
-                            <div class="card-placeholder">
-                                <i class="fas fa-chart-line"></i>
-                                <p>곧 추가될 예정</p>
-                            </div>
-                        </div>
-                        
-                        <div class="analysis-card placeholder-card">
-                            <div class="analysis-card-header">
-                                <h4><i class="fas fa-trophy"></i> 탑 퍼포머</h4>
-                            </div>
-                            <div class="card-placeholder">
-                                <i class="fas fa-crown"></i>
-                                <p>곧 추가될 예정</p>
-                            </div>
-                        </div>
-                        
-                        <div class="analysis-card placeholder-card">
-                            <div class="analysis-card-header">
-                                <h4><i class="fas fa-bell"></i> 알림 센터</h4>
-                            </div>
-                            <div class="card-placeholder">
-                                <i class="fas fa-bell"></i>
-                                <p>곧 추가될 예정</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="whale-tracker-section">
-                    <div class="whale-container">
-                        <div class="section-header">
-                            <h3 class="section-title">
-                                <i class="fas fa-fish"></i>
-                                실시간 고래 거래
-                            </h3>
-                            <div class="whale-controls">
-                                <span class="whale-status">연결 중...</span>
-                                <button class="whale-settings-btn" id="whale-settings-btn">
-                                    <i class="fas fa-cog"></i>
-                                </button>
-                            </div>
-                        </div>
-                        <div class="whale-trades-container" id="whale-trades-container">
-                            <div class="whale-trades-list">
-                                <!-- 고래 거래 데이터가 여기에 동적으로 추가됩니다 -->
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-        return analysisDiv;
-    }
-
-    // 🔥 단일 차트 초기화
-    initializeSingleChart() {
-        try {
-            if (window.layoutManager && typeof window.layoutManager.createSingleChart === 'function') {
-                window.layoutManager.createSingleChart();
-            } else {
-                console.log('📊 단일 차트 초기화: layoutManager 사용 불가, 기본 초기화');
-            }
-        } catch (error) {
-            console.warn('⚠️ 단일 차트 초기화 중 오류 (무시됨):', error);
-        }
-    }
-
-    // 🔥 고래 추적기 초기화
-    initializeWhaleTracker() {
-        // 컨테이너 확인
-        const whaleContainer = document.getElementById('whale-trades-container');
-        if (!whaleContainer) {
-            console.warn('⚠️ whale-trades-container를 찾을 수 없습니다');
-            return;
-            }
-            
-        if (window.WhaleTracker && !window.whaleTracker) {
-        try {
-                window.whaleTracker = new window.WhaleTracker();
-                console.log('🐋 고래 추적기 초기화 완료');
-                
-                // 상태 업데이트
-                const statusElement = document.querySelector('.whale-status');
-                if (statusElement) {
-                    statusElement.textContent = '연결됨';
-                    statusElement.style.color = '#10b981';
-            }
-        } catch (error) {
-                console.error('❌ 고래 추적기 초기화 실패:', error);
-                
-                // 에러 상태 표시
-                const statusElement = document.querySelector('.whale-status');
-                if (statusElement) {
-                    statusElement.textContent = '연결 실패';
-                    statusElement.style.color = '#ef4444';
-        }
-    }
-        } else if (window.whaleTracker) {
-            console.log('🐋 고래 추적기 이미 초기화됨');
-        
-            // 상태 업데이트
-            const statusElement = document.querySelector('.whale-status');
-            if (statusElement) {
-                statusElement.textContent = '연결됨';
-                statusElement.style.color = '#10b981';
-            }
-        } else {
-            console.warn('⚠️ WhaleTracker 클래스를 찾을 수 없습니다');
-        
-            // 대기 상태 표시
-            const statusElement = document.querySelector('.whale-status');
-            if (statusElement) {
-                statusElement.textContent = '로딩 중...';
-                statusElement.style.color = '#f59e0b';
-            }
-            
-            // 클래스가 로드될 때까지 재시도
-            setTimeout(() => {
-                if (window.WhaleTracker && !window.whaleTracker) {
-                    this.initializeWhaleTracker();
-        }
-            }, 1000);
-        }
     }
 
     // 🔥 차트 레이아웃 변경
@@ -556,13 +182,6 @@ class ChartLayoutManager {
 
     // 🔥 레이아웃에 맞는 차트들 초기화
     async initializeChartsForLayout(layout) {
-        // 분석 탭이 활성화된 경우 차트 초기화 건너뛰기
-        const activeTab = document.querySelector('.tab-btn.active');
-        if (activeTab && activeTab.dataset.tab === 'analysis') {
-            console.log('📊 분석 탭 활성화됨 - 차트 초기화 건너뛰기');
-            return;
-        }
-
         console.log(`🔄 ${layout}개 차트 초기화 시작`);
         
         const symbols = ['BINANCE:BTCUSDT', 'BINANCE:ETHUSDT', 'BINANCE:BNBUSDT', 'BINANCE:ADAUSDT'];
@@ -675,584 +294,9 @@ class ChartLayoutManager {
         });
     }
 
-    // 🔥 오더북 초기화
-    initializeOrderbook() {
-        console.log('🔥 전문 오더북 시스템 초기화 시작');
-        
-        // 오더북 컨테이너 확인
-        const orderbookContainer = document.getElementById('orderbook-container');
-        if (!orderbookContainer) {
-            console.warn('⚠️ 오더북 컨테이너를 찾을 수 없습니다');
-            return;
-        }
-        
-        // 전문 오더북 관리자 초기화
-        this.orderBookManager = new ProfessionalOrderBookManager('BTCUSDT');
-        
-        // 오더북 이벤트 리스너 설정
-        this.setupOrderBookEventListeners();
-        
-        // 오더북 시작
-        setTimeout(() => {
-            this.orderBookManager.start();
-        }, 500);
-    }
-    
-    // 🔥 오더북 이벤트 리스너 설정
-    setupOrderBookEventListeners() {
-        // 상태 변경 이벤트
-        document.addEventListener('orderbook-status-change', (event) => {
-            this.updateOrderbookStatus(event.detail.status, event.detail.statusClass);
-        });
-        
-        // 데이터 업데이트 이벤트
-        document.addEventListener('orderbook-data-update', (event) => {
-            this.updateOrderbookDisplay(event.detail);
-        });
-        
-        // 에러 이벤트
-        document.addEventListener('orderbook-error', (event) => {
-            console.error('❌ 오더북 에러:', event.detail.error);
-            this.updateOrderbookStatus('에러 발생', 'error');
-        });
-        
-        // 성능 메트릭스 이벤트
-        document.addEventListener('orderbook-metrics', (event) => {
-            this.updateOrderbookMetrics(event.detail);
-        });
-    }
-    
-    // 🔥 성능 메트릭스 업데이트
-    updateOrderbookMetrics(metrics) {
-        if (this.metricsDebugMode) {
-            console.log('📊 오더북 성능 메트릭스:', {
-                latency: `${metrics.latency}ms`,
-                updateRate: `${metrics.updateRate}/s`,
-                missedUpdates: metrics.missedUpdates,
-                syncStatus: metrics.syncStatus
-            });
-        }
-    }
-    
-    // 🔥 오더북 상태 업데이트
-    updateOrderbookStatus(status, statusClass = '') {
-        const statusElement = document.querySelector('.orderbook-status');
-        if (statusElement) {
-            statusElement.textContent = status;
-            statusElement.className = `orderbook-status ${statusClass}`;
-        }
-    }
-    
-    // 🔥 오더북 디스플레이 업데이트 (사진과 동일한 스타일)
-    updateOrderbookDisplay(data) {
-        const container = document.getElementById('orderbook-container');
-        if (!container || !data.bids || !data.asks) return;
-        
-        // 데이터 저장 (정밀도 변경시 재사용)
-        this.lastOrderbookData = data;
-        
-        // 로딩 상태 제거
-        const loading = container.querySelector('.orderbook-loading');
-        if (loading) {
-            loading.remove();
-        }
-        
-        // 기존 오더북이 있으면 업데이트, 없으면 생성
-        let orderbookWrapper = container.querySelector('.orderbook-wrapper');
-        if (!orderbookWrapper) {
-            orderbookWrapper = this.createProfessionalOrderbook();
-            container.appendChild(orderbookWrapper);
-        }
-        
-        // 현재 가격 계산
-        const bestBid = parseFloat(data.bids[0][0]);
-        const bestAsk = parseFloat(data.asks[0][0]);
-        const currentPrice = (bestBid + bestAsk) / 2;
-        
-        // 가격 변화 방향 감지
-        const prevPrice = this.lastPrice || currentPrice;
-        const priceDirection = currentPrice > prevPrice ? '↑' : currentPrice < prevPrice ? '↓' : '';
-        this.lastPrice = currentPrice;
-        
-        // 현재 가격 섹션 업데이트
-        this.updateCurrentPriceDisplay(currentPrice, priceDirection, prevPrice);
-        
-        // 매도 주문 처리 (상위 7개, 역순으로 표시)
-        this.updateOrderbookSide('asks', data.asks.slice(0, 7).reverse(), true);
-        
-        // 매수 주문 처리 (상위 7개)
-        this.updateOrderbookSide('bids', data.bids.slice(0, 7), false);
-    }
-    
-    // 🔥 현재 가격 표시 업데이트
-    updateCurrentPriceDisplay(currentPrice, direction, prevPrice) {
-        const priceSection = document.querySelector('.current-price-section');
-        if (!priceSection) return;
-        
-        const priceValue = priceSection.querySelector('.price-value');
-        const priceChange = priceSection.querySelector('.price-change');
-        const pricePrev = priceSection.querySelector('.price-prev');
-        
-        if (priceValue) {
-            priceValue.textContent = this.formatOrderbookPrice(currentPrice);
-            // 가격 변화에 따른 색상
-            if (direction === '↑') {
-                priceValue.style.color = '#0ecb81';
-            } else if (direction === '↓') {
-                priceValue.style.color = '#f6465d';
-            }
-        }
-        
-        if (priceChange) {
-            priceChange.textContent = direction;
-            priceChange.style.color = direction === '↑' ? '#0ecb81' : '#f6465d';
-        }
-        
-        if (pricePrev) {
-            pricePrev.textContent = this.formatOrderbookPrice(prevPrice);
-        }
-    }
-    
-    // 🔥 오더북 사이드 업데이트 (사진과 동일한 스타일)
-    updateOrderbookSide(side, orders, isAsk) {
-        const listElement = document.querySelector(`.${side}-list`);
-        if (!listElement) return;
-        
-        // 누적 수량 계산
-        let cumulativeTotal = 0;
-        const processedOrders = orders.map(order => {
-            const price = parseFloat(order[0]);
-            const size = parseFloat(order[1]);
-            cumulativeTotal += size;
-            return { price, size, cumulative: cumulativeTotal };
-        });
-        
-        // 최대 누적량 계산 (깊이 바 용)
-        const maxCumulative = Math.max(...processedOrders.map(o => o.cumulative));
-        
-        listElement.innerHTML = '';
-        
-        processedOrders.forEach((order, index) => {
-            const depthPercent = (order.cumulative / maxCumulative) * 100;
-            
-            const row = document.createElement('div');
-            row.className = `orderbook-row ${side}-row`;
-            
-            // 깊이 바 배경 설정
-            const depthColor = isAsk ? 'rgba(246, 70, 93, 0.1)' : 'rgba(14, 203, 129, 0.1)';
-            row.style.background = `linear-gradient(to ${isAsk ? 'left' : 'right'}, ${depthColor} ${depthPercent}%, transparent ${depthPercent}%)`;
-            
-            row.innerHTML = `
-                <div class="order-data">
-                    <div class="price-cell ${isAsk ? 'ask-price' : 'bid-price'}">
-                        ${this.formatOrderbookPrice(order.price)}
-                    </div>
-                    <div class="size-cell">
-                        ${this.formatOrderbookSize(order.size)}
-                    </div>
-                    <div class="sum-cell">
-                        ${this.formatOrderbookSum(order.cumulative)}
-                    </div>
-                </div>
-            `;
-            
-            // 행 클릭 이벤트
-            row.addEventListener('click', () => {
-                this.selectOrderbookPrice(order.price, isAsk);
-            });
-            
-            listElement.appendChild(row);
-        });
-    }
-    
-    // 🔥 오더북 가격 포맷 (소수점 처리)
-    formatOrderbookPrice(price) {
-        return price.toLocaleString('en-US', {
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 0
-        });
-    }
-    
-    // 🔥 오더북 수량 포맷
-    formatOrderbookSize(size) {
-        return size.toFixed(3);
-    }
-    
-    // 🔥 오더북 누적 포맷
-    formatOrderbookSum(sum) {
-        return sum.toFixed(3);
-    }
-    
-    // 🔥 전문적인 오더북 UI 생성 (사진과 동일한 디자인)
-    createProfessionalOrderbook() {
-        const wrapper = document.createElement('div');
-        wrapper.className = 'orderbook-wrapper';
-        wrapper.innerHTML = `
-            <div class="orderbook-table">
-                <div class="orderbook-table-header">
-                    <div class="header-item price-header">Price (USDT)</div>
-                    <div class="header-item size-header">Size (BTC)</div>
-                    <div class="header-item sum-header">Sum (BTC)</div>
-                </div>
-                
-                <div class="orderbook-content">
-                    <div class="asks-section">
-                        <div class="asks-list"></div>
-                    </div>
-                    
-                    <div class="current-price-section">
-                        <div class="current-price">
-                            <span class="price-value">118,870.2</span>
-                            <span class="price-change">↓</span>
-                            <span class="price-prev">118,879.9</span>
-                        </div>
-                    </div>
-                    
-                    <div class="bids-section">
-                        <div class="bids-list"></div>
-                    </div>
-                </div>
-            </div>
-        `;
-        
-        // 컨트롤 이벤트 설정
-        this.setupOrderbookControls(wrapper);
-        
-        return wrapper;
-    }
-    
-    // 🔥 오더북 헤더 업데이트
-    updateOrderbookHeader(currentPrice, spread, spreadPercent, priceChange) {
-        const wrapper = document.querySelector('.orderbook-wrapper');
-        if (!wrapper) return;
-        
-        const priceValue = wrapper.querySelector('.current-price-value');
-        const priceChangeEl = wrapper.querySelector('.price-change');
-        const spreadValue = wrapper.querySelector('.spread-value');
-        const spreadPercentEl = wrapper.querySelector('.spread-percent');
-        
-        // 가격 업데이트 (플래시 효과)
-        if (priceValue) {
-            const formattedPrice = '$' + this.formatPrice(currentPrice);
-            if (priceValue.textContent !== formattedPrice) {
-                priceValue.textContent = formattedPrice;
-                priceValue.classList.add('price-flash');
-                setTimeout(() => priceValue.classList.remove('price-flash'), 300);
-            }
-        }
-        
-        // 가격 변화 표시
-        if (priceChangeEl) {
-            if (priceChange > 0) {
-                priceChangeEl.className = 'price-change positive';
-                priceChangeEl.textContent = `+${((priceChange / (currentPrice - priceChange)) * 100).toFixed(2)}%`;
-            } else if (priceChange < 0) {
-                priceChangeEl.className = 'price-change negative';
-                priceChangeEl.textContent = `${((priceChange / (currentPrice - priceChange)) * 100).toFixed(2)}%`;
-            } else {
-                priceChangeEl.className = 'price-change neutral';
-                priceChangeEl.textContent = '0.00%';
-            }
-        }
-        
-        // 스프레드 정보 업데이트
-        if (spreadValue) spreadValue.textContent = '$' + this.formatPrice(spread);
-        if (spreadPercentEl) spreadPercentEl.textContent = `(${spreadPercent.toFixed(3)}%)`;
-    }
-    
-    // 🔥 오더북 사이드 업데이트 (매수/매도)
-    updateOrderbookSide(side, orders, isAsk) {
-        const listElement = document.querySelector(`.${side}-list`);
-        if (!listElement) return;
-        
-        // 누적 수량 계산
-        let cumulativeTotal = 0;
-        const maxTotal = orders.reduce((max, order) => {
-            cumulativeTotal += parseFloat(order[1]);
-            return Math.max(max, cumulativeTotal);
-        }, 0);
-        
-        listElement.innerHTML = '';
-        cumulativeTotal = 0;
-        
-        orders.forEach((order, index) => {
-            const [price, quantity] = order;
-            const priceNum = parseFloat(price);
-            const quantityNum = parseFloat(quantity);
-            cumulativeTotal += quantityNum;
-            
-            const total = priceNum * quantityNum;
-            const depthPercent = (cumulativeTotal / maxTotal) * 100;
-            
-            const row = document.createElement('div');
-            row.className = `orderbook-row ${side}-row`;
-            row.style.setProperty('--depth-percent', `${depthPercent}%`);
-            
-            // 호버 효과를 위한 데이터 속성
-            row.setAttribute('data-price', priceNum);
-            row.setAttribute('data-quantity', quantityNum);
-            
-            row.innerHTML = `
-                <div class="depth-bar ${isAsk ? 'ask-depth' : 'bid-depth'}"></div>
-                <div class="order-data">
-                    <span class="orderbook-price ${isAsk ? 'ask-price' : 'bid-price'}">${this.formatPrice(priceNum)}</span>
-                    <span class="orderbook-quantity">${this.formatQuantity(quantityNum)}</span>
-                    <span class="orderbook-cumulative">${this.formatQuantity(cumulativeTotal)}</span>
-                </div>
-            `;
-            
-            // 행 클릭 이벤트 (가격 선택)
-            row.addEventListener('click', () => {
-                this.selectOrderbookPrice(priceNum, isAsk);
-            });
-            
-            // 호버 효과
-            row.addEventListener('mouseenter', () => {
-                row.classList.add('orderbook-row-hover');
-            });
-            
-            row.addEventListener('mouseleave', () => {
-                row.classList.remove('orderbook-row-hover');
-            });
-            
-            listElement.appendChild(row);
-        });
-    }
-    
-    // 🔥 오더북 컨트롤 설정
-    setupOrderbookControls(wrapper) {
-        // 뷰 타입 아이콘 클릭 이벤트
-        const iconItems = document.querySelectorAll('.orderbook-type-icons .icon-item');
-        iconItems.forEach(item => {
-            item.addEventListener('click', () => {
-                // 모든 아이콘에서 active 클래스 제거
-                iconItems.forEach(icon => icon.classList.remove('active'));
-                // 클릭된 아이콘에 active 클래스 추가
-                item.classList.add('active');
-                
-                const viewType = item.dataset.view;
-                this.changeOrderbookView(viewType);
-                console.log('🎯 오더북 뷰 변경:', viewType);
-            });
-        });
-        
-        // 정밀도 선택 드롭다운
-        const precisionSelect = document.querySelector('.precision-select');
-        if (precisionSelect) {
-            precisionSelect.addEventListener('change', (e) => {
-                const precision = parseFloat(e.target.value);
-                this.currentPrecision = precision;
-                console.log('🎯 오더북 정밀도 변경:', precision);
-                
-                // 현재 오더북 데이터 다시 렌더링
-                if (this.lastOrderbookData) {
-                    this.updateOrderbookDisplay(this.lastOrderbookData);
-                }
-            });
-        }
-        
-        // 디버그 모드 토글 (Ctrl + Shift + O)
-        document.addEventListener('keydown', (e) => {
-            if (e.ctrlKey && e.shiftKey && e.key === 'O') {
-                this.toggleOrderbookDebugMode();
-            }
-        });
-    }
-    
-    // 🔥 디버그 모드 토글
-    toggleOrderbookDebugMode() {
-        this.metricsDebugMode = !this.metricsDebugMode;
-        console.log(`🐛 오더북 디버그 모드: ${this.metricsDebugMode ? 'ON' : 'OFF'}`);
-        
-        if (this.metricsDebugMode) {
-            this.showOrderbookMetrics();
-        } else {
-            this.hideOrderbookMetrics();
-        }
-    }
-    
-    // 🔥 메트릭스 디스플레이 표시
-    showOrderbookMetrics() {
-        let metricsPanel = document.querySelector('.orderbook-metrics-panel');
-        if (!metricsPanel) {
-            metricsPanel = document.createElement('div');
-            metricsPanel.className = 'orderbook-metrics-panel';
-            metricsPanel.innerHTML = `
-                <div class="metrics-header">
-                    <h5>📊 오더북 성능 메트릭스</h5>
-                    <button class="close-metrics">×</button>
-                </div>
-                <div class="metrics-content">
-                    <div class="metric-item">
-                        <span class="metric-label">레이턴시:</span>
-                        <span class="metric-value" id="latency-value">-</span>
-                    </div>
-                    <div class="metric-item">
-                        <span class="metric-label">업데이트율:</span>
-                        <span class="metric-value" id="update-rate-value">-</span>
-                    </div>
-                    <div class="metric-item">
-                        <span class="metric-label">누락 업데이트:</span>
-                        <span class="metric-value" id="missed-updates-value">-</span>
-                    </div>
-                    <div class="metric-item">
-                        <span class="metric-label">동기화 상태:</span>
-                        <span class="metric-value" id="sync-status-value">-</span>
-                    </div>
-                    <div class="metric-item">
-                        <span class="metric-label">마지막 업데이트 ID:</span>
-                        <span class="metric-value" id="last-update-id-value">-</span>
-                    </div>
-                </div>
-            `;
-            
-            const orderbookCard = document.querySelector('.orderbook-card');
-            if (orderbookCard) {
-                orderbookCard.appendChild(metricsPanel);
-            }
-            
-            // 닫기 버튼 이벤트
-            metricsPanel.querySelector('.close-metrics').addEventListener('click', () => {
-                this.hideOrderbookMetrics();
-                this.metricsDebugMode = false;
-            });
-        }
-        
-        metricsPanel.style.display = 'block';
-    }
-    
-    // 🔥 메트릭스 디스플레이 숨기기
-    hideOrderbookMetrics() {
-        const metricsPanel = document.querySelector('.orderbook-metrics-panel');
-        if (metricsPanel) {
-            metricsPanel.style.display = 'none';
-        }
-    }
-    
-    // 🔥 성능 메트릭스 업데이트 (확장)
-    updateOrderbookMetrics(metrics) {
-        if (this.metricsDebugMode) {
-            console.log('📊 오더북 성능 메트릭스:', {
-                latency: `${metrics.latency}ms`,
-                updateRate: `${metrics.updateRate}/s`,
-                missedUpdates: metrics.missedUpdates,
-                syncStatus: metrics.syncStatus
-            });
-            
-            // UI 업데이트
-            const panel = document.querySelector('.orderbook-metrics-panel');
-            if (panel && panel.style.display !== 'none') {
-                document.getElementById('latency-value').textContent = `${metrics.latency}ms`;
-                document.getElementById('update-rate-value').textContent = `${metrics.updateRate}/s`;
-                document.getElementById('missed-updates-value').textContent = metrics.missedUpdates;
-                document.getElementById('sync-status-value').textContent = metrics.syncStatus;
-                
-                if (this.orderBookManager) {
-                    document.getElementById('last-update-id-value').textContent = 
-                        this.orderBookManager.localOrderBook.lastUpdateId;
-                }
-            }
-        }
-    }
-    
-    // 🔥 정밀도 적용된 가격 포맷
-    formatOrderbookPrice(price) {
-        const precision = this.currentPrecision || 0.01;
-        
-        if (precision >= 1) {
-            return Math.round(price / precision) * precision;
-        } else {
-            const decimals = Math.abs(Math.log10(precision));
-            return (Math.round(price / precision) * precision).toFixed(decimals);
-        }
-    }
-    
-    // 🔥 오더북 뷰 변경
-    changeOrderbookView(viewType) {
-        const asksSection = document.querySelector('.asks-section');
-        const bidsSection = document.querySelector('.bids-section');
-        const currentPriceSection = document.querySelector('.current-price-section');
-        
-        if (!asksSection || !bidsSection || !currentPriceSection) return;
-        
-        switch (viewType) {
-            case 'combined':
-                asksSection.style.display = 'flex';
-                bidsSection.style.display = 'flex';
-                currentPriceSection.style.display = 'block';
-                break;
-            case 'bids-only':
-                asksSection.style.display = 'none';
-                bidsSection.style.display = 'flex';
-                currentPriceSection.style.display = 'block';
-                bidsSection.style.flex = '1';
-                break;
-            case 'asks-only':
-                asksSection.style.display = 'flex';
-                bidsSection.style.display = 'none';
-                currentPriceSection.style.display = 'block';
-                asksSection.style.flex = '1';
-                break;
-        }
-    }
-    
-    // 🔥 오더북 가격 선택 (거래 인터페이스와 연동 가능)
-    selectOrderbookPrice(price, isAsk) {
-        console.log(`🎯 오더북 가격 선택: ${price} (${isAsk ? '매도' : '매수'})`);
-        
-        // 가격 선택 시각적 피드백
-        const rows = document.querySelectorAll('.orderbook-row');
-        rows.forEach(row => row.classList.remove('selected'));
-        
-        const selectedRow = document.querySelector(`[data-price="${price}"]`);
-        if (selectedRow) {
-            selectedRow.classList.add('selected');
-        }
-        
-        // 실제 거래 인터페이스와 연동하려면 여기에 구현
-        // 예: this.setTradingPrice(price, isAsk);
-    }
-    
-
-    
-    // 🔥 가격 포맷팅
-    formatPrice(price) {
-        if (price >= 100000) {
-            return price.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
-        } else {
-            return price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-        }
-    }
-    
-    // 🔥 수량 포맷팅
-    formatQuantity(quantity) {
-        if (quantity >= 1) {
-            return quantity.toFixed(3);
-        } else {
-            return quantity.toFixed(6);
-        }
-    }
-    
-    // 🔥 총액 포맷팅
-    formatTotal(total) {
-        if (total >= 1000000) {
-            return (total / 1000000).toFixed(2) + 'M';
-        } else if (total >= 1000) {
-            return (total / 1000).toFixed(1) + 'K';
-        } else {
-            return total.toFixed(0);
-        }
-    }
-
     // 🔥 레이아웃 매니저 정리
     destroy() {
         this.cleanupWidgets();
-        
-        // 전문 오더북 관리자 정리
-        if (this.orderBookManager) {
-            this.orderBookManager.destroy();
-            this.orderBookManager = null;
-        }
         
         // 헤더 제거
         const header = document.querySelector('.chart-layout-header');
@@ -1270,349 +314,991 @@ class ChartLayoutManager {
     }
 }
 
-// 🚀 전문 오더북 관리자 클래스
-class ProfessionalOrderBookManager {
-    constructor(symbol) {
-        this.symbol = symbol.toLowerCase();
-        this.localOrderBook = {
-            lastUpdateId: 0,
-            bids: new Map(), // price -> quantity
-            asks: new Map()
+// 🚀 전문 오더북 클래스 (Professional Orderbook)
+class ProfessionalOrderbook {
+    constructor(container, options = {}) {
+        this.config = {
+            container,
+            symbol: options.symbol || 'BTCUSDT',
+            maxDepth: options.maxDepth || 15,
+            precision: options.precision || 0.1,
+            updateInterval: options.updateInterval || 100,
+            heartbeatInterval: options.heartbeatInterval || 30000,
+            maxReconnectAttempts: options.maxReconnectAttempts || 10,
+            reconnectDelay: options.reconnectDelay || 1000,
+            ...options
         };
-        this.eventBuffer = [];
-        this.isInitialized = false;
-        this.ws = null;
-        this.reconnectAttempts = 0;
-        this.maxReconnectAttempts = 10;
-        this.reconnectDelay = 1000;
-        
+
+        // 오더북 데이터
+        this.orderbook = {
+            bids: new Map(),
+            asks: new Map(),
+            lastUpdateId: 0,
+            timestamp: 0,
+            spread: 0,
+            bestBid: 0,
+            bestAsk: 0
+        };
+
+        // 연결 상태 - 강화된 상태 관리
+        this.connection = {
+            ws: null,
+            isConnected: false,
+            isSubscribed: false,
+            reconnectAttempts: 0,
+            status: 'disconnected', // disconnected, connecting, connected, error, reconnecting
+            lastDataTime: 0,
+            heartbeatInterval: null,
+            connectionStartTime: 0
+        };
+
+        // UI 상태
+        this.ui = {
+            viewMode: 'combined', // combined, bids-only, asks-only
+            precision: 0.1,
+            isInitialized: false,
+            lastRenderTime: 0,
+            renderThrottle: 50
+        };
+
         // 성능 메트릭스
         this.metrics = {
-            lastUpdateTime: Date.now(),
             updateCount: 0,
-            latencySum: 0,
+            lastUpdateTime: 0,
+            averageLatency: 0,
             missedUpdates: 0,
-            syncStatus: 'disconnected'
+            errorCount: 0,
+            reconnectCount: 0,
+            messagesPerSecond: 0,
+            lastSecondCount: 0,
+            lastSecondTime: Date.now()
         };
-        
-        console.log(`🔥 전문 오더북 관리자 생성: ${symbol}`);
+
+        // 건강 상태 관리
+        this.healthCheck = {
+            lastHealthTime: Date.now(),
+            consecutiveErrors: 0,
+            maxConsecutiveErrors: 5
+        };
+
+        // 데이터 버퍼
+        this.dataBuffer = [];
+        this.isProcessingBuffer = false;
+        this.isDestroyed = false;
+
+        this.initialize();
     }
-    
-    // 🔥 오더북 시스템 시작
-    async start() {
-        console.log('🚀 오더북 시스템 시작');
-        this.emitStatusChange('초기화 중...', 'connecting');
-        
+
+    /**
+     * 🔥 초기화 - 강화된 에러 처리
+     */
+    async initialize() {
+        if (this.isDestroyed) {
+            console.warn('⚠️ 오더북이 이미 정리됨, 초기화 취소');
+            return;
+        }
+
         try {
-            // 1단계: 스냅샷 가져오기
-            await this.getSnapshot();
+            console.log('🔄 전문 오더북 초기화 중...', this.config);
             
-            // 2단계: WebSocket 연결
-            this.connectWebSocket();
+            this.createUI();
+            this.setupEventListeners();
+            await this.loadInitialSnapshot();
+            await this.connectWebSocket();
+            this.startPerformanceMonitoring();
+            this.startHealthCheck();
+            
+            console.log('✅ 전문 오더북 초기화 완료');
             
         } catch (error) {
-            console.error('❌ 오더북 시작 실패:', error);
-            this.emitError(error);
+            console.error('❌ 전문 오더북 초기화 실패:', error);
+            this.handleError(error);
+        }
+    }
+
+    /**
+     * 🔥 UI 생성 - 향상된 구조
+     */
+    createUI() {
+        if (!this.config.container) {
+            throw new Error('오더북 컨테이너가 제공되지 않았습니다');
+        }
+
+        this.config.container.innerHTML = `
+            <div class="professional-orderbook">
+                <!-- 간단한 컨트롤 헤더 -->
+                <div class="orderbook-controls">
+                    <div class="orderbook-symbol-info">
+                        <span class="symbol-display">${this.config.symbol}</span>
+                        <div class="connection-status">
+                            <div class="status-indicator disconnected"></div>
+                            <span class="status-text">연결 중...</span>
+                        </div>
+                    </div>
+                    
+                    <div class="orderbook-settings">
+                        <div class="precision-controls">
+                            <button class="precision-btn" data-precision="0.01">0.01</button>
+                            <button class="precision-btn active" data-precision="0.1">0.1</button>
+                            <button class="precision-btn" data-precision="1">1</button>
+                            <button class="precision-btn" data-precision="10">10</button>
+                        </div>
+                        
+                        <div class="view-controls">
+                            <button class="view-btn active" data-view="combined" title="결합형">
+                                <i class="fas fa-columns"></i>
+                            </button>
+                            <button class="view-btn" data-view="bids-only" title="매수만">
+                                <i class="fas fa-arrow-up" style="color: #22c55e;"></i>
+                            </button>
+                            <button class="view-btn" data-view="asks-only" title="매도만">
+                                <i class="fas fa-arrow-down" style="color: #ef4444;"></i>
+                            </button>
+                    </div>
+                    </div>
+                    </div>
+
+                <!-- 로딩 상태 -->
+                <div class="orderbook-loading-state" style="display: block;">
+                    <div class="loading-spinner"></div>
+                    <span>오더북 로딩 중...</span>
+                </div>
+
+                <!-- 오더북 컨테이너 -->
+                <div class="professional-orderbook-container" style="display: none;">
+                    <!-- 테이블 헤더 -->
+                <div class="orderbook-table-header">
+                        <div class="header-cell price-header">가격(USDT)</div>
+                        <div class="header-cell size-header">수량(BTC)</div>
+                        <div class="header-cell sum-header">누적(BTC)</div>
+                </div>
+                
+                    <!-- 오더북 콘텐츠 -->
+                <div class="orderbook-content">
+                        <!-- 매도 섹션 -->
+                        <div class="asks-section" id="asks-section">
+                            <div class="orderbook-rows asks-rows"></div>
+                    </div>
+                    
+                        <!-- 스프레드 정보 -->
+                        <div class="spread-section">
+                            <div class="current-price-info">
+                                <div class="price-display">
+                                    <span class="current-price">--</span>
+                                    <span class="price-direction">--</span>
+                                </div>
+                                <div class="spread-info">
+                                    <span class="spread-label">스프레드:</span>
+                                    <span class="spread-value">--</span>
+                                    <span class="spread-percent">(--)</span>
+                                </div>
+                        </div>
+                    </div>
+                    
+                        <!-- 매수 섹션 -->
+                        <div class="bids-section" id="bids-section">
+                            <div class="orderbook-rows bids-rows"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        this.ui.isInitialized = true;
+        console.log('✅ 전문 오더북 UI 생성 완료');
+    }
+
+    /**
+     * 🔥 이벤트 리스너 설정 - 강화된 이벤트 처리
+     */
+    setupEventListeners() {
+        // 정밀도 버튼 이벤트
+        this.config.container.querySelectorAll('.precision-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const precision = parseFloat(btn.dataset.precision);
+                this.changePrecision(precision);
+                
+                // UI 업데이트
+                this.config.container.querySelectorAll('.precision-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+            });
+        });
+
+        // 뷰 모드 버튼 이벤트
+        this.config.container.querySelectorAll('.view-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const viewMode = btn.dataset.view;
+                this.changeViewMode(viewMode);
+                
+                // UI 업데이트
+                this.config.container.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+            });
+        });
+
+        // 페이지 가시성 변경 감지
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') {
+                this.handlePageVisible();
+            } else {
+                this.handlePageHidden();
+            }
+        });
+
+        // 네트워크 상태 변경 감지
+        window.addEventListener('online', () => {
+            console.log('🌐 네트워크 연결 복구됨');
+            this.reconnectWebSocket();
+        });
+
+        window.addEventListener('offline', () => {
+            console.log('🌐 네트워크 연결 끊김');
+            this.updateStatus('네트워크 끊김', 'error');
+        });
+    }
+
+    /**
+     * 🔥 초기 스냅샷 로드 - 향상된 에러 처리
+     */
+    async loadInitialSnapshot() {
+        const maxRetries = 3;
+        let retryCount = 0;
+
+        while (retryCount < maxRetries) {
+            try {
+                this.updateStatus('스냅샷 로딩 중...', 'connecting');
+
+                const symbol = this.config.symbol.toUpperCase();
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+                const response = await fetch(`https://api.binance.com/api/v3/depth?symbol=${symbol}&limit=1000`, {
+                    signal: controller.signal
+                });
+
+                clearTimeout(timeoutId);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+
+                // 데이터 유효성 검증
+                if (!data.bids || !data.asks || !data.lastUpdateId) {
+                    throw new Error('유효하지 않은 스냅샷 데이터');
+                }
+
+                // 오더북 데이터 초기화
+                this.orderbook.bids.clear();
+                this.orderbook.asks.clear();
+
+                // 스냅샷 데이터 저장
+                data.bids.forEach(([price, quantity]) => {
+                    const qty = parseFloat(quantity);
+                    if (qty > 0 && !isNaN(qty)) {
+                        this.orderbook.bids.set(parseFloat(price), qty);
+                    }
+                });
+
+                data.asks.forEach(([price, quantity]) => {
+                    const qty = parseFloat(quantity);
+                    if (qty > 0 && !isNaN(qty)) {
+                        this.orderbook.asks.set(parseFloat(price), qty);
+                    }
+                });
+
+                this.orderbook.lastUpdateId = data.lastUpdateId;
+                this.orderbook.timestamp = Date.now();
+
+                // 스프레드 계산 및 UI 업데이트
+                this.calculateSpread();
+                this.showOrderbookContent();
+                this.updateDisplay();
+
+                console.log(`✅ 초기 오더북 스냅샷 로드 완료: ${data.bids.length} bids, ${data.asks.length} asks`);
+                return;
+
+            } catch (error) {
+                retryCount++;
+                console.error(`❌ 스냅샷 로드 실패 (시도 ${retryCount}/${maxRetries}):`, error);
+
+                if (retryCount >= maxRetries) {
+                    this.updateStatus('스냅샷 로드 실패', 'error');
+                    throw error;
+                } else {
+                    await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
+                }
+            }
+        }
+    }
+
+    /**
+     * 🔥 오더북 콘텐츠 표시
+     */
+    showOrderbookContent() {
+        const loadingElement = this.config.container.querySelector('.orderbook-loading-state');
+        const contentElement = this.config.container.querySelector('.professional-orderbook-container');
+
+        if (loadingElement) {
+            loadingElement.style.display = 'none';
+        }
+        if (contentElement) {
+            contentElement.style.display = 'block';
+        }
+    }
+
+    /**
+     * 🔥 WebSocket 연결 - 강화된 연결 관리
+     */
+    async connectWebSocket() {
+        try {
+            this.cleanupConnections();
+
+            const symbol = this.config.symbol.toLowerCase();
+            const wsUrl = `wss://stream.binance.com:9443/ws/${symbol}@depth@100ms`;
+
+            console.log(`🔗 WebSocket 연결 시도: ${wsUrl}`);
+            this.updateStatus('연결 중...', 'connecting');
+            this.connection.connectionStartTime = Date.now();
+
+            this.connection.ws = new WebSocket(wsUrl);
+            this.setupWebSocketEvents();
+
+        } catch (error) {
+            console.error('❌ WebSocket 연결 실패:', error);
+            this.updateStatus('연결 실패', 'error');
             this.scheduleReconnect();
         }
     }
-    
-    // 🔥 1단계: 오더북 스냅샷 가져오기
-    async getSnapshot() {
-        console.log('📸 오더북 스냅샷 요청');
-        
-        const url = `https://api.binance.com/api/v3/depth?symbol=${this.symbol.toUpperCase()}&limit=1000`;
-        
-        try {
-            const response = await fetch(url);
-            if (!response.ok) {
-                throw new Error(`스냅샷 요청 실패: ${response.status}`);
-            }
-            
-            const snapshot = await response.json();
-            
-            // 로컬 오더북 초기화
-            this.localOrderBook.lastUpdateId = snapshot.lastUpdateId;
-            this.localOrderBook.bids.clear();
-            this.localOrderBook.asks.clear();
-            
-            // 스냅샷 데이터 저장
-            snapshot.bids.forEach(([price, quantity]) => {
-                if (parseFloat(quantity) > 0) {
-                    this.localOrderBook.bids.set(parseFloat(price), parseFloat(quantity));
-                }
-            });
-            
-            snapshot.asks.forEach(([price, quantity]) => {
-                if (parseFloat(quantity) > 0) {
-                    this.localOrderBook.asks.set(parseFloat(price), parseFloat(quantity));
-                }
-            });
-            
-            console.log(`✅ 스냅샷 로드 완료: ${snapshot.bids.length} bids, ${snapshot.asks.length} asks (lastUpdateId: ${snapshot.lastUpdateId})`);
-            
-            // 초기 UI 업데이트
-            this.emitDataUpdate();
-            
-        } catch (error) {
-            console.error('❌ 스냅샷 가져오기 실패:', error);
-            throw error;
-        }
-    }
-    
-    // 🔥 2단계: WebSocket 연결
-    connectWebSocket() {
-        // 기존 연결 정리
-        if (this.ws) {
-            this.ws.close();
-        }
-        
-        const wsUrl = `wss://stream.binance.com:9443/ws/${this.symbol}@depth`;
-        console.log(`🔗 WebSocket 연결: ${wsUrl}`);
-        
-        this.ws = new WebSocket(wsUrl);
-        
-        this.ws.onopen = () => {
+
+    /**
+     * 🔥 WebSocket 이벤트 설정 - 강화된 이벤트 처리
+     */
+    setupWebSocketEvents() {
+        if (!this.connection.ws) return;
+
+        this.connection.ws.onopen = () => {
             console.log('✅ WebSocket 연결 성공');
-            this.reconnectAttempts = 0;
-            this.metrics.syncStatus = 'connected';
-            this.emitStatusChange('연결됨', 'connected');
-            this.processBufferedEvents();
+            this.connection.isConnected = true;
+            this.connection.isSubscribed = true;
+            this.connection.reconnectAttempts = 0;
+            this.connection.status = 'connected';
+            this.metrics.reconnectCount++;
+
+            this.updateStatus('연결됨', 'connected');
+            this.startHeartbeat();
+            this.processBufferedData();
+
+            // 건강 상태 개선
+            this.healthCheck.consecutiveErrors = 0;
+            this.healthCheck.lastHealthTime = Date.now();
         };
-        
-        this.ws.onmessage = (event) => {
+
+        this.connection.ws.onmessage = (event) => {
             try {
+                this.connection.lastDataTime = Date.now();
                 const data = JSON.parse(event.data);
                 this.handleDepthUpdate(data);
             } catch (error) {
-                console.error('❌ WebSocket 메시지 파싱 에러:', error);
+                console.error('❌ WebSocket 메시지 파싱 오류:', error);
+                this.metrics.missedUpdates++;
+                this.healthCheck.consecutiveErrors++;
             }
         };
-        
-        this.ws.onerror = (error) => {
-            console.error('❌ WebSocket 에러:', error);
-            this.metrics.syncStatus = 'error';
-            this.emitError(error);
-        };
-        
-        this.ws.onclose = (event) => {
+
+        this.connection.ws.onclose = (event) => {
             console.log(`🔌 WebSocket 연결 종료: ${event.code} ${event.reason}`);
-            this.metrics.syncStatus = 'disconnected';
-            this.emitStatusChange('연결 끊김', 'disconnected');
-            this.scheduleReconnect();
+            this.connection.isConnected = false;
+            this.connection.isSubscribed = false;
+            this.connection.status = 'disconnected';
+
+            this.updateStatus('연결 끊김', 'disconnected');
+            this.stopHeartbeat();
+
+            if (!event.wasClean && !this.isDestroyed &&
+                this.connection.reconnectAttempts < this.config.maxReconnectAttempts) {
+                this.scheduleReconnect();
+            }
+        };
+
+        this.connection.ws.onerror = (error) => {
+            console.error('❌ WebSocket 오류:', error);
+            this.connection.status = 'error';
+            this.updateStatus('연결 오류', 'error');
+            this.metrics.errorCount++;
+            this.healthCheck.consecutiveErrors++;
         };
     }
-    
-    // 🔥 3단계: Depth Update 처리
+
+    /**
+     * 🔥 하트비트 시작
+     */
+    startHeartbeat() {
+        this.stopHeartbeat();
+
+        this.connection.heartbeatInterval = setInterval(() => {
+            if (this.connection.ws && this.connection.ws.readyState === WebSocket.OPEN) {
+                const now = Date.now();
+                const timeSinceLastData = now - this.connection.lastDataTime;
+
+                // 30초 이상 데이터가 없으면 연결 재시도
+                if (timeSinceLastData > 30000) {
+                    console.warn('⚠️ 하트비트 실패 - 연결 재시도');
+                    this.reconnectWebSocket();
+                }
+            }
+        }, this.config.heartbeatInterval);
+    }
+
+    /**
+     * 🔥 하트비트 중지
+     */
+    stopHeartbeat() {
+        if (this.connection.heartbeatInterval) {
+            clearInterval(this.connection.heartbeatInterval);
+            this.connection.heartbeatInterval = null;
+        }
+    }
+
+    /**
+     * 🔥 건강 상태 체크 시작
+     */
+    startHealthCheck() {
+        setInterval(() => {
+            if (this.isDestroyed) return;
+
+            const now = Date.now();
+            const timeSinceLastHealth = now - this.healthCheck.lastHealthTime;
+
+            if (timeSinceLastHealth > 60000) {
+                this.performHealthCheck();
+                this.healthCheck.lastHealthTime = now;
+            }
+        }, 60000);
+    }
+
+    /**
+     * 🔥 건강 상태 체크 수행
+     */
+    performHealthCheck() {
+        const issues = [];
+
+        if (!this.connection.isConnected) {
+            issues.push('WebSocket 연결 끊김');
+        }
+
+        const timeSinceLastUpdate = Date.now() - this.orderbook.timestamp;
+        if (timeSinceLastUpdate > 30000) {
+            issues.push('데이터 업데이트 중단');
+        }
+
+        if (this.healthCheck.consecutiveErrors > 3) {
+            issues.push('높은 에러율');
+        }
+
+        if (this.orderbook.bids.size === 0 || this.orderbook.asks.size === 0) {
+            issues.push('오더북 데이터 없음');
+        }
+
+        if (issues.length > 0) {
+            console.warn('⚠️ 오더북 건강 상태 문제:', issues);
+            if (issues.length >= 2) {
+                this.restartOrderbook();
+            }
+        } else {
+            console.log('✅ 오더북 건강 상태 양호');
+        }
+    }
+
+    /**
+     * 🔥 오더북 재시작
+     */
+    async restartOrderbook() {
+        console.log('🔄 오더북 재시작 중...');
+
+        this.cleanupConnections();
+        this.orderbook.bids.clear();
+        this.orderbook.asks.clear();
+        this.dataBuffer = [];
+        this.healthCheck.consecutiveErrors = 0;
+
+        await this.initialize();
+    }
+
+    /**
+     * 🔥 깊이 업데이트 처리
+     */
     handleDepthUpdate(data) {
-        if (data.e !== 'depthUpdate') return;
-        
-        const updateId = data.u; // 마지막 업데이트 ID
-        const firstUpdateId = data.U; // 첫 번째 업데이트 ID
-        
-        // 성능 메트릭스 업데이트
-        this.updateMetrics(data.E);
-        
-        if (!this.isInitialized) {
-            // 초기화 과정: 이벤트 버퍼링
-            this.eventBuffer.push(data);
-            return;
-        }
-        
-        // 순서 검증
-        if (updateId <= this.localOrderBook.lastUpdateId) {
-            // 이미 처리된 업데이트, 무시
-            return;
-        }
-        
-        if (firstUpdateId > this.localOrderBook.lastUpdateId + 1) {
-            // 업데이트 누락 감지, 재동기화 필요
-            console.warn(`⚠️ 업데이트 누락 감지: ${this.localOrderBook.lastUpdateId} -> ${firstUpdateId}`);
-            this.metrics.missedUpdates++;
-            this.resync();
-            return;
-        }
-        
-        // 로컬 오더북 업데이트
-        this.updateLocalOrderBook(data);
-    }
-    
-    // 🔥 로컬 오더북 업데이트
-    updateLocalOrderBook(data) {
-        // Bids 업데이트
-        data.b.forEach(([price, quantity]) => {
-            const priceFloat = parseFloat(price);
-            const quantityFloat = parseFloat(quantity);
-            
-            if (quantityFloat === 0) {
-                this.localOrderBook.bids.delete(priceFloat);
-            } else {
-                this.localOrderBook.bids.set(priceFloat, quantityFloat);
-            }
-        });
-        
-        // Asks 업데이트
-        data.a.forEach(([price, quantity]) => {
-            const priceFloat = parseFloat(price);
-            const quantityFloat = parseFloat(quantity);
-            
-            if (quantityFloat === 0) {
-                this.localOrderBook.asks.delete(priceFloat);
-            } else {
-                this.localOrderBook.asks.set(priceFloat, quantityFloat);
-            }
-        });
-        
-        // 업데이트 ID 저장
-        this.localOrderBook.lastUpdateId = data.u;
-        
-        // UI 업데이트
-        this.emitDataUpdate();
-    }
-    
-    // 🔥 버퍼된 이벤트 처리
-    processBufferedEvents() {
-        console.log(`🔄 버퍼된 이벤트 처리: ${this.eventBuffer.length}개`);
-        
-        // 스냅샷보다 오래된 이벤트 제거
-        this.eventBuffer = this.eventBuffer.filter(event => 
-            event.u > this.localOrderBook.lastUpdateId
-        );
-        
-        // 첫 번째 유효한 이벤트 찾기
-        const firstValidEventIndex = this.eventBuffer.findIndex(event =>
-            event.U <= this.localOrderBook.lastUpdateId + 1 && 
-            event.u >= this.localOrderBook.lastUpdateId + 1
-        );
-        
-        if (firstValidEventIndex === -1) {
-            console.warn('⚠️ 유효한 첫 이벤트를 찾을 수 없음, 재동기화 필요');
-            this.resync();
-            return;
-        }
-        
-        // 유효한 이벤트들만 처리
-        const validEvents = this.eventBuffer.slice(firstValidEventIndex);
-        validEvents.sort((a, b) => a.U - b.U);
-        
-        this.isInitialized = true;
-        
-        validEvents.forEach(event => {
-            this.updateLocalOrderBook(event);
-        });
-        
-        this.eventBuffer = [];
-        console.log(`✅ ${validEvents.length}개 이벤트 처리 완료`);
-    }
-    
-    // 🔥 재동기화
-    async resync() {
-        console.log('🔄 오더북 재동기화 시작');
-        this.isInitialized = false;
-        this.eventBuffer = [];
-        this.emitStatusChange('재동기화 중...', 'connecting');
-        
         try {
-            await this.getSnapshot();
-            this.processBufferedEvents();
+            if (data.e !== 'depthUpdate') return;
+
+            const startTime = performance.now();
+
+            // 데이터 유효성 검증
+            if (!data.u || !data.U || (!data.b && !data.a)) {
+                console.warn('⚠️ 유효하지 않은 깊이 업데이트 데이터');
+                return;
+            }
+
+            // 성능 메트릭스 업데이트
+            this.updatePerformanceMetrics(data.E);
+
+            // 순서 검증
+            if (data.u <= this.orderbook.lastUpdateId) {
+                return;
+            }
+
+            // 연속성 검증
+            if (data.U > this.orderbook.lastUpdateId + 1) {
+                console.warn(`⚠️ 업데이트 누락 감지: ${this.orderbook.lastUpdateId} -> ${data.U}`);
+                this.metrics.missedUpdates++;
+                this.bufferDataAndResync(data);
+                return;
+            }
+
+            // 오더북 업데이트
+            this.updateOrderbookData(data);
+
+            // 처리 시간 기록
+            const processingTime = performance.now() - startTime;
+            if (processingTime > 20) {
+                console.warn(`⚠️ 느린 업데이트 처리: ${processingTime.toFixed(2)}ms`);
+            }
+
         } catch (error) {
-            console.error('❌ 재동기화 실패:', error);
-            this.scheduleReconnect();
+            console.error('❌ 깊이 업데이트 처리 오류:', error);
+            this.metrics.missedUpdates++;
+            this.healthCheck.consecutiveErrors++;
+
+            if (this.healthCheck.consecutiveErrors >= 3) {
+                this.restartOrderbook();
+            }
         }
     }
-    
-    // 🔥 재연결 스케줄링
-    scheduleReconnect() {
-        if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-            console.error('❌ 최대 재연결 시도 횟수 초과');
-            this.emitStatusChange('연결 실패', 'error');
-            return;
+
+    /**
+     * 🔥 오더북 데이터 업데이트
+     */
+    updateOrderbookData(data) {
+        try {
+            // Bids 업데이트
+            if (data.b && Array.isArray(data.b)) {
+                data.b.forEach(([price, quantity]) => {
+                    const priceFloat = parseFloat(price);
+                    const quantityFloat = parseFloat(quantity);
+
+                    if (isNaN(priceFloat) || isNaN(quantityFloat) || priceFloat <= 0) {
+                        return;
+                    }
+
+                    if (quantityFloat === 0) {
+                        this.orderbook.bids.delete(priceFloat);
+                    } else {
+                        this.orderbook.bids.set(priceFloat, quantityFloat);
+                    }
+                });
+            }
+
+            // Asks 업데이트
+            if (data.a && Array.isArray(data.a)) {
+                data.a.forEach(([price, quantity]) => {
+                    const priceFloat = parseFloat(price);
+                    const quantityFloat = parseFloat(quantity);
+
+                    if (isNaN(priceFloat) || isNaN(quantityFloat) || priceFloat <= 0) {
+                        return;
+                    }
+
+                    if (quantityFloat === 0) {
+                        this.orderbook.asks.delete(priceFloat);
+                    } else {
+                        this.orderbook.asks.set(priceFloat, quantityFloat);
+                    }
+                });
+            }
+
+            // 메타데이터 업데이트
+            this.orderbook.lastUpdateId = data.u;
+            this.orderbook.timestamp = Date.now();
+
+            // 스프레드 계산 및 UI 업데이트
+            this.calculateSpread();
+            this.throttledUpdateDisplay();
+
+            // 건강 상태 개선
+            this.healthCheck.consecutiveErrors = Math.max(0, this.healthCheck.consecutiveErrors - 1);
+            
+        } catch (error) {
+            console.error('❌ 오더북 데이터 업데이트 오류:', error);
+            this.healthCheck.consecutiveErrors++;
+        }
+    }
+
+    // 오더북 사이드 렌더링
+    renderOrderbookSide(side, orders, isAsk) {
+        const container = this.config.container.querySelector(`.${side}-rows`);
+        if (!container) return;
+        
+        // 뷰 모드에 따른 표시 여부 결정
+        const shouldShow = this.ui.viewMode === 'combined' || 
+                          (this.ui.viewMode === 'bids-only' && !isAsk) ||
+                          (this.ui.viewMode === 'asks-only' && isAsk);
+        
+        const section = this.config.container.querySelector(`#${side}-section`);
+        if (section) {
+            section.style.display = shouldShow ? 'block' : 'none';
         }
         
-        this.reconnectAttempts++;
-        const delay = this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1); // 지수 백오프
+        if (!shouldShow) return;
         
-        console.log(`🔄 ${delay}ms 후 재연결 시도 (${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
+        // 누적 수량 계산
+        let cumulative = 0;
+        const processedOrders = orders.map(([price, quantity]) => {
+            cumulative += quantity;
+            return { price, quantity, cumulative };
+        });
         
-        setTimeout(() => {
-            this.start();
-        }, delay);
+        const maxCumulative = cumulative;
+        
+        // HTML 생성 - 더 강화된 깊이 시각화
+        container.innerHTML = processedOrders.map(order => {
+            const depthPercent = maxCumulative > 0 ? (order.cumulative / maxCumulative) * 100 : 0;
+            const priceClass = isAsk ? 'ask-price' : 'bid-price';
+            
+            return `
+                <div class="orderbook-row ${side}-row" data-price="${order.price}">
+                    <div class="depth-background ${isAsk ? 'ask-depth' : 'bid-depth'}" 
+                         style="width: ${depthPercent}%"></div>
+                    <div class="order-data">
+                        <div class="price-cell ${priceClass}">${this.formatPrice(order.price)}</div>
+                        <div class="size-cell">${this.formatQuantity(order.quantity)}</div>
+                        <div class="sum-cell">${this.formatQuantity(order.cumulative)}</div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+        
+        // 행 클릭 이벤트 설정
+        this.setupRowClickEvents(container);
     }
-    
-    // 🔥 성능 메트릭스 업데이트
-    updateMetrics(eventTime) {
+
+    // 기존의 나머지 메서드들 유지...
+    calculateSpread() {
+        const bids = Array.from(this.orderbook.bids.keys()).sort((a, b) => b - a);
+        const asks = Array.from(this.orderbook.asks.keys()).sort((a, b) => a - b);
+        
+        if (bids.length > 0 && asks.length > 0) {
+            this.orderbook.bestBid = bids[0];
+            this.orderbook.bestAsk = asks[0];
+            this.orderbook.spread = this.orderbook.bestAsk - this.orderbook.bestBid;
+        } else {
+            this.orderbook.bestBid = 0;
+            this.orderbook.bestAsk = 0;
+            this.orderbook.spread = 0;
+        }
+    }
+
+    throttledUpdateDisplay() {
         const now = Date.now();
-        const latency = now - eventTime;
+        if (now - this.ui.lastRenderTime >= this.ui.renderThrottle) {
+            this.updateDisplay();
+            this.ui.lastRenderTime = now;
+        }
+    }
+
+    updateDisplay() {
+        if (!this.ui.isInitialized || this.isDestroyed) return;
+
+        try {
+            this.updatePriceInfo();
+            this.updateOrderbookSides();
+        } catch (error) {
+            console.error('❌ 디스플레이 업데이트 오류:', error);
+        }
+    }
+
+    updatePriceInfo() {
+        const spreadInfo = this.config.container.querySelector('.current-price-info');
+        if (!spreadInfo) return;
+
+        const currentPrice = (this.orderbook.bestBid + this.orderbook.bestAsk) / 2;
+        const priceElement = spreadInfo.querySelector('.current-price');
+        const spreadValueElement = spreadInfo.querySelector('.spread-value');
+        const spreadPercentElement = spreadInfo.querySelector('.spread-percent');
+
+        if (priceElement) {
+            priceElement.textContent = this.formatPrice(currentPrice);
+        }
+
+        if (spreadValueElement) {
+            spreadValueElement.textContent = this.formatPrice(this.orderbook.spread);
+        }
+
+        if (spreadPercentElement) {
+            const spreadPercent = (this.orderbook.spread / this.orderbook.bestBid) * 100;
+            spreadPercentElement.textContent = `(${spreadPercent.toFixed(3)}%)`;
+        }
+    }
+
+    updateOrderbookSides() {
+        // 매도 주문 (역순으로 정렬하여 높은 가격부터 표시)
+        const askOrders = Array.from(this.orderbook.asks.entries())
+            .sort((a, b) => b[0] - a[0])
+            .slice(0, this.config.maxDepth);
+        
+        // 매수 주문 (높은 가격부터 표시)
+        const bidOrders = Array.from(this.orderbook.bids.entries())
+            .sort((a, b) => b[0] - a[0])
+            .slice(0, this.config.maxDepth);
+            
+        this.renderOrderbookSide('asks', askOrders, true);
+        this.renderOrderbookSide('bids', bidOrders, false);
+    }
+
+    setupRowClickEvents(container) {
+        container.querySelectorAll('.orderbook-row').forEach(row => {
+            row.addEventListener('click', () => {
+                const price = parseFloat(row.dataset.price);
+                this.selectPrice(price);
+            });
+        });
+    }
+
+    selectPrice(price) {
+        console.log(`🎯 오더북 가격 선택: ${price}`);
+        
+        // 시각적 피드백
+        this.config.container.querySelectorAll('.orderbook-row').forEach(row => {
+            row.classList.remove('selected');
+        });
+        
+        const selectedRow = this.config.container.querySelector(`[data-price="${price}"]`);
+        if (selectedRow) {
+            selectedRow.classList.add('selected');
+            selectedRow.classList.add('price-flash');
+            setTimeout(() => selectedRow.classList.remove('price-flash'), 500);
+        }
+
+        // 커스텀 이벤트 발송
+        document.dispatchEvent(new CustomEvent('orderbook-price-selected', {
+            detail: { price, timestamp: Date.now() }
+        }));
+    }
+
+    changePrecision(precision) {
+        this.ui.precision = precision;
+        console.log(`🎯 오더북 정밀도 변경: ${precision}`);
+        this.updateDisplay();
+    }
+
+    changeViewMode(viewMode) {
+        this.ui.viewMode = viewMode;
+        console.log(`🎯 오더북 뷰 모드 변경: ${viewMode}`);
+        this.updateDisplay();
+    }
+
+    updateStatus(message, status) {
+        this.connection.status = status;
+        
+        const statusIndicator = this.config.container.querySelector('.status-indicator');
+        const statusText = this.config.container.querySelector('.status-text');
+        
+        if (statusIndicator) {
+            statusIndicator.className = `status-indicator ${status}`;
+        }
+        
+        if (statusText) {
+            statusText.textContent = message;
+        }
+
+        console.log(`📊 오더북 상태: ${status} - ${message}`);
+    }
+
+    updatePerformanceMetrics(eventTime) {
+        const now = Date.now();
         
         this.metrics.updateCount++;
-        this.metrics.latencySum += latency;
         this.metrics.lastUpdateTime = now;
         
-        // 1초마다 메트릭스 전송
-        if (this.metrics.updateCount % 10 === 0) {
-            const avgLatency = Math.round(this.metrics.latencySum / this.metrics.updateCount);
-            const updateRate = Math.round(10000 / (now - (this.metrics.lastMetricsTime || now)));
-            
-            this.emitMetrics({
-                latency: avgLatency,
-                updateRate: updateRate,
-                missedUpdates: this.metrics.missedUpdates,
-                syncStatus: this.metrics.syncStatus
-            });
-            
-            this.metrics.lastMetricsTime = now;
+        if (eventTime) {
+            const latency = now - eventTime;
+            this.metrics.averageLatency = (this.metrics.averageLatency + latency) / 2;
+        }
+
+        // 초당 메시지 수 계산
+        if (now - this.metrics.lastSecondTime >= 1000) {
+            this.metrics.messagesPerSecond = this.metrics.lastSecondCount;
+            this.metrics.lastSecondCount = 0;
+            this.metrics.lastSecondTime = now;
+        } else {
+            this.metrics.lastSecondCount++;
         }
     }
-    
-    // 🔥 데이터 가공 및 전송
-    emitDataUpdate() {
-        // 정렬된 bids/asks 생성
-        const sortedBids = Array.from(this.localOrderBook.bids.entries())
-            .sort(([a], [b]) => b - a) // 내림차순
-            .slice(0, 20);
+
+    startPerformanceMonitoring() {
+        setInterval(() => {
+            if (this.connection.isConnected && !this.isDestroyed) {
+                console.log(`📊 오더북 성능 메트릭스:`, {
+                    updates: this.metrics.updateCount,
+                    avgLatency: `${this.metrics.averageLatency.toFixed(2)}ms`,
+                    messagesPerSec: this.metrics.messagesPerSecond,
+                    missedUpdates: this.metrics.missedUpdates,
+                    errors: this.metrics.errorCount,
+                    reconnects: this.metrics.reconnectCount
+                });
+            }
+        }, 30000);
+    }
+
+    cleanupConnections() {
+        if (this.connection.ws) {
+            this.connection.ws.close();
+            this.connection.ws = null;
+        }
+        
+        this.stopHeartbeat();
+        this.connection.isConnected = false;
+        this.connection.isSubscribed = false;
+    }
+
+    scheduleReconnect() {
+        if (this.isDestroyed) return;
+        
+        if (this.connection.reconnectAttempts >= this.config.maxReconnectAttempts) {
+            console.error('❌ 최대 재연결 시도 횟수 초과');
+            this.updateStatus('연결 실패', 'error');
             
-        const sortedAsks = Array.from(this.localOrderBook.asks.entries())
-            .sort(([a], [b]) => a - b) // 오름차순
-            .slice(0, 20);
+            setTimeout(() => {
+                if (!this.isDestroyed) {
+                    this.restartOrderbook();
+                }
+            }, 30000);
+            return;
+        }
         
-        const data = {
-            bids: sortedBids.map(([price, quantity]) => [price.toString(), quantity.toString()]),
-            asks: sortedAsks.map(([price, quantity]) => [price.toString(), quantity.toString()]),
-            lastUpdateId: this.localOrderBook.lastUpdateId
-        };
+        this.connection.reconnectAttempts++;
+        this.connection.status = 'reconnecting';
         
-        document.dispatchEvent(new CustomEvent('orderbook-data-update', { detail: data }));
+        const baseDelay = this.config.reconnectDelay * Math.pow(2, this.connection.reconnectAttempts - 1);
+        const jitter = Math.random() * 1000;
+        const delay = Math.min(baseDelay + jitter, 30000);
+        
+        console.log(`🔄 ${Math.round(delay)}ms 후 재연결 시도 (${this.connection.reconnectAttempts}/${this.config.maxReconnectAttempts})`);
+        this.updateStatus(`재연결 중... (${this.connection.reconnectAttempts}/${this.config.maxReconnectAttempts})`, 'reconnecting');
+        
+        setTimeout(() => {
+            if (!this.isDestroyed) {
+                this.connectWebSocket();
+            }
+        }, delay);
     }
-    
-    // 🔥 상태 변경 이벤트
-    emitStatusChange(status, statusClass) {
-        document.dispatchEvent(new CustomEvent('orderbook-status-change', { 
-            detail: { status, statusClass }
-        }));
+
+    reconnectWebSocket() {
+        this.connection.reconnectAttempts = 0;
+        this.connectWebSocket();
     }
-    
-    // 🔥 에러 이벤트
-    emitError(error) {
-        document.dispatchEvent(new CustomEvent('orderbook-error', { 
-            detail: { error }
-        }));
+
+    bufferDataAndResync(data) {
+        this.dataBuffer.push(data);
+        
+        if (!this.isProcessingBuffer) {
+            this.isProcessingBuffer = true;
+            setTimeout(() => {
+                this.resyncOrderbook();
+            }, 1000);
+        }
     }
-    
-    // 🔥 메트릭스 이벤트
-    emitMetrics(metrics) {
-        document.dispatchEvent(new CustomEvent('orderbook-metrics', { 
-            detail: metrics
-        }));
+
+    async resyncOrderbook() {
+        try {
+            console.log('🔄 오더북 재동기화 시작');
+            this.updateStatus('재동기화 중...', 'connecting');
+            
+            await this.loadInitialSnapshot();
+            this.processBufferedData();
+            
+            this.updateStatus('연결됨', 'connected');
+            console.log('✅ 오더북 재동기화 완료');
+            
+        } catch (error) {
+            console.error('❌ 오더북 재동기화 실패:', error);
+            this.updateStatus('재동기화 실패', 'error');
+        } finally {
+            this.isProcessingBuffer = false;
+        }
     }
-    
-    // 🔥 정리
+
+    processBufferedData() {
+        if (this.dataBuffer.length === 0) return;
+        
+        console.log(`🔄 버퍼된 데이터 처리: ${this.dataBuffer.length}개`);
+        
+        this.dataBuffer.sort((a, b) => a.U - b.U);
+        
+        this.dataBuffer.forEach(data => {
+            if (data.U <= this.orderbook.lastUpdateId + 1) {
+                this.updateOrderbookData(data);
+            }
+        });
+        
+        this.dataBuffer = [];
+    }
+
+    handlePageVisible() {
+        if (!this.connection.isConnected) {
+            console.log('🔄 페이지 활성화 - WebSocket 재연결 시도');
+            this.reconnectWebSocket();
+        }
+    }
+
+    handlePageHidden() {
+        console.log('⏸️ 페이지 비활성화');
+    }
+
+    formatPrice(price) {
+        if (!price || isNaN(price)) return '--';
+        
+        if (this.ui.precision >= 1) {
+            return Math.round(price / this.ui.precision) * this.ui.precision;
+        } else {
+            const decimals = Math.abs(Math.log10(this.ui.precision));
+            return (Math.round(price / this.ui.precision) * this.ui.precision).toFixed(decimals);
+        }
+    }
+
+    formatQuantity(quantity) {
+        if (!quantity || isNaN(quantity)) return '--';
+        
+        if (quantity >= 1) {
+            return quantity.toFixed(3);
+        } else {
+            return quantity.toFixed(6);
+        }
+    }
+
+    handleError(error) {
+        console.error('❌ 오더북 오류:', error);
+        this.updateStatus('오류 발생', 'error');
+        this.metrics.errorCount++;
+        
+        setTimeout(() => {
+            if (this.connection.status === 'error' && !this.isDestroyed) {
+                this.restartOrderbook();
+            }
+        }, 5000);
+    }
+
     destroy() {
-        if (this.ws) {
-            this.ws.close();
-        }
-        this.eventBuffer = [];
-        this.localOrderBook.bids.clear();
-        this.localOrderBook.asks.clear();
-        console.log('🔥 오더북 관리자 정리 완료');
+        console.log('🧹 전문 오더북 정리 중...');
+        
+        this.isDestroyed = true;
+        this.cleanupConnections();
+        
+        this.orderbook.bids.clear();
+        this.orderbook.asks.clear();
+        this.dataBuffer = [];
+        
+        console.log('✅ 전문 오더북 정리 완료');
     }
 }

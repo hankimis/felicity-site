@@ -32,6 +32,9 @@
     <link rel="stylesheet" href="../css/components/chat.css" />
     <link rel="stylesheet" href="../css/components/chart.css" />
     
+    <!-- 🔥 고래 추적기 CSS 추가 -->
+    <link rel="stylesheet" href="../css/whale-tracker.css" />
+    
     <!-- Page CSS -->
     <link rel="stylesheet" href="../css/pages/community.css" />
     <link rel="stylesheet" href="../css/pages/community-realtime.css" />
@@ -139,21 +142,46 @@
                         <div class="chart-loading" id="chart-loading">데이터 로딩 중...</div>
                     </div>
                 </section>
-                <section class="chat-section">
-                    <div class="chat-section-header">
-                        <h2>실시간 채팅</h2>
-                        <div class="chat-users-count">
-                            <i class="fas fa-user"></i>
-                            <span id="chat-users-count">0</span>
+                <!-- 고래 탐지와 채팅을 위한 컨테이너 -->
+                <section class="whale-chat-container">
+                    <!-- 실시간 고래 탐지 섹션 -->
+                    <section class="whale-tracking-section">
+                        <div class="whale-section-header">
+                            <h2>실시간 고래 탐지</h2>
+                            <div class="whale-status-info">
+                                <div class="whale-status-indicator"></div>
+                                <span class="whale-status-text">연결 중...</span>
+                            </div>
                         </div>
-                    </div>
-                    <div class="chat-wrapper">
-                        <div id="chat-messages"></div>
-                        <form id="chat-form" class="chat-input-form">
-                            <input type="text" id="message-input" placeholder="메시지를 입력하세요..." autocomplete="off">
-                            <button type="submit">전송</button>
-                        </form>
-                    </div>
+                        <div class="whale-trades-wrapper">
+                            <div id="whale-trades-container" class="whale-trades-container">
+                                <div class="whale-trades-list">
+                                    <!-- 고래 거래 데이터가 여기에 동적으로 추가됩니다 -->
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                    
+                    <!-- 구분선 -->
+                    <div class="section-divider"></div>
+                    
+                    <!-- 실시간 채팅 섹션 -->
+                    <section class="chat-section">
+                        <div class="chat-section-header">
+                            <h2>실시간 채팅</h2>
+                            <div class="chat-users-count">
+                                <i class="fas fa-user"></i>
+                                <span id="chat-users-count">0</span>
+                            </div>
+                        </div>
+                        <div class="chat-wrapper">
+                            <div id="chat-messages"></div>
+                            <form id="chat-form" class="chat-input-form">
+                                <input type="text" id="message-input" placeholder="메시지를 입력하세요..." autocomplete="off">
+                                <button type="submit">전송</button>
+                            </form>
+                        </div>
+                    </section>
                 </section>
             </div>
         </div>

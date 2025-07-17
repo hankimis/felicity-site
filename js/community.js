@@ -524,6 +524,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             }, 1000);
         }
 
+        // 🔥 실시간 고래 탐지 시스템 초기화
+        initializeWhaleTrackingSystem();
+
         // 🔥 페이지 종료 이벤트 리스너
         window.addEventListener('beforeunload', handlePageUnload);
         window.addEventListener('unload', handlePageUnload);
@@ -546,3 +549,104 @@ document.addEventListener('DOMContentLoaded', async () => {
 window.initializeTradingViewChart = initializeTradingViewChart;
 window.updateChartTheme = updateChartTheme;
 window.saveChartStateWithOptions = saveChartStateWithOptions;
+
+// 🔥 실시간 고래 탐지 시스템 초기화
+function initializeWhaleTrackingSystem() {
+    console.log('🐋 실시간 고래 탐지 시스템 초기화 시작');
+    
+    try {
+        // 고래 탐지 컨테이너 확인
+        const whaleContainer = document.getElementById('whale-trades-container');
+        if (!whaleContainer) {
+            console.warn('⚠️ 고래 탐지 컨테이너를 찾을 수 없습니다');
+            return;
+        }
+
+        // 상태 표시 요소들
+        const statusIndicator = document.querySelector('.whale-status-indicator');
+        const statusText = document.querySelector('.whale-status-text');
+
+        // WhaleTracker 클래스가 있는지 확인
+        if (window.WhaleTracker) {
+            // 고래 추적기 초기화
+            if (!window.whaleTracker) {
+                window.whaleTracker = new window.WhaleTracker();
+                console.log('🐋 고래 추적기 인스턴스 생성 완료');
+                
+                // 연결 상태 업데이트
+                updateWhaleStatus('연결됨', 'connected');
+            } else {
+                console.log('🐋 고래 추적기 이미 초기화됨');
+                updateWhaleStatus('연결됨', 'connected');
+            }
+        } else {
+            console.warn('⚠️ WhaleTracker 클래스를 찾을 수 없습니다');
+            updateWhaleStatus('로딩 중...', 'disconnected');
+            
+            // WhaleTracker 클래스 로드 대기
+            let retryCount = 0;
+            const maxRetries = 10;
+            
+            const checkWhaleTracker = setInterval(() => {
+                retryCount++;
+                
+                if (window.WhaleTracker) {
+                    clearInterval(checkWhaleTracker);
+                    console.log('🐋 WhaleTracker 클래스 로드됨 - 초기화 재시도');
+                    initializeWhaleTrackingSystem();
+                } else if (retryCount >= maxRetries) {
+                    clearInterval(checkWhaleTracker);
+                    console.error('❌ WhaleTracker 클래스 로드 실패');
+                    updateWhaleStatus('로드 실패', 'error');
+                    showWhaleLoadingError();
+                }
+            }, 1000);
+        }
+
+        // 고래 상태 업데이트 함수
+        function updateWhaleStatus(message, status) {
+            if (statusIndicator) {
+                statusIndicator.className = `whale-status-indicator ${status}`;
+            }
+            if (statusText) {
+                statusText.textContent = message;
+            }
+            console.log(`🐋 고래 탐지 상태: ${status} - ${message}`);
+        }
+
+        // 고래 로딩 에러 표시
+        function showWhaleLoadingError() {
+            const whaleList = document.querySelector('.whale-trades-list');
+            if (whaleList) {
+                whaleList.innerHTML = `
+                    <div class="whale-error-message">
+                        <div class="error-icon">⚠️</div>
+                        <div class="error-text">
+                            <p>고래 탐지 시스템을 로드할 수 없습니다.</p>
+                            <p>페이지를 새로고침 해주세요.</p>
+                        </div>
+                        <button onclick="location.reload()" class="retry-button">
+                            새로고침
+                        </button>
+                    </div>
+                `;
+            }
+        }
+
+        console.log('✅ 고래 탐지 시스템 초기화 완료');
+        
+    } catch (error) {
+        console.error('❌ 고래 탐지 시스템 초기화 실패:', error);
+        
+        // 에러 상태 표시
+        const statusIndicator = document.querySelector('.whale-status-indicator');
+        const statusText = document.querySelector('.whale-status-text');
+        
+        if (statusIndicator) {
+            statusIndicator.className = 'whale-status-indicator error';
+        }
+        if (statusText) {
+            statusText.textContent = '초기화 실패';
+        }
+    }
+}

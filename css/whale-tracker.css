@@ -1,4 +1,168 @@
-/* Advanced Whale Tracker CSS - AGGR Style */
+/* Advanced Whale Tracker CSS - 색상 팔레트 기반 업데이트 */
+
+/* 🔥 GIF 백그라운드 이미지 변수 정의 */
+:root {
+    /* 롱 거래용 GIF 목록 */
+    --long-gif-1: url('https://media4.giphy.com/media/v1.Y2lkPWFlODQxYTJlMm91YmxnNDRtZTkzN3o2cXFwY25mZGpiN2wxYWl5eXIxdHlqZTRiMSZlcD12MV9naWZzX3NlYXJjaCZjdD1n/f3k2U9HDaEvVjxexSn/giphy.gif');
+    --long-gif-2: url('https://media1.giphy.com/media/v1.Y2lkPWFlODQxYTJlcHU4aGg4NmNzaXl1aWw4eW4wc21yYzFlN3NlaDZoNG4yNzB2MW14NCZlcD12MV9naWZzX3NlYXJjaCZjdD1n/z52lNhLdSBnkZvRugs/giphy.gif');
+    
+    /* 숏 거래용 GIF 목록 */
+    --short-gif-1: url('https://media4.giphy.com/media/v1.Y2lkPWFlODQxYTJlYW02dzNiOGt6MjNianlsOG1yaW4yanhndXo2eW8ybmt6dzVjaXlvZiZlcD12MV9naWZzX3NlYXJjaCZjdD1n/3o7aTAU4jIYG2rZkI0/giphy.gif');
+    --short-gif-2: url('https://media1.giphy.com/media/v1.Y2lkPWFlODQxYTJlYW02dzNiOGt6MjNianlsOG1yaW4yanhndXo2eW8ybmt6dzVjaXlvZiZlcD12MV9naWZzX3NlYXJjaCZjdD1n/2NrnzD6zS1Upq/giphy.gif');
+    --short-gif-3: url('https://media3.giphy.com/media/v1.Y2lkPWFlODQxYTJlYW02dzNiOGt6MjNianlsOG1yaW4yanhndXo2eW8ybmt6dzVjaXlvZiZlcD12MV9naWZzX3NlYXJjaCZjdD1n/82Ph8dHcNLrKo/giphy.gif');
+}
+
+/* 🔥 고래 탐지 섹션 컨테이너 */
+.whale-tracker-section {
+    width: 350px;
+    height: 100%;
+    flex-shrink: 0;
+    background: var(--bg-primary);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    order: 2;
+    overflow: hidden; /* 🔥 가로 스크롤 방지 */
+}
+
+/* 🐋 고래 추적기 스타일 */
+.whale-container {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden; /* 🔥 가로 스크롤 방지 */
+}
+
+.whale-container .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border-color);
+    background: var(--card-bg);
+    padding: 12px 16px;
+}
+
+.whale-container .section-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.whale-container .section-title i {
+    color: var(--primary-color);
+    font-size: 18px;
+}
+
+/* 🔥 커뮤니티 페이지 고래 섹션 */
+.whale-tracking-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    height: 50%;
+    min-height: 0;
+    background-color: var(--bg-primary);
+    overflow: hidden; /* 🔥 가로 스크롤 방지 */
+}
+
+.whale-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border-color);
+    background-color: var(--bg-secondary);
+    flex-shrink: 0;
+    height: 40px;
+}
+
+.whale-section-header h2 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.whale-section-header h2::before {
+    content: "🐋";
+    font-size: 18px;
+}
+
+.whale-status-info {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.whale-status-indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: #f59e0b;
+    
+}
+
+.whale-status-indicator.connected {
+    background-color: rgb(100, 157, 102);
+}
+
+.whale-status-indicator.disconnected {
+    background-color: rgb(239, 67, 82);
+}
+
+.whale-status-indicator.error {
+    background-color: rgb(239, 67, 82);
+}
+
+.whale-status-text {
+    font-size: 12px;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.whale-trades-wrapper {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+/* 🔥 고래 컨트롤 */
+.whale-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.whale-status {
+    font-size: 12px;
+    font-weight: 500;
+    padding: 4px 8px;
+    border-radius: 4px;
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+}
+
+.whale-settings-btn {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 6px 8px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.whale-settings-btn:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+    border-color: var(--primary-color);
+}
 
 /* Main Container */
 .whale-trades-container {
@@ -9,6 +173,7 @@
     padding: 0;
     margin: 0;
     overflow-y: auto;
+    overflow-x: hidden; /* 🔥 가로 스크롤 방지 */
     max-height: calc(100vh - 200px);
     height: calc(100vh - 200px);
     display: flex;
@@ -34,123 +199,197 @@
 /* Trade List */
 .whale-trades-container ul {
     list-style: none;
-    margin: 0;
     padding: 0;
-    overflow-y: auto;
-    max-height: calc(100vh - 60px);
-    scrollbar-width: thin;
-    scrollbar-color: #333 #1a1a1a;
-    width: 100%;
-    display: flex;
-    flex-direction: column;
+    margin: 0;
+    flex: 1;
+    overflow: hidden; /* 🔥 리스트에서도 오버플로우 방지 */
 }
 
-.whale-trades-container ul::-webkit-scrollbar {
+.whale-trades-list {
+    list-style: none;
+    padding: 8px;
+    margin: 0;
+    overflow-y: auto;
+    overflow-x: hidden; /* 🔥 가로 스크롤 방지 */
+    height: 100%;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0,0,0,0.3) transparent;
+}
+
+.whale-trades-list::-webkit-scrollbar {
     width: 6px;
 }
 
-.whale-trades-container ul::-webkit-scrollbar-track {
-    background: #1a1a1a;
+.whale-trades-list::-webkit-scrollbar-track {
+    background: transparent;
 }
 
-.whale-trades-container ul::-webkit-scrollbar-thumb {
-    background: #333;
+.whale-trades-list::-webkit-scrollbar-thumb {
+    background: rgba(0,0,0,0.2);
     border-radius: 3px;
 }
 
-/* Pixel Perfect Trade Items - 통일된 스타일 */
+.whale-trades-list::-webkit-scrollbar-thumb:hover {
+    background: rgba(0,0,0,0.4);
+}
+
+/* 🔥 업데이트된 고래 거래 픽셀 - 새로운 색상 팔레트 적용 */
 .whale-trade-pixel {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    width: 100%;
-    height: 22px;
-    margin-bottom: 1px;
-    padding: 2px 8px;
-    border-radius: 2px;
-    font-family: 'Courier New', monospace;
-    font-size: 13px;
-    font-weight: 600;
-    color: white;
-    box-sizing: border-box;
-    flex-wrap: nowrap;
-    white-space: nowrap;
-    animation: slideDown 0.3s ease-out;
-    border-left: 3px solid transparent;
+    padding: 8px 12px;
+    margin: 1px 0;
+    background: rgba(255, 255, 255, 0.8);
+    border-left: 3px solid #ccc;
+    font-size: 11px;
+    color: #333;
+    transition: all 0.3s ease;
+    /* 🔥 기본 애니메이션 제거 */
+    overflow: hidden;
+    position: relative;
+    min-height: 20px;
 }
 
-/* 거래량 크기에 따른 색상 */
+/* 🔥 새로운 거래에만 간단한 반짝임 효과 */
+.whale-trade-pixel.new-trade-flash {
+    animation: simpleFlash 0.8s ease-out;
+}
+
+/* 🎨 새로운 색상 팔레트 기반 레벨별 스타일 */
+
+/* Level 1: $250k+ - theme-buy-100 / theme-sell-100 */
 .whale-trade-pixel.level-1 {
-    background-color: rgba(34, 197, 94, 0.7);
-    border-left-color: #22c55e;
+    background: linear-gradient(90deg, rgba(114, 180, 116, 0.9), rgba(114, 180, 116, 0.7));
+    border-left-color: rgb(100, 157, 102);
+    color: #ffffff;
+    
 }
 
 .whale-trade-pixel.level-1.sell {
-    background-color: rgba(239, 68, 68, 0.7);
-    border-left-color: #ef4444;
+    background: linear-gradient(90deg, rgba(249, 95, 105, 0.9), rgba(249, 95, 105, 0.7));
+    border-left-color: rgb(239, 67, 82);
+    color: #ffffff;
+    
 }
 
+/* Level 2: $500k+ - theme-buy-200 / theme-sell-200 */
 .whale-trade-pixel.level-2 {
-    background-color: rgba(34, 197, 94, 0.8);
-    border-left-color: #16a34a;
+    background: linear-gradient(90deg, rgba(168, 238, 168, 1), rgba(168, 238, 168, 0.8));
+    border-left-color: rgb(114, 180, 116);
+    color: rgb(100, 157, 102);
     font-weight: 700;
+    box-shadow: 0 0 8px rgba(100, 157, 102, 0.4);
+    
 }
 
 .whale-trade-pixel.level-2.sell {
-    background-color: rgba(239, 68, 68, 0.8);
-    border-left-color: #dc2626;
+    background: linear-gradient(90deg, rgba(266, 167, 172, 1), rgba(266, 167, 172, 0.8));
+    border-left-color: rgb(249, 95, 105);
+    color: rgb(239, 67, 82);
     font-weight: 700;
+    box-shadow: 0 0 8px rgba(239, 67, 82, 0.4);
+    
 }
 
+/* Level 3 고래 거래 (500k-1M) */
 .whale-trade-pixel.level-3 {
-    background-color: rgba(34, 197, 94, 0.9);
-    border-left-color: #15803d;
-    font-weight: 700;
-    box-shadow: 0 0 10px rgba(34, 197, 94, 0.3);
+    background: linear-gradient(135deg, rgba(114, 180, 116, 0.3), rgba(114, 180, 116, 0.1));
+    border-left-color: rgb(114, 180, 116);
+    color: rgb(114, 180, 116);
+    font-weight: 600;
+    box-shadow: 0 0 15px rgba(114, 180, 116, 0.6);
+    
 }
 
 .whale-trade-pixel.level-3.sell {
-    background-color: rgba(239, 68, 68, 0.9);
-    border-left-color: #b91c1c;
-    font-weight: 700;
-    box-shadow: 0 0 10px rgba(239, 68, 68, 0.3);
+    background: linear-gradient(135deg, rgba(249, 95, 105, 0.3), rgba(249, 95, 105, 0.1));
+    border-left-color: rgb(249, 95, 105);
+    color: rgb(249, 95, 105);
+    box-shadow: 0 0 15px rgba(249, 95, 105, 0.6);
 }
 
+/* Level 4 고래 거래 (1M 이상) - 롱/숏 구분 */
 .whale-trade-pixel.level-4 {
-    background-color: rgba(34, 197, 94, 1);
-    border-left-color: #166534;
+    background-color: rgb(53, 208, 111) !important; /* 🔥 롱 1M 이상 - 초록색 배경 */
+    background-image: var(--long-gif-1) !important; /* 🔥 기본 GIF (JavaScript에서 랜덤 변경됨) */
+    background-size: cover; /* 🔥 GIF가 전체 영역을 덮도록 */
+    background-position: center; /* 🔥 GIF 중앙 정렬 */
+    background-repeat: no-repeat; /* 🔥 GIF 반복 없음 */
+    background-blend-mode: overlay; /* 🔥 색상과 GIF 블렌딩 */
+    border-left-color: rgb(53, 208, 111);
+    color: #ffffff; /* 🔥 흰색 텍스트로 가독성 향상 */
     font-weight: 700;
-    box-shadow: 0 0 15px rgba(34, 197, 94, 0.5);
-    animation: slideDown 0.3s ease-out, megaWhalePulse 2s infinite;
+    box-shadow: 0 0 20px rgba(53, 208, 111, 0.8);
+    /* 🔥 기본 애니메이션 제거 - 새로운 거래에만 빤짝 효과 */
+    transform: scale(1.005); /* 🔥 가로 스크롤 방지 - 1.02에서 1.005로 감소 */
+    min-height: 30px; /* 🔥 높이 30px로 설정 */
+    position: relative;
+    overflow: hidden;
+    z-index: 1;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8); /* 🔥 초록 GIF 위에서 텍스트 가독성 향상 */
 }
 
 .whale-trade-pixel.level-4.sell {
-    background-color: rgba(239, 68, 68, 1);
-    border-left-color: #991b1b;
+    background-color: rgb(235, 30, 47) !important; /* 🔥 숏 1M 이상 - 빨간색 배경 */
+    background-image: var(--short-gif-1) !important; /* 🔥 기본 GIF (JavaScript에서 랜덤 변경됨) */
+    background-size: cover; /* 🔥 GIF가 전체 영역을 덮도록 */
+    background-position: center; /* 🔥 GIF 중앙 정렬 */
+    background-repeat: no-repeat; /* 🔥 GIF 반복 없음 */
+    background-blend-mode: overlay; /* 🔥 색상과 GIF 블렌딩 */
+    border-left-color: rgb(235, 30, 47);
+    color: #ffffff; /* 🔥 흰색 텍스트로 가독성 향상 */
     font-weight: 700;
-    box-shadow: 0 0 15px rgba(239, 68, 68, 0.5);
-    animation: slideDown 0.3s ease-out, megaWhalePulse 2s infinite;
+    box-shadow: 0 0 20px rgba(235, 30, 47, 0.8);
+    /* 🔥 기본 애니메이션 제거 - 새로운 거래에만 빤짝 효과 */
+    transform: scale(1.005);
+    min-height: 30px; /* 🔥 높이 30px로 설정 */
+    position: relative;
+    overflow: hidden;
+    z-index: 1;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8); /* 🔥 GIF 위에서 텍스트 가독성 향상 */
 }
 
-@keyframes slideDown {
-    from {
-        opacity: 0;
-        transform: translateY(-10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+/* 🔥 랜덤 GIF 클래스들 - JavaScript에서 동적으로 추가됨 */
+.whale-trade-pixel.level-4.long-gif-1 {
+    background-image: var(--long-gif-1) !important;
 }
 
-@keyframes megaWhalePulse {
-    0%, 100% {
-        box-shadow: 0 0 15px rgba(34, 197, 94, 0.5);
-    }
-    50% {
-        box-shadow: 0 0 25px rgba(34, 197, 94, 0.8);
-    }
+.whale-trade-pixel.level-4.long-gif-2 {
+    background-image: var(--long-gif-2) !important;
 }
+
+.whale-trade-pixel.level-4.sell.short-gif-1 {
+    background-image: var(--short-gif-1) !important;
+}
+
+.whale-trade-pixel.level-4.sell.short-gif-2 {
+    background-image: var(--short-gif-2) !important;
+}
+
+.whale-trade-pixel.level-4.sell.short-gif-3 {
+    background-image: var(--short-gif-3) !important;
+}
+
+/* 🔥 GIF 백그라운드 위에서 텍스트 가독성 향상 */
+.whale-trade-pixel.level-4 {
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8); /* 🔥 초록 GIF 위에서 텍스트 가독성 향상 */
+}
+
+.whale-trade-pixel.level-4 > *,
+.whale-trade-pixel.level-4.sell > * {
+    position: relative;
+    z-index: 3;
+    font-weight: 800; /* 🔥 더 굵은 폰트로 가독성 강화 */
+}
+
+/* 🔥 새로운 반짝임 애니메이션 - 가로 스크롤 방지 */
+
+/* 🔥 강화된 메가 고래 펄스 - 가로 스크롤 방지 */
+
+/* 🔥 초대형 고래 반짝임 효과 */
+
+/* 기존 슬라이드 다운 애니메이션 제거 (중복) */
 
 .whale-trade-pixel .trade-arrow {
     display: inline-block;
@@ -158,16 +397,6 @@
     text-align: center;
     flex-shrink: 0;
     font-size: 11px;
-}
-
-.whale-trade-pixel .trade-exchange-icon {
-    display: inline-block;
-    width: 16px;
-    text-align: center;
-    flex-shrink: 0;
-    margin-left: 2px;
-    font-size: 12px;
-    font-weight: bold;
 }
 
 .whale-trade-pixel .trade-price {
@@ -214,29 +443,29 @@
     min-width: 300px;
     max-width: 400px;
     z-index: 10000;
-    animation: alertSlideIn 0.5s ease-out;
+    
     box-shadow: 0 8px 32px rgba(0,0,0,0.3);
 }
 
 .whale-alert-buy {
-    border-color: #22c55e;
-    box-shadow: 0 8px 32px rgba(34, 197, 94, 0.2);
+    border-color: rgb(100, 157, 102);
+    box-shadow: 0 8px 32px rgba(100, 157, 102, 0.3);
 }
 
 .whale-alert-sell {
-    border-color: #ef4444;
-    box-shadow: 0 8px 32px rgba(239, 68, 68, 0.2);
+    border-color: rgb(239, 67, 82);
+    box-shadow: 0 8px 32px rgba(239, 67, 82, 0.3);
 }
 
 .whale-alert-level-2 {
     border-width: 3px;
-    transform: scale(1.05);
+    transform: scale(1.01); /* 🔥 가로 스크롤 방지 - 1.05에서 1.01로 감소 */
 }
 
 .whale-alert-level-3 {
     border-width: 4px;
-    transform: scale(1.1);
-    animation: whaleAlertPulse 1s infinite;
+    transform: scale(1.02); /* 🔥 가로 스크롤 방지 - 1.1에서 1.02로 감소 */
+    
 }
 
 .whale-alert-content {
@@ -264,12 +493,12 @@
 }
 
 .whale-alert-buy .whale-alert-side {
-    background: #22c55e;
-    color: #000;
+    background: rgb(100, 157, 102);
+    color: #fff;
 }
 
 .whale-alert-sell .whale-alert-side {
-    background: #ef4444;
+    background: rgb(239, 67, 82);
     color: #fff;
 }
 
@@ -370,47 +599,11 @@
 }
 
 /* Animations */
-@keyframes tradeSlideIn {
-    from {
-        opacity: 0;
-        transform: translateX(-20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateX(0);
-    }
-}
 
-@keyframes whalePulse {
-    0%, 100% {
-        box-shadow: 0 0 20px rgba(0,0,0,0.5);
-    }
-    50% {
-        box-shadow: 0 0 30px rgba(34, 197, 94, 0.3);
-    }
-}
 
-@keyframes alertSlideIn {
-    from {
-        opacity: 0;
-        transform: translateX(100px) scale(0.8);
-    }
-    to {
-        opacity: 1;
-        transform: translateX(0) scale(1);
-    }
-}
 
-@keyframes whaleAlertPulse {
-    0%, 100% {
-        box-shadow: 0 8px 32px rgba(0,0,0,0.3);
-    }
-    50% {
-        box-shadow: 0 8px 32px rgba(34, 197, 94, 0.4);
-    }
-}
 
-/* Exchange-specific styling */
+/* Exchange-specific styling - 색상 팔레트 기반 업데이트 */
 .trade-binance {
     border-left-color: #f3ba2f;
 }
@@ -448,12 +641,6 @@
         font-size: 10px;
     }
     
-    .whale-trade-pixel .trade-exchange-icon {
-        width: 14px;
-        font-size: 11px;
-    }
-    
-    .whale-trade-pixel .trade-price,
     .whale-trade-pixel .trade-amount {
         font-size: 11px;
     }
@@ -481,12 +668,6 @@
         font-size: 9px;
     }
     
-    .whale-trade-pixel .trade-exchange-icon {
-        width: 12px;
-        font-size: 10px;
-    }
-    
-    .whale-trade-pixel .trade-price,
     .whale-trade-pixel .trade-amount {
         font-size: 10px;
     }
@@ -528,11 +709,6 @@
     }
     
     .whale-trade-pixel .trade-exchange-icon {
-        font-size: 10px;
-        width: 12px;
-    }
-    
-    .whale-trade-pixel .trade-price {
         font-size: 10px;
     }
     
@@ -609,14 +785,10 @@
     border: 2px solid #333;
     border-top: 2px solid #22c55e;
     border-radius: 50%;
-    animation: spin 1s linear infinite;
+    
     margin-left: 10px;
 }
 
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
 
 /* Connection Status */
 .whale-connection-status {
@@ -681,6 +853,7 @@
     border-radius: 3px;
 }
 
+/* 기존 중복 스타일 정리 - trade 클래스들 통합 */
 .trade {
     display: flex;
     background-position: center center;
@@ -701,31 +874,33 @@
     bottom: 0;
     opacity: 0;
     background-color: #fff;
-    animation: 1s cubic-bezier(.16,1,.3,1) highlight;
+    
     pointer-events: none;
 }
 
 .trade.-sell {
     background-color: rgba(239, 67, 82, 0.1);
-    color: #ef4352;
+    color: rgb(239, 67, 82);
 }
 
 .trade.-buy {
     background-color: rgba(100, 157, 102, 0.1);
-    color: #649d66;
+    color: rgb(100, 157, 102);
 }
 
-/* Trade size levels */
+/* Trade size levels - 새로운 색상 적용 */
 .trade.-level-0 {
     line-height: 1.875em;
     font-size: 0.875em;
     padding: 0.3em 2rem 0.3em 1.25rem;
+    background-color: rgba(197, 198, 202, 0.1);
 }
 
 .trade.-level-1 {
     line-height: 1.875em;
     font-size: 1em;
     padding: 0.4em 2rem 0.4em 1.25rem;
+    background-color: rgba(114, 180, 116, 0.2);
 }
 
 .trade.-level-2 {
@@ -733,17 +908,20 @@
     font-size: 1.125em;
     font-weight: 600;
     padding: 0.5em 2rem 0.5em 1.25rem;
+    background-color: rgba(168, 238, 168, 0.3);
 }
 
 .trade.-level-3 {
     line-height: 2em;
-    box-shadow: 0 0 20px rgba(0,0,0,0.5);
+    box-shadow: 0 0 20px rgba(100, 157, 102, 0.5);
     z-index: 1;
     font-size: 1.25em;
     padding: 0.6em 2rem 0.6em 1.25rem;
     font-weight: 600;
+    background-color: rgba(168, 238, 168, 0.4);
 }
 
+/* 나머지 기존 스타일들은 유지하되 중복 제거 */
 .trade > div {
     flex-grow: 1;
     flex-basis: 0;
@@ -807,31 +985,12 @@
 }
 
 /* Animation for $1M+ trades */
-@keyframes megaWhale {
-    0% {
-        background-color: rgba(255,255,255,0.2);
-    }
-    50% {
-        background-color: rgba(255,255,255,0.1);
-    }
-    100% {
-        background-color: rgba(255,255,255,0);
-    }
-}
 
 .trade.-mega-whale {
-    animation: megaWhale 2s ease-out;
+    
 }
 
 /* Highlight animation */
-@keyframes highlight {
-    0% {
-        opacity: 0.75;
-    }
-    100% {
-        opacity: 0;
-    }
-}
 
 /* Container styles */
 #whale-tracker {
@@ -965,4 +1124,137 @@
 
 .whale-trade-side-sell {
     color: #f44336;
-} 
+} /* 🔥 펄스 애니메이션 */
+
+/* 🔥 고래 에러 메시지 스타일 */
+.whale-error-message {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    text-align: center;
+    height: 150px;
+}
+
+.whale-error-message .error-icon {
+    font-size: 24px;
+    margin-bottom: 8px;
+    color: rgb(239, 67, 82);
+}
+
+.whale-error-message .error-text p {
+    margin: 4px 0;
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.4;
+}
+
+.whale-error-message .retry-button {
+    margin-top: 12px;
+    padding: 6px 12px;
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.whale-error-message .retry-button:hover {
+    background-color: #2563eb;
+}
+
+/* 🔥 숏 1M 이상 거래 전용 애니메이션 - GIF 효과 */
+
+
+
+/* 🔥 롱 1M 이상 거래 전용 애니메이션 - GIF 효과 */
+
+
+
+/* 🔥 롱 1M 이상 거래 특별 애니메이션 효과 */
+
+
+/* 🔥 텍스트 콘텐츠가 애니메이션 위에 표시되도록 */
+.whale-trade-pixel.level-4 > * {
+    position: relative;
+    z-index: 3;
+}
+
+/* 🔥 거래소 아이콘 스타일 */
+.trade-exchange-icon {
+    width: 50px;
+    font-size: 12px;
+    font-weight: 600;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    /* 🔥 박스 제거 - 깔끔한 아이콘만 표시 */
+}
+
+/* 🔥 거래소 SVG 아이콘 스타일 */
+.exchange-svg-icon {
+    width: 16px;
+    height: 16px;
+    object-fit: contain;
+    transition: all 0.3s ease;
+    /* 🔥 박스 제거 - 아이콘만 깔끔하게 표시 */
+}
+
+/* 🔥 레벨별 거래소 아이콘 크기 차등화 */
+.whale-trade-pixel.level-1 .exchange-svg-icon {
+    width: 16px;
+    height: 16px;
+}
+
+.whale-trade-pixel.level-2 .exchange-svg-icon {
+    width: 18px;
+    height: 18px;
+    filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.5));
+}
+
+.whale-trade-pixel.level-3 .exchange-svg-icon {
+    width: 20px;
+    height: 20px;
+    filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.7));
+}
+
+/* 🔥 Level 4 거래에서 SVG 아이콘 강조 */
+.whale-trade-pixel.level-4 .exchange-svg-icon {
+    width: 24px;
+    height: 24px;
+    filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.9));
+    
+}
+
+.whale-trade-pixel.level-4.sell .exchange-svg-icon {
+    width: 24px;
+    height: 24px;
+    filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.9));
+    
+}
+
+/* 🔥 Level 4 아이콘 펄스 애니메이션 */
+
+/* 🔥 새로운 거래에만 간단한 반짝임 효과 */
+.whale-trade-pixel.new-trade-flash {
+    
+}
+
+/* 🔥 간단한 반짝임 애니메이션 */
+@keyframes simpleFlash {
+    0% {
+        background-color: rgba(255, 255, 255, 0.9);
+        transform: scale(1.02);
+    }
+    50% {
+        background-color: rgba(255, 255, 255, 0.7);
+    }
+    100% {
+        background-color: inherit;
+        transform: scale(1);
+    }
+}

@@ -1,8 +1,13 @@
-/* ========================================
-   💬 CHAT COMPONENT STYLES
-   ======================================== */
+/* 🔥 Chat Component CSS - 중복 제거 및 최적화 */
 
-/* 🔥 채팅 섹션 기본 레이아웃 */
+/* 🔥 공통 배경색 통합 */
+.chat-input-form,
+.chat-input-form input,
+.message-text,
+.message-input-wrapper {
+}
+
+/* 채팅 섹션 */
 .chat-section {
     display: flex;
     flex-direction: column;
@@ -179,7 +184,6 @@
     color: var(--text-color);
     padding: 8px 12px;
     border-radius: 12px;
-    background: var(--bg-secondary-color);
     margin: 0;
     max-width: 100%;
     box-sizing: border-box;
@@ -195,19 +199,17 @@
 .chat-input-form {
     display: flex;
     gap: 8px;
-    padding: 4px;
+    padding: 8px 8px;
     border-top: 1px solid var(--border-color);
-    background: var(--card-bg);
     flex-shrink: 0;
     box-sizing: border-box;
-    height: 39px;
+    height: 60px;
 }
 
 #message-input {
     flex: 1;
     padding: 12px 16px;
     border: 1px solid var(--border-color);
-    background: var(--bg-secondary-color);
     color: var(--text-color);
     font-size: 14px;
     outline: none;
@@ -250,7 +252,6 @@
 }
 
 #chat-messages::-webkit-scrollbar-track {
-    background: var(--bg-secondary-color);
     border-radius: 3px;
 }
 
@@ -269,7 +270,6 @@
     padding: 20px;
     color: var(--text-color-secondary);
     font-size: 14px;
-    background: var(--bg-secondary-color);
     border-radius: 8px;
     margin: 10px;
 }
@@ -417,31 +417,26 @@
 }
 
 :root.dark-mode #message-input {
-    background-color: var(--bg-secondary-color);
     color: var(--text-color);
     border-color: var(--border-color);
 }
 
 :root.dark-mode .message-text {
-    background-color: var(--bg-secondary-color);
     color: var(--text-color);
 }
 
-/* 🔥 라이트 모드 지원 */
+/* 🔥 라이트 모드 지원 - 최적화 */
 :root:not(.dark-mode) .chat-section,
 :root:not(.dark-mode) .chat-wrapper,
-:root:not(.dark-mode) #chat-messages,
-:root:not(.dark-mode) .chat-input-form {
+:root:not(.dark-mode) #chat-messages {
     background-color: var(--card-bg);
 }
 
 :root:not(.dark-mode) #message-input {
-    background-color: var(--bg-secondary-color);
     color: var(--text-color);
     border-color: var(--border-color);
 }
 
 :root:not(.dark-mode) .message-text {
-    background-color: var(--bg-secondary-color);
     color: var(--text-color);
 } 

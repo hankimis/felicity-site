@@ -1,4 +1,4 @@
-// Analysis Dashboard Main Controller
+// 🚀 Analysis Dashboard Main Controller (전문 오더북 통합)
 // Analysis 모듈들 import
 import { WhaleTracker } from './analysis/whale-tracker.js';
 import { TechnicalIndicators } from './analysis/technical-indicators.js';
@@ -121,9 +121,10 @@ class AnalysisDashboard {
                 symbol: 'BTCUSDT'
             });
 
-            this.modules.orderbookTracker = new OrderbookTracker({
-                symbol: 'BTCUSDT'
-            });
+            // 새로운 오더북 시스템 초기화 (비동기)
+            setTimeout(async () => {
+                await initializeOrderbook('BTCUSDT');
+            }, 1000); // 다른 모듈들이 먼저 초기화된 후 실행
 
             this.modules.marketHeatmap = new MarketHeatmap({
                 symbols: ['BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'ADAUSDT', 'SOLUSDT']
@@ -178,6 +179,9 @@ class AnalysisDashboard {
         
         document.getElementById('orderbook-symbol')?.addEventListener('change', async (e) => {
             await this.updateSymbol('orderbook', e.target.value);
+            
+            // 새로운 오더북 시스템에 심볼 변경 적용
+            changeOrderbookSymbol(e.target.value);
         });
         
         document.getElementById('open-interest-symbol')?.addEventListener('change', async (e) => {
@@ -1204,6 +1208,342 @@ class AnalysisDashboard {
         
         console.log('🧹 Dashboard cleanup completed');
     }
+}
+
+/**
+ * 🔥 오더북 초기화 - 강화된 시스템
+ */
+async function initializeOrderbook(symbol = 'BTCUSDT') {
+    try {
+        console.log('🔄 오더북 시스템 초기화 중...', { symbol });
+
+        // 기존 오더북 정리
+        if (window.orderbookTracker) {
+            window.orderbookTracker.destroy();
+            window.orderbookTracker = null;
+        }
+
+        // 오더북 컨테이너 확인 및 생성
+        let orderbookContainer = document.getElementById('professional-orderbook-container');
+        if (!orderbookContainer) {
+            // 기존 오더북 카드에서 컨테이너 찾기
+            const orderbookCard = document.querySelector('.orderbook-card, .professional-orderbook-card');
+            if (orderbookCard) {
+                orderbookContainer = orderbookCard.querySelector('.card-content') || orderbookCard;
+                if (orderbookContainer) {
+                    orderbookContainer.id = 'professional-orderbook-container';
+                }
+            }
+        }
+
+        if (!orderbookContainer) {
+            console.warn('⚠️ 오더북 컨테이너를 찾을 수 없음 - GridStack 카드 생성');
+            
+            // GridStack에서 오더북 카드 찾기 또는 생성
+            const grid = GridStack.getById('analysis-grid');
+            if (grid) {
+                // 기존 오더북 위젯 찾기
+                let orderbookWidget = grid.el.querySelector('[gs-w="orderbook"], [data-widget="orderbook"]');
+                
+                if (!orderbookWidget) {
+                    // 오더북 위젯이 없으면 생성
+                    const widgetHtml = `
+                        <div class="grid-stack-item" data-widget="orderbook" gs-w="3" gs-h="4" gs-x="6" gs-y="0">
+                            <div class="grid-stack-item-content">
+                                <div class="analysis-card professional-orderbook-card">
+                                    <div class="analysis-card-header">
+                                        <h4><i class="fas fa-list-alt"></i> 실시간 오더북</h4>
+                                    </div>
+                                    <div class="card-content" id="professional-orderbook-container">
+                                        <!-- 오더북 UI가 여기에 동적으로 생성됩니다 -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    grid.addWidget(widgetHtml);
+                    orderbookWidget = grid.el.querySelector('[data-widget="orderbook"]');
+                }
+                
+                if (orderbookWidget) {
+                    orderbookContainer = orderbookWidget.querySelector('#professional-orderbook-container') ||
+                                       orderbookWidget.querySelector('.card-content');
+                    
+                    if (orderbookContainer && !orderbookContainer.id) {
+                        orderbookContainer.id = 'professional-orderbook-container';
+                    }
+                }
+            }
+        }
+
+        if (!orderbookContainer) {
+            throw new Error('오더북 컨테이너를 생성할 수 없습니다');
+        }
+
+        console.log('✅ 오더북 컨테이너 준비 완료:', orderbookContainer.id);
+
+        // 새로운 OrderbookTracker 인스턴스 생성
+        const { OrderbookTracker } = await import('./analysis/orderbook-tracker.js');
+        
+        window.orderbookTracker = new OrderbookTracker({
+            symbol: symbol,
+            maxDepth: 15,
+            precision: 0.1,
+            updateInterval: 100,
+            enablePriceGrouping: true,
+            heartbeatInterval: 30000,
+            maxReconnectAttempts: 10,
+            reconnectDelay: 1000
+        });
+
+        // 오더북 이벤트 리스너 설정
+        setupOrderbookEventListeners();
+
+        console.log('✅ 오더북 시스템 초기화 완료');
+        return window.orderbookTracker;
+
+    } catch (error) {
+        console.error('❌ 오더북 초기화 실패:', error);
+        
+        // 폴백: 기본 오더북 메시지 표시
+        showOrderbookFallback(error.message);
+        
+        // 재시도 스케줄링
+        setTimeout(() => {
+            console.log('🔄 오더북 초기화 재시도...');
+            initializeOrderbook(symbol);
+        }, 5000);
+        
+        return null;
+    }
+}
+
+/**
+ * 🔥 오더북 폴백 표시
+ */
+function showOrderbookFallback(errorMessage) {
+    const orderbookContainer = document.getElementById('professional-orderbook-container');
+    if (!orderbookContainer) return;
+
+    orderbookContainer.innerHTML = `
+        <div class="orderbook-error-state">
+            <div class="error-icon">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <div class="error-message">
+                <h4>오더북 로딩 실패</h4>
+                <p>${errorMessage}</p>
+                <button class="retry-btn" onclick="initializeOrderbook()">
+                    <i class="fas fa-redo"></i> 다시 시도
+                </button>
+            </div>
+        </div>
+    `;
+}
+
+/**
+ * 🔥 오더북 이벤트 리스너 설정
+ */
+function setupOrderbookEventListeners() {
+    // 가격 선택 이벤트
+    document.addEventListener('orderbook-price-selected', (event) => {
+        const { price, timestamp } = event.detail;
+        console.log(`📊 오더북 가격 선택됨: ${price} at ${new Date(timestamp).toLocaleTimeString()}`);
+        
+        // 토스트 알림
+        showToast(`가격 선택: ${price} USDT`, 'info');
+        
+        // 다른 차트나 컴포넌트에 가격 정보 전파
+        document.dispatchEvent(new CustomEvent('price-selected', {
+            detail: { price, source: 'orderbook', timestamp }
+        }));
+    });
+
+    // 심볼 변경 이벤트 리스너
+    document.addEventListener('symbol-changed', (event) => {
+        const { symbol } = event.detail;
+        console.log(`🔄 심볼 변경됨: ${symbol}`);
+        
+        if (window.orderbookTracker) {
+            // 기존 오더북 정리하고 새 심볼로 재초기화
+            window.orderbookTracker.destroy();
+            setTimeout(() => {
+                initializeOrderbook(symbol);
+            }, 500);
+        }
+    });
+
+    // 정밀도 변경 이벤트 (외부에서 호출 가능)
+    document.addEventListener('orderbook-precision-change', (event) => {
+        const { precision } = event.detail;
+        console.log(`🎯 오더북 정밀도 변경: ${precision}`);
+        
+        if (window.orderbookTracker) {
+            window.orderbookTracker.changePrecision(precision);
+        }
+    });
+
+    // 뷰 모드 변경 이벤트 (외부에서 호출 가능)
+    document.addEventListener('orderbook-view-change', (event) => {
+        const { viewMode } = event.detail;
+        console.log(`🎯 오더북 뷰 모드 변경: ${viewMode}`);
+        
+        if (window.orderbookTracker) {
+            window.orderbookTracker.changeViewMode(viewMode);
+        }
+    });
+
+    // 페이지 언로드 시 정리
+    window.addEventListener('beforeunload', () => {
+        if (window.orderbookTracker) {
+            window.orderbookTracker.destroy();
+        }
+    });
+
+    // 에러 처리
+    window.addEventListener('error', (event) => {
+        if (event.error && event.error.message && 
+            (event.error.message.includes('orderbook') || event.error.message.includes('WebSocket'))) {
+            console.error('🚨 오더북 관련 전역 오류:', event.error);
+            
+            // 치명적 오류 시 재초기화
+            if (window.orderbookTracker) {
+                setTimeout(() => {
+                    console.log('🔄 전역 오류로 인한 오더북 재초기화');
+                    const currentSymbol = window.orderbookTracker.config?.symbol || 'BTCUSDT';
+                    initializeOrderbook(currentSymbol);
+                }, 2000);
+            }
+        }
+    });
+}
+
+/**
+ * 🔥 심볼 변경 함수 (외부 호출용)
+ */
+function changeOrderbookSymbol(newSymbol) {
+    if (!newSymbol || typeof newSymbol !== 'string') {
+        console.error('❌ 유효하지 않은 심볼:', newSymbol);
+        return;
+    }
+
+    console.log(`🔄 오더북 심볼 변경 요청: ${newSymbol}`);
+    
+    document.dispatchEvent(new CustomEvent('symbol-changed', {
+        detail: { symbol: newSymbol.toUpperCase() }
+    }));
+}
+
+/**
+ * 🔥 오더북 정밀도 변경 함수 (외부 호출용)
+ */
+function changeOrderbookPrecision(precision) {
+    const validPrecisions = [0.01, 0.1, 1, 10, 100];
+    
+    if (!validPrecisions.includes(precision)) {
+        console.error('❌ 유효하지 않은 정밀도:', precision);
+        return;
+    }
+
+    document.dispatchEvent(new CustomEvent('orderbook-precision-change', {
+        detail: { precision }
+    }));
+}
+
+/**
+ * 🔥 오더북 뷰 모드 변경 함수 (외부 호출용)
+ */
+function changeOrderbookView(viewMode) {
+    const validViewModes = ['combined', 'bids-only', 'asks-only'];
+    
+    if (!validViewModes.includes(viewMode)) {
+        console.error('❌ 유효하지 않은 뷰 모드:', viewMode);
+        return;
+    }
+
+    document.dispatchEvent(new CustomEvent('orderbook-view-change', {
+        detail: { viewMode }
+    }));
+}
+
+/**
+ * 🔥 오더북 상태 확인 함수
+ */
+function getOrderbookStatus() {
+    if (!window.orderbookTracker) {
+        return { status: 'not_initialized', message: '오더북이 초기화되지 않음' };
+    }
+
+    const tracker = window.orderbookTracker;
+    return {
+        status: tracker.connection.status,
+        isConnected: tracker.connection.isConnected,
+        symbol: tracker.config.symbol,
+        lastUpdate: tracker.orderbook.timestamp,
+        updateCount: tracker.metrics.updateCount,
+        errors: tracker.metrics.errorCount,
+        reconnects: tracker.metrics.reconnectCount,
+        spread: tracker.orderbook.spread,
+        bestBid: tracker.orderbook.bestBid,
+        bestAsk: tracker.orderbook.bestAsk
+    };
+}
+
+/**
+ * 🔥 토스트 알림 표시 (유틸리티 함수)
+ */
+function showToast(message, type = 'info', duration = 3000) {
+    // 기존 토스트가 있으면 제거
+    const existingToast = document.querySelector('.orderbook-toast');
+    if (existingToast) {
+        existingToast.remove();
+    }
+
+    const toast = document.createElement('div');
+    toast.className = `orderbook-toast toast-${type}`;
+    toast.innerHTML = `
+        <div class="toast-content">
+            <i class="fas fa-${type === 'info' ? 'info-circle' : type === 'success' ? 'check-circle' : 'exclamation-triangle'}"></i>
+            <span>${message}</span>
+        </div>
+    `;
+
+    // 토스트 스타일
+    toast.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: ${type === 'info' ? '#3b82f6' : type === 'success' ? '#10b981' : '#ef4444'};
+        color: white;
+        padding: 12px 16px;
+        border-radius: 8px;
+        z-index: 10000;
+        opacity: 0;
+        transform: translateX(100%);
+        transition: all 0.3s ease;
+        font-size: 14px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    `;
+
+    document.body.appendChild(toast);
+
+    // 애니메이션
+    requestAnimationFrame(() => {
+        toast.style.opacity = '1';
+        toast.style.transform = 'translateX(0)';
+    });
+
+    // 자동 제거
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateX(100%)';
+        setTimeout(() => {
+            if (toast.parentNode) {
+                toast.parentNode.removeChild(toast);
+            }
+        }, 300);
+    }, duration);
 }
 
 // Export for use in other modules

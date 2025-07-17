@@ -27,6 +27,9 @@
     <link rel="stylesheet" href="css/components/_navbar.css">
     <link rel="stylesheet" href="css/components/_modal.css">
     <link rel="stylesheet" href="css/components/_buttons.css">
+    
+    <!-- 🔥 고래 추적기 CSS 추가 -->
+    <link rel="stylesheet" href="css/whale-tracker.css">
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
     <link rel="icon" type="image/png" href="/onbit/favicon-96x96.png" sizes="96x96">
@@ -197,14 +200,10 @@
                             </div>
                         </div>
                         <div class="card-content">
-                            <div class="orderbook-container">
-                                <div class="orderbook-side asks">
-                                    <h4>매도</h4>
-                                    <div class="orderbook-orders" id="asks-orders"></div>
-                                </div>
-                                <div class="orderbook-side bids">
-                                    <h4>매수</h4>
-                                    <div class="orderbook-orders" id="bids-orders"></div>
+                            <div class="orderbook-container" id="orderbook-container">
+                                <div class="orderbook-loading">
+                                    <i class="fas fa-spinner fa-spin"></i>
+                                    <span>오더북 로딩 중...</span>
                                 </div>
                             </div>
                         </div>
