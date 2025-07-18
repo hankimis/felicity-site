@@ -280,7 +280,7 @@ async function loadFreshNews(isBackgroundUpdate = false) {
             Promise.race([
                 fetchAndParseFeed(feed),
                 new Promise((_, reject) => 
-                    setTimeout(() => reject(new Error('Timeout')), 2000)
+                    setTimeout(() => reject(new Error('Timeout')), 5000)
                 )
             ]).catch(error => {
                 console.warn(`${feed.source} 피드 로딩 실패:`, error.message);
@@ -326,12 +326,12 @@ async function loadFreshNews(isBackgroundUpdate = false) {
             console.log(`📰 빠른 로딩 완료: ${successCount}개 소스에서 ${uniqueNews.length}개 뉴스`);
         }
 
-        // 2단계: 나머지 피드들 백그라운드에서 로드 (3초 타임아웃)
+        // 2단계: 나머지 피드들 백그라운드에서 로드 (5초 타임아웃)
         const slowPromises = slowFeeds.map(feed => 
             Promise.race([
                 fetchAndParseFeed(feed),
                 new Promise((_, reject) => 
-                    setTimeout(() => reject(new Error('Timeout')), 3000)
+                    setTimeout(() => reject(new Error('Timeout')), 5000)
                 )
             ]).catch(error => {
                 console.warn(`${feed.source} 피드 로딩 실패:`, error.message);
@@ -783,7 +783,7 @@ function loadEconomicCalendar() {
 function showSimpleCalendar() {
     console.log('📊 간단한 경제 캘린더 표시');
     
-    const widgetContainer = document.querySelector('.tradingview-widget-container__widget');
+    const widgetContainer = document.querySelector('#tradingview-economic-calendar');
     if (!widgetContainer) {
         console.error('위젯 컨테이너를 찾을 수 없습니다.');
         return;
@@ -823,7 +823,7 @@ function showSimpleCalendar() {
 
 // TradingView 경제 캘린더 로드 (직접 iframe 방식)
 function loadTradingViewCalendar() {
-    const widgetContainer = document.querySelector('.tradingview-widget-container__widget');
+    const widgetContainer = document.querySelector('#tradingview-economic-calendar');
     if (!widgetContainer) {
         console.error('TradingView 위젯 컨테이너를 찾을 수 없습니다.');
         return;
@@ -872,7 +872,7 @@ function loadTradingViewCalendar() {
 
 // 캘린더 로드 상태 확인
 function checkCalendarLoad() {
-    const iframe = document.querySelector('.tradingview-widget-container__widget iframe');
+    const iframe = document.querySelector('#tradingview-economic-calendar iframe');
     if (!iframe) {
         console.log('iframe이 없어서 대체 캘린더 로드');
         loadFallbackCalendar();
@@ -891,7 +891,7 @@ function checkCalendarLoad() {
 
 // 대체 캘린더 로드
 function loadFallbackCalendar() {
-    const widgetContainer = document.querySelector('.tradingview-widget-container__widget');
+    const widgetContainer = document.querySelector('#tradingview-economic-calendar');
     if (!widgetContainer) {
         console.error('위젯 컨테이너를 찾을 수 없습니다.');
         return;
@@ -948,7 +948,7 @@ function loadFallbackCalendar() {
 
 // 대체 캘린더 로드 상태 확인
 function checkFallbackCalendarLoad() {
-    const iframe = document.querySelector('.tradingview-widget-container__widget iframe');
+    const iframe = document.querySelector('#tradingview-economic-calendar iframe');
     if (!iframe) {
         console.log('대체 캘린더도 없어서 정적 캘린더 표시');
         showStaticCalendar();
@@ -967,7 +967,7 @@ function checkFallbackCalendarLoad() {
 
 // 정적 경제 캘린더 표시
 function showStaticCalendar() {
-    const widgetContainer = document.querySelector('.tradingview-widget-container__widget');
+    const widgetContainer = document.querySelector('#tradingview-economic-calendar');
     if (!widgetContainer) return;
 
     const today = new Date();

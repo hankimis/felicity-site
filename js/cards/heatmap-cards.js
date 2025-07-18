@@ -39,8 +39,9 @@ class HeatmapCardsManager {
   
   // 차트 카드 상태 확인
   checkHeatmapStatus() {
-    const cryptoChart = document.querySelector('.crypto-chart .tradingview-widget-container__widget');
-    const dominanceWidget = document.querySelector('.dominance-widget .tradingview-widget-container__widget');
+    // 위젯 초기화
+    const cryptoChart = document.querySelector('.crypto-chart #tradingview-crypto-heatmap');
+    const dominanceWidget = document.querySelector('.dominance-widget #tradingview-dominance-widget');
     
     if (cryptoChart && cryptoChart.children.length === 0) {
       console.log('📊 암호화폐 차트 로딩 중...');

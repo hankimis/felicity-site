@@ -24,7 +24,7 @@ class TabNavigation {
     }
 
     loadTradingViewCalendar() {
-        const widgetContainer = document.querySelector('.tradingview-widget-container__widget');
+        const widgetContainer = document.querySelector('#tradingview-economic-calendar');
         if (!widgetContainer) {
             console.error('TradingView 위젯 컨테이너를 찾을 수 없습니다.');
             return;
@@ -59,7 +59,7 @@ class TabNavigation {
     }
 
     loadWithHTMLEmbed() {
-        const widgetContainer = document.querySelector('.tradingview-widget-container__widget');
+        const widgetContainer = document.querySelector('#tradingview-economic-calendar');
         if (!widgetContainer) return;
 
         console.log('📊 TradingView HTML 임베드 방식으로 로드');
@@ -140,7 +140,7 @@ class TabNavigation {
     }
 
     checkWidgetLoad() {
-        const iframe = document.querySelector('.tradingview-widget-container__widget iframe');
+        const iframe = document.querySelector('#tradingview-economic-calendar iframe');
         if (!iframe) {
             console.log('iframe이 없어서 한국 캘린더로 대체');
             this.loadKoreanCalendar();
@@ -158,7 +158,7 @@ class TabNavigation {
     }
 
     loadKoreanCalendar() {
-        const widgetContainer = document.querySelector('.tradingview-widget-container__widget');
+        const widgetContainer = document.querySelector('#tradingview-economic-calendar');
         if (!widgetContainer) return;
 
         console.log('📊 한국 경제 캘린더 로드');
@@ -210,9 +210,9 @@ class TabNavigation {
     }
 
     checkKoreanCalendarLoad() {
-        const iframe = document.querySelector('.tradingview-widget-container__widget iframe');
+        const iframe = document.querySelector('#tradingview-economic-calendar iframe');
         if (!iframe) {
-            console.log('한국 캘린더도 없어서 정적 캘린더로 대체');
+            console.log('한국 캘린더로 대체');
             this.showStaticCalendar();
             return;
         }
@@ -420,7 +420,7 @@ class TabNavigation {
     }
 
     showCalendarError() {
-        const widgetContainer = document.querySelector('.tradingview-widget-container__widget');
+        const widgetContainer = document.querySelector('#tradingview-economic-calendar');
         if (!widgetContainer) return;
 
         widgetContainer.innerHTML = `

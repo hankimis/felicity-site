@@ -10,7 +10,7 @@
   grid-template-columns: 2fr 1fr;
   grid-template-rows: 1fr 1fr;
   gap: 20px;
-  height: 500px;
+  height: 600px; /* 높이 증가 */
 }
 
 .chart-card {
@@ -19,6 +19,9 @@
   box-shadow: 0 4px 12px rgba(0,0,0,0.1);
   overflow: hidden;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
+  height: 100%; /* 카드 높이를 100%로 설정 */
+  display: flex;
+  flex-direction: column;
 }
 
 .chart-card:hover {
@@ -31,10 +34,18 @@
   line-height: 1.4;
 }
 
+/* 위젯 높이 설정 */
+.chart-card > div[id^="tradingview-"] {
+  flex: 1;
+  height: 100%;
+  min-height: 0; /* flex 아이템이 축소될 수 있도록 */
+}
+
 /* 반응형 스타일 */
 @media (max-width: 1200px) {
   .main-widgets-grid {
     grid-template-columns: 1.5fr 1fr !important;
+    height: 550px !important;
   }
 }
 
