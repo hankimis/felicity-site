@@ -1,0 +1,59 @@
+/* 도미넌스 섹션 스타일 */
+.dominance-section {
+  padding: 2rem 0;
+  background: var(--bg-secondary);
+}
+
+.dominance-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 1.5rem;
+  max-width: 1800px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+.dominance-card {
+  background: var(--bg-primary);
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+  border: 1px solid var(--border-default);
+  transition: all 0.3s ease;
+}
+
+.dominance-card:hover {
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.dominance-card .tradingview-widget-container {
+  height: 550px;
+  width: 100%;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 1024px) {
+  .dominance-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .dominance-card .tradingview-widget-container {
+    height: 400px;
+  }
+}
+
+@media (max-width: 768px) {
+  .dominance-section {
+    padding: 1rem 0;
+  }
+  
+  .dominance-grid {
+    padding: 0 0.5rem;
+  }
+  
+  .dominance-card .tradingview-widget-container {
+    height: 350px;
+  }
+} 

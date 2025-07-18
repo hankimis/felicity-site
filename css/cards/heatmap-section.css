@@ -1,0 +1,88 @@
+/* 히트맵 섹션 스타일 */
+.heatmap-section {
+  padding: 2rem 0;
+}
+
+.heatmap-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  max-width: 1800px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+.heatmap-card {
+  background: var(--bg-primary);
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+  border: 1px solid var(--border-default);
+  transition: all 0.3s ease;
+}
+
+.heatmap-card:hover {
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.heatmap-card .card-header {
+  padding: 1.5rem 1.5rem 1rem;
+  border-bottom: 1px solid var(--border-default);
+  background: var(--bg-secondary);
+}
+
+.heatmap-card .card-header h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 0.5rem 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.heatmap-card .card-header p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.heatmap-card .tradingview-widget-container {
+  height: 500px;
+  width: 100%;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 1024px) {
+  .heatmap-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .heatmap-card .tradingview-widget-container {
+    height: 400px;
+  }
+}
+
+@media (max-width: 768px) {
+  .heatmap-section {
+    padding: 1rem 0;
+  }
+  
+  .heatmap-grid {
+    padding: 0 0.5rem;
+  }
+  
+  .heatmap-card .card-header {
+    padding: 1rem;
+  }
+  
+  .heatmap-card .card-header h3 {
+    font-size: 1.1rem;
+  }
+  
+  .heatmap-card .tradingview-widget-container {
+    height: 350px;
+  }
+} 

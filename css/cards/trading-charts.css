@@ -1,0 +1,72 @@
+/* TradingView 차트 그리드 섹션 스타일 */
+.trading-widgets-section {
+  padding: 20px 20px;
+  max-width: 1800px;
+  margin: 0 auto;
+}
+
+.main-widgets-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 20px;
+  height: 500px;
+}
+
+.chart-card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.chart-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+}
+
+.chart-card .card-header h3 {
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+/* 반응형 스타일 */
+@media (max-width: 1200px) {
+  .main-widgets-grid {
+    grid-template-columns: 1.5fr 1fr !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .main-widgets-grid {
+    grid-template-columns: 1fr !important;
+    grid-template-rows: auto auto auto !important;
+    height: auto !important;
+  }
+  .main-widgets-grid > div:first-child {
+    grid-row: 1 !important;
+    height: 400px !important;
+  }
+  .main-widgets-grid > div:not(:first-child) {
+    height: 300px !important;
+  }
+  .trading-widgets-section {
+    padding: 20px 10px !important;
+  }
+  .chart-card .card-header {
+    padding: 12px 15px 8px !important;
+  }
+  .chart-card .card-header h3 {
+    font-size: 0.95rem !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .chart-card .card-header h3 {
+    font-size: 0.9rem !important;
+  }
+  .chart-card .card-header p {
+    font-size: 0.8rem !important;
+  }
+} 

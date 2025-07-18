@@ -143,3 +143,99 @@
 .chart-section, .chat-section {
     height: 100%;
 } 
+
+/* ===================================================================
+ * TRADINGVIEW TICKER TAPE WIDGET STYLES - 수정됨
+ * ================================================================= */
+.tradingview-widget-container {
+  width: 100%;
+  position: relative;
+  background: var(--bg-primary);
+}
+
+/* 티커 테이프 전용 스타일 (헤더 아래) */
+body > .tradingview-widget-container:first-of-type {
+  height: 50px !important;
+  max-height: 50px !important;
+  min-height: 50px !important;
+  border-bottom: 1px solid var(--border-default);
+  z-index: 100;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  overflow: hidden !important;
+}
+
+body > .tradingview-widget-container:first-of-type .tradingview-widget-container__widget {
+  width: 100%;
+  height: 50px !important;
+  max-height: 50px !important;
+  min-height: 50px !important;
+  overflow: hidden !important;
+}
+
+/* TradingView 내부 iframe과 요소들의 높이 강제 조정 (티커 테이프만) */
+body > .tradingview-widget-container:first-of-type iframe,
+body > .tradingview-widget-container:first-of-type > div,
+body > .tradingview-widget-container:first-of-type * {
+  height: 50px !important;
+  max-height: 50px !important;
+}
+
+.tradingview-widget-copyright {
+  position: absolute;
+  bottom: 2px;
+  right: 8px;
+  font-size: 11px;
+  opacity: 0.7;
+  z-index: 101;
+}
+
+.tradingview-widget-copyright a {
+  color: var(--text-secondary);
+  text-decoration: none;
+}
+
+.tradingview-widget-copyright .blue-text {
+  color: #2962ff;
+}
+
+/* 다크 모드에서 위젯 스타일 조정 */
+[data-theme="dark"] .tradingview-widget-container {
+  background: var(--bg-primary);
+  border-bottom-color: var(--border-default);
+}
+
+/* 반응형 디자인 (티커 테이프만) */
+@media (max-width: 768px) {
+  body > .tradingview-widget-container:first-of-type {
+    height: 40px;
+  }
+  
+  body > .tradingview-widget-container:first-of-type .tradingview-widget-container__widget {
+    height: 40px;
+  }
+  
+  .tradingview-widget-copyright {
+    font-size: 10px;
+    bottom: 1px;
+    right: 6px;
+  }
+} 
+
+/* TradingView 불필요한 요소 숨기기 */
+#tradingview_59436-wrapper,
+[id*="tradingview_"][id*="-wrapper"],
+.tradingview-widget-container iframe[id*="tradingview_"] {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  position: absolute !important;
+  left: -9999px !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+/* TradingView 위젯 관련 팝업이나 오버레이 숨기기 */
+div[id*="tradingview_widget"],
+div[class*="tradingview-widget"]:not(.tradingview-widget-container):not(.tradingview-widget-container__widget):not(.tradingview-widget-copyright) {
+  display: none !important;
+} 

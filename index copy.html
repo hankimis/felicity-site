@@ -118,15 +118,9 @@
   
   <!-- Load critical CSS files -->
   <link rel="stylesheet" href="css/style.css">
-  <link rel="stylesheet" href="css/whale-tracker.css">
-  <link rel="stylesheet" href="css/popup-banner.css">
+
+    <link rel="stylesheet" href="css/popup-banner.css">
   <link rel="stylesheet" href="auth.css">
-  
-  <!-- Card-specific CSS files -->
-  <link rel="stylesheet" href="css/cards/trading-charts.css">
-  <link rel="stylesheet" href="css/cards/feature-cards.css">
-  <link rel="stylesheet" href="css/cards/dominance-cards.css">
-  <link rel="stylesheet" href="css/cards/heatmap-section.css">
   
   <!-- Preload critical fonts -->
   <link rel="preload" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard-dynamic-subset.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
@@ -136,542 +130,122 @@
   <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
   <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"></noscript>
 
-  <!-- TradingView Core Script -->
-  <script src="https://s3.tradingview.com/tv.js"></script>
-  
-  <!-- TradingView Widget Scripts - Preconnect & Preload -->
-  <link rel="preconnect" href="https://s3.tradingview.com">
-  <link rel="dns-prefetch" href="https://s3.tradingview.com">
-  <script>
-    // TradingView 위젯 초기화 함수
-    window.initTradingViewWidgets = () => {
-      const widgetConfigs = {
-        'ticker-tape': {
-          container: 'tradingview-ticker-tape',
-          script: 'embed-widget-ticker-tape.js',
-          config: {
-            symbols: [
-              { proName: "FOREXCOM:SPXUSD", title: "S&P 500" },
-              { proName: "FOREXCOM:NSXUSD", title: "나스닥" },
-              { proName: "BITSTAMP:BTCUSD", title: "비트코인" },
-              { proName: "BITSTAMP:ETHUSD", title: "이더리움" }
-            ],
-            showSymbolLogo: true,
-            colorTheme: "light",
-            isTransparent: false,
-            displayMode: "adaptive",
-            locale: "kr"
-          }
-        },
-        'symbol-overview': {
-          container: 'tradingview-btc-chart',
-          script: 'embed-widget-symbol-overview.js',
-          config: {
-            symbols: [["BINANCE:BTCUSD|1M"]],
-            chartOnly: false,
-            width: "100%",
-            height: "100%",
-            locale: "kr",
-            colorTheme: "light",
-            autosize: true,
-            showVolume: true
-          }
-        }
-        // ... 다른 위젯 설정들
-      };
-
-      // 위젯 초기화 함수
-      const initWidget = async (type, config) => {
-        const script = document.createElement('script');
-        script.src = `https://s3.tradingview.com/external-embedding/${config.script}`;
-        script.async = true;
-        script.onload = () => {
-          new TradingView.widget({
-            container_id: config.container,
-            ...config.config
-          });
-        };
-        document.head.appendChild(script);
-      };
-
-      // 모든 위젯 병렬로 초기화
-      Object.entries(widgetConfigs).forEach(([type, config]) => {
-        initWidget(type, config);
-      });
-    };
-
-    // 페이지 로드 시 위젯 초기화
-    if (document.readyState === 'complete') {
-      window.initTradingViewWidgets();
-    } else {
-      window.addEventListener('load', window.initTradingViewWidgets);
-    }
-  </script>
-  
-  <!-- Critical Firebase Scripts -->
+  <!-- Critical scripts that must load immediately -->
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+  <script src="https://s3.tradingview.com/tv.js" async defer></script>
 </head>
 <body>
   <!-- Header placeholder -->
   <div id="header-placeholder"></div>
 
-  <!-- TradingView Ticker Tape Widget BEGIN -->
+  <!-- TradingView Widget BEGIN -->
   <div class="tradingview-widget-container">
-    <div id="tradingview-ticker-tape" class="tradingview-widget-container__widget"></div>
-    <script type="text/javascript">
-      new TradingView.widget({
-        "container_id": "tradingview-widget-container__widget",
-        "symbols": [
-          {
-            "proName": "FOREXCOM:SPXUSD",
-            "title": "S&P 500"
-          },
-          {
-            "proName": "FOREXCOM:NSXUSD", 
-            "title": "나스닥"
-          },
-          {
-            "proName": "FX_IDC:EURUSD",
-            "title": "EUR/USD"
-          },
-          {
-            "proName": "BITSTAMP:BTCUSD",
-            "title": "비트코인"
-          },
-          {
-            "proName": "BITSTAMP:ETHUSD",
-            "title": "이더리움"
-          },
-          {
-            "proName": "BINANCE:BNBUSDT",
-            "title": "BNB"
-          },
-          {
-            "proName": "BINANCE:ADAUSDT",
-            "title": "카르다노"
-          },
-          {
-            "proName": "BINANCE:DOTUSDT",
-            "title": "폴카닷"
-          }
-        ],
-        "showSymbolLogo": true,
-        "isTransparent": false,
-        "displayMode": "adaptive",
-        "colorTheme": "light",
-        "locale": "kr",
-        "width": "100%",
-        "height": 46,
-        "scriptHost": "https://s3.tradingview.com"
-      });
+    <div class="tradingview-widget-container__widget"></div>
+    <script type="text/javascript" async src="https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js">
+    {
+      "symbols": [
+        {
+          "proName": "FOREXCOM:SPXUSD",
+          "title": "S&P 500"
+        },
+        {
+          "proName": "FOREXCOM:NSXUSD", 
+          "title": "나스닥"
+        },
+        {
+          "proName": "FX_IDC:EURUSD",
+          "title": "EUR/USD"
+        },
+        {
+          "proName": "BITSTAMP:BTCUSD",
+          "title": "비트코인"
+        },
+        {
+          "proName": "BITSTAMP:ETHUSD",
+          "title": "이더리움"
+        },
+        {
+          "proName": "BINANCE:BNBUSDT",
+          "title": "BNB"
+        },
+        {
+          "proName": "BINANCE:ADAUSDT",
+          "title": "카르다노"
+        },
+        {
+          "proName": "BINANCE:DOTUSDT",
+          "title": "폴카닷"
+        }
+      ],
+      "showSymbolLogo": true,
+      "isTransparent": false,
+      "displayMode": "adaptive",
+      "colorTheme": "light",
+      "locale": "kr"
+    }
     </script>
-    <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js" async></script>
   </div>
-  <!-- TradingView Ticker Tape Widget END -->
+  <!-- TradingView Widget END -->
 
-
-
-  <!-- TradingView 차트 그리드 섹션 -->
-  <section class="trading-widgets-section">
-    
-    <!-- 메인 차트 그리드: 비트코인(좌측 큰), 이더리움/솔라나(우측 작은) -->
-    <div class="main-widgets-grid">
-      
-      <!-- 비트코인 위젯 카드 (좌측 전체 높이) -->
-      <div class="chart-card bitcoin-chart" style="grid-row: 1 / 3;">
-        <div class="tradingview-widget-container">
-          <div id="tradingview-btc-chart" class="tradingview-widget-container__widget"></div>
-          <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-symbol-overview.js" async>
-          {
-          "lineWidth": 2,
-          "lineType": 0,
-          "chartType": "area",
-          "showVolume": true,
-          "fontColor": "#707070",
-          "gridLineColor": "rgba(46, 46, 46, 0.06)",
-          "volumeUpColor": "rgba(34, 171, 148, 0.5)",
-          "volumeDownColor": "rgba(247, 82, 95, 0.5)",
-          "backgroundColor": "#ffffff",
-          "widgetFontColor": "#0F0F0F",
-          "upColor": "#22ab94",
-          "downColor": "#f7525f",
-          "borderUpColor": "#22ab94",
-          "borderDownColor": "#f7525f",
-          "wickUpColor": "#22ab94",
-          "wickDownColor": "#f7525f",
-          "colorTheme": "light",
-          "isTransparent": false,
-          "locale": "kr",
-          "chartOnly": false,
-          "scalePosition": "right",
-          "scaleMode": "Normal",
-          "fontFamily": "-apple-system, BlinkMacSystemFont, Trebuchet MS, Roboto, Ubuntu, sans-serif",
-          "valuesTracking": "1",
-          "changeMode": "price-and-percent",
-          "symbols": [
-            [
-              "BINANCE:BTCUSD|1M"
-            ]
-          ],
-          "dateRanges": [
-            "1d|1",
-            "1m|30",
-            "3m|60",
-            "12m|1D",
-            "60m|1W",
-            "all|1M"
-          ],
-          "fontSize": "10",
-          "headerFontSize": "medium",
-          "autosize": true,
-          "width": "100%",
-          "height": "100%",
-          "noTimeScale": false,
-          "hideDateRanges": false,
-          "hideMarketStatus": false,
-          "hideSymbolLogo": false
-        }
-          </script>
-        </div>
-      </div>
-
-      <!-- 이더리움 위젯 카드 (우측 상단) -->
-      <div class="chart-card ethereum-chart">
-        <div class="tradingview-widget-container">
-          <div class="tradingview-widget-container__widget"></div>
-          <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" async>
-          {
-          "symbol": "BINANCE:ETHUSD",
-          "chartOnly": false,
-          "dateRange": "1M",
-          "noTimeScale": false,
-          "colorTheme": "light",
-          "isTransparent": false,
-          "locale": "kr",
-          "width": "100%",
-          "autosize": true,
-          "height": "100%"
-        }
-          </script>
-        </div>
-      </div>
-
-      <!-- 솔라나 위젯 카드 (우측 하단) -->
-      <div class="chart-card solana-chart">
-        <div class="tradingview-widget-container">
-          <div class="tradingview-widget-container__widget"></div>
-          <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" async>
-          {
-          "symbol": "BINANCE:SOLUSDT",
-          "chartOnly": false,
-          "dateRange": "1M",
-          "noTimeScale": false,
-          "colorTheme": "light",
-          "isTransparent": false,
-          "locale": "kr",
-          "width": "100%",
-          "autosize": true,
-          "height": "100%"
-        }
-          </script>
-        </div>
-      </div>
-    </div>
-
-
-  </section>
-  <!-- TradingView 차트 그리드 섹션 END -->
-  
-  <!-- 새로운 3개 카드 섹션 -->
-  <section class="feature-cards-section">
-    <div class="feature-cards-grid">
-      
-      <!-- 1. TradingView 기술적 분석 카드 -->
-      <div class="feature-card technical-analysis-card">
-        <div class="card-header">
-          <h3>
-            <i class="fas fa-chart-line" style="color: #3b82f6;"></i>
-            기술적 분석
-          </h3>
-          <p>실시간 기술적 분석 지표</p>
-        </div>
-        <div class="tradingview-widget-container">
-          <div class="tradingview-widget-container__widget"></div>
-          <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-technical-analysis.js" async>
-          {
-          "colorTheme": "light",
-          "displayMode": "single",
-          "isTransparent": false,
-          "locale": "kr",
-          "interval": "1m",
-          "disableInterval": false,
-          "width": "100%",
-          "height": 500,
-          "symbol": "BINANCE:BTCUSDT",
-          "showIntervalTabs": true
-        }
-          </script>
-        </div>
-      </div>
-
-      <!-- 2. 고래 탐지 카드 -->
-      <div class="feature-card whale-tracker-card">
-        <div class="card-header">
-          <h3>
-            <i class="fas fa-fish" style="color: #10b981;"></i>
-            고래 거래 추적
-          </h3>
-          <p>대형 거래 실시간 모니터링</p>
-        </div>
-        <div class="whale-content">
-          <!-- 고래 거래 목록 -->
-          <div id="whale-transactions">
-            <div style="display: flex; align-items: center; justify-content: center; height: 100%; color: #6b7280;">
-              <div style="text-align: center;">
-                <i class="fas fa-spinner fa-spin" style="font-size: 2rem; margin-bottom: 1rem;"></i>
-                <div>고래 거래 연결 중...</div>
-              </div>
-            </div>
+  <section class="main-banner">
+    <div class="banner-content">
+      <div class="banner-text">
+        <div class="banner-features">
+          <div class="feature-item">
+            <i class="fas fa-percentage"></i>
+            <span>최대 40% 수수료 페이백</span>
+          </div>
+          <div class="feature-item">
+            <i class="fas fa-clock"></i>
+            <span>실시간 정산</span>
+          </div>
+          <div class="feature-item">
+            <i class="fas fa-shield-alt"></i>
+            <span>안전한 거래 보장</span>
           </div>
         </div>
-      </div>
-
-      <!-- 3. 속보 뉴스 카드 -->
-      <div class="feature-card breaking-news-card">
-        <div class="card-header">
-          <h3>
-            <i class="fas fa-newspaper" style="color: #ef4444;"></i>
-            속보 뉴스
-          </h3>
-          <p>중요도 높은 암호화폐 뉴스</p>
-        </div>
-        <div class="breaking-news-content">
-          <div id="breaking-news-list">
-            <div style="display: flex; align-items: center; justify-content: center; height: 400px; color: #6b7280;">
-              <div style="text-align: center;">
-                <i class="fas fa-spinner fa-spin" style="font-size: 2rem; margin-bottom: 1rem;"></i>
-                <div>속보 뉴스 로딩 중...</div>
-              </div>
-            </div>
-          </div>
+        <h1 class="banner-title">
+          암호화폐 커뮤니티의 새로운 <span class="highlight">표준</span>
+          <br><span class="highlight">온비트</span><span class="black-text">에서 시작하세요</span>
+        </h1>
+        <p class="banner-subtitle">
+          제휴 거래소 이용 시 거래 수수료의 일부를 페이백으로 돌려받으세요
+        </p>
+        <div class="banner-cta">
+          <a href="/affiliated/" class="cta-button primary">
+            <i class="fas fa-rocket"></i>
+            제휴 거래소 보기
+          </a>
+          <a href="/affiliated/payback-calculator/" class="cta-button secondary">
+            <i class="fas fa-calculator"></i>
+            페이백 계산하기
+          </a>
         </div>
       </div>
-    </div>
-
-
-  </section>
-  
-  <!-- 도미넌스 섹션 -->
-  <section class="dominance-section">
-    <div class="dominance-grid">
-      
-      <!-- 암호화폐 도미넌스 차트 (왼쪽) -->
-      <div class="dominance-card crypto-dominance">
-        <div class="tradingview-widget-container">
-          <div class="tradingview-widget-container__widget"></div>
-          <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-symbol-overview.js" async>
-          {
-          "lineWidth": 2,
-          "lineType": 0,
-          "chartType": "area",
-          "fontColor": "rgb(106, 109, 120)",
-          "gridLineColor": "rgba(46, 46, 46, 0.06)",
-          "volumeUpColor": "rgba(34, 171, 148, 0.5)",
-          "volumeDownColor": "rgba(247, 82, 95, 0.5)",
-          "backgroundColor": "#ffffff",
-          "widgetFontColor": "#0F0F0F",
-          "upColor": "#22ab94",
-          "downColor": "#f7525f",
-          "borderUpColor": "#22ab94",
-          "borderDownColor": "#f7525f",
-          "wickUpColor": "#22ab94",
-          "wickDownColor": "#f7525f",
-          "colorTheme": "light",
-          "isTransparent": false,
-          "locale": "kr",
-          "chartOnly": false,
-          "scalePosition": "right",
-          "scaleMode": "Normal",
-          "fontFamily": "-apple-system, BlinkMacSystemFont, Trebuchet MS, Roboto, Ubuntu, sans-serif",
-          "valuesTracking": "1",
-          "changeMode": "price-and-percent",
-          "symbols": [
-            [
-              "CRYPTOCAP:BTC.D|1M"
-            ],
-            [
-              "CRYPTOCAP:ETH.D|1M"
-            ]
-          ],
-          "dateRanges": [
-            "1d|1",
-            "1m|30",
-            "3m|60",
-            "12m|1D",
-            "60m|1W",
-            "all|1M"
-          ],
-          "fontSize": "10",
-          "headerFontSize": "medium",
-          "autosize": true,
-          "width": "100%",
-          "height": "100%",
-          "noTimeScale": false,
-          "hideDateRanges": false,
-          "hideMarketStatus": false,
-          "hideSymbolLogo": false
-        }
-          </script>
-        </div>
+      <div class="banner-image">
+        <img src="/assets/mainbanner/mainbanner.png" alt="온비트 메인 배너" loading="lazy">
       </div>
-
-      <!-- 도미넌스 위젯 (오른쪽) -->
-      <div class="dominance-card dominance-widget">
-        <div class="tradingview-widget-container">
-          <div class="tradingview-widget-container__widget"></div>
-          <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-market-overview.js" async>
-          {
-          "colorTheme": "light",
-          "dateRange": "12M",
-          "locale": "kr",
-          "largeChartUrl": "",
-          "isTransparent": false,
-          "showFloatingTooltip": false,
-          "plotLineColorGrowing": "rgba(41, 98, 255, 1)",
-          "plotLineColorFalling": "rgba(41, 98, 255, 1)",
-          "gridLineColor": "rgba(240, 243, 250, 0)",
-          "scaleFontColor": "#0F0F0F",
-          "belowLineFillColorGrowing": "rgba(41, 98, 255, 0.12)",
-          "belowLineFillColorFalling": "rgba(41, 98, 255, 0.12)",
-          "belowLineFillColorGrowingBottom": "rgba(41, 98, 255, 0)",
-          "belowLineFillColorFallingBottom": "rgba(41, 98, 255, 0)",
-          "symbolActiveColor": "rgba(41, 98, 255, 0.12)",
-          "tabs": [
-            {
-              "title": "도미넌스",
-              "symbols": [
-                {
-                  "s": "CRYPTOCAP:BTC.D",
-                  "d": "비트코인 도미넌스",
-                  "logoid": "crypto/XTVCBTC"
-                },
-                {
-                  "s": "CRYPTOCAP:USDT.D",
-                  "d": "테더 도미넌스",
-                  "logoid": "crypto/XTVCUSDT"
-                },
-                {
-                  "s": "CRYPTOCAP:ETH.D",
-                  "d": "이더리움 도미넌스",
-                  "logoid": "crypto/XTVCETH"
-                },
-                {
-                  "s": "CRYPTOCAP:XRP.D",
-                  "d": "리플 도미넌스",
-                  "logoid": "crypto/XTVCXRP"
-                },
-                {
-                  "s": "CRYPTOCAP:USDC.D",
-                  "d": "써클 도미넌스",
-                  "logoid": "crypto/XTVCUSDC"
-                },
-                {
-                  "s": "CRYPTOCAP:SOL.D",
-                  "d": "솔라나 도미넌스",
-                  "logoid": "crypto/XTVCSOL"
-                }
-              ],
-              "originalTitle": "Indices"
-            }
-          ],
-          "support_host": "https://www.tradingview.com",
-          "backgroundColor": "#131722",
-          "width": "580",
-          "height": "550",
-          "showSymbolLogo": true,
-          "showChart": true
-        }
-          </script>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- 히트맵 섹션 -->
-  <section class="heatmap-section">
-    <div class="heatmap-grid">
-      
-      <!-- 암호화폐 히트맵 카드 -->
-      <div class="heatmap-card crypto-heatmap">
-        <div class="tradingview-widget-container">
-          <div class="tradingview-widget-container__widget"></div>
-          <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-crypto-coins-heatmap.js" async>
-          {
-          "dataSource": "Crypto",
-          "blockSize": "market_cap_calc",
-          "blockColor": "24h_close_change|5",
-          "locale": "kr",
-          "symbolUrl": "",
-          "colorTheme": "light",
-          "hasTopBar": false,
-          "isDataSetEnabled": false,
-          "isZoomEnabled": true,
-          "hasSymbolTooltip": true,
-          "isMonoSize": false,
-          "width": "100%",
-          "height": "100%"
-        }
-          </script>
-        </div>
-      </div>
-
-      <!-- S&P 500 히트맵 카드 -->
-      <div class="heatmap-card sp500-heatmap">
-        <div class="tradingview-widget-container">
-          <div class="tradingview-widget-container__widget"></div>
-          <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-stock-heatmap.js" async>
-          {
-          "colorTheme": "light",
-          "locale": "kr",
-          "isTransparent": false,
-          "width": "100%",
-          "symbolsGroups": [
-            {
-              "name": "S&P 500",
-              "originalName": "S&P 500",
-              "symbols": [
-                {
-                  "name": "AAPL",
-                  "displayName": "Apple Inc."
-                },
-                {
-                  "name": "MSFT",
-                  "displayName": "Microsoft Corporation"
-                },
-                {
-                  "name": "GOOGL",
-                  "displayName": "Alphabet Inc."
-                },
-                {
-                  "name": "AMZN",
-                  "displayName": "Amazon.com Inc."
-                },
-                {
-                  "name": "TSLA",
-                  "displayName": "Tesla Inc."
-                },
-                {
-                  "name": "NVDA",
-                  "displayName": "NVIDIA Corporation"
-                }
-              ]
-            }
-          ]
-        }
-          </script>
+      <div class="banner-exchanges">
+        <div class="exchanges-grid">
+          <a href="/affiliated/" class="exchange-item">
+            <img src="/assets/logoicon/binance.webp" alt="Binance" class="exchange-logo">
+            <span class="exchange-name">Binance</span>
+          </a>
+          <a href="/affiliated/bitget/" class="exchange-item">
+            <img src="/assets/logoicon/bitget.png" alt="Bitget" class="exchange-logo">
+            <span class="exchange-name">Bitget</span>
+          </a>
+          <a href="/affiliated/okx/" class="exchange-item">
+            <img src="/assets/logoicon/okx.png" alt="OKX" class="exchange-logo">
+            <span class="exchange-name">OKX</span>
+          </a>
+          <a href="/affiliated/lbank/" class="exchange-item">
+            <img src="/assets/logoicon/lbank.png" alt="LBank" class="exchange-logo">
+            <span class="exchange-name">LBank</span>
+          </a>
         </div>
       </div>
     </div>
@@ -861,53 +435,24 @@
   <script src="js/header-loader.js"></script>
   <script src="js/footer-loader.js"></script>
   
-  <!-- 뉴스 기능 로드 (속보 카드에 필요) -->
-  <script src="js/news.js"></script>
-  
-  <script src="js/popup-banner.js"></script>
+<script src="js/popup-banner.js"></script>
   <script src="js/analysis/longshort-tracker.js" type="module"></script>
   <script src="js/analysis/whale-tracker.js" type="module"></script>
   <script src="js/compound-calculator.js" type="module"></script>
-  
-  <!-- Card-specific JavaScript files -->
-  <script src="js/cards/trading-charts.js"></script>
-  <script src="js/cards/feature-cards.js"></script>
-  <script src="js/cards/heatmap-cards.js"></script>
   <!-- html2canvas for modal capture -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-  <!-- WhaleTracker 모듈 초기화 -->
   <script type="module">
+    // Whale Tracker 초기화
     import { WhaleTracker } from './js/analysis/whale-tracker.js';
-    window.WhaleTracker = WhaleTracker;
-    console.log('🐋 WhaleTracker 클래스 전역 등록 완료');
-  </script>
-  
-  <script>
+    
     // DOM 로드 후 초기화
     document.addEventListener('DOMContentLoaded', () => {
       setTimeout(() => {
         try {
-          console.log('🔍 WhaleTracker 클래스 확인:', typeof window.WhaleTracker);
-          if (typeof window.WhaleTracker !== 'undefined') {
-            window.whaleTracker = new window.WhaleTracker();
-            console.log('✅ 메인 Whale Tracker 초기화 완료');
-          } else {
-            console.error('❌ WhaleTracker 클래스를 찾을 수 없습니다');
-            // 대체 방법으로 스크립트 다시 로드 시도
-            const script = document.createElement('script');
-            script.src = 'js/whale-tracker.js';
-            script.onload = () => {
-              setTimeout(() => {
-                if (typeof window.WhaleTracker !== 'undefined') {
-                  window.whaleTracker = new window.WhaleTracker();
-                  console.log('✅ 재로드 후 Whale Tracker 초기화 완료');
-                }
-              }, 500);
-            };
-            document.head.appendChild(script);
-          }
+          window.whaleTracker = new WhaleTracker();
+          console.log('Whale Tracker 초기화 완료');
         } catch (error) {
-          console.error('❌ 메인 Whale Tracker 초기화 실패:', error);
+          console.error('Whale Tracker 초기화 실패:', error);
         }
       }, 1000);
     });
@@ -1779,8 +1324,6 @@
         console.warn('복리 계산기 클래스를 찾을 수 없습니다');
       }
     });
-
-
   </script>
 
 </body>

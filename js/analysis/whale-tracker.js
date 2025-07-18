@@ -4,7 +4,10 @@
  */
 
 class WhaleTracker {
-    constructor(settings = {}) {
+    constructor(container = null, settings = {}) {
+        // 컨테이너 설정 (메인페이지 카드용)
+        this.container = container;
+        this.isCardMode = !!container;
         this.defaultMarkets = [
             // BINANCE_FUTURES btcusdt (btcusd_perp는 존재하지 않음)
             { id: 'binance_futures_btcusdt', exchange: 'Binance', type: 'Futures', symbol: 'BTCUSDT', rawSymbol: 'btcusdt', enabled: true, threshold: 100000 },
@@ -74,8 +77,10 @@ class WhaleTracker {
         this.muted = !this.settings.enableSound;
         this.audioVolume = 0.5;
         
-        // DOM 요소
-        this.container = document.getElementById('whale-trades-container');
+        // DOM 요소 (카드 모드가 아닌 경우만)
+        if (!this.isCardMode) {
+            this.container = document.getElementById('whale-trades-container');
+        }
         
         // 초기화
         this.init();
@@ -575,11 +580,18 @@ class WhaleTracker {
     }
     
     updateDisplay() {
-        const container = document.querySelector('.whale-trades-list');
+        // 카드 모드인 경우 카드 컨테이너 사용
+        const container = this.isCardMode ? 
+            this.container : 
+            document.querySelector('.whale-trades-list');
+        
         if (!container) return;
 
         if (this.trades.length === 0) {
-            container.innerHTML = '<div style="text-align: center; padding: 2rem; color: var(--text-secondary);">고래 거래 대기 중...</div>';
+            const waitingMessage = this.isCardMode ? 
+                '<div style="display: flex; align-items: center; justify-content: center; height: 100%; color: #6b7280;"><div style="text-align: center;"><i class="fas fa-fish" style="font-size: 2rem; margin-bottom: 1rem; color: #10b981;"></i><div>고래 거래 대기 중...</div></div></div>' :
+                '<div style="text-align: center; padding: 2rem; color: var(--text-secondary);">고래 거래 대기 중...</div>';
+            container.innerHTML = waitingMessage;
             return;
         }
 
@@ -588,13 +600,15 @@ class WhaleTracker {
         this.previousTradeCount = this.trades.length;
 
         // 최신 거래부터 표시 (위에서 아래로 떨어지는 효과)
-        const recentTrades = this.trades.slice(0, 50); // 최신 50개 표시
+        const recentTrades = this.trades.slice(0, this.isCardMode ? 20 : 50); // 카드 모드는 20개, 일반 모드는 50개
         
-        // 🔥 새로운 거래인지 확인하여 애니메이션 클래스 추가
+        // 새로운 거래인지 확인하여 애니메이션 클래스 추가
         const tradesHTML = recentTrades.map((trade, index) => {
-            const tradeHTML = this.createTradeHTML(trade);
+            const tradeHTML = this.isCardMode ? 
+                this.createCardTradeHTML(trade) : 
+                this.createTradeHTML(trade);
             
-            // 🔥 맨 위 거래(index 0)이고 새로 추가된 거래인 경우에만 애니메이션 적용
+            // 맨 위 거래(index 0)이고 새로 추가된 거래인 경우에만 애니메이션 적용
             if (index === 0 && this.trades.length > previousTradeCount) {
                 return tradeHTML.replace(
                     'class="whale-trade-pixel',
@@ -605,9 +619,15 @@ class WhaleTracker {
             return tradeHTML;
         }).join('');
         
-        container.innerHTML = tradesHTML;
+        // 카드 모드인 경우 whale-trades-list 클래스 적용
+        if (this.isCardMode) {
+            container.className = 'whale-trades-list';
+            container.innerHTML = tradesHTML;
+        } else {
+            container.innerHTML = tradesHTML;
+        }
         
-        // 🔥 애니메이션 완료 후 클래스 제거
+        // 애니메이션 완료 후 클래스 제거
         setTimeout(() => {
             const newTradeElement = container.querySelector('.new-trade-flash');
             if (newTradeElement) {
@@ -634,7 +654,7 @@ class WhaleTracker {
         const sideClass = side === 'sell' ? 'sell' : '';
         const levelClass = `level-${level}`;
         
-        // 🔥 1M 이상 거래에 랜덤 GIF 클래스 추가
+        // 1M 이상 거래에 랜덤 GIF 클래스 추가
         let randomGifClass = '';
         if (level === 4) {
             if (side === 'sell') {
@@ -657,6 +677,63 @@ class WhaleTracker {
                 <span class="trade-time">${timeAgo}</span>
             </div>
         `;
+    }
+
+    // 카드 모드용 거래 HTML 생성 (whale-tracker.css 스타일 적용)
+    createCardTradeHTML(trade) {
+        const { side, exchange, symbol, price, value, timestamp } = trade;
+        const timeAgo = this.formatTimeAgo(timestamp);
+        const arrow = side === 'buy' ? '▲' : '▼';
+        const exchangeIcon = this.getExchangeIcon(exchange);
+        
+        // 거래량 크기에 따른 레벨 결정
+        let level = 1;
+        if (value >= 1000000) level = 4;      // $1M+
+        else if (value >= 500000) level = 3;  // $500K+
+        else if (value >= 250000) level = 2;  // $250K+
+        else level = 1;                       // $100K+
+        
+        const sideClass = side === 'sell' ? 'sell' : '';
+        const levelClass = `level-${level}`;
+        
+        // 1M 이상 거래에 랜덤 GIF 클래스 추가
+        let randomGifClass = '';
+        if (level === 4) {
+            if (side === 'sell') {
+                // 숏 거래: 3개 GIF 중 랜덤 선택
+                const shortGifs = ['short-gif-1', 'short-gif-2', 'short-gif-3'];
+                randomGifClass = shortGifs[Math.floor(Math.random() * shortGifs.length)];
+            } else {
+                // 롱 거래: 2개 GIF 중 랜덤 선택
+                const longGifs = ['long-gif-1', 'long-gif-2'];
+                randomGifClass = longGifs[Math.floor(Math.random() * longGifs.length)];
+            }
+        }
+
+        return `
+            <div class="whale-trade-pixel ${levelClass} ${sideClass} ${randomGifClass}">
+                <span class="trade-arrow">${arrow}</span>
+                <span class="trade-exchange-icon">${exchangeIcon}</span>
+                <span class="trade-price">${price.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}</span>
+                <span class="trade-amount">${this.formatValue(value)}</span>
+                <span class="trade-time">${timeAgo}</span>
+            </div>
+        `;
+    }
+
+    getExchangeName(exchange) {
+        const exchangeNames = {
+            'Binance': 'BINANCE',
+            'Bybit': 'BYBIT',
+            'OKX': 'OKX',
+            'OKEX': 'OKX',
+            'BitMEX': 'BITMEX',
+            'Bitfinex': 'BITFINEX',
+            'Coinbase': 'COINBASE',
+            'Deribit': 'DERIBIT',
+            'Bitstamp': 'BITSTAMP'
+        };
+        return exchangeNames[exchange] || exchange.toUpperCase();
     }
 
     getExchangeIcon(exchange) {
@@ -718,6 +795,8 @@ class WhaleTracker {
     updateStats() {
         // This function is no longer needed as the stats elements are removed.
     }
+
+
     
     updateConnectionStatus(connectedCount = null) {
         const statusElement = document.querySelector('.whale-status');
@@ -1257,4 +1336,9 @@ setInterval(updateWhaleStats, 1000);
 setInterval(updateConnectionStatus, 2000);
 
 // Export the WhaleTracker class for different environments
-export { WhaleTracker }; 
+export { WhaleTracker };
+
+// 전역 객체로도 등록 (window.WhaleTracker)
+if (typeof window !== 'undefined') {
+    window.WhaleTracker = WhaleTracker;
+} 

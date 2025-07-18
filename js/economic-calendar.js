@@ -1,29 +1,24 @@
-// 탭 네비게이션 및 경제 캘린더 모듈 (비활성화 - news.js에서 통합 관리)
+// 탭 네비게이션 및 경제 캘린더 모듈
 class TabNavigation {
     constructor() {
         this.currentTab = 'news';
         this.isCalendarLoaded = false;
-        // 탭 관리는 news.js에서 하므로 초기화하지 않음
-        console.log('📋 경제 캘린더 모듈 초기화 (탭 관리는 news.js에서 처리)');
+        console.log('📋 TabNavigation 경제 캘린더 모듈 초기화');
     }
 
     init() {
-        // 탭 관리는 news.js에서 하므로 비활성화
-        console.log('📋 탭 관리는 news.js에서 통합 처리됨');
+        console.log('📋 TabNavigation 초기화 완료');
     }
 
     initializeNavigation() {
-        // 비활성화
         console.log('📋 탭 네비게이션은 news.js에서 처리됨');
     }
 
     setupTabNavigation() {
-        // 비활성화 - news.js에서 처리
         console.log('📋 탭 설정은 news.js에서 처리됨');
     }
 
     switchTab(tabName) {
-        // 비활성화 - news.js에서 처리
         console.log(`📋 탭 전환 요청 무시됨 (news.js에서 처리): ${tabName}`);
         return;
     }
@@ -70,37 +65,66 @@ class TabNavigation {
         console.log('📊 TradingView HTML 임베드 방식으로 로드');
 
         try {
-            // 기존 내용 초기화
-            widgetContainer.innerHTML = '';
-
-            // TradingView 위젯 HTML 임베드 (contentWindow 접근 없음)
-            const widgetHTML = `
-                <div class="tradingview-widget-container" style="height: 600px; width: 100%;">
-                    <div class="tradingview-widget-container__widget" style="height: 100%; width: 100%;">
-                        <iframe 
-                            src="https://www.tradingview.com/embed-widget/events/?locale=ko&importanceFilter=-1%2C0%2C1&countryFilter=us%2Ceu%2Cjp%2Ccn%2Ckr%2Cgb%2Cca%2Cau%2Cde%2Cfr%2Cit%2Ces%2Cbr%2Cin%2Cru%2Cmx%2Cza%2Ctr%2Csg%2Chk%2Ctw%2Cth%2Cmy%2Cid%2Cph%2Cvn&currencyFilter=USD%2CEUR%2CJPY%2CGBP%2CCHF%2CAUD%2CCAD%2CNZD%2CCNY%2CKRW%2CBTC%2CETH&utm_source=&utm_medium=widget&utm_campaign=events&utm_term="
-                            width="100%"
-                            height="600"
-                            frameborder="0"
-                            scrolling="no"
-                            allowfullscreen="true"
-                            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-                            referrerpolicy="no-referrer-when-downgrade"
-                            style="
-                                border: none;
-                                width: 100%;
-                                height: 600px;
-                                background: #fff;
-                                border-radius: 8px;
-                                display: block;
-                            "
-                            loading="lazy">
-                        </iframe>
+            // TradingView iframe 직접 삽입 (중복 컨테이너 제거)
+            widgetContainer.innerHTML = `
+                <div style="
+                    height: 600px; 
+                    width: 100%; 
+                    background: #fff; 
+                    border-radius: 8px; 
+                    overflow: hidden;
+                    position: relative;
+                ">
+                    <div style="
+                        position: absolute;
+                        top: 0;
+                        left: 0;
+                        right: 0;
+                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        color: white;
+                        padding: 12px;
+                        text-align: center;
+                        font-weight: bold;
+                        z-index: 10;
+                        font-size: 1rem;
+                        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                    ">
+                        📊 TradingView 경제 캘린더 - 주요 경제 지표 및 이벤트
+                    </div>
+                    <iframe 
+                        src="https://www.tradingview.com/embed-widget/events/?locale=ko&importanceFilter=-1%2C0%2C1&countryFilter=us%2Ceu%2Cjp%2Ccn%2Ckr%2Cgb%2Cca%2Cau%2Cde%2Cfr%2Cit%2Ces%2Cbr%2Cin%2Cru%2Cmx%2Cza%2Ctr%2Csg%2Chk%2Ctw%2Cth%2Cmy%2Cid%2Cph%2Cvn&currencyFilter=USD%2CEUR%2CJPY%2CGBP%2CCHF%2CAUD%2CCAD%2CNZD%2CCNY%2CKRW%2CBTC%2CETH&utm_source=&utm_medium=widget&utm_campaign=events&utm_term="
+                        width="100%"
+                        height="600"
+                        frameborder="0"
+                        scrolling="no"
+                        allowfullscreen="true"
+                        sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+                        referrerpolicy="no-referrer-when-downgrade"
+                        style="
+                            border: none;
+                            width: 100%;
+                            height: 600px;
+                            background: #fff;
+                            display: block;
+                            margin-top: 44px;
+                        "
+                        loading="lazy">
+                    </iframe>
+                    <div style="
+                        position: absolute;
+                        bottom: 0;
+                        right: 0;
+                        background: rgba(0,0,0,0.7);
+                        color: white;
+                        padding: 4px 8px;
+                        font-size: 0.7rem;
+                        border-top-left-radius: 4px;
+                    ">
+                        Powered by TradingView
                     </div>
                 </div>
             `;
 
-            widgetContainer.innerHTML = widgetHTML;
             this.isCalendarLoaded = true;
             console.log('📊 TradingView HTML 임베드 설정 완료');
 

@@ -320,6 +320,9 @@ async function loadFreshNews(isBackgroundUpdate = false) {
             resetInfiniteScroll();
             displayNews(uniqueNews);
             
+            // 속보 뉴스 카드 업데이트 (index.html의 카드가 있을 때)
+            setTimeout(() => triggerBreakingNewsUpdate(), 500);
+            
             console.log(`📰 빠른 로딩 완료: ${successCount}개 소스에서 ${uniqueNews.length}개 뉴스`);
         }
 
@@ -369,9 +372,16 @@ async function loadFreshNews(isBackgroundUpdate = false) {
             window.newsItems = uniqueNews;
             resetInfiniteScroll();
             displayNews(uniqueNews);
+            
+            // 속보 뉴스 카드 업데이트
+            setTimeout(() => triggerBreakingNewsUpdate(), 500);
         } else {
             // 백그라운드 업데이트인 경우 새 데이터로 교체
             window.newsItems = uniqueNews;
+            
+            // 백그라운드 업데이트에서도 속보 카드 업데이트
+            setTimeout(() => triggerBreakingNewsUpdate(), 500);
+            
             console.log(`📰 백그라운드 업데이트 완료: ${uniqueNews.length}개 뉴스`);
         }
         
@@ -746,46 +756,69 @@ function switchTab(tabName) {
     console.log(`📑 탭 전환: ${tabName}`);
 }
 
-// 경제 캘린더 로드 함수
+// 경제 캘린더 로드 함수 - 직접 로드 방식으로 변경
 function loadEconomicCalendar() {
+    console.log('📊 경제 캘린더 로드 시작');
+    
     // 경제 캘린더가 이미 로드되었는지 확인
     if (window.isEconomicCalendarLoaded) {
         console.log('📊 경제 캘린더 이미 로드됨');
         return;
     }
 
-    const widgetContainer = document.querySelector('.tradingview-widget-container__widget');
-    if (!widgetContainer) {
-        console.error('TradingView 위젯 컨테이너를 찾을 수 없습니다.');
+    // TabNavigation 클래스 사용 시도
+    if (window.tabNavigation && typeof window.tabNavigation.loadTradingViewCalendar === 'function') {
+        console.log('📊 TabNavigation으로 경제 캘린더 로드');
+        window.tabNavigation.loadTradingViewCalendar();
+        window.isEconomicCalendarLoaded = true;
         return;
     }
 
-    console.log('📊 TradingView 경제 캘린더 로드 시작');
+    // TabNavigation이 없으면 직접 로드
+    console.log('📊 TabNavigation 없음 - 직접 로드');
+    loadTradingViewCalendar();
+}
 
-    // 로딩 메시지 표시
+// 간단한 캘린더 표시 함수
+function showSimpleCalendar() {
+    console.log('📊 간단한 경제 캘린더 표시');
+    
+    const widgetContainer = document.querySelector('.tradingview-widget-container__widget');
+    if (!widgetContainer) {
+        console.error('위젯 컨테이너를 찾을 수 없습니다.');
+        return;
+    }
+
     widgetContainer.innerHTML = `
         <div style="
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
             height: 600px;
-            color: var(--text-color-secondary);
             text-align: center;
             padding: 20px;
             background: #fff;
             border-radius: 8px;
         ">
-            <div>
-                <i class="fas fa-spinner fa-spin" style="font-size: 2rem; margin-bottom: 1rem; color: #2962ff;"></i>
-                <p style="margin: 0; font-size: 1rem;">경제 캘린더를 불러오는 중...</p>
-            </div>
+            <i class="fas fa-calendar-alt" style="font-size: 3rem; margin-bottom: 1rem; color: #2962ff;"></i>
+            <h3 style="margin: 0 0 1rem 0; color: #333;">경제 캘린더 로드 중...</h3>
+            <p style="margin: 0 0 1rem 0; line-height: 1.5; color: #666;">
+                economic-calendar.js 파일이 로드되면 자동으로 TradingView 캘린더가 표시됩니다.
+            </p>
+            <a href="https://kr.tradingview.com/economic-calendar/" 
+               target="_blank" 
+               style="
+                   display: inline-block;
+                   padding: 10px 20px;
+                   background: #2962ff;
+                   color: white;
+                   text-decoration: none;
+                   border-radius: 5px;
+                   font-size: 0.9rem;
+               ">TradingView 사이트에서 보기</a>
         </div>
     `;
-
-    // 직접 iframe 방식으로 로드 (안정적)
-    setTimeout(() => {
-        loadTradingViewCalendar();
-    }, 500);
 }
 
 // TradingView 경제 캘린더 로드 (직접 iframe 방식)
@@ -1570,4 +1603,20 @@ async function reanalyzeNewsImportance(newsItem) {
     
     console.log(`🔄 뉴스 재분석 완료: ${newsId} = ${analysis.score}점`);
     return analysis.score;
-} 
+}
+
+// 전역 스코프에 함수들 노출 (index.html의 속보 카드에서 사용)
+window.getNewsImportance = getNewsImportance;
+window.getRelativeTime = getRelativeTime;
+window.getSourceDisplayName = getSourceDisplayName;
+window.createStarRating = createStarRating;
+
+// 속보 카드 업데이트 이벤트 발송
+function triggerBreakingNewsUpdate() {
+    if (typeof window.updateBreakingNewsCard === 'function') {
+        window.updateBreakingNewsCard();
+    } else {
+        // 커스텀 이벤트 발송
+        window.dispatchEvent(new CustomEvent('newsDataUpdated'));
+    }
+}
