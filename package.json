@@ -1,31 +1,21 @@
 {
-  "name": "felicity-crypto-api-server",
+  "name": "lbank-referral-dashboard",
   "version": "1.0.0",
-  "description": "Optimized CoinGecko API caching server for Felicity Site",
-  "main": "crypto-api-server.js",
+  "description": "LBank 레퍼럴 대시보드",
+  "main": "lbank-proxy.js",
   "scripts": {
-    "start": "node crypto-api-server.js",
-    "dev": "nodemon crypto-api-server.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node lbank-proxy.js",
+    "dev": "nodemon lbank-proxy.js"
   },
-  "keywords": [
-    "cryptocurrency",
-    "api",
-    "caching",
-    "coingecko",
-    "express"
-  ],
-  "author": "Felicity Team",
-  "license": "MIT",
   "dependencies": {
     "express": "^4.18.2",
-    "cors": "^2.8.5",
-    "node-cache": "^5.1.2"
+    "axios": "^1.6.0",
+    "cors": "^2.8.5"
   },
   "devDependencies": {
-    "nodemon": "^3.0.2"
+    "nodemon": "^3.0.1"
   },
-  "engines": {
-    "node": ">=14.0.0"
-  }
+  "keywords": ["lbank", "api", "referral", "dashboard"],
+  "author": "ONBit",
+  "license": "MIT"
 }

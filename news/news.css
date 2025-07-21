@@ -87,29 +87,7 @@
     }
 }
 
-/* Economic Calendar Tab Content */
-.calendar-container {
-    width: 100%;
-    min-height: 600px;
-    background: var(--bg-color);
-    padding: 0 1rem;
-    max-width: 1000px;
-    margin: 0 auto;
-}
 
-.tradingview-widget-container {
-    width: 100%;
-    height: 600px;
-    border-radius: 8px;
-    overflow: hidden;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    background: #fff;
-}
-
-.tradingview-widget-container__widget {
-    width: 100%;
-    height: 100%;
-}
 
 /* News Filters */
 .news-filters {
@@ -425,14 +403,7 @@
         flex-shrink: 0;
     }
     
-    .calendar-container {
-        min-height: 500px;
-        padding: 0 0.5rem;
-    }
-    
-    .tradingview-widget-container {
-        height: 500px;
-    }
+
 
     .news-filters {
         gap: 8px;
@@ -516,14 +487,7 @@
         font-size: 0.85rem;
     }
     
-    .calendar-container {
-        min-height: 400px;
-        padding: 0 0.25rem;
-    }
-    
-    .tradingview-widget-container {
-        height: 400px;
-    }
+
 
     .news-filters {
         gap: 6px;

@@ -233,7 +233,7 @@
     <!-- Common Scripts -->
     <script src="../js/auth.js"></script>
     <!-- Unified Header Loader -->
-    <script src="../js/header-loader.js" defer></script>
+    <script src="../components/header/header-loader.js" defer></script>
 </head>
 <body>
     <!-- 헤더 포함 -->
@@ -262,6 +262,15 @@
             </div>
 
             <div id="admin-dashboard" style="display:none;">
+                <div class="admin-tabs">
+                    <button class="admin-tab-btn active" onclick="switchAdminTab('users')">
+                        <i class="fas fa-users"></i> 사용자 관리
+                    </button>
+                    <button class="admin-tab-btn" onclick="switchAdminTab('blocks')">
+                        <i class="fas fa-ban"></i> 차단/금지 관리
+                    </button>
+                </div>
+
                 <section class="user-management-section">
                     <div class="section-header">
                         <h2>사용자 관리</h2>

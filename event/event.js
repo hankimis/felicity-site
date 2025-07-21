@@ -46,38 +46,42 @@ let adminAuthManager = null;
 
 // 🔒 AdminAuthManager 초기화 및 인증 상태 감지
 async function initializeAdminAuth() {
-  // 전역 인스턴스 import
-  const { default: authManager } = await import('../js/admin-auth-manager.js');
-  adminAuthManager = authManager;
-  
-  // 어드민 상태 변경 감지 (올바른 메서드명과 매개변수 사용)
-  adminAuthManager.onAuthStateChange((user, isAdminStatus) => {
-    currentUser = user;
-    isAdmin = isAdminStatus;
+  try {
+    // 전역 인스턴스 import
+    const { default: authManager } = await import('../js/admin-auth-manager.js');
+    adminAuthManager = authManager;
     
-    // UI 업데이트
-    writeBtn.style.display = isAdmin ? 'inline-block' : 'none';
-    
-    // 🔒 작성 버튼에 보안 스타일 적용
-    if (isAdmin && writeBtn) {
-      writeBtn.className = 'floating-write-btn admin-btn';
-      writeBtn.innerHTML = '<i class="fas fa-shield-alt"></i> 보안 이벤트 작성';
-    }
-    
-    renderEvents();
-    
-    // 🔒 보안 상태 UI 업데이트
-    updateSecurityStatusUI(user, isAdminStatus);
-    
-    // 디버그 정보 출력
-    if (user) {
-      console.log('🔐 이벤트 게시판 어드민 인증 상태:', {
-        user: user.email,
-        isAdmin: isAdminStatus,
-        timestamp: new Date().toISOString()
-      });
-    }
-  });
+    // 어드민 상태 변경 감지 (올바른 메서드명과 매개변수 사용)
+    adminAuthManager.onAuthStateChange((user, isAdminStatus) => {
+      currentUser = user;
+      isAdmin = isAdminStatus;
+      
+      // UI 업데이트
+      writeBtn.style.display = isAdmin ? 'inline-block' : 'none';
+      
+      // 🔒 작성 버튼에 보안 스타일 적용
+      if (isAdmin && writeBtn) {
+        writeBtn.className = 'floating-write-btn admin-btn';
+        writeBtn.innerHTML = '<i class="fas fa-shield-alt"></i> 보안 이벤트 작성';
+      }
+      
+      renderEvents();
+      
+      // 🔒 보안 상태 UI 업데이트
+      updateSecurityStatusUI(user, isAdminStatus);
+      
+      // 디버그 정보 출력
+      if (user) {
+        console.log('🔐 이벤트 게시판 어드민 인증 상태:', {
+          user: user.email,
+          isAdmin: isAdminStatus,
+          timestamp: new Date().toISOString()
+        });
+      }
+    });
+  } catch (error) {
+    console.error('🔒 AdminAuthManager 초기화 실패:', error);
+  }
 }
 
 // 🔒 보안 상태 UI 업데이트 함수

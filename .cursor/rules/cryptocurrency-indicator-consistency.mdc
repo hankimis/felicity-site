@@ -1,0 +1,608 @@
+# 🚀 Cryptocurrency Indicator Consistency Rules
+
+## 📋 **Overview**
+This document defines comprehensive rules and standards for creating new cryptocurrency indicator pages that maintain consistency with existing implementations in the Felicity-Site project.
+
+---
+
+## 🎯 **Core Principles**
+
+### **1. Design System Consistency**
+- **Dark Theme**: All pages must use the established dark theme color palette
+- **Typography**: Use 'Pretendard' font family with consistent sizing
+- **Layout**: Maintain 1400px max-width container with 20px padding
+- **Spacing**: Use consistent 20px margins and 12px border-radius
+
+### **2. Technical Architecture**
+- **Single Page Application**: Each indicator is a standalone HTML page
+- **Modular JavaScript**: Use ES6 classes for data management and chart rendering
+- **External Dependencies**: Lazy load Chart.js and date-fns for performance
+- **API Integration**: Use Binance API as primary data source with fallback handling
+
+### **3. User Experience Standards**
+- **Responsive Design**: Mobile-first approach with breakpoint considerations
+- **Loading States**: Consistent spinner and loading indicators
+- **Error Handling**: Graceful error messages with retry mechanisms
+- **Accessibility**: Proper ARIA labels and keyboard navigation support
+
+---
+
+## 🏗️ **File Structure Template**
+
+```
+asset/
+├── [indicator-name]/
+│   ├── index.html          # Main indicator page
+│   └── assets/             # Indicator-specific assets (if needed)
+├── js/
+│   └── sidebar.js          # Navigation management
+└── css/
+    └── sidebar.css         # Shared sidebar styles
+```
+
+---
+
+## 📄 **HTML Template Structure**
+
+### **Required Meta Tags**
+```html
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>[Indicator Name]: [Description] - Onbit</title>
+  <meta name="description" content="[API Source] 기반 [Indicator Description]">
+  
+  <!-- Preconnect to external domains -->
+  <link rel="preconnect" href="https://api.binance.com">
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+  <link rel="preconnect" href="https://cdn.jsdelivr.net">
+  
+  <!-- Critical CSS -->
+  <link rel="stylesheet" href="../css/sidebar.css">
+```
+
+### **CSS Variables (Required)**
+```css
+:root {
+  --bg-primary: #1a1a1a;
+  --bg-secondary: #2a2a2a;
+  --text-primary: #ffffff;
+  --text-secondary: #cccccc;
+  --accent-blue: #3b82f6;
+  --border-default: #404040;
+  --shadow-light: rgba(0, 0, 0, 0.3);
+  --chart-bg: #1e1e1e;
+  --grid-color: #333333;
+}
+```
+
+### **Page Structure**
+```html
+<body>
+  <div class="container">
+    <!-- Header Section -->
+    <div class="header">
+      <div class="title-section">
+        <h1>[Indicator Title]</h1>
+        <p>[Brief Description]</p>
+      </div>
+      <div class="controls">
+        <!-- Control elements -->
+      </div>
+    </div>
+
+    <!-- Chart Container -->
+    <div class="chart-container">
+      <div class="chart-header">
+        <div class="chart-title">[Chart Title]</div>
+        <div class="chart-controls">
+          <!-- Timeframe buttons -->
+        </div>
+      </div>
+      <div class="chart-area" id="chart-area">
+        <!-- Chart will be rendered here -->
+      </div>
+    </div>
+
+    <!-- Legend -->
+    <div class="legend">
+      <!-- Legend items -->
+    </div>
+
+    <!-- Stats Panel -->
+    <div class="stats-panel">
+      <!-- Statistics cards -->
+    </div>
+
+    <!-- Description Section -->
+    <div class="description-section">
+      <!-- Detailed explanation -->
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="../js/sidebar.js"></script>
+  <script>
+    // Indicator-specific JavaScript
+  </script>
+</body>
+```
+
+---
+
+## 🎨 **Component Standards**
+
+### **1. Header Component**
+```css
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+  padding: 20px;
+  background: var(--bg-secondary);
+  border-radius: 12px;
+}
+
+.title-section h1 {
+  font-size: 24px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.title-section p {
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+```
+
+### **2. Chart Container**
+```css
+.chart-container {
+  background: var(--chart-bg);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+  position: relative;
+  min-height: 600px;
+}
+
+.chart-area {
+  position: relative;
+  height: 500px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--chart-bg);
+}
+```
+
+### **3. Timeframe Controls**
+```css
+.timeframe-btn {
+  padding: 6px 12px;
+  border: 1px solid var(--border-default);
+  border-radius: 6px;
+  background: var(--bg-primary);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.3s ease;
+}
+
+.timeframe-btn.active {
+  background: var(--accent-blue);
+  color: white;
+  border-color: var(--accent-blue);
+}
+```
+
+### **4. Loading Spinner**
+```css
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--border-default);
+  border-top: 3px solid var(--accent-blue);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-right: 15px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+```
+
+---
+
+## ⚙️ **JavaScript Architecture**
+
+### **1. Class Structure Template**
+```javascript
+class [IndicatorName]Manager {
+  constructor() {
+    this.currentSymbol = 'BTCUSDT';
+    this.currentPeriod = 'all';
+    this.chart = null;
+    this.init();
+  }
+
+  init() {
+    this.loadScripts();
+    this.bindEvents();
+    this.loadData();
+  }
+
+  async loadScripts() {
+    // Lazy load Chart.js and date-fns
+  }
+
+  bindEvents() {
+    // Event listeners for controls
+  }
+
+  async loadData() {
+    // Data loading logic
+  }
+
+  async renderChart(data) {
+    // Chart rendering logic
+  }
+
+  updateStats(data) {
+    // Statistics update logic
+  }
+}
+```
+
+### **2. Required Methods**
+- `loadScripts()`: Lazy load external dependencies
+- `bindEvents()`: Attach event listeners
+- `loadData()`: Fetch and process data
+- `renderChart()`: Create and configure Chart.js
+- `updateStats()`: Update statistics panel
+- `handleError()`: Error handling and user feedback
+
+### **3. Error Handling Pattern**
+```javascript
+async loadData() {
+  try {
+    this.showLoading();
+    const data = await this.fetchData();
+    await this.renderChart(data);
+    this.updateStats(data);
+  } catch (error) {
+    this.handleError(error);
+  } finally {
+    this.hideLoading();
+  }
+}
+
+handleError(error) {
+  console.error('Data loading failed:', error);
+  const chartArea = document.getElementById('chart-area');
+  chartArea.innerHTML = `
+    <div class="error-message">
+      <p>데이터 로딩에 실패했습니다.</p>
+      <button onclick="location.reload()">다시 시도</button>
+    </div>
+  `;
+}
+```
+
+---
+
+## 📊 **Chart.js Configuration Standards**
+
+### **1. Base Configuration**
+```javascript
+const chartConfig = {
+  type: 'line', // or 'bar', 'scatter'
+  data: {
+    datasets: []
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: {
+      intersect: false,
+      mode: 'index'
+    },
+    plugins: {
+      legend: {
+        display: false
+      },
+      tooltip: {
+        enabled: true,
+        backgroundColor: 'rgba(0, 0, 0, 0.9)',
+        titleColor: '#ffffff',
+        bodyColor: '#ffffff',
+        borderColor: '#333333',
+        borderWidth: 1,
+        cornerRadius: 6,
+        displayColors: false
+      }
+    },
+    scales: {
+      x: {
+        type: 'time',
+        time: {
+          unit: 'day',
+          displayFormats: {
+            day: 'yyyy MM dd'
+          }
+        },
+        grid: {
+          color: 'rgba(255, 255, 255, 0.1)',
+          borderColor: 'rgba(255, 255, 255, 0.1)',
+          borderDash: [5, 5]
+        },
+        ticks: {
+          color: '#cccccc',
+          maxTicksLimit: 8,
+          font: { size: 11 }
+        }
+      },
+      y: {
+        position: 'right',
+        grid: {
+          color: 'rgba(255, 255, 255, 0.1)',
+          borderColor: 'rgba(255, 255, 255, 0.1)',
+          borderDash: [5, 5]
+        },
+        ticks: {
+          color: '#cccccc',
+          font: { size: 11 }
+        }
+      }
+    }
+  }
+};
+```
+
+### **2. Dataset Color Standards**
+```javascript
+const colors = {
+  primary: '#3b82f6',      // Blue for main data
+  positive: '#10b981',     // Green for positive values
+  negative: '#ef4444',     // Red for negative values
+  neutral: '#666666',      // Gray for neutral states
+  price: '#ffffff',        // White for price data
+  volume: '#8b5cf6'        // Purple for volume data
+};
+```
+
+---
+
+## 🔗 **Sidebar Integration**
+
+### **1. Add to sidebar.js**
+```javascript
+// In the sidebar menu structure
+<div class="menu-item" data-page="[indicator-name]">
+  <span class="menu-item-text">[Indicator Display Name]</span>
+  <span class="menu-item-arrow">▶</span>
+</div>
+
+// In the routing switch statement
+case '[indicator-name]':
+  if (!currentPath.includes('/asset/[indicator-name]/')) {
+    shouldNavigate = true;
+  }
+  break;
+
+// In the navigation switch statement
+case '[indicator-name]':
+  window.location.href = '/asset/[indicator-name]/';
+  break;
+```
+
+### **2. Menu Categories**
+- **시장 지표 (Market Indicators)**: MVRV, Retail Activity, Taker CVD
+- **거래소 자금 흐름 (Exchange Flow)**: Holdings, Netflow
+- **파생 상품 (Derivatives)**: Funding Rate
+- **새로운 카테고리**: 필요시 추가
+
+---
+
+## 📈 **Data Standards**
+
+### **1. API Integration**
+```javascript
+async fetchData() {
+  const url = `https://api.binance.com/api/v3/[endpoint]?symbol=${this.currentSymbol}&[params]`;
+  
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000);
+  
+  try {
+    const response = await fetch(url, {
+      signal: controller.signal,
+      headers: { 'Accept': 'application/json' }
+    });
+    
+    clearTimeout(timeoutId);
+    
+    if (!response.ok) {
+      throw new Error(`API request failed: ${response.status}`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    clearTimeout(timeoutId);
+    throw new Error(`Data loading failed: ${error.message}`);
+  }
+}
+```
+
+### **2. Data Processing**
+- **Time Formatting**: Use ISO strings and Date objects consistently
+- **Number Formatting**: Use appropriate decimal places and K/M/B suffixes
+- **Error Handling**: Validate data structure and handle missing values
+- **Caching**: Implement appropriate caching strategies
+
+---
+
+## 🎯 **Performance Standards**
+
+### **1. Loading Optimization**
+- **Lazy Loading**: Load Chart.js and date-fns only when needed
+- **Preconnect**: Use preconnect for external domains
+- **Minimal Dependencies**: Keep external dependencies to minimum
+- **Efficient Rendering**: Use Chart.js destroy/recreate pattern
+
+### **2. Memory Management**
+```javascript
+// Clean up previous chart
+if (this.chart) {
+  this.chart.destroy();
+}
+
+// Create new chart
+this.chart = new Chart(canvas, config);
+```
+
+---
+
+## 🔍 **Testing Checklist**
+
+### **Before Deployment**
+- [ ] **Responsive Design**: Test on mobile, tablet, desktop
+- [ ] **Data Loading**: Verify API integration and error handling
+- [ ] **Chart Rendering**: Test all chart types and configurations
+- [ ] **Navigation**: Verify sidebar integration and routing
+- [ ] **Performance**: Check loading times and memory usage
+- [ ] **Accessibility**: Test keyboard navigation and screen readers
+- [ ] **Cross-browser**: Test on Chrome, Firefox, Safari, Edge
+
+### **Quality Assurance**
+- [ ] **Code Review**: Follow established patterns and conventions
+- [ ] **Error Handling**: Comprehensive error scenarios covered
+- [ ] **Documentation**: Clear comments and inline documentation
+- [ ] **Consistency**: Matches existing indicator implementations
+
+---
+
+## 📝 **Naming Conventions**
+
+### **Files and Directories**
+- **Directory**: `kebab-case` (e.g., `exchange-netflow`)
+- **HTML File**: `index.html` (always)
+- **CSS Classes**: `kebab-case` (e.g., `chart-container`)
+- **JavaScript Classes**: `PascalCase` (e.g., `ExchangeNetflowManager`)
+
+### **Variables and Functions**
+- **Variables**: `camelCase` (e.g., `currentSymbol`)
+- **Functions**: `camelCase` (e.g., `loadData()`)
+- **Constants**: `UPPER_SNAKE_CASE` (e.g., `API_TIMEOUT`)
+
+---
+
+## 🚀 **Quick Start Template**
+
+### **1. Create Directory Structure**
+```bash
+mkdir -p asset/[indicator-name]
+touch asset/[indicator-name]/index.html
+```
+
+### **2. Copy Base Template**
+Use the HTML template structure provided above as starting point.
+
+### **3. Implement Core Methods**
+- Data fetching and processing
+- Chart rendering
+- Event handling
+- Error management
+
+### **4. Add to Sidebar**
+Update `asset/js/sidebar.js` with new indicator routing.
+
+### **5. Test and Deploy**
+Follow the testing checklist before deployment.
+
+---
+
+## 🎨 **Design System Extensions**
+
+### **New Color Variables**
+```css
+/* Add to :root when needed */
+--indicator-specific: #color;
+--status-positive: #10b981;
+--status-negative: #ef4444;
+--status-neutral: #666666;
+```
+
+### **New Component Classes**
+```css
+/* Follow existing patterns */
+.new-component {
+  background: var(--bg-secondary);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+```
+
+---
+
+## 📚 **Resources and References**
+
+### **Existing Implementations**
+- **Taker CVD**: `/asset/taker-cvd/index.html`
+- **Funding Rate**: `/asset/funding-rate/index.html`
+- **Exchange Netflow**: `/asset/exchange-netflow/index.html`
+- **MVRV Ratio**: `/asset/mvrv-ratio/index.html`
+
+### **External Dependencies**
+- **Chart.js**: https://www.chartjs.org/
+- **date-fns**: https://date-fns.org/
+- **Binance API**: https://binance-docs.github.io/apidocs/
+
+### **Design Resources**
+- **Color Palette**: Use established CSS variables
+- **Typography**: Pretendard font family
+- **Icons**: Use consistent icon system
+
+---
+
+## 🔄 **Maintenance and Updates**
+
+### **Regular Reviews**
+- **Monthly**: Review consistency across all indicators
+- **Quarterly**: Update dependencies and security patches
+- **Annually**: Major design system updates
+
+### **Version Control**
+- **Feature Branches**: Create separate branches for new indicators
+- **Code Review**: Require review before merging
+- **Documentation**: Update this document with new patterns
+
+---
+
+## ✅ **Success Metrics**
+
+### **Consistency Goals**
+- **100%**: All indicators follow established patterns
+- **<2s**: Page load time for all indicators
+- **100%**: Mobile responsiveness across all devices
+- **0**: Critical accessibility issues
+
+### **Quality Standards**
+- **Code Coverage**: Maintain high test coverage
+- **Performance**: Meet established performance benchmarks
+- **User Experience**: Consistent UX across all indicators
+- **Maintainability**: Easy to update and extend
+
+---
+
+*This document should be updated whenever new patterns or standards are established. Last updated: [Current Date]*
+description:
+globs:
+alwaysApply: false
+---

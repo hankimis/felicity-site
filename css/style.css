@@ -13,7 +13,7 @@
 
 /* 4. Components (재사용 가능한 UI 요소들) */
 @import url('components/_buttons.css');
-@import url('components/_navbar.css');
+@import url('../components/header/navbar.css');
 @import url('components/_footer.css');
 @import url('components/_cards.css');
 @import url('components/_table.css');

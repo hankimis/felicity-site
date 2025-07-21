@@ -25,7 +25,7 @@ class FeatureCardsManager {
       } catch (error) {
         console.error('❌ 속보 뉴스 카드 초기화 실패:', error);
       }
-    }, 2000);
+    }, 1000); // 더 빠른 초기화
   }
 
   // 고래 탐지 카드 초기화
@@ -89,7 +89,8 @@ class FeatureCardsManager {
     console.log('📰 속보 뉴스 카드 초기화 시작');
     
     // 즉시 뉴스 함수들이 있는지 확인
-    if (typeof window.getNewsImportance === 'function' && window.newsItems) {
+    if (typeof window.getNewsImportance === 'function' && window.newsItems && window.newsItems.length > 0) {
+      console.log('📰 뉴스 데이터가 이미 로드되어 있음, 즉시 표시');
       this.loadBreakingNews();
       return;
     }
@@ -98,39 +99,46 @@ class FeatureCardsManager {
     const checkNewsData = setInterval(() => {
       if (window.newsItems && window.newsItems.length > 0) {
         clearInterval(checkNewsData);
+        console.log('📰 뉴스 데이터 로드 완료, 속보 표시');
         this.loadBreakingNews();
       }
-    }, 1000);
+    }, 500); // 더 빠른 체크 간격
     
-    // 15초 후 타임아웃 (뉴스 로딩 시간을 더 줌)
+    // 20초 후 타임아웃 (뉴스 로딩 시간을 더 줌)
     setTimeout(() => {
       clearInterval(checkNewsData);
       if (!window.newsItems || window.newsItems.length === 0) {
         console.log('📰 뉴스 데이터 로딩 타임아웃, 대체 메시지 표시');
         this.showBreakingNewsFallback();
       }
-    }, 15000);
+    }, 20000);
   }
 
   // 속보 뉴스 로드 및 표시
   loadBreakingNews() {
-    if (!window.newsItems) {
+    if (!window.newsItems || window.newsItems.length === 0) {
+      console.log('📰 뉴스 데이터가 없음, 대체 메시지 표시');
       this.showBreakingNewsFallback();
       return;
     }
+    
+    console.log(`📰 속보 뉴스 필터링 시작 (전체 ${window.newsItems.length}개 뉴스)`);
     
     // 중요도 5점 뉴스만 필터링 (속보)
     const breakingNews = window.newsItems.filter(item => {
       // getNewsImportance 함수가 있으면 사용, 없으면 기본 필터링
       if (typeof window.getNewsImportance === 'function') {
-        return window.getNewsImportance(item) === 5;
+        const importance = window.getNewsImportance(item);
+        return importance >= 4; // 4점 이상을 속보로 간주 (더 많은 뉴스 표시)
       } else {
         // 기본 키워드 기반 속보 필터링
-        const title = item.title.toLowerCase();
-        const urgentKeywords = ['긴급', '속보', '규제', '승인', '금지', '해킹', '상장', '폐쇄', '급등', '폭락', 'ETF', 'SEC', '비트코인', '이더리움'];
+        const title = (item.title || '').toLowerCase();
+        const urgentKeywords = ['긴급', '속보', '규제', '승인', '금지', '해킹', '상장', '폐쇄', '급등', '폭락', 'ETF', 'SEC', '비트코인', '이더리움', '폭등', '급락', '대형', '거래', '투자'];
         return urgentKeywords.some(keyword => title.includes(keyword));
       }
     });
+    
+    console.log(`📰 속보 뉴스 필터링 완료: ${breakingNews.length}개 발견`);
     
     // 최신 순으로 정렬하고 상위 10개만 표시
     const topBreakingNews = breakingNews

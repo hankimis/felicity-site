@@ -30,7 +30,7 @@ body {
 /* 🔥 커뮤니티 레이아웃 */
 .community-layout {
     display: flex;
-    height: calc(100vh - 80px);
+    height: calc(100vh - 65px); /* 새로운 헤더 높이에 맞춤 */
     width: 100%;
     overflow: hidden;
 }
@@ -465,7 +465,7 @@ body {
 
 /* 🔥 고래 탐지와 채팅 컨테이너 */
 .whale-chat-container {
-    width: 350px;
+    width: 450px;
     height: 100%;
     display: flex;
     flex-direction: column;

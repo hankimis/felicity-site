@@ -35,6 +35,26 @@ class CommunityChat {
 
     // 메시지 렌더링 함수
     renderMessage(msg) {
+        // 시스템 알람 메시지인지 확인
+        const isSystemAlert = msg.data.isSystemAlert || msg.data.uid === 'system-alert';
+        const isBreakingNews = msg.data.isBreakingNews || msg.data.uid === 'system-breaking-news';
+        
+        if (isSystemAlert) {
+            const alertClass = isBreakingNews ? 'system-alert breaking-news' : 'system-alert';
+            const clickable = isBreakingNews && msg.data.newsLink ? 'clickable' : '';
+            
+            return `
+                <div class="message-item ${alertClass} ${clickable}" id="${msg.id}" data-uid="${msg.data.uid}" ${isBreakingNews && msg.data.newsLink ? `data-news-link="${msg.data.newsLink}"` : ''}>
+                    <div class="message-content">
+                        <div class="message-sender">
+                            <strong>${msg.data.displayName}</strong>
+                        </div>
+                        <div class="message-text">${msg.data.text.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</div>
+                    </div>
+                </div>
+            `;
+        }
+        
         const profileImg = msg.data.photoThumbURL || msg.data.photoURL || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMjAiIGN5PSIyMCIgcj0iMjAiIGZpbGw9IiM2Mjc0OGEiLz4KPHBhdGggZD0iTTIwIDEwQzIyLjIwOTEgMTAgMjQgMTEuNzkwOSAyNCAxNEMyNCAxNi4yMDkxIDIyLjIwOTEgMTggMjAgMThDMTcuNzkwOSAxOCAxNiAxNi4yMDkxIDE2IDE0QzE2IDExLjc5MDkgMTcuNzkwOSAxMCAyMCAxMFoiIGZpbGw9IiNmZmZmZmYiLz4KPHBhdGggZD0iTTI4IDI4QzI4IDI0LjY4NjMgMjQuNDE4MyAyMiAyMCAyMkMxNS41ODE3IDIyIDEyIDI0LjY4NjMgMTIgMjhIMjhaIiBmaWxsPSIjZmZmZmZmIi8+Cjwvc3ZnPgo=';
         
         let isMyMessage = false;
@@ -143,6 +163,14 @@ class CommunityChat {
                     if (!document.getElementById(msg.id)) {
                         const messageHTML = this.renderMessage(msg);
                         this.messagesContainer.insertAdjacentHTML('beforeend', messageHTML);
+                        
+                        // 속보 뉴스 메시지 클릭 이벤트 추가
+                        const messageElement = document.getElementById(msg.id);
+                        if (messageElement && msg.data.isBreakingNews && msg.data.newsLink) {
+                            messageElement.addEventListener('click', () => {
+                                window.open(msg.data.newsLink, '_blank', 'noopener,noreferrer');
+                            });
+                        }
                     }
                 }
             });

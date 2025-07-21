@@ -46,87 +46,310 @@
 
 /* 🔥 레이아웃 버튼 그룹 */
 .layout-buttons-group {
-    display: flex;
-    gap: 8px;
-    align-items: center;
+    position: relative;
+    display: inline-block;
 }
 
-/* 🔥 레이아웃 버튼 */
+/* 🔥 레이아웃 버튼 - 완전히 배경 없는 아이콘 스타일 */
 .layout-btn {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 48px;
-    height: 32px;
-    background: var(--bg-secondary);
-    border: 1px solid var(--border-color);
-    border-radius: 6px;
+    width: 40px;
+    height: 40px;
+    background: transparent !important;
+    border: none !important;
+    border-radius: 0 !important;
     cursor: pointer;
     transition: all 0.2s ease;
     position: relative;
+    padding: 8px;
+    box-shadow: none !important;
+    outline: none !important;
+}
+
+/* 전역적으로 레이아웃 버튼 배경만 제거 (아이콘은 보존) */
+.layout-btn,
+.layout-btn:hover,
+.layout-btn:active,
+.layout-btn:focus,
+.layout-btn.active {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    outline: none !important;
 }
 
 .layout-btn:hover {
-    background: var(--bg-hover);
-    border-color: var(--primary-color);
-    transform: translateY(-1px);
+    background: transparent !important;
+    transform: scale(1.1);
 }
 
 .layout-btn.active {
-    background: var(--primary-color);
-    border-color: var(--primary-color);
-    box-shadow: 0 2px 8px rgba(49, 130, 246, 0.3);
+    background: transparent !important;
+    color: var(--primary-color);
+    box-shadow: none !important;
 }
 
-/* 🔥 레이아웃 아이콘 */
-.layout-icon {
+/* 다크모드 호버 효과 */
+[data-theme="dark"] .layout-btn:hover {
+    background: transparent !important;
+}
+
+[data-theme="dark"] .layout-btn.active {
+    background: transparent !important;
+}
+
+/* 🔥 드롭다운 메뉴 */
+.layout-dropdown {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    min-width: 200px;
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: all 0.2s ease;
+    margin-top: 4px;
+}
+
+.layout-buttons-group:hover .layout-dropdown {
+    opacity: 1 !important;
+    visibility: visible !important;
+    transform: translateY(0);
+}
+
+/* 🔥 드롭다운 화살표 제거 - 깔끔한 아이콘만 표시 */
+.layout-btn::after {
+    display: none;
+}
+
+/* 🔥 드롭다운 메뉴 화살표 */
+.layout-dropdown::before {
+    content: '';
+    position: absolute;
+    top: -6px;
+    right: 12px;
+    width: 0;
+    height: 0;
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-bottom: 6px solid var(--border-color);
+}
+
+.layout-dropdown::after {
+    content: '';
+    position: absolute;
+    top: -5px;
+    right: 12px;
+    width: 0;
+    height: 0;
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-bottom: 6px solid var(--card-bg);
+}
+
+/* 🔥 드롭다운 아이템 */
+.layout-dropdown-item {
     display: flex;
-    flex-wrap: wrap;
-    gap: 2px;
-    width: 20px;
-    height: 16px;
     align-items: center;
-    justify-content: center;
+    padding: 12px 16px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    border-bottom: 1px solid var(--border-color);
 }
 
-.layout-1 {
+.layout-dropdown-item:last-child {
+    border-bottom: none;
+}
+
+.layout-dropdown-item:hover {
+    background: var(--bg-hover);
+}
+
+.layout-dropdown-item.active {
+    background: var(--primary-color);
+    color: white;
+}
+
+.layout-dropdown-item.active .chart-box {
+    background: white;
+}
+
+/* 🔥 드롭다운 아이템 번호 */
+.layout-dropdown-number {
+    font-weight: 600;
+    margin-right: 12px;
+    min-width: 20px;
+    text-align: center;
+}
+
+/* 🔥 드롭다운 아이콘 그룹 */
+.layout-dropdown-icons {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+/* 🔥 드롭다운 아이콘 */
+.layout-dropdown-icon {
+    display: grid;
+    gap: 1px;
+    width: 28px;
+    height: 20px;
+    border: 1px solid var(--border-color);
+    border-radius: 3px;
+    background: var(--bg-secondary);
+    padding: 2px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.layout-dropdown-icon:hover {
+    border-color: var(--primary-color);
+    transform: scale(1.05);
+}
+
+/* 🔥 드롭다운 아이콘 레이아웃별 설정 */
+.layout-dropdown-icon.layout-single {
     grid-template-columns: 1fr;
     grid-template-rows: 1fr;
 }
 
-.layout-2 {
+.layout-dropdown-icon.layout-horizontal {
     grid-template-columns: 1fr 1fr;
     grid-template-rows: 1fr;
 }
 
-.layout-3 {
+.layout-dropdown-icon.layout-vertical {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr 1fr;
+}
+
+.layout-dropdown-icon.layout-grid-3 {
     grid-template-columns: 1fr 1fr;
     grid-template-rows: 1fr 1fr;
 }
 
-.layout-4 {
+.layout-dropdown-icon.layout-grid-4 {
     grid-template-columns: 1fr 1fr;
     grid-template-rows: 1fr 1fr;
 }
 
-.chart-box {
-    width: 8px;
-    height: 6px;
+/* 3개 차트 그리드에서 마지막 박스 숨기기 */
+.layout-dropdown-icon.layout-grid-3 .chart-box:nth-child(4) {
+    display: none;
+}
+
+/* 🔥 드롭다운 아이콘 내부 차트 박스 */
+.layout-dropdown-icon .chart-box {
+    width: 100%;
+    height: 100%;
     background: var(--text-secondary);
     border-radius: 1px;
     transition: background-color 0.2s ease;
 }
 
-.layout-btn.active .chart-box {
+.layout-dropdown-item:hover .layout-dropdown-icon .chart-box {
+    background: var(--primary-color);
+}
+
+.layout-dropdown-item.active .layout-dropdown-icon .chart-box {
     background: white;
+}
+
+.layout-dropdown-item:hover .layout-dropdown-icon {
+    border-color: var(--primary-color);
+}
+
+.layout-dropdown-item.active .layout-dropdown-icon {
+    border-color: white;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+/* 🔥 레이아웃 아이콘 - 배경만 제거하고 아이콘은 보이게 */
+.layout-icon {
+    display: grid;
+    gap: 1px;
+    width: 24px;
+    height: 20px;
+    border: none !important;
+    border-radius: 0;
+    background: transparent !important;
+    padding: 2px;
+    opacity: 0.8;
+    transition: all 0.2s ease;
+}
+
+.layout-btn:hover .layout-icon {
+    opacity: 1;
+    transform: scale(1.1);
+}
+
+.layout-btn.active .layout-icon {
+    opacity: 1;
+    background: transparent !important;
+}
+
+/* 메인 버튼 아이콘 레이아웃별 설정 */
+.layout-icon.layout-single {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr;
+}
+
+.layout-icon.layout-horizontal {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr;
+}
+
+.layout-icon.layout-vertical {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr 1fr;
+}
+
+.layout-icon.layout-grid-3 {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+}
+
+.layout-icon.layout-grid-4 {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+}
+
+/* 3개 차트 그리드에서 마지막 박스 숨기기 */
+.layout-icon.layout-grid-3 .chart-box:nth-child(4) {
+    display: none;
+}
+
+.chart-box {
+    width: 100%;
+    height: 100%;
+    background: var(--text-color);
+    border-radius: 1px;
+    transition: all 0.2s ease;
+    opacity: 0.8;
+    border: none !important;
 }
 
 .layout-btn:hover .chart-box {
     background: var(--primary-color);
+    opacity: 1;
+}
+
+.layout-btn.active .chart-box {
+    background: var(--primary-color);
+    opacity: 1;
 }
 
 .layout-btn.active:hover .chart-box {
-    background: white;
+    background: var(--primary-color);
+    opacity: 1;
 }
 
 /* 🔥 차트 메인 컨테이너 */
@@ -139,22 +362,56 @@
     background: var(--bg-primary);
 }
 
-.chart-main-container.layout-1 {
+/* 🔥 기본 레이아웃 (단일 차트) */
+.chart-main-container.layout-1.layout-single {
     grid-template-columns: 1fr;
     grid-template-rows: 1fr;
 }
 
-.chart-main-container.layout-2 {
+/* 🔥 2개 차트 레이아웃 */
+.chart-main-container.layout-2.layout-horizontal {
     grid-template-columns: 1fr 1fr;
     grid-template-rows: 1fr;
 }
 
-.chart-main-container.layout-3 {
+.chart-main-container.layout-2.layout-vertical {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr 1fr;
+}
+
+/* 🔥 3개 차트 레이아웃 */
+.chart-main-container.layout-3.layout-horizontal {
+    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-rows: 1fr;
+}
+
+.chart-main-container.layout-3.layout-vertical {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr 1fr 1fr;
+}
+
+.chart-main-container.layout-3.layout-grid {
     grid-template-columns: 1fr 1fr;
     grid-template-rows: 1fr 1fr;
 }
 
-.chart-main-container.layout-4 {
+.chart-main-container.layout-3.layout-grid .chart-container:nth-child(3) {
+    grid-column: 1;
+    grid-row: 2;
+}
+
+/* 🔥 4개 차트 레이아웃 */
+.chart-main-container.layout-4.layout-horizontal {
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    grid-template-rows: 1fr;
+}
+
+.chart-main-container.layout-4.layout-vertical {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr 1fr 1fr 1fr;
+}
+
+.chart-main-container.layout-4.layout-grid {
     grid-template-columns: 1fr 1fr;
     grid-template-rows: 1fr 1fr;
 }
@@ -264,8 +521,14 @@
     }
     
     .layout-btn {
-        width: 40px;
-        height: 28px;
+        width: 36px;
+        height: 36px;
+        padding: 6px;
+    }
+    
+    .layout-icon {
+        width: 20px;
+        height: 16px;
     }
     
     .chart-main-container {
@@ -286,8 +549,14 @@
     }
     
     .layout-btn {
-        width: 36px;
-        height: 24px;
+        width: 32px;
+        height: 32px;
+        padding: 4px;
+    }
+    
+    .layout-icon {
+        width: 18px;
+        height: 14px;
     }
     
     .chart-box {
@@ -320,19 +589,19 @@
 }
 
 .dark-mode .layout-btn {
-    background: var(--bg-secondary);
-    border-color: var(--border-color);
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
 }
 
 .dark-mode .layout-btn:hover {
-    background: var(--bg-hover);
-    border-color: var(--primary-color);
+    background: transparent !important;
 }
 
 .dark-mode .layout-btn.active {
-    background: var(--primary-color);
-    border-color: var(--primary-color);
-    color: white;
+    background: transparent !important;
+    color: var(--primary-color);
+    box-shadow: none !important;
 }
 
 .analysis-card-header i {

@@ -207,7 +207,7 @@
 
 .whale-trades-list {
     list-style: none;
-    padding: 8px;
+    padding: 2px;
     margin: 0;
     overflow-y: auto;
     overflow-x: hidden; /* 🔥 가로 스크롤 방지 */
@@ -241,7 +241,6 @@
     padding: 8px 12px;
     margin: 1px 0;
     background: rgba(255, 255, 255, 0.8);
-    border-left: 3px solid #ccc;
     font-size: 11px;
     color: #333;
     transition: all 0.3s ease;
@@ -261,14 +260,12 @@
 /* Level 1: $250k+ - theme-buy-100 / theme-sell-100 */
 .whale-trade-pixel.level-1 {
     background: linear-gradient(90deg, rgba(114, 180, 116, 0.9), rgba(114, 180, 116, 0.7));
-    border-left-color: rgb(100, 157, 102);
     color: #ffffff;
     
 }
 
 .whale-trade-pixel.level-1.sell {
     background: linear-gradient(90deg, rgba(249, 95, 105, 0.9), rgba(249, 95, 105, 0.7));
-    border-left-color: rgb(239, 67, 82);
     color: #ffffff;
     
 }
@@ -276,37 +273,29 @@
 /* Level 2: $500k+ - theme-buy-200 / theme-sell-200 */
 .whale-trade-pixel.level-2 {
     background: linear-gradient(90deg, rgba(168, 238, 168, 1), rgba(168, 238, 168, 0.8));
-    border-left-color: rgb(114, 180, 116);
     color: rgb(100, 157, 102);
     font-weight: 700;
-    box-shadow: 0 0 8px rgba(100, 157, 102, 0.4);
     
 }
 
 .whale-trade-pixel.level-2.sell {
     background: linear-gradient(90deg, rgba(266, 167, 172, 1), rgba(266, 167, 172, 0.8));
-    border-left-color: rgb(249, 95, 105);
     color: rgb(239, 67, 82);
     font-weight: 700;
-    box-shadow: 0 0 8px rgba(239, 67, 82, 0.4);
     
 }
 
 /* Level 3 고래 거래 (500k-1M) */
 .whale-trade-pixel.level-3 {
     background: linear-gradient(135deg, rgba(114, 180, 116, 0.3), rgba(114, 180, 116, 0.1));
-    border-left-color: rgb(114, 180, 116);
     color: rgb(114, 180, 116);
     font-weight: 600;
-    box-shadow: 0 0 15px rgba(114, 180, 116, 0.6);
     
 }
 
 .whale-trade-pixel.level-3.sell {
     background: linear-gradient(135deg, rgba(249, 95, 105, 0.3), rgba(249, 95, 105, 0.1));
-    border-left-color: rgb(249, 95, 105);
     color: rgb(249, 95, 105);
-    box-shadow: 0 0 15px rgba(249, 95, 105, 0.6);
 }
 
 /* Level 4 고래 거래 (1M 이상) - 롱/숏 구분 */
@@ -317,10 +306,8 @@
     background-position: center; /* 🔥 GIF 중앙 정렬 */
     background-repeat: no-repeat; /* 🔥 GIF 반복 없음 */
     background-blend-mode: overlay; /* 🔥 색상과 GIF 블렌딩 */
-    border-left-color: rgb(53, 208, 111);
     color: #ffffff; /* 🔥 흰색 텍스트로 가독성 향상 */
     font-weight: 700;
-    box-shadow: 0 0 20px rgba(53, 208, 111, 0.8);
     /* 🔥 기본 애니메이션 제거 - 새로운 거래에만 빤짝 효과 */
     transform: scale(1.005); /* 🔥 가로 스크롤 방지 - 1.02에서 1.005로 감소 */
     min-height: 30px; /* 🔥 높이 30px로 설정 */
@@ -337,10 +324,8 @@
     background-position: center; /* 🔥 GIF 중앙 정렬 */
     background-repeat: no-repeat; /* 🔥 GIF 반복 없음 */
     background-blend-mode: overlay; /* 🔥 색상과 GIF 블렌딩 */
-    border-left-color: rgb(235, 30, 47);
     color: #ffffff; /* 🔥 흰색 텍스트로 가독성 향상 */
     font-weight: 700;
-    box-shadow: 0 0 20px rgba(235, 30, 47, 0.8);
     /* 🔥 기본 애니메이션 제거 - 새로운 거래에만 빤짝 효과 */
     transform: scale(1.005);
     min-height: 30px; /* 🔥 높이 30px로 설정 */
@@ -444,17 +429,14 @@
     max-width: 400px;
     z-index: 10000;
     
-    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
 }
 
 .whale-alert-buy {
     border-color: rgb(100, 157, 102);
-    box-shadow: 0 8px 32px rgba(100, 157, 102, 0.3);
 }
 
 .whale-alert-sell {
     border-color: rgb(239, 67, 82);
-    box-shadow: 0 8px 32px rgba(239, 67, 82, 0.3);
 }
 
 .whale-alert-level-2 {
@@ -605,27 +587,27 @@
 
 /* Exchange-specific styling - 색상 팔레트 기반 업데이트 */
 .trade-binance {
-    border-left-color: #f3ba2f;
+    /* border-left-color: #f3ba2f; */
 }
 
 .trade-binance_futures {
-    border-left-color: #f3ba2f;
+    /* border-left-color: #f3ba2f; */
 }
 
 .trade-bybit {
-    border-left-color: #00d4aa;
+    /* border-left-color: #00d4aa; */
 }
 
 .trade-okx {
-    border-left-color: #000000;
+    /* border-left-color: #000000; */
 }
 
 .trade-bitget {
-    border-left-color: #00c2ff;
+    /* border-left-color: #00c2ff; */
 }
 
 .trade-mexc {
-    border-left-color: #ff6b35;
+    /* border-left-color: #ff6b35; */
 }
 
 /* Responsive Design */
@@ -913,7 +895,6 @@
 
 .trade.-level-3 {
     line-height: 2em;
-    box-shadow: 0 0 20px rgba(100, 157, 102, 0.5);
     z-index: 1;
     font-size: 1.25em;
     padding: 0.6em 2rem 0.6em 1.25rem;

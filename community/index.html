@@ -27,7 +27,7 @@
     <link rel="stylesheet" href="../css/layout/_main.css" />
     
     <!-- Component CSS -->
-    <link rel="stylesheet" href="../css/components/_navbar.css" />
+    <link rel="stylesheet" href="../components/header/navbar.css" />
     <link rel="stylesheet" href="../css/components/_modal.css" />
     <link rel="stylesheet" href="../css/components/chat.css" />
     <link rel="stylesheet" href="../css/components/chart.css" />
@@ -68,7 +68,7 @@
     <script src="../js/auth.js"></script>
     <script src="../js/websocket-manager.js"></script>
     <!-- Unified Header Loader -->
-    <script src="../js/header-loader.js" defer></script>
+    <script src="../components/header/header-loader.js" defer></script>
     
     <!-- Firebase 설정 -->
     <script>
@@ -92,45 +92,8 @@
     </script>
 </head>
 <body>
-    <header class="navbar">
-        <a href="../index.html" class="logo">
-            <img id="main-logo" src="../assets/lightlogo.png" alt="Onbit Logo" height="40"/>
-        </a>
-        <nav>
-            <ul>
-                <li><a href="../affiliated/">제휴 거래소</a></li>
-                <li><a href="../community/">실시간 채팅</a></li>
-                <li class="dropdown">
-                    <a href="#" class="dropdown-toggle">커뮤니티 <i class="fas fa-caret-down"></i></a>
-                    <ul class="dropdown-menu">
-                        <li><a href="../community-board.html">자유 게시판</a></li>
-                        <li><a href="../attendance.html">출석체크</a></li>
-                        <li><a href="../event-board.html">이벤트</a></li>
-                    </ul>
-                </li>
-                <li><a href="../notice-board/">공지사항</a></li>
-            </ul>
-        </nav>
-        <div class="header-right">
-            <aside class="auth-buttons">
-                <a href="#" class="login" data-action="open-login">로그인</a>
-                <a href="#" class="signup" data-action="open-signup">회원가입</a>
-            </aside>
-            <div class="user-info" id="user-profile" style="display: none;">
-                <span id="user-display-name"></span>
-                <span id="user-level"></span>
-                <a href="../admin.html" id="admin-page-link" style="display: none;" title="관리자 페이지">
-                    <i class="fas fa-shield-alt"></i>
-                </a>
-                <button id="logout-btn" data-action="logout"><i class="fas fa-sign-out-alt"></i></button>
-            </div>
-            <a href="../my-account/" id="my-page-link" class="icon-button" data-action="my-page" aria-label="마이페이지"><i class="fas fa-user-circle"></i></a>
-            <button class="theme-button" id="theme-toggle" data-action="toggle-theme"><i class="fas fa-sun"></i></button>
-        </div>
-        <button class="mobile-menu-button" id="mobile-menu-button" data-action="open-mobile-menu" aria-label="메뉴 열기">
-            <i class="fas fa-bars"></i>
-        </button>
-    </header>
+    <!-- Header placeholder -->
+    <div id="header-placeholder"></div>
 
     <main class="main-container">
         <div class="community-layout">
@@ -169,9 +132,14 @@
                     <section class="chat-section">
                         <div class="chat-section-header">
                             <h2>실시간 채팅</h2>
-                            <div class="chat-users-count">
-                                <i class="fas fa-user"></i>
-                                <span id="chat-users-count">0</span>
+                            <div class="chat-header-controls">
+                                <button id="price-alert-settings" class="alert-settings-btn" title="가격 알람 설정">
+                                    <i class="fas fa-bell"></i>
+                                </button>
+                                <div class="chat-users-count">
+                                    <i class="fas fa-user"></i>
+                                    <span id="chat-users-count">0</span>
+                                </div>
                             </div>
                         </div>
                         <div class="chat-wrapper">
@@ -187,88 +155,7 @@
         </div>
     </main>
 
-    <!-- Modals -->
-    <div id="login-modal" class="auth-modal">
-        <div class="auth-modal-content">
-            <span class="auth-modal-close" data-action="close-modal">&times;</span>
-            <form id="login-form" class="auth-form">
-                <h2>로그인</h2>
-                <p id="login-error-message" class="error-message"></p>
-                <div class="input-group">
-                    <i class="fas fa-envelope"></i>
-                    <input type="email" name="login-email" placeholder="이메일" required>
-                </div>
-                <div class="input-group">
-                    <i class="fas fa-lock"></i>
-                    <input type="password" name="login-password" placeholder="비밀번호" required>
-                </div>
-                <button type="submit" class="submit-btn">로그인</button>
-                <p class="auth-form-switch">계정이 없으신가요? <a href="#" id="show-signup">회원가입</a></p>
-            </form>
-            <p class="find-links" style="text-align:center; margin-top:12px;">
-                <a href="#" id="find-id-link">아이디(이메일) 찾기</a> | <a href="#" id="find-password-link">비밀번호 찾기</a>
-            </p>
-        </div>
-    </div>
-
-    <!-- Signup Modal -->
-    <div id="signup-modal" class="auth-modal">
-        <div class="auth-modal-content">
-            <span class="auth-modal-close" data-action="close-modal">&times;</span>
-            <form id="signup-form" class="auth-form">
-                <h2>회원가입</h2>
-                <p id="signup-error-message" class="error-message"></p>
-                <div class="input-group">
-                    <i class="fas fa-user"></i>
-                    <input type="text" name="signup-name" placeholder="닉네임" required>
-                </div>
-                <div class="input-group">
-                    <i class="fas fa-envelope"></i>
-                    <input type="email" name="signup-email" placeholder="이메일" required>
-                </div>
-                <div class="input-group">
-                    <i class="fas fa-lock"></i>
-                    <input type="password" name="signup-password" placeholder="비밀번호" required>
-                </div>
-                <div class="input-group">
-                    <i class="fas fa-check-circle"></i>
-                    <input type="password" name="signup-confirm-password" placeholder="비밀번호 확인" required>
-                </div>
-                <button type="submit" class="submit-btn">회원가입</button>
-                <p class="auth-form-switch">이미 계정이 있으신가요? <a href="#" id="show-login">로그인</a></p>
-            </form>
-        </div>
-    </div>
-
-    <!-- 비밀번호 재설정 모달 -->
-    <div id="reset-password-modal" class="auth-modal">
-        <div class="auth-modal-content">
-            <span class="auth-modal-close" data-action="close-modal">&times;</span>
-            <form id="reset-password-form" class="auth-form">
-                <h2>비밀번호 재설정</h2>
-                <div class="input-group">
-                    <input type="email" id="reset-password-email" placeholder="가입한 이메일을 입력하세요" required>
-                </div>
-                <button type="submit" class="submit-btn">재설정 메일 보내기</button>
-                <p id="reset-password-message" class="form-message"></p>
-            </form>
-        </div>
-    </div>
-
-    <!-- 아이디(이메일) 찾기 모달 -->
-    <div id="find-id-modal" class="auth-modal">
-        <div class="auth-modal-content">
-            <span class="auth-modal-close" data-action="close-modal">&times;</span>
-            <form id="find-id-form" class="auth-form">
-                <h2>아이디(이메일) 찾기</h2>
-                <div class="input-group">
-                    <input type="text" id="find-id-nickname" placeholder="닉네임을 입력하세요" required>
-                </div>
-                <button type="submit" class="submit-btn">이메일 찾기</button>
-                <p id="find-id-message" class="form-message"></p>
-            </form>
-        </div>
-    </div>
+    <!-- Auth Modals are now in components/header/header.html -->
 
     <!-- 차트 설정 모달 -->
     <div id="chart-settings-modal" class="auth-modal">
@@ -374,6 +261,57 @@
         </div>
     </div>
 
+    <!-- 가격 알람 설정 모달 -->
+    <div id="price-alert-modal" class="auth-modal">
+        <div class="auth-modal-content" style="max-width: 400px;">
+            <span class="auth-modal-close" data-action="close-modal">&times;</span>
+            <div style="padding: 20px;">
+                <h2 style="margin: 0 0 20px 0; font-size: 18px;">
+                    <i class="fas fa-bell"></i> 비트코인 가격 알람 설정
+                </h2>
+                
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 8px; font-size: 14px; color: var(--text-color);">
+                        알람 단위 (달러)
+                    </label>
+                    <select id="alert-threshold" style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--card-bg); color: var(--text-color);">
+                        <option value="500">500달러</option>
+                        <option value="1000" selected>1,000달러</option>
+                        <option value="2000">2,000달러</option>
+                        <option value="5000">5,000달러</option>
+                        <option value="10000">10,000달러</option>
+                    </select>
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 8px; font-size: 14px; color: var(--text-color);">
+                        알람 쿨다운 (초)
+                    </label>
+                    <select id="alert-cooldown" style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--card-bg); color: var(--text-color);">
+                        <option value="10000">10초</option>
+                        <option value="30000" selected>30초</option>
+                        <option value="60000">1분</option>
+                        <option value="300000">5분</option>
+                    </select>
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <label style="display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--text-color);">
+                        <input type="checkbox" id="browser-notifications" checked>
+                        브라우저 알림 표시
+                    </label>
+                </div>
+                
+
+                
+                <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 30px;">
+                    <button class="chart-settings-btn" id="save-alert-settings">저장</button>
+                    <button class="chart-settings-btn secondary" data-action="close-modal">취소</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- html2canvas for screenshots -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     
@@ -383,6 +321,7 @@
     <!-- Custom Scripts -->
     <script src="../js/community.js"></script>
     <script src="../js/community-chat.js"></script>
+    <script src="../js/bitcoin-price-alert.js"></script>
     
     <!-- WhaleTracker 초기화 스크립트 -->
     <script type="module">
@@ -545,6 +484,75 @@
 
         if (chartSaveModal) {
             observer.observe(chartSaveModal, { attributes: true });
+        }
+
+        // 가격 알람 설정 모달 이벤트
+        const priceAlertModal = document.getElementById('price-alert-modal');
+        const priceAlertSettingsBtn = document.getElementById('price-alert-settings');
+        const saveAlertSettingsBtn = document.getElementById('save-alert-settings');
+        const alertThresholdSelect = document.getElementById('alert-threshold');
+        const alertCooldownSelect = document.getElementById('alert-cooldown');
+        const browserNotificationsCheckbox = document.getElementById('browser-notifications');
+
+        // 알람 설정 버튼 클릭
+        if (priceAlertSettingsBtn) {
+            priceAlertSettingsBtn.addEventListener('click', () => {
+                if (priceAlertModal) {
+                    priceAlertModal.style.display = 'flex';
+                    
+                    // 현재 설정값 로드
+                    if (window.BitcoinPriceAlert && window.BitcoinPriceAlert.getInstance()) {
+                        const alert = window.BitcoinPriceAlert.getInstance();
+                        alertThresholdSelect.value = alert.alertThreshold || 1000;
+                        alertCooldownSelect.value = alert.alertCooldown || 30000;
+                    }
+                }
+            });
+        }
+
+        // 알람 설정 저장
+        if (saveAlertSettingsBtn) {
+            saveAlertSettingsBtn.addEventListener('click', () => {
+                const threshold = parseInt(alertThresholdSelect.value);
+                const cooldown = parseInt(alertCooldownSelect.value);
+                const browserNotifications = browserNotificationsCheckbox.checked;
+
+                if (window.BitcoinPriceAlert && window.BitcoinPriceAlert.getInstance()) {
+                    window.BitcoinPriceAlert.updateSettings(threshold, cooldown);
+                    
+                    // 설정을 로컬 스토리지에 저장
+                    localStorage.setItem('bitcoinAlertSettings', JSON.stringify({
+                        threshold,
+                        cooldown,
+                        browserNotifications
+                    }));
+                }
+
+                if (priceAlertModal) {
+                    priceAlertModal.style.display = 'none';
+                }
+            });
+        }
+
+        // 모달 닫기 이벤트
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('auth-modal-close') || 
+                e.target.getAttribute('data-action') === 'close-modal') {
+                if (priceAlertModal) {
+                    priceAlertModal.style.display = 'none';
+                }
+            }
+        });
+
+
+
+        // 모달 외부 클릭 시 닫기
+        if (priceAlertModal) {
+            priceAlertModal.addEventListener('click', (e) => {
+                if (e.target === priceAlertModal) {
+                    priceAlertModal.style.display = 'none';
+                }
+            });
         }
       });
     </script>

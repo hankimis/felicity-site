@@ -438,36 +438,11 @@ class AdminAuthManager {
      * 🔧 개발 환경 디버깅 도구
      */
     enableDebugMode() {
-        if (!SECURITY_CONFIG.DEV_MODE) {
-            console.warn('Debug mode is only available in development environment');
-            return;
-        }
-
-        window.AdminAuthDebug = {
-            setAdmin: () => {
-                localStorage.setItem('isAdmin', 'true');
-                console.log('🔧 Debug: Admin status set to true');
-            },
-            removeAdmin: () => {
-                localStorage.removeItem('isAdmin');
-                console.log('🔧 Debug: Admin status removed');
-            },
-            checkStatus: async () => {
-                const isAdmin = await this.isAdminUser();
-                console.log('🔧 Debug: Current admin status:', isAdmin);
-                console.log('🔧 Debug: Current user:', this.currentUser);
-            },
-            getSecurityLogs: async () => {
-                const logs = await getDocs(query(
-                    collection(this.db, 'security_logs'),
-                    orderBy('timestamp', 'desc'),
-                    limit(10)
-                ));
-                console.log('🔧 Debug: Recent security logs:', logs.docs.map(doc => doc.data()));
-            }
-        };
-
-        console.log('🔧 Debug mode enabled. Use AdminAuthDebug object for testing.');
+        console.log('🔧 AdminAuthManager Debug Mode Enabled');
+        console.log('Current User:', this.currentUser);
+        console.log('Is Admin:', this.isAdmin);
+        console.log('Session Start:', this.sessionStartTime);
+        console.log('Last Activity:', this.lastActivityTime);
     }
 }
 
@@ -479,5 +454,6 @@ if (SECURITY_CONFIG.DEV_MODE) {
     adminAuthManager.enableDebugMode();
 }
 
+// Default export for ES6 modules (전역 인스턴스)
 export default adminAuthManager;
 export { AdminAuthManager, SECURITY_CONFIG }; 

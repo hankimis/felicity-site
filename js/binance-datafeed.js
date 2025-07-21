@@ -41,9 +41,8 @@ class BinanceDatafeed {
                 const symbols = data.symbols
                     .filter(symbol => 
                         symbol.status === 'TRADING' && 
-                        symbol.symbol.includes(userInput.toUpperCase())
+                        (userInput === '' || symbol.symbol.includes(userInput.toUpperCase()))
                     )
-                    .slice(0, 30) // 최대 30개 결과
                     .map(symbol => ({
                         symbol: symbol.symbol,
                         full_name: `BINANCE:${symbol.symbol}`,

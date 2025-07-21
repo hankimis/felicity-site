@@ -7,17 +7,11 @@ document.addEventListener('DOMContentLoaded', () => {
         document.body.insertBefore(headerPlaceholder, document.body.firstChild);
     }
 
-    // FOUC 방지: 초기 로딩 상태 설정
-    const authLoading = document.getElementById('auth-loading');
-    if (authLoading) {
-        authLoading.style.display = 'flex';
-    }
-
     // 현재 경로에 따라 헤더 파일 경로 결정
     const currentPath = window.location.pathname;
     
     // 경로별 헤더 파일 경로 결정
-    let headerPath = '_header.html'; // 기본값
+    let headerPath = 'components/header/header.html'; // 기본값
     
     // 1단계 하위 디렉토리 (/event/, /community/, /bitcoin/ 등)
     if (currentPath.includes('/event/') || currentPath.includes('/event-board/') || 
@@ -25,7 +19,12 @@ document.addEventListener('DOMContentLoaded', () => {
         currentPath.includes('/affiliated/') || currentPath.includes('/notice-board/') || 
         currentPath.includes('/my-account/') || currentPath.includes('/admin/') ||
         currentPath.includes('/bitcoin/')) {
-        headerPath = '../_header.html';
+        headerPath = '../components/header/header.html';
+    }
+    
+    // asset 디렉토리는 2단계 하위 디렉토리로 처리
+    if (currentPath.includes('/asset/')) {
+        headerPath = '../../components/header/header.html';
     }
     
     // 2단계 하위 디렉토리 (/affiliated/exchange-guide/, /affiliated/payback-calculator/, /currencies/bitcoin/ 등)
@@ -36,28 +35,31 @@ document.addEventListener('DOMContentLoaded', () => {
         currentPath.includes('/affiliated/lbank/') ||
         currentPath.includes('/affiliated/okx/') ||
         currentPath.includes('/currencies/bitcoin/')) {
-        headerPath = '../../_header.html';
+        headerPath = '../../components/header/header.html';
     }
     
     // 3단계 하위 디렉토리 (/affiliated/exchange-guide/bitget-guide/ 등)
     if (currentPath.includes('/affiliated/exchange-guide/bitget-guide/') ||
         currentPath.includes('/affiliated/exchange-guide/bitmex-guide/') ||
         currentPath.includes('/affiliated/exchange-guide/lbank-guide/')) {
-        headerPath = '../../../_header.html';
+        headerPath = '../../../components/header/header.html';
     }
     
     // 4단계 하위 디렉토리 (/affiliated/exchange-guide/bitget-guide/kyc/ 등)
     if (currentPath.includes('/affiliated/exchange-guide/bitget-guide/kyc/') ||
         currentPath.includes('/affiliated/exchange-guide/bitget-guide/regi/') ||
         currentPath.includes('/affiliated/exchange-guide/bitget-guide/trade/')) {
-        headerPath = '../../../../_header.html';
+        headerPath = '../../../../components/header/header.html';
     }
     
     console.log(`Header loader: Current path: ${currentPath}, Header path: ${headerPath}`);
     
     fetch(headerPath)
         .then(response => {
-            if (!response.ok) throw new Error('Could not load header.');
+            if (!response.ok) {
+                console.error(`Header fetch failed: ${response.status} ${response.statusText}`);
+                throw new Error(`Could not load header: ${response.status}`);
+            }
             return response.text();
         })
         .then(async (data) => {
@@ -91,51 +93,68 @@ document.addEventListener('DOMContentLoaded', () => {
             console.warn(`Removed ${topBars.length - 1} legacy top-bar element(s).`);
         }
             
-            // 1. Start the main authentication and header logic
-            if (typeof startApp === 'function') {
-                await startApp(); // Wait for firebase etc. to be ready
-                console.log("Header loader: Main app started.");
-            // Attach auth form handlers now that header/DOM elements exist
-            if (typeof window.bindAuthForms === 'function') {
-                window.bindAuthForms();
+            // 헤더가 로드되면 즉시 표시
+            const mainHeader = document.getElementById('main-header');
+            if (mainHeader) {
+                mainHeader.style.opacity = '1';
+                console.log("Header loaded and displayed successfully.");
             }
             
-            // TurnstileManager가 모든 이벤트 처리 - 별도 설정 불필요
-            console.log("Header loader: TurnstileManager에서 모든 Turnstile 처리");
-            } else {
-                console.error('startApp function not found!');
-                // FOUC 방지: startApp이 없어도 헤더는 표시
-                const mainHeader = document.getElementById('main-header');
-                const authLoading = document.getElementById('auth-loading');
-                if (mainHeader && authLoading) {
-                    authLoading.style.opacity = '0';
-                    setTimeout(() => {
-                        authLoading.style.display = 'none';
-                    }, 300);
-                    mainHeader.style.opacity = '1';
+            // 1. Start the main authentication and header logic (if startApp exists)
+            if (typeof startApp === 'function') {
+                try {
+                    await startApp(); // Wait for firebase etc. to be ready
+                    console.log("Header loader: Main app started.");
+                    
+                    // Attach auth form handlers now that header/DOM elements exist
+                    if (typeof window.bindAuthForms === 'function') {
+                        window.bindAuthForms();
+                    }
+                    
+                    // TurnstileManager가 모든 이벤트 처리 - 별도 설정 불필요
+                    console.log("Header loader: TurnstileManager에서 모든 Turnstile 처리");
+                } catch (error) {
+                    console.error('startApp 실행 중 오류:', error);
                 }
-                return;
+            } else {
+                console.log('startApp function not found - continuing without Firebase initialization.');
+                
+                // startApp이 없어도 인증 폼 바인딩 시도
+                if (typeof window.bindAuthForms === 'function') {
+                    window.bindAuthForms();
+                }
             }
 
             // 2. Run page-specific logic if it exists
             if (typeof initializePage === 'function') {
                 console.log("Header loader: Initializing page-specific script.");
-                initializePage();
+                try {
+                    initializePage();
+                } catch (error) {
+                    console.error('initializePage 실행 중 오류:', error);
+                }
             } else {
                 console.log("Header loader: No page-specific script (initializePage) found.");
             }
         })
         .catch(error => {
             console.error('Error fetching or initializing header:', error);
-            headerPlaceholder.innerHTML = '<p style="color: red; text-align: center;">Error loading header.</p>';
-            
-            // 에러 발생 시에도 로딩 상태 해제
-            const authLoading = document.getElementById('auth-loading');
-            if (authLoading) {
-                authLoading.style.opacity = '0';
-                setTimeout(() => {
-                    authLoading.style.display = 'none';
-                }, 300);
-            }
+            headerPlaceholder.innerHTML = `
+                <div style="
+                    background: #1a1a1a; 
+                    color: #ffffff; 
+                    padding: 20px; 
+                    text-align: center; 
+                    border-bottom: 1px solid #333;
+                    height: 60px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                ">
+                    <a href="/index.html" style="color: #ffffff; text-decoration: none; font-weight: bold;">
+                        Onbit
+                    </a>
+                </div>
+            `;
         });
 }); 

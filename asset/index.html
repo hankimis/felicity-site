@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>지표 - Onbit</title>
+  <meta name="description" content="암호화폐 시장 지표, 거래소 자금 흐름, 파생상품 지표를 제공하는 Onbit에서 전문적인 분석 도구를 확인하세요.">
+  
+  <!-- Preconnect to external domains for faster loading -->
+  <link rel="preconnect" href="https://www.gstatic.com">
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+  <link rel="preconnect" href="https://cdn.jsdelivr.net">
+  <link rel="preconnect" href="https://api.binance.com">
+  <link rel="preconnect" href="https://s3.tradingview.com">
+  <link rel="dns-prefetch" href="https://s3.tradingview.com">
+
+  <!-- Critical CSS Variables -->
+  <style>
+    :root {
+      --bg-primary: #ffffff;
+      --bg-secondary: #f8fafc;
+      --text-primary: #1f2937;
+      --text-secondary: #6b7280;
+      --accent-blue: #3b82f6;
+      --primary-color: #3b82f6;
+      --border-default: #e2e8f0;
+      --shadow-light: rgba(0, 0, 0, 0.08);
+    }
+
+    [data-theme="dark"] {
+      --bg-primary: #1a1a1a;
+      --bg-secondary: #2a2a2a;
+      --text-primary: #ffffff;
+      --text-secondary: #cccccc;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
+      transition: background-color 0.3s ease, color 0.3s ease;
+      line-height: 1.6;
+    }
+
+    /* 메인 컨테이너 */
+    .main-container {
+      margin-left: 0;
+      min-height: 100vh;
+      padding-top: 60px;
+    }
+
+    /* 헤더 스타일 보장 */
+    .navbar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 1000;
+      background-color: var(--bg-primary);
+      border-bottom: 1px solid var(--border-default);
+    }
+
+    /* 인증 모달 스타일 보장 */
+    .auth-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 2000;
+    }
+
+    .auth-modal.show {
+      display: flex;
+    }
+
+    .auth-modal-content {
+      background: var(--bg-primary);
+      padding: 30px;
+      border-radius: 12px;
+      position: relative;
+      max-width: 400px;
+      width: 90%;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    }
+
+    .auth-modal-close {
+      position: absolute;
+      top: 15px;
+      right: 20px;
+      font-size: 24px;
+      cursor: pointer;
+      color: var(--text-secondary);
+    }
+
+    .auth-form h2 {
+      margin-bottom: 20px;
+      text-align: center;
+      color: var(--text-primary);
+    }
+
+    .input-group {
+      position: relative;
+      margin-bottom: 15px;
+    }
+
+    .input-group i {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-secondary);
+    }
+
+    .input-group input {
+      width: 100%;
+      padding: 12px 12px 12px 40px;
+      border: 1px solid var(--border-default);
+      border-radius: 6px;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      font-size: 14px;
+    }
+
+    .submit-btn {
+      width: 100%;
+      padding: 12px;
+      background: var(--accent-blue);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 16px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+
+    .auth-form-switch {
+      text-align: center;
+      margin-top: 15px;
+      color: var(--text-secondary);
+    }
+
+    .auth-form-switch a {
+      color: var(--accent-blue);
+      text-decoration: none;
+    }
+
+    .error-message {
+      color: #ef4444;
+      font-size: 14px;
+      margin-bottom: 15px;
+      text-align: center;
+    }
+
+    /* 지표 페이지 스타일 */
+    .indicators-page {
+      padding: 40px 20px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .page-header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    .page-title {
+      font-size: 2.5rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 10px;
+    }
+
+    .page-subtitle {
+      font-size: 1.1rem;
+      color: var(--text-secondary);
+      margin-bottom: 30px;
+    }
+
+    /* 지표 카테고리 */
+    .indicator-categories {
+      display: grid;
+      gap: 30px;
+      margin-bottom: 40px;
+    }
+
+    .category-section {
+      background: var(--bg-primary);
+      border-radius: 16px;
+      padding: 30px;
+      box-shadow: 0 4px 20px var(--shadow-light);
+    }
+
+    .category-title {
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .category-title i {
+      color: var(--accent-blue);
+    }
+
+    .indicators-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 20px;
+    }
+
+    .indicator-card {
+      background: var(--bg-secondary);
+      border-radius: 12px;
+      padding: 20px;
+      border: 1px solid var(--border-default);
+      transition: all 0.3s ease;
+      cursor: pointer;
+      text-decoration: none;
+      color: inherit;
+    }
+
+    .indicator-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px var(--shadow-light);
+      border-color: var(--accent-blue);
+    }
+
+    .indicator-card h3 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: var(--text-primary);
+    }
+
+    .indicator-card p {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+      margin-bottom: 15px;
+      line-height: 1.5;
+    }
+
+    .indicator-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+    }
+
+    .indicator-type {
+      background: var(--accent-blue);
+      color: white;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      font-weight: 500;
+    }
+
+    /* 반응형 */
+    @media (max-width: 768px) {
+      body {
+        padding-top: 56px; /* 모바일 헤더 높이 */
+      }
+
+      .indicators-page {
+        padding: 20px 15px;
+      }
+
+      .page-title {
+        font-size: 2rem;
+      }
+
+      .category-section {
+        padding: 20px;
+      }
+
+      .indicators-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .auth-modal-content {
+        width: 95%;
+        padding: 20px;
+      }
+    }
+  </style>
+
+  <!-- Favicon and icons -->
+  <link rel="icon" type="image/png" href="/onbit/favicon-96x96.png" sizes="96x96" />
+  <link rel="icon" type="image/svg+xml" href="/onbit/favicon.svg" />
+  <link rel="shortcut icon" href="/onbit/favicon.ico" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/onbit/apple-touch-icon.png" />
+  <link rel="manifest" href="/onbit/site.webmanifest" />
+  
+  <!-- Load critical CSS files -->
+  <link rel="stylesheet" href="../../css/style.css">
+  
+  <!-- Preload critical fonts -->
+  <link rel="preload" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard-dynamic-subset.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard-dynamic-subset.css"></noscript>
+  
+  <!-- Defer Font Awesome -->
+  <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"></noscript>
+</head>
+<body>
+  <!-- Header placeholder -->
+  <div id="header-placeholder"></div>
+
+  <!-- Main Container -->
+  <div class="main-container">
+    <div class="indicators-page">
+      <!-- 페이지 헤더 -->
+      <div class="page-header">
+        <h1 class="page-title">암호화폐 시장 지표</h1>
+        <p class="page-subtitle">전문적인 분석 도구로 시장을 파악하세요</p>
+      </div>
+
+      <!-- 지표 카테고리 -->
+      <div class="indicator-categories">
+        <!-- 시장 지표 -->
+        <div class="category-section">
+          <h2 class="category-title">
+            <i class="fas fa-chart-line"></i>
+            시장 지표
+          </h2>
+          <div class="indicators-grid">
+            <a href="retailactivity/" class="indicator-card">
+              <h3>비트코인: 선물 거래 빈도 급증에 따른 개인 투자자 활동</h3>
+              <p>개인 투자자들의 선물 거래 활동을 분석하여 시장 심리를 파악합니다.</p>
+              <div class="indicator-meta">
+                <span class="indicator-type">시장 분석</span>
+                <span>실시간</span>
+              </div>
+            </a>
+            
+            <a href="mvrv-ratio/" class="indicator-card">
+              <h3>비트코인: MVRV 비율</h3>
+              <p>Market Value to Realized Value 비율로 비트코인의 과매수/과매도 상태를 분석합니다.</p>
+              <div class="indicator-meta">
+                <span class="indicator-type">가치 분석</span>
+                <span>일간</span>
+              </div>
+            </a>
+            
+            <a href="taker-cvd/" class="indicator-card">
+              <h3>비트코인: 선물 시장가 거래 누적 거래량 변화, 90일 (Taker CVD)</h3>
+              <p>시장가 주문의 누적 거래량 변화를 통해 매수/매도 압력을 분석합니다.</p>
+              <div class="indicator-meta">
+                <span class="indicator-type">거래량 분석</span>
+                <span>90일</span>
+              </div>
+            </a>
+            
+            <a href="volume-bubble-map/" class="indicator-card">
+              <h3>비트코인: 선물 Volume Bubble Map</h3>
+              <p>거래량을 버블 크기로, 거래량 변화율을 색상으로 표현한 시각적 지표입니다.</p>
+              <div class="indicator-meta">
+                <span class="indicator-type">시각화</span>
+                <span>실시간</span>
+              </div>
+            </a>
+          </div>
+        </div>
+
+        <!-- 거래소 자금 흐름 -->
+        <div class="category-section">
+          <h2 class="category-title">
+            <i class="fas fa-exchange-alt"></i>
+            거래소 자금 흐름
+          </h2>
+          <div class="indicators-grid">
+            <a href="exchange-holdings/" class="indicator-card">
+              <h3>비트코인: 거래소 보유량 - 전체 거래소</h3>
+              <p>전체 거래소의 비트코인 보유량 변화를 추적하여 시장 유동성을 분석합니다.</p>
+              <div class="indicator-meta">
+                <span class="indicator-type">보유량 분석</span>
+                <span>일간</span>
+              </div>
+            </a>
+            
+            <a href="exchange-netflow/" class="indicator-card">
+              <h3>비트코인: 거래소 순입출금량 (Netflow) - 전체 거래소</h3>
+              <p>거래소로의 순 유입/유출량을 분석하여 투자자 행동을 파악합니다.</p>
+              <div class="indicator-meta">
+                <span class="indicator-type">자금 흐름</span>
+                <span>실시간</span>
+              </div>
+            </a>
+          </div>
+        </div>
+
+        <!-- 파생 상품 -->
+        <div class="category-section">
+          <h2 class="category-title">
+            <i class="fas fa-chart-bar"></i>
+            파생 상품
+          </h2>
+          <div class="indicators-grid">
+            <a href="funding-rate/" class="indicator-card">
+              <h3>비트코인: 펀딩비 - 전체 거래소</h3>
+              <p>전체 거래소의 펀딩비율을 분석하여 선물 시장의 균형 상태를 파악합니다.</p>
+              <div class="indicator-meta">
+                <span class="indicator-type">펀딩비</span>
+                <span>8시간</span>
+              </div>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer placeholder -->
+  <div id="footer-placeholder"></div>
+
+  <!-- Scripts -->
+  <script src="../../components/header/header-loader.js"></script>
+  <script src="../../js/footer-loader.js"></script>
+  <!-- 사이드바는 asset/index.html에서는 로드하지 않음 (메인 페이지와 동일) -->
+  
+  <!-- Firebase Scripts -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+  <script src="../../firebase-config.js"></script>
+  <script src="../../js/auth.js"></script>
+  
+  <script>
+    // Firebase 초기화 및 인증 폼 바인딩
+    document.addEventListener('DOMContentLoaded', function() {
+      // Firebase 초기화
+      if (typeof firebase !== 'undefined' && firebaseConfig) {
+        firebase.initializeApp(firebaseConfig);
+        console.log('Firebase initialized in asset/index.html');
+      }
+      
+      // 헤더 로드 완료 후 인증 폼 바인딩
+      setTimeout(() => {
+        if (typeof window.bindAuthForms === 'function') {
+          window.bindAuthForms();
+          console.log('Auth forms bound in asset/index.html');
+        } else {
+          console.warn('bindAuthForms function not found');
+        }
+      }, 1000);
+    });
+  </script>
+</body>
+</html> 

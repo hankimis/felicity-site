@@ -106,14 +106,13 @@ class CoinSelectorManager {
             const data = await response.json();
             
             this.coins = data
-                .filter(coin => coin.symbol.endsWith('USDT'))
                 .map(coin => ({
                     symbol: coin.symbol,
-                    name: coin.symbol.replace('USDT', ''),
+                    name: this.getCoinName(coin.symbol),
                     price: parseFloat(coin.lastPrice),
                     change: parseFloat(coin.priceChangePercent),
                     volume: parseFloat(coin.volume),
-                    icon: this.getCoinIcon(coin.symbol.replace('USDT', '')),
+                    icon: this.getCoinIcon(this.getCoinName(coin.symbol)),
                     isFavorite: this.isFavoriteCoin(coin.symbol)
                 }))
                 .sort((a, b) => b.volume - a.volume); // 거래량 순 정렬
@@ -128,10 +127,32 @@ class CoinSelectorManager {
         }
     }
 
-    // 🔥 코인 아이콘 가져오기
+    // 🔥 코인 이름 추출 (USDT, BTC, ETH 등 제거)
+    getCoinName(symbol) {
+        // 일반적인 quote assets 제거
+        const quoteAssets = ['USDT', 'BTC', 'ETH', 'BNB', 'BUSD', 'USDC', 'TUSD', 'DAI', 'PAX'];
+        for (const quote of quoteAssets) {
+            if (symbol.endsWith(quote)) {
+                return symbol.slice(0, -quote.length);
+            }
+        }
+        return symbol;
+    }
+
+    // 🔥 코인 아이콘 가져오기 (CryptoIcon API 사용)
     getCoinIcon(symbol) {
-        // 모든 아이콘을 null로 반환하여 404 오류 방지
-        return null;
+        if (!symbol) return null;
+        // 거래쌍이면 앞부분만 추출 (예: BTCUSDT → BTC)
+        let baseSymbol = symbol;
+        // USDT, BTC, ETH, BNB, BUSD, USDC, TUSD, DAI, PAX 등 쿼트 제거
+        const quoteAssets = ['USDT', 'BTC', 'ETH', 'BNB', 'BUSD', 'USDC', 'TUSD', 'DAI', 'PAX'];
+        for (const quote of quoteAssets) {
+            if (symbol.endsWith(quote)) {
+                baseSymbol = symbol.slice(0, -quote.length);
+                break;
+            }
+        }
+        return `https://cryptoicon-api.vercel.app/api/icon/${baseSymbol.toLowerCase()}`;
     }
 
     // 🔥 기본 아이콘 SVG 생성

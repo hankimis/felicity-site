@@ -12,7 +12,6 @@
     display: flex;
     flex-direction: column;
     flex: 0 0 350px;
-    width: 350px;
     min-width: 320px;
     border-left: 1px solid var(--border-color);
     background: var(--card-bg);
@@ -37,13 +36,39 @@
     color: var(--text-color);
 }
 
+.chat-header-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.alert-settings-btn {
+    background: none;
+    border: none;
+    color: var(--text-color-secondary);
+    font-size: 14px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.alert-settings-btn:hover {
+    background: var(--border-color);
+    color: var(--text-color);
+}
+
+.alert-settings-btn.active {
+    color: #ff4757;
+    background: rgba(255, 71, 87, 0.1);
+}
+
 .chat-users-count {
     display: flex;
     align-items: center;
     gap: 6px;
     font-size: 14px;
     color: var(--text-color-secondary);
-    flex-direction: row-reverse;
 }
 
 /* 🔥 채팅 래퍼 */
@@ -101,10 +126,8 @@
 .chat-profile-pic {
     width: 32px;
     height: 32px;
-    border-radius: 50%;
+    border-radius: 30%;
     object-fit: cover;
-    border: 2px solid var(--border-color);
-    background: var(--primary-color);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -183,15 +206,16 @@
     word-break: break-word;
     color: var(--text-color);
     padding: 8px 12px;
-    border-radius: 12px;
+    border-radius: 5px;
     margin: 0;
     max-width: 100%;
     box-sizing: border-box;
     overflow-wrap: break-word;
+    background-color: white;
 }
 
 .message-item.my-message .message-text {
-    background: var(--primary-color);
+    background: #FFE22D;
     color: #fff;
 }
 
@@ -200,7 +224,6 @@
     display: flex;
     gap: 8px;
     padding: 8px 8px;
-    border-top: 1px solid var(--border-color);
     flex-shrink: 0;
     box-sizing: border-box;
     height: 60px;
@@ -316,6 +339,72 @@
     border: 1px solid rgba(239, 68, 68, 0.2);
 }
 
+/* 🔥 시스템 알람 메시지 스타일 */
+.message-item.system-alert {
+    max-width: 100%;
+    margin: 8px 0;
+    padding: 8px 12px;
+    background: linear-gradient(135deg, #ff6b6b, #ff8e8e);
+    border-radius: 8px;
+    border-left: 4px solid #ff4757;
+    box-shadow: 0 2px 8px rgba(255, 71, 87, 0.2);
+}
+
+.message-item.system-alert .message-content {
+    width: 100%;
+    margin: 0;
+}
+
+.message-item.system-alert .message-sender {
+    color: #fff;
+    font-weight: 700;
+    font-size: 13px;
+    margin-bottom: 4px;
+}
+
+.message-item.system-alert .message-text {
+    color: #fff;
+    font-weight: 500;
+    line-height: 1.4;
+    white-space: pre-line;
+    background: none;
+    padding: 0;
+    border-radius: 0;
+}
+
+.message-item.system-alert .chat-profile-pic-wrap {
+    display: none;
+}
+
+/* 다크모드에서 시스템 알람 스타일 */
+:root.dark-mode .message-item.system-alert {
+    background: linear-gradient(135deg, #ff4757, #ff6b6b);
+    box-shadow: 0 2px 8px rgba(255, 71, 87, 0.3);
+}
+
+/* 속보 뉴스 메시지 스타일 */
+.message-item.breaking-news {
+    background: linear-gradient(135deg, #ffa726, #ffcc02);
+    border-left: 4px solid #ff9800;
+    box-shadow: 0 2px 8px rgba(255, 152, 0, 0.3);
+}
+
+.message-item.breaking-news.clickable {
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.message-item.breaking-news.clickable:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(255, 152, 0, 0.4);
+}
+
+/* 다크모드에서 속보 뉴스 스타일 */
+:root.dark-mode .message-item.breaking-news {
+    background: linear-gradient(135deg, #ff9800, #ffa726);
+    box-shadow: 0 2px 8px rgba(255, 152, 0, 0.4);
+}
+
 /* 🔥 태블릿 반응형 */
 @media (max-width: 1024px) {
     .chat-section {
@@ -429,7 +518,7 @@
 :root:not(.dark-mode) .chat-section,
 :root:not(.dark-mode) .chat-wrapper,
 :root:not(.dark-mode) #chat-messages {
-    background-color: var(--card-bg);
+    background-color: #B0C7DB;
 }
 
 :root:not(.dark-mode) #message-input {

@@ -633,7 +633,28 @@ if (!window.bindAuthForms) {
                     controlModal('login-modal', false);
                     loginForm.reset();
                 } catch (error) {
-                    if(errorMsg) errorMsg.textContent = "이메일 또는 비밀번호가 잘못되었습니다.";
+                    console.warn('로그인 오류:', error.code, error.message);
+                    if(errorMsg) {
+                        switch(error.code) {
+                            case 'auth/user-not-found':
+                                errorMsg.textContent = "등록되지 않은 이메일입니다.";
+                                break;
+                            case 'auth/wrong-password':
+                                errorMsg.textContent = "비밀번호가 잘못되었습니다.";
+                                break;
+                            case 'auth/invalid-email':
+                                errorMsg.textContent = "유효하지 않은 이메일 형식입니다.";
+                                break;
+                            case 'auth/user-disabled':
+                                errorMsg.textContent = "비활성화된 계정입니다.";
+                                break;
+                            case 'auth/too-many-requests':
+                                errorMsg.textContent = "너무 많은 로그인 시도가 있었습니다. 잠시 후 다시 시도해주세요.";
+                                break;
+                            default:
+                                errorMsg.textContent = "로그인 중 오류가 발생했습니다. 다시 시도해주세요.";
+                        }
+                    }
                 }
             });
         }
@@ -692,7 +713,25 @@ if (!window.bindAuthForms) {
                     signupForm.reset();
                     alert('회원가입이 완료되었습니다!');
                 } catch (error) {
-                    if(errorMsg) errorMsg.textContent = error.code === 'auth/email-already-in-use' ? '이미 사용 중인 이메일입니다.' : "회원가입 중 오류가 발생했습니다.";
+                    console.warn('회원가입 오류:', error.code, error.message);
+                    if(errorMsg) {
+                        switch(error.code) {
+                            case 'auth/email-already-in-use':
+                                errorMsg.textContent = "이미 사용 중인 이메일입니다.";
+                                break;
+                            case 'auth/invalid-email':
+                                errorMsg.textContent = "유효하지 않은 이메일 형식입니다.";
+                                break;
+                            case 'auth/weak-password':
+                                errorMsg.textContent = "비밀번호가 너무 약합니다. 6자 이상으로 설정해주세요.";
+                                break;
+                            case 'auth/operation-not-allowed':
+                                errorMsg.textContent = "회원가입이 현재 비활성화되어 있습니다.";
+                                break;
+                            default:
+                                errorMsg.textContent = "회원가입 중 오류가 발생했습니다. 다시 시도해주세요.";
+                        }
+                    }
                 }
             });
         }

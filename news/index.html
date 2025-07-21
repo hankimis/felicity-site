@@ -30,7 +30,7 @@
     
     <!-- Common Scripts -->
     <script src="/js/auth.js"></script>
-    <script src="/js/header-loader.js" defer></script>
+    <script src="/components/header/header-loader.js" defer></script>
 </head>
 <body>
     <div id="header-placeholder"></div>
@@ -43,7 +43,6 @@
         <div class="tab-navigation">
             <button class="tab-btn" data-tab="breaking">속보</button>
             <button class="tab-btn active" data-tab="news">뉴스</button>
-            <button class="tab-btn" data-tab="economic-calendar">경제 캘린더</button>
         </div>
 
         <!-- Breaking News Tab Content -->
@@ -86,21 +85,7 @@
             </div>
         </div>
 
-        <!-- Economic Calendar Tab Content -->
-        <div class="tab-content" id="economicCalendarTab" style="display: none;">
-            <div class="calendar-container">
-                <div class="tradingview-widget-container">
-                    <div class="tradingview-widget-container__widget">
-                        <div class="loading-widget">
-                            <div style="text-align: center; padding: 50px; color: var(--text-color-secondary);">
-                                <i class="fas fa-spinner fa-spin" style="font-size: 2rem; margin-bottom: 1rem;"></i>
-                                <p>TradingView 경제 캘린더를 불러오는 중...</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+
     </main>
 
 
@@ -108,10 +93,9 @@
     <!-- Footer -->
     <div id="footer-placeholder"></div>
 
-    <!-- Auth Modals are now in _header.html -->
+    <!-- Auth Modals are now in components/header/header.html -->
 
     <script src="/js/news.js"></script>
-    <script src="/js/economic-calendar.js"></script>
     <script src="/js/footer-loader.js" defer></script>
 </body>
 </html> 

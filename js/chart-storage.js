@@ -27,7 +27,8 @@ class ChartStorage {
     // 🔥 차트 레이아웃 저장 (TradingView 공식 방식)
     async saveChartLayout(chartData, metadata = {}) {
         try {
-            if (!window.currentUser) {
+            const currentUser = this._getCurrentUser();
+            if (!currentUser) {
                 console.warn('❌ 로그인이 필요합니다');
                 return null;
             }
@@ -45,7 +46,7 @@ class ChartStorage {
                 symbol: metadata.symbol || 'BTCUSDT',
                 interval: metadata.interval || '15',
                 timestamp: Date.now(),
-                userId: window.currentUser.uid,
+                userId: currentUser.uid,
                 version: '1.1',
                 // 🔥 TradingView 메타데이터
                 clientId: this.clientId,
@@ -85,7 +86,8 @@ class ChartStorage {
     // 🔥 차트 레이아웃 불러오기
     async loadChartLayout(chartId) {
         try {
-            if (!window.currentUser || !chartId) {
+            const currentUser = this._getCurrentUser();
+            if (!currentUser || !chartId) {
                 return null;
             }
 
@@ -111,11 +113,12 @@ class ChartStorage {
     // 🔥 마지막 차트 상태 가져오기 (자동 복원용)
     async getLastChartState() {
         try {
-            if (!window.currentUser) {
+            const currentUser = this._getCurrentUser();
+            if (!currentUser) {
                 return null;
             }
 
-            const doc = await window.db.collection('chartStates').doc(window.currentUser.uid).get();
+            const doc = await window.db.collection('chartStates').doc(currentUser.uid).get();
             if (doc.exists) {
                 const data = doc.data();
                 console.log('✅ 마지막 차트 상태 로드');
@@ -137,7 +140,8 @@ class ChartStorage {
     // 🔥 자동 저장 상태 업데이트 (TradingView onAutoSaveNeeded 이벤트용)
     async updateAutoSaveState(chartData) {
         try {
-            if (!window.currentUser || this.isAutoSaving) {
+            const currentUser = this._getCurrentUser();
+            if (!currentUser || this.isAutoSaving) {
                 return;
             }
 
@@ -147,7 +151,7 @@ class ChartStorage {
             const stateData = {
                 content: chartData,
                 timestamp: Date.now(),
-                userId: window.currentUser.uid,
+                userId: currentUser.uid,
                 clientId: this.clientId,
                 apiVersion: this.chartStorageApiVersion,
                 // 🔥 지표 및 그림 포함 여부
@@ -156,7 +160,7 @@ class ChartStorage {
                 autoSave: true
             };
 
-            await window.db.collection('chartStates').doc(window.currentUser.uid).set(stateData);
+            await window.db.collection('chartStates').doc(currentUser.uid).set(stateData);
             console.log('✅ 자동 저장 상태 업데이트 완료');
             
             // 자동 저장 알림 (조용히)
@@ -171,7 +175,8 @@ class ChartStorage {
 
     // 🔥 디바운스된 자동 저장 (TradingView 공식 권장)
     scheduleAutoSave(chartData) {
-        if (!window.currentUser) {
+        const currentUser = this._getCurrentUser();
+        if (!currentUser) {
             return;
         }
 
@@ -187,12 +192,13 @@ class ChartStorage {
     // 🔥 그림 도구 및 그룹 저장 (TradingView 공식 saveload_separate_drawings_storage)
     async saveLineToolsAndGroups(layoutId, chartId, state) {
         try {
-            if (!window.currentUser) {
+            const currentUser = this._getCurrentUser();
+            if (!currentUser) {
                 console.warn('❌ 로그인이 필요합니다 (그림 저장)');
                 return;
             }
 
-            const drawingKey = this._getDrawingKey(layoutId, chartId);
+            const drawingKey = this._getDrawingKey(layoutId, chartId, currentUser);
             const drawings = state.sources;
 
             console.log('🎨 그림 도구 및 그룹 저장:', {
@@ -206,7 +212,7 @@ class ChartStorage {
             const drawingData = {
                 layoutId,
                 chartId,
-                userId: window.currentUser.uid,
+                userId: currentUser.uid,
                 timestamp: Date.now(),
                 sources: {},
                 groups: state.groups ? Object.fromEntries(state.groups) : {}
@@ -239,12 +245,14 @@ class ChartStorage {
     // 🔥 그림 도구 및 그룹 불러오기 (TradingView 공식 saveload_separate_drawings_storage)
     async loadLineToolsAndGroups(layoutId, chartId, requestType, requestContext) {
         try {
-            if (!window.currentUser) {
+            // 더 안전한 사용자 확인 방법
+            const currentUser = this._getCurrentUser();
+            if (!currentUser) {
                 console.warn('❌ 로그인이 필요합니다 (그림 불러오기)');
                 return null;
             }
 
-            const drawingKey = this._getDrawingKey(layoutId, chartId);
+            const drawingKey = this._getDrawingKey(layoutId, chartId, currentUser);
             
             ;
             
@@ -291,9 +299,31 @@ class ChartStorage {
         }
     }
 
+    // 🔥 현재 사용자 안전하게 가져오기
+    _getCurrentUser() {
+        // 여러 방법으로 사용자 확인
+        if (window.currentUser && window.currentUser.uid) {
+            return window.currentUser;
+        }
+        
+        if (window.auth && window.auth.currentUser) {
+            return window.auth.currentUser;
+        }
+        
+        if (window.authStateManager && window.authStateManager.getCurrentUser()) {
+            return window.authStateManager.getCurrentUser();
+        }
+        
+        return null;
+    }
+
     // 🔥 그림 키 생성 (레이아웃 ID + 차트 ID)
-    _getDrawingKey(layoutId, chartId) {
-        return `${window.currentUser.uid}_${layoutId}_${chartId}`;
+    _getDrawingKey(layoutId, chartId, user = null) {
+        const currentUser = user || this._getCurrentUser();
+        if (!currentUser || !currentUser.uid) {
+            throw new Error('사용자 정보가 없습니다');
+        }
+        return `${currentUser.uid}_${layoutId}_${chartId}`;
     }
 
     // 🔥 차트 데이터에 그림이 포함되어 있는지 확인
@@ -358,12 +388,13 @@ class ChartStorage {
     // 🔥 차트 목록 가져오기
     async getChartList() {
         try {
-            if (!window.currentUser) {
+            const currentUser = this._getCurrentUser();
+            if (!currentUser) {
                 return [];
             }
 
             const snapshot = await window.db.collection('chartLayouts')
-                .where('userId', '==', window.currentUser.uid)
+                .where('userId', '==', currentUser.uid)
                 .orderBy('timestamp', 'desc')
                 .limit(20)
                 .get();
@@ -393,7 +424,8 @@ class ChartStorage {
     // 🔥 차트 삭제
     async deleteChart(chartId) {
         try {
-            if (!window.currentUser || !chartId) {
+            const currentUser = this._getCurrentUser();
+            if (!currentUser || !chartId) {
                 return false;
             }
 
@@ -411,7 +443,8 @@ class ChartStorage {
     // 🔥 차트 이름 변경
     async renameChart(chartId, newName) {
         try {
-            if (!window.currentUser || !chartId) {
+            const currentUser = this._getCurrentUser();
+            if (!currentUser || !chartId) {
                 return false;
             }
 

@@ -560,9 +560,7 @@ body {
    5. CRYPTO TABLE SECTION
    =================================================================== */
 .crypto-table-section {
-  margin: 2rem 0;
-  padding: 0 1rem;
-  max-width: 1800px;
+  max-width: 1920px;
   margin-left: auto;
   margin-right: auto;
 }

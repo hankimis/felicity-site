@@ -1,12 +1,13 @@
 <!-- Main Navigation Bar -->
-<header class="navbar" id="main-header" style="opacity: 0; transition: opacity 0.3s ease;">
+<header class="navbar" id="main-header" style="opacity: 1; transition: opacity 0.3s ease;">
     <a href="/index.html" class="logo">
-        <img id="main-logo" src="assets/lightlogo.png" alt="Onbit Logo" height="40"/>
+        <img id="main-logo" src="/assets/lightlogo.png" alt="Onbit Logo" height="40"/>
     </a>
     <nav class="desktop-nav">
         <ul>
             <li><a href="/index.html">홈</a></li>
             <li><a href="/affiliated/">제휴 거래소</a></li>
+            <li><a href="/asset/">지표</a></li>
             <li><a href="/community/">실시간 채팅</a></li>
             <li><a href="/news/">뉴스</a></li>
             <li><a href="/event/">이벤트</a></li>
@@ -43,8 +44,8 @@
     left: 0;
     right: 0;
     height: 60px;
-    background: var(--header-bg, #ffffff);
-    display: flex;
+    background: var(--header-bg, #1a1a1a);
+    display: none;
     align-items: center;
     justify-content: center;
     z-index: 1000;
@@ -54,7 +55,7 @@
     <div style="
         width: 20px;
         height: 20px;
-        border: 2px solid #f3f3f3;
+        border: 2px solid #333;
         border-top: 2px solid #3498db;
         border-radius: 50%;
         animation: spin 1s linear infinite;

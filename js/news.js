@@ -1,6 +1,17 @@
 // DOM이 로드된 후 실행
 document.addEventListener('DOMContentLoaded', function() {
-    initializePage();
+    // 메인페이지의 속보뉴스 카드를 위한 뉴스 데이터 로드
+    const breakingNewsCard = document.querySelector('.breaking-news-card');
+    if (breakingNewsCard) {
+        console.log('📰 메인페이지 속보뉴스 카드 감지, 뉴스 데이터 로드 시작');
+        loadNewsForMainPage();
+    }
+    
+    // 뉴스 페이지인 경우에만 전체 초기화
+    const newsGrid = document.getElementById('newsGrid');
+    if (newsGrid) {
+        initializePage();
+    }
 });
 
 // 뉴스 중요도 시스템 전역 변수
@@ -15,6 +26,13 @@ let isLoading = false; // 로딩 중 여부
 let hasMoreNews = true; // 더 불러올 뉴스가 있는지
 
 function initializePage() {
+    // 뉴스 페이지인지 확인
+    const newsGrid = document.getElementById('newsGrid');
+    if (!newsGrid) {
+        console.log('📰 뉴스 페이지가 아니므로 뉴스 초기화를 건너뜁니다.');
+        return;
+    }
+    
     initializeNewsUI();
     initializeInfiniteScroll();
     loadNewsImportanceData();
@@ -26,6 +44,13 @@ function initializePage() {
 
 // 무한스크롤 초기화
 function initializeInfiniteScroll() {
+    // 뉴스 페이지인지 확인
+    const newsGrid = document.getElementById('newsGrid');
+    if (!newsGrid) {
+        console.log('📰 뉴스 페이지가 아니므로 무한스크롤 초기화를 건너뜁니다.');
+        return;
+    }
+    
     const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
             if (entry.isIntersecting && !isLoading && hasMoreNews) {
@@ -51,7 +76,6 @@ function initializeInfiniteScroll() {
     breakingLoadingTrigger.style.margin = '20px 0';
     
     // 뉴스 그리드 뒤에 추가
-    const newsGrid = document.getElementById('newsGrid');
     if (newsGrid && newsGrid.parentNode) {
         newsGrid.parentNode.insertBefore(newsLoadingTrigger, newsGrid.nextSibling);
         observer.observe(newsLoadingTrigger);
@@ -166,6 +190,13 @@ function hideLoadingIndicator() {
 
 // 뉴스 페이지 UI 초기화
 function initializeNewsUI() {
+    // 뉴스 페이지인지 확인
+    const newsGrid = document.getElementById('newsGrid');
+    if (!newsGrid) {
+        console.log('📰 뉴스 페이지가 아니므로 UI 초기화를 건너뜁니다.');
+        return;
+    }
+    
     // 모든 탭 버튼 초기화 (통합 관리)
     const tabButtons = document.querySelectorAll('.tab-btn');
     tabButtons.forEach(button => {
@@ -214,31 +245,40 @@ async function loadNewsFeeds() {
     const CACHE_KEY = 'newsFeedsCache';
     const CACHE_DURATION_MS = 3 * 60 * 1000; // 3분 캐시 (더 자주 업데이트)
 
-    // 1. 캐시 확인 및 즉시 표시 (빠른 로딩)
-    try {
-        const cached = localStorage.getItem(CACHE_KEY);
-        if (cached) {
-            const cacheData = JSON.parse(cached);
-            const age = Date.now() - cacheData.timestamp;
-            
-            // 캐시가 있으면 즉시 표시 (만료되어도 일단 표시)
-            if (cacheData.data && cacheData.data.length > 0) {
-                console.log('📰 캐시된 뉴스 즉시 표시');
-                window.newsItems = cacheData.data;
-                resetInfiniteScroll();
-                displayNews(cacheData.data);
-                
-                // 캐시가 만료되었으면 백그라운드에서 새 데이터 가져오기
-                if (age >= CACHE_DURATION_MS) {
-                    console.log('📰 캐시 만료, 백그라운드에서 새 데이터 로딩');
-                    setTimeout(() => loadFreshNews(true), 100);
-                }
-                return;
-            }
-        }
-    } catch (e) {
-        console.warn('캐시 읽기 실패:', e);
+    // newsGrid가 없으면 함수 종료
+    if (!newsGrid) {
+        console.warn('❌ newsGrid 요소를 찾을 수 없습니다. 뉴스 페이지가 아닙니다.');
+        return;
     }
+
+            // 1. 캐시 확인 및 즉시 표시 (빠른 로딩)
+        try {
+            const cached = localStorage.getItem(CACHE_KEY);
+            if (cached) {
+                const cacheData = JSON.parse(cached);
+                const age = Date.now() - cacheData.timestamp;
+                
+                // 캐시가 있으면 즉시 표시 (만료되어도 일단 표시)
+                if (cacheData.data && cacheData.data.length > 0) {
+                    console.log('📰 캐시된 뉴스 즉시 표시');
+                    
+                    // 캐시된 데이터의 시간 정보 검증 및 수정
+                    const validatedData = validateAndFixNewsDates(cacheData.data);
+                    window.newsItems = validatedData;
+                    resetInfiniteScroll();
+                    displayNews(validatedData);
+                    
+                    // 캐시가 만료되었으면 백그라운드에서 새 데이터 가져오기
+                    if (age >= CACHE_DURATION_MS) {
+                        console.log('📰 캐시 만료, 백그라운드에서 새 데이터 로딩');
+                        setTimeout(() => loadFreshNews(true), 100);
+                    }
+                    return;
+                }
+            }
+        } catch (e) {
+            console.warn('캐시 읽기 실패:', e);
+        }
     
     // 캐시가 없으면 로딩 메시지 표시하고 새 데이터 로드
     newsGrid.innerHTML = `
@@ -256,6 +296,12 @@ async function loadNewsFeeds() {
 async function loadFreshNews(isBackgroundUpdate = false) {
     const newsGrid = document.getElementById('newsGrid');
     const CACHE_KEY = 'newsFeedsCache';
+    
+    // newsGrid가 없으면 함수 종료
+    if (!newsGrid) {
+        console.warn('❌ newsGrid 요소를 찾을 수 없습니다. 뉴스 페이지가 아닙니다.');
+        return;
+    }
     
     try {
         const feeds = [
@@ -305,23 +351,28 @@ async function loadFreshNews(isBackgroundUpdate = false) {
 
         // 빠른 피드 결과가 있으면 즉시 표시 (백그라운드 업데이트가 아닌 경우)
         if (allNews.length > 0 && !isBackgroundUpdate) {
-            // 중복 제거 및 정렬
-            const uniqueNews = removeDuplicateNews(allNews);
-            uniqueNews.sort((a, b) => new Date(b.pubDate) - new Date(a.pubDate));
-            
-            // 캐시 저장
-            const cacheData = {
-                timestamp: Date.now(),
-                data: uniqueNews
-            };
-            localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
-            
-            window.newsItems = uniqueNews;
-            resetInfiniteScroll();
-            displayNews(uniqueNews);
+                    // 중복 제거 및 정렬
+        const uniqueNews = removeDuplicateNews(allNews);
+        
+        // 날짜 정보 검증 및 수정
+        const validatedNews = validateAndFixNewsDates(uniqueNews);
+        validatedNews.sort((a, b) => new Date(b.pubDate) - new Date(a.pubDate));
+        
+        // 캐시 저장
+        const cacheData = {
+            timestamp: Date.now(),
+            data: validatedNews
+        };
+        localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
+        
+        window.newsItems = validatedNews;
+        resetInfiniteScroll();
+        displayNews(validatedNews);
             
             // 속보 뉴스 카드 업데이트 (index.html의 카드가 있을 때)
             setTimeout(() => triggerBreakingNewsUpdate(), 500);
+            
+
             
             console.log(`📰 빠른 로딩 완료: ${successCount}개 소스에서 ${uniqueNews.length}개 뉴스`);
         }
@@ -358,31 +409,38 @@ async function loadFreshNews(isBackgroundUpdate = false) {
 
         // 중복 제거 및 정렬
         const uniqueNews = removeDuplicateNews(allNews);
-        uniqueNews.sort((a, b) => new Date(b.pubDate) - new Date(a.pubDate));
+        
+        // 날짜 정보 검증 및 수정
+        const validatedNews = validateAndFixNewsDates(uniqueNews);
+        validatedNews.sort((a, b) => new Date(b.pubDate) - new Date(a.pubDate));
         
         // 캐시 저장
         const cacheData = {
             timestamp: Date.now(),
-            data: uniqueNews
+            data: validatedNews
         };
         localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
 
         // 백그라운드 업데이트가 아닌 경우에만 UI 업데이트
         if (!isBackgroundUpdate) {
-            window.newsItems = uniqueNews;
+            window.newsItems = validatedNews;
             resetInfiniteScroll();
-            displayNews(uniqueNews);
+            displayNews(validatedNews);
             
             // 속보 뉴스 카드 업데이트
             setTimeout(() => triggerBreakingNewsUpdate(), 500);
+            
+
         } else {
             // 백그라운드 업데이트인 경우 새 데이터로 교체
-            window.newsItems = uniqueNews;
+            window.newsItems = validatedNews;
             
             // 백그라운드 업데이트에서도 속보 카드 업데이트
             setTimeout(() => triggerBreakingNewsUpdate(), 500);
             
-            console.log(`📰 백그라운드 업데이트 완료: ${uniqueNews.length}개 뉴스`);
+
+            
+            console.log(`📰 백그라운드 업데이트 완료: ${validatedNews.length}개 뉴스`);
         }
         
         console.log(`📰 뉴스 로딩 완료: ${successCount}/${feeds.length} 소스 성공, ${uniqueNews.length}개 뉴스`);
@@ -415,6 +473,47 @@ function removeDuplicateNews(newsArray) {
         }
     });
     return Array.from(uniqueNewsMap.values());
+}
+
+// 뉴스 날짜 정보 검증 및 수정 함수
+function validateAndFixNewsDates(newsArray) {
+    const now = new Date();
+    const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    
+    return newsArray.map(item => {
+        let fixedItem = { ...item };
+        
+        try {
+            if (item.pubDate) {
+                const originalDate = new Date(item.pubDate);
+                
+                // 잘못된 날짜인지 확인
+                if (isNaN(originalDate.getTime())) {
+                    console.warn('잘못된 날짜 감지, 현재 시간으로 수정:', item.pubDate);
+                    fixedItem.pubDate = now.toISOString();
+                } else {
+                    // 미래 날짜인지 확인 (잘못된 시간대 등)
+                    if (originalDate > now) {
+                        console.warn('미래 날짜 감지, 현재 시간으로 수정:', item.pubDate);
+                        fixedItem.pubDate = now.toISOString();
+                    }
+                    // 너무 오래된 날짜인지 확인 (1일 이상)
+                    else if (originalDate < oneDayAgo) {
+                        console.warn('너무 오래된 날짜 감지, 현재 시간으로 수정:', item.pubDate);
+                        fixedItem.pubDate = now.toISOString();
+                    }
+                }
+            } else {
+                // pubDate가 없는 경우 현재 시간으로 설정
+                fixedItem.pubDate = now.toISOString();
+            }
+        } catch (error) {
+            console.error('날짜 검증 중 오류:', error);
+            fixedItem.pubDate = now.toISOString();
+        }
+        
+        return fixedItem;
+    });
 }
 
 
@@ -683,7 +782,7 @@ function displayNews(news, isInitialLoad = true, currentTab = 'news') {
             <div class="news-body">
                 <div class="news-meta">
                     <span class="news-source">${sourceName}</span>
-                    <span class="news-time">
+                    <span class="news-time" data-pubdate="${item.pubDate}">
                         ${relativeTime}
                         ${starRating}
                     </span>
@@ -716,6 +815,41 @@ function displayNews(news, isInitialLoad = true, currentTab = 'news') {
         completeMessage.innerHTML = `총 ${news.length}개의 ${contentType}를 모두 불러왔습니다.`;
         newsGrid.appendChild(completeMessage);
     }
+    
+    // 실시간 시간 업데이트 시작
+    if (isInitialLoad) {
+        startRealTimeUpdates();
+    }
+}
+
+// 실시간 시간 업데이트 함수
+function startRealTimeUpdates() {
+    // 기존 인터벌이 있으면 정리
+    if (window.newsTimeUpdateInterval) {
+        clearInterval(window.newsTimeUpdateInterval);
+    }
+    
+    // 1분마다 시간 업데이트
+    window.newsTimeUpdateInterval = setInterval(() => {
+        const timeElements = document.querySelectorAll('.news-time[data-pubdate]');
+        timeElements.forEach(element => {
+            const pubDate = element.getAttribute('data-pubdate');
+            if (pubDate) {
+                const newTime = getRelativeTime(pubDate);
+                const currentText = element.textContent;
+                
+                // 시간 부분만 업데이트 (별 아이콘은 유지)
+                const starRating = element.querySelector('.news-importance');
+                const starHtml = starRating ? starRating.outerHTML : '';
+                
+                // 시간 부분 추출 (별 아이콘 제외)
+                const timeOnly = currentText.replace(starHtml, '').trim();
+                if (timeOnly !== newTime) {
+                    element.innerHTML = `${newTime} ${starHtml}`;
+                }
+            }
+        });
+    }, 60000); // 1분마다
 }
 
 // 통합 탭 전환 함수
@@ -743,472 +877,15 @@ function switchTab(tabName) {
             const activeFilter = selectedTabContent?.querySelector('.filter-btn.active');
             const source = activeFilter?.getAttribute('data-source') || 'all';
             
-            resetInfiniteScroll();
+                        resetInfiniteScroll();
             filterNews(source, tabName);
         }
-    } else if (tabName === 'economic-calendar') {
-        // 경제 캘린더 탭 - 약간의 지연 후 로드
-        setTimeout(() => {
-            loadEconomicCalendar();
-        }, 100);
     }
     
     console.log(`📑 탭 전환: ${tabName}`);
 }
 
-// 경제 캘린더 로드 함수 - 직접 로드 방식으로 변경
-function loadEconomicCalendar() {
-    console.log('📊 경제 캘린더 로드 시작');
-    
-    // 경제 캘린더가 이미 로드되었는지 확인
-    if (window.isEconomicCalendarLoaded) {
-        console.log('📊 경제 캘린더 이미 로드됨');
-        return;
-    }
 
-    // TabNavigation 클래스 사용 시도
-    if (window.tabNavigation && typeof window.tabNavigation.loadTradingViewCalendar === 'function') {
-        console.log('📊 TabNavigation으로 경제 캘린더 로드');
-        window.tabNavigation.loadTradingViewCalendar();
-        window.isEconomicCalendarLoaded = true;
-        return;
-    }
-
-    // TabNavigation이 없으면 직접 로드
-    console.log('📊 TabNavigation 없음 - 직접 로드');
-    loadTradingViewCalendar();
-}
-
-// 간단한 캘린더 표시 함수
-function showSimpleCalendar() {
-    console.log('📊 간단한 경제 캘린더 표시');
-    
-    const widgetContainer = document.querySelector('#tradingview-economic-calendar');
-    if (!widgetContainer) {
-        console.error('위젯 컨테이너를 찾을 수 없습니다.');
-        return;
-    }
-
-    widgetContainer.innerHTML = `
-        <div style="
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 600px;
-            text-align: center;
-            padding: 20px;
-            background: #fff;
-            border-radius: 8px;
-        ">
-            <i class="fas fa-calendar-alt" style="font-size: 3rem; margin-bottom: 1rem; color: #2962ff;"></i>
-            <h3 style="margin: 0 0 1rem 0; color: #333;">경제 캘린더 로드 중...</h3>
-            <p style="margin: 0 0 1rem 0; line-height: 1.5; color: #666;">
-                economic-calendar.js 파일이 로드되면 자동으로 TradingView 캘린더가 표시됩니다.
-            </p>
-            <a href="https://kr.tradingview.com/economic-calendar/" 
-               target="_blank" 
-               style="
-                   display: inline-block;
-                   padding: 10px 20px;
-                   background: #2962ff;
-                   color: white;
-                   text-decoration: none;
-                   border-radius: 5px;
-                   font-size: 0.9rem;
-               ">TradingView 사이트에서 보기</a>
-        </div>
-    `;
-}
-
-// TradingView 경제 캘린더 로드 (직접 iframe 방식)
-function loadTradingViewCalendar() {
-    const widgetContainer = document.querySelector('#tradingview-economic-calendar');
-    if (!widgetContainer) {
-        console.error('TradingView 위젯 컨테이너를 찾을 수 없습니다.');
-        return;
-    }
-
-    console.log('📊 TradingView 경제 캘린더 iframe 로드');
-
-    try {
-        // 직접 iframe으로 TradingView 경제 캘린더 로드
-        widgetContainer.innerHTML = `
-            <div style="height: 600px; width: 100%; background: #fff; border-radius: 8px; overflow: hidden;">
-                <iframe 
-                    src="https://www.tradingview.com/embed-widget/events/?locale=ko&importanceFilter=-1%2C0%2C1&countryFilter=us%2Ceu%2Cjp%2Ccn%2Ckr%2Cgb%2Cca%2Cau%2Cde%2Cfr%2Cit%2Ces%2Cbr%2Cin%2Cru%2Cmx%2Cza%2Ctr%2Csg%2Chk%2Ctw%2Cth%2Cmy%2Cid%2Cph%2Cvn&currencyFilter=USD%2CEUR%2CJPY%2CGBP%2CCHF%2CAUD%2CCAD%2CNZD%2CCNY%2CKRW%2CBTC%2CETH&utm_source=&utm_medium=widget&utm_campaign=events&utm_term="
-                    width="100%"
-                    height="600"
-                    frameborder="0"
-                    scrolling="no"
-                    allowfullscreen="true"
-                    sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-                    referrerpolicy="no-referrer-when-downgrade"
-                    style="
-                        border: none;
-                        width: 100%;
-                        height: 600px;
-                        background: #fff;
-                        border-radius: 8px;
-                    "
-                    loading="lazy">
-                </iframe>
-            </div>
-        `;
-
-        window.isEconomicCalendarLoaded = true;
-        console.log('📊 TradingView 경제 캘린더 iframe 설정 완료');
-
-        // 5초 후 로드 상태 확인
-        setTimeout(() => {
-            checkCalendarLoad();
-        }, 5000);
-
-    } catch (error) {
-        console.error('TradingView 경제 캘린더 로드 중 오류:', error);
-        loadFallbackCalendar();
-    }
-}
-
-// 캘린더 로드 상태 확인
-function checkCalendarLoad() {
-    const iframe = document.querySelector('#tradingview-economic-calendar iframe');
-    if (!iframe) {
-        console.log('iframe이 없어서 대체 캘린더 로드');
-        loadFallbackCalendar();
-        return;
-    }
-
-    // iframe이 정상적으로 로드되었는지 확인
-    const rect = iframe.getBoundingClientRect();
-    if (rect.width > 0 && rect.height > 0) {
-        console.log('📊 TradingView 경제 캘린더 정상 작동 중');
-    } else {
-        console.log('캘린더 로드 실패, 대체 캘린더 로드');
-        loadFallbackCalendar();
-    }
-}
-
-// 대체 캘린더 로드
-function loadFallbackCalendar() {
-    const widgetContainer = document.querySelector('#tradingview-economic-calendar');
-    if (!widgetContainer) {
-        console.error('위젯 컨테이너를 찾을 수 없습니다.');
-        return;
-    }
-
-    console.log('📊 대체 경제 캘린더 로드');
-
-    // 한국 투자 정보 사이트의 경제 캘린더
-    widgetContainer.innerHTML = `
-        <div style="height: 600px; width: 100%; background: #fff; border-radius: 8px; overflow: hidden; position: relative;">
-            <div style="
-                position: absolute;
-                top: 0;
-                left: 0;
-                right: 0;
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                color: white;
-                padding: 15px;
-                text-align: center;
-                font-weight: bold;
-                z-index: 10;
-                font-size: 1.1rem;
-            ">
-                📊 경제 캘린더 - 주요 경제 지표 및 이벤트
-            </div>
-            <iframe 
-                src="https://kr.investing.com/economic-calendar/"
-                width="100%"
-                height="560"
-                frameborder="0"
-                scrolling="yes"
-                allowfullscreen="true"
-                sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-                referrerpolicy="no-referrer-when-downgrade"
-                style="
-                    border: none;
-                    width: 100%;
-                    height: 560px;
-                    background: #fff;
-                    margin-top: 40px;
-                "
-                loading="lazy">
-            </iframe>
-        </div>
-    `;
-
-    console.log('📊 대체 경제 캘린더 설정 완료');
-
-    // 10초 후에도 로드되지 않으면 정적 캘린더 표시
-    setTimeout(() => {
-        checkFallbackCalendarLoad();
-    }, 10000);
-}
-
-// 대체 캘린더 로드 상태 확인
-function checkFallbackCalendarLoad() {
-    const iframe = document.querySelector('#tradingview-economic-calendar iframe');
-    if (!iframe) {
-        console.log('대체 캘린더도 없어서 정적 캘린더 표시');
-        showStaticCalendar();
-        return;
-    }
-
-    // iframe이 정상적으로 로드되었는지 확인
-    const rect = iframe.getBoundingClientRect();
-    if (rect.width > 0 && rect.height > 0) {
-        console.log('📊 대체 경제 캘린더 정상 작동 중');
-    } else {
-        console.log('대체 캘린더 로드 실패, 정적 캘린더 표시');
-        showStaticCalendar();
-    }
-}
-
-// 정적 경제 캘린더 표시
-function showStaticCalendar() {
-    const widgetContainer = document.querySelector('#tradingview-economic-calendar');
-    if (!widgetContainer) return;
-
-    const today = new Date();
-    const todayStr = today.toLocaleDateString('ko-KR', { 
-        year: 'numeric', 
-        month: 'long', 
-        day: 'numeric',
-        weekday: 'long'
-    });
-
-    widgetContainer.innerHTML = `
-        <div style="
-            height: 600px;
-            width: 100%;
-            background: #fff;
-            border-radius: 8px;
-            padding: 20px;
-            box-sizing: border-box;
-            overflow-y: auto;
-        ">
-            <div style="
-                text-align: center;
-                margin-bottom: 30px;
-                padding-bottom: 20px;
-                border-bottom: 2px solid #e9ecef;
-            ">
-                <h2 style="
-                    color: #2962ff;
-                    margin: 0 0 10px 0;
-                    font-size: 1.8rem;
-                ">📊 경제 캘린더</h2>
-                <p style="
-                    color: #666;
-                    margin: 0;
-                    font-size: 1.1rem;
-                ">${todayStr}</p>
-            </div>
-
-            <div style="margin-bottom: 30px;">
-                <h3 style="
-                    color: #333;
-                    margin: 0 0 15px 0;
-                    font-size: 1.3rem;
-                    display: flex;
-                    align-items: center;
-                    gap: 10px;
-                ">
-                    <span style="color: #ff6b6b;">🔴</span>
-                    주요 경제 지표
-                </h3>
-                <div style="
-                    display: grid;
-                    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-                    gap: 15px;
-                ">
-                    <div style="
-                        background: #f8f9fa;
-                        padding: 15px;
-                        border-radius: 8px;
-                        border-left: 4px solid #ff6b6b;
-                    ">
-                        <h4 style="margin: 0 0 5px 0; color: #333;">🇺🇸 미국 CPI</h4>
-                        <p style="margin: 0; color: #666; font-size: 0.9rem;">소비자물가지수</p>
-                    </div>
-                    <div style="
-                        background: #f8f9fa;
-                        padding: 15px;
-                        border-radius: 8px;
-                        border-left: 4px solid #ffa500;
-                    ">
-                        <h4 style="margin: 0 0 5px 0; color: #333;">🇺🇸 FOMC</h4>
-                        <p style="margin: 0; color: #666; font-size: 0.9rem;">연방공개시장위원회</p>
-                    </div>
-                    <div style="
-                        background: #f8f9fa;
-                        padding: 15px;
-                        border-radius: 8px;
-                        border-left: 4px solid #28a745;
-                    ">
-                        <h4 style="margin: 0 0 5px 0; color: #333;">🇰🇷 한국 기준금리</h4>
-                        <p style="margin: 0; color: #666; font-size: 0.9rem;">한국은행 금통위</p>
-                    </div>
-                    <div style="
-                        background: #f8f9fa;
-                        padding: 15px;
-                        border-radius: 8px;
-                        border-left: 4px solid #007bff;
-                    ">
-                        <h4 style="margin: 0 0 5px 0; color: #333;">🇪🇺 ECB 정책금리</h4>
-                        <p style="margin: 0; color: #666; font-size: 0.9rem;">유럽중앙은행</p>
-                    </div>
-                </div>
-            </div>
-
-            <div style="margin-bottom: 30px;">
-                <h3 style="
-                    color: #333;
-                    margin: 0 0 15px 0;
-                    font-size: 1.3rem;
-                    display: flex;
-                    align-items: center;
-                    gap: 10px;
-                ">
-                    <span style="color: #2962ff;">💼</span>
-                    암호화폐 관련 이벤트
-                </h3>
-                <div style="
-                    background: #f8f9fa;
-                    padding: 20px;
-                    border-radius: 8px;
-                    border: 1px solid #e9ecef;
-                ">
-                    <p style="
-                        margin: 0 0 10px 0;
-                        color: #333;
-                        font-weight: bold;
-                    ">🚀 주요 암호화폐 이벤트</p>
-                    <ul style="
-                        margin: 0;
-                        padding-left: 20px;
-                        color: #666;
-                    ">
-                        <li>비트코인 ETF 승인 관련 소식</li>
-                        <li>주요 거래소 상장/상폐 공지</li>
-                        <li>메이저 프로젝트 업데이트</li>
-                        <li>규제 관련 발표</li>
-                    </ul>
-                </div>
-            </div>
-
-            <div style="
-                text-align: center;
-                padding: 20px;
-                background: #f8f9fa;
-                border-radius: 8px;
-                border: 1px solid #e9ecef;
-            ">
-                <p style="
-                    margin: 0 0 15px 0;
-                    color: #666;
-                    font-size: 0.9rem;
-                ">더 자세한 경제 캘린더는 아래 링크에서 확인하세요</p>
-                <div style="
-                    display: flex;
-                    gap: 10px;
-                    justify-content: center;
-                    flex-wrap: wrap;
-                ">
-                    <a href="https://kr.tradingview.com/economic-calendar/" 
-                       target="_blank" 
-                       style="
-                           display: inline-block;
-                           padding: 10px 20px;
-                           background: #2962ff;
-                           color: white;
-                           text-decoration: none;
-                           border-radius: 5px;
-                           font-size: 0.9rem;
-                           margin: 5px;
-                       ">TradingView 캘린더</a>
-                    <a href="https://kr.investing.com/economic-calendar/" 
-                       target="_blank" 
-                       style="
-                           display: inline-block;
-                           padding: 10px 20px;
-                           background: #28a745;
-                           color: white;
-                           text-decoration: none;
-                           border-radius: 5px;
-                           font-size: 0.9rem;
-                           margin: 5px;
-                       ">Investing.com 캘린더</a>
-                    <button onclick="loadEconomicCalendar()" style="
-                        padding: 10px 20px;
-                        background: #007bff;
-                        color: white;
-                        border: none;
-                        border-radius: 5px;
-                        cursor: pointer;
-                        font-size: 0.9rem;
-                        margin: 5px;
-                    ">캘린더 다시 로드</button>
-                </div>
-            </div>
-        </div>
-    `;
-
-    console.log('📊 정적 경제 캘린더 표시 완료');
-}
-
-// 캘린더 오류 메시지 표시
-function showCalendarError() {
-    const widgetContainer = document.querySelector('.tradingview-widget-container__widget');
-    if (!widgetContainer) return;
-
-    widgetContainer.innerHTML = `
-        <div style="
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 600px;
-            color: var(--text-color-secondary);
-            text-align: center;
-            padding: 20px;
-            background: #fff;
-            border-radius: 8px;
-        ">
-            <i class="fas fa-exclamation-triangle" style="font-size: 3rem; margin-bottom: 1rem; color: #ff6b6b;"></i>
-            <h3 style="margin: 0 0 1rem 0; color: var(--text-color);">경제 캘린더를 불러올 수 없습니다</h3>
-            <p style="margin: 0 0 1rem 0; line-height: 1.5; color: var(--text-color-secondary);">
-                네트워크 연결을 확인하고 다시 시도해주세요.<br>
-                또는 아래 링크를 통해 직접 확인하세요.
-            </p>
-            <div style="display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;">
-                <button onclick="loadEconomicCalendar()" style="
-                    padding: 10px 20px;
-                    background: #2962ff;
-                    color: white;
-                    border: none;
-                    border-radius: 5px;
-                    cursor: pointer;
-                    font-size: 0.9rem;
-                    margin: 5px;
-                ">다시 시도</button>
-                <a href="https://kr.tradingview.com/economic-calendar/" 
-                   target="_blank" 
-                   style="
-                       display: inline-block;
-                       padding: 10px 20px;
-                       background: #007bff;
-                       color: white;
-                       text-decoration: none;
-                       border-radius: 5px;
-                       font-size: 0.9rem;
-                       margin: 5px;
-                   ">TradingView 사이트로</a>
-            </div>
-        </div>
-    `;
-}
 
 // 뉴스 필터링 (탭별 처리)
 function filterNews(source, currentTab = null) {
@@ -1248,25 +925,63 @@ function filterNews(source, currentTab = null) {
     console.log(`🔍 ${tabLabel} 필터링 완료: ${source} (${filteredNews.length}개)`);
 }
 
-// 상대적 시간 표시 함수
+// 상대적 시간 표시 함수 (개선된 버전)
 function getRelativeTime(dateString) {
+    if (!dateString) return '시간 정보 없음';
+    
     const now = new Date();
-    const date = new Date(dateString);
-    const diffMs = now - date;
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMins / 60);
-    const diffDays = Math.floor(diffHours / 24);
+    let date;
     
-    if (diffMins < 1) return '방금 전';
-    if (diffMins < 60) return `${diffMins}분 전`;
-    if (diffHours < 24) return `${diffHours}시간 전`;
-    if (diffDays < 7) return `${diffDays}일 전`;
-    if (diffDays < 30) return `${Math.floor(diffDays / 7)}주 전`;
-    
-    return date.toLocaleDateString('ko-KR', { 
-        month: 'short', 
-        day: 'numeric' 
-    });
+    try {
+        // 다양한 날짜 형식 지원
+        if (typeof dateString === 'string') {
+            // ISO 형식, RFC 형식 등 다양한 형식 시도
+            date = new Date(dateString);
+            
+            // 잘못된 날짜인지 확인
+            if (isNaN(date.getTime())) {
+                // 다른 형식으로 시도
+                const cleanedString = dateString.replace(/[^\w\s:+-]/g, ' ').trim();
+                date = new Date(cleanedString);
+                
+                if (isNaN(date.getTime())) {
+                    console.warn('날짜 파싱 실패:', dateString);
+                    return '시간 정보 없음';
+                }
+            }
+        } else if (dateString instanceof Date) {
+            date = dateString;
+        } else {
+            return '시간 정보 없음';
+        }
+        
+        const diffMs = now - date;
+        
+        // 미래 날짜인지 확인 (잘못된 시간대 등)
+        if (diffMs < 0) {
+            console.warn('미래 날짜 감지, 현재 시간으로 조정:', dateString);
+            return '방금 전';
+        }
+        
+        const diffMins = Math.floor(diffMs / 60000);
+        const diffHours = Math.floor(diffMins / 60);
+        const diffDays = Math.floor(diffHours / 24);
+        
+        if (diffMins < 1) return '방금 전';
+        if (diffMins < 60) return `${diffMins}분 전`;
+        if (diffHours < 24) return `${diffHours}시간 전`;
+        if (diffDays < 7) return `${diffDays}일 전`;
+        if (diffDays < 30) return `${Math.floor(diffDays / 7)}주 전`;
+        
+        return date.toLocaleDateString('ko-KR', { 
+            month: 'short', 
+            day: 'numeric' 
+        });
+        
+    } catch (error) {
+        console.error('시간 계산 오류:', error, dateString);
+        return '시간 정보 없음';
+    }
 }
 
 // 소스 표시명 매핑
@@ -1338,6 +1053,13 @@ const SPECIAL_KEYWORDS = {
 
 // 뉴스 중요도 데이터 로드
 async function loadNewsImportanceData() {
+    // 뉴스 페이지인지 확인
+    const newsGrid = document.getElementById('newsGrid');
+    if (!newsGrid) {
+        console.log('📰 뉴스 페이지가 아니므로 중요도 데이터 로드를 건너뜁니다.');
+        return;
+    }
+    
     try {
         // 캐시에서 먼저 확인
         const cached = localStorage.getItem(IMPORTANCE_CACHE_KEY);
@@ -1605,6 +1327,122 @@ async function reanalyzeNewsImportance(newsItem) {
     return analysis.score;
 }
 
+// 메인페이지용 뉴스 데이터 로드 (속보 카드용)
+async function loadNewsForMainPage() {
+    const CACHE_KEY = 'newsFeedsCache';
+    const CACHE_DURATION_MS = 3 * 60 * 1000; // 3분 캐시
+
+    try {
+        // 1. 캐시 확인
+        const cached = localStorage.getItem(CACHE_KEY);
+        if (cached) {
+            const cacheData = JSON.parse(cached);
+            const age = Date.now() - cacheData.timestamp;
+            
+            if (cacheData.data && cacheData.data.length > 0) {
+                console.log('📰 메인페이지: 캐시된 뉴스 데이터 사용');
+                window.newsItems = cacheData.data;
+                
+                // 속보뉴스 카드 업데이트
+                setTimeout(() => {
+                    if (typeof window.updateBreakingNewsCard === 'function') {
+                        window.updateBreakingNewsCard();
+                    }
+                }, 100);
+                
+                // 캐시가 만료되었으면 백그라운드에서 새 데이터 가져오기
+                if (age >= CACHE_DURATION_MS) {
+                    console.log('📰 메인페이지: 캐시 만료, 백그라운드에서 새 데이터 로딩');
+                    setTimeout(() => loadFreshNewsForMainPage(), 100);
+                }
+                return;
+            }
+        }
+    } catch (e) {
+        console.warn('메인페이지 캐시 읽기 실패:', e);
+    }
+    
+    // 캐시가 없으면 새 데이터 로드
+    console.log('📰 메인페이지: 새 뉴스 데이터 로딩 시작');
+    await loadFreshNewsForMainPage();
+}
+
+// 메인페이지용 새 뉴스 데이터 로드
+async function loadFreshNewsForMainPage() {
+    const CACHE_KEY = 'newsFeedsCache';
+    
+    try {
+        const feeds = [
+            // 빠른 로딩을 위한 주요 피드들만 사용
+            { url: 'https://kr.cointelegraph.com/rss', source: 'cointelegraph' },
+            { url: 'https://www.tokenpost.kr/rss', source: 'tokenpost' },
+            { url: 'https://www.blockmedia.co.kr/feed', source: 'blockmedia' },
+            { url: 'https://bloomingbit.io/rss.xml', source: 'bloomingbit' }
+        ];
+
+        // 빠른 피드들 로드 (5초 타임아웃)
+        const fastPromises = feeds.map(feed => 
+            Promise.race([
+                fetchAndParseFeed(feed),
+                new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error('Timeout')), 5000)
+                )
+            ]).catch(error => {
+                console.warn(`${feed.source} 피드 로딩 실패:`, error.message);
+                return [];
+            })
+        );
+
+        const fastResults = await Promise.all(fastPromises);
+        
+        let allNews = [];
+        let successCount = 0;
+        
+        // 결과 처리
+        fastResults.forEach((result, index) => {
+            const feedName = feeds[index].source;
+            if (result && result.length > 0) {
+                allNews.push(...result);
+                successCount++;
+                console.log(`✅ 메인페이지 ${feedName}: ${result.length}개 뉴스 로드`);
+            }
+        });
+
+        if (allNews.length > 0) {
+            // 중복 제거 및 정렬
+            const uniqueNews = removeDuplicateNews(allNews);
+            
+            // 날짜 정보 검증 및 수정
+            const validatedNews = validateAndFixNewsDates(uniqueNews);
+            validatedNews.sort((a, b) => new Date(b.pubDate) - new Date(a.pubDate));
+            
+            // 캐시 저장
+            const cacheData = {
+                timestamp: Date.now(),
+                data: validatedNews
+            };
+            localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
+            
+            window.newsItems = validatedNews;
+            
+            // 속보뉴스 카드 업데이트
+            setTimeout(() => {
+                if (typeof window.updateBreakingNewsCard === 'function') {
+                    window.updateBreakingNewsCard();
+                }
+            }, 100);
+            
+
+            
+            console.log(`📰 메인페이지 뉴스 로딩 완료: ${successCount}개 소스에서 ${validatedNews.length}개 뉴스`);
+        } else {
+            console.warn('📰 메인페이지: 뉴스 데이터를 가져올 수 없습니다');
+        }
+    } catch (error) {
+        console.error('📰 메인페이지 뉴스 로딩 실패:', error);
+    }
+}
+
 // 전역 스코프에 함수들 노출 (index.html의 속보 카드에서 사용)
 window.getNewsImportance = getNewsImportance;
 window.getRelativeTime = getRelativeTime;
@@ -1620,3 +1458,13 @@ function triggerBreakingNewsUpdate() {
         window.dispatchEvent(new CustomEvent('newsDataUpdated'));
     }
 }
+
+
+
+// 페이지 언로드 시 정리
+window.addEventListener('beforeunload', () => {
+    if (window.newsTimeUpdateInterval) {
+        clearInterval(window.newsTimeUpdateInterval);
+        window.newsTimeUpdateInterval = null;
+    }
+});

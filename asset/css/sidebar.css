@@ -1,0 +1,150 @@
+/* 사이드바 스타일 */
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 300px;
+  height: 100vh;
+  background: var(--bg-secondary);
+  border-right: 1px solid var(--border-default);
+  z-index: 1000;
+  overflow-y: auto;
+}
+
+.sidebar-header {
+  padding: 20px;
+  border-bottom: 1px solid var(--border-default);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.sidebar-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.sidebar-close {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 20px;
+  cursor: pointer;
+  padding: 5px;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+}
+
+.sidebar-close:hover {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+.sidebar-search {
+  padding: 15px 20px;
+  border-bottom: 1px solid var(--border-default);
+}
+
+.search-input {
+  width: 100%;
+  padding: 10px 15px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-default);
+  border-radius: 6px;
+  color: var(--text-primary);
+  font-size: 14px;
+}
+
+.search-input::placeholder {
+  color: var(--text-secondary);
+}
+
+.sidebar-menu {
+  padding: 10px 0;
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  border-left: 3px solid transparent;
+}
+
+.menu-item:hover {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  border-left-color: var(--accent-blue);
+}
+
+.menu-item.active {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  border-left-color: var(--accent-blue);
+}
+
+.menu-item-text {
+  flex: 1;
+  font-size: 14px;
+}
+
+.menu-item-arrow {
+  font-size: 12px;
+  transition: transform 0.3s ease;
+}
+
+.menu-item:hover .menu-item-arrow {
+  transform: translateX(3px);
+}
+
+.submenu {
+  margin-left: 20px;
+  border-left: 2px solid rgba(59, 130, 246, 0.3);
+}
+
+.submenu .menu-item {
+  margin: 1px 10px;
+  padding: 10px 20px;
+  font-size: 13px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.submenu .menu-item:hover {
+  background: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+}
+
+.submenu .menu-item.active {
+  background: rgba(59, 130, 246, 0.2);
+  color: #3b82f6;
+}
+
+/* 사이드바는 항상 열려있으므로 오버레이와 토글 버튼 불필요 */
+
+/* 반응형 */
+@media (max-width: 768px) {
+  .sidebar {
+    width: 280px;
+  }
+}
+
+/* 메인 컨테이너 조정 */
+.main-container {
+  margin-left: 300px;
+  transition: margin-left 0.3s ease;
+}
+
+@media (max-width: 768px) {
+  .sidebar {
+    width: 280px;
+  }
+  
+  .main-container {
+    margin-left: 280px;
+  }
+} 

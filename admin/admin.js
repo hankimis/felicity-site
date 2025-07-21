@@ -1036,3 +1036,17 @@ window.searchBlockedUsers = searchBlockedUsers;
 window.showBlockUserModal = showBlockUserModal;
 window.closeBlockModal = closeBlockModal;
 window.unblockUser = unblockUser; 
+
+window.switchAdminTab = function(tabName) {
+    // 모든 탭 버튼 비활성화
+    document.querySelectorAll('.admin-tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    // 모든 탭 콘텐츠 숨기기
+    document.querySelectorAll('.admin-tab-content').forEach(content => {
+        content.style.display = 'none';
+    });
+    // 선택된 탭 활성화
+    document.querySelector(`[onclick="switchAdminTab('${tabName}')"]`).classList.add('active');
+    document.getElementById(`${tabName}-tab`).style.display = 'block';
+}; 
