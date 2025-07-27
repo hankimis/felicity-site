@@ -115,7 +115,7 @@ function loadMoreNews() {
             filteredNews = window.newsItems.filter(item => {
                 const importance = getNewsImportance(item);
                 const sourceMatch = source === 'all' || item.source === source;
-                return importance === 5 && sourceMatch;
+                return importance >= 4 && sourceMatch;
             });
         } else {
             if (source === 'all') {
@@ -136,6 +136,17 @@ function loadMoreNews() {
             hasMoreNews = currentDisplayCount < totalNews;
         } else {
             hasMoreNews = false;
+        }
+        
+        // 속보 탭에서는 모든 뉴스를 표시했을 때 완료 메시지 표시
+        if (currentTab === 'breaking' && !hasMoreNews) {
+            const breakingGrid = document.getElementById('breakingGrid');
+            if (breakingGrid) {
+                const completeMessage = document.createElement('div');
+                completeMessage.className = 'loading';
+                completeMessage.innerHTML = `총 ${totalNews}개의 속보를 모두 불러왔습니다.`;
+                breakingGrid.appendChild(completeMessage);
+            }
         }
         
         hideLoadingIndicator();
@@ -233,7 +244,17 @@ function initializeNewsUI() {
 
 // 무한스크롤 상태 리셋
 function resetInfiniteScroll() {
-    currentDisplayCount = 10;
+    // 현재 활성 탭 확인
+    const activeTabBtn = document.querySelector('.tab-btn.active');
+    const currentTab = activeTabBtn?.getAttribute('data-tab') || 'news';
+    
+    // 속보 탭에서는 더 많은 뉴스를 표시하도록 설정
+    if (currentTab === 'breaking') {
+        currentDisplayCount = 20; // 속보는 더 많은 뉴스 표시
+    } else {
+        currentDisplayCount = 10; // 일반 뉴스는 10개씩
+    }
+    
     hasMoreNews = true;
     isLoading = false;
     hideLoadingIndicator();
@@ -478,7 +499,7 @@ function removeDuplicateNews(newsArray) {
 // 뉴스 날짜 정보 검증 및 수정 함수
 function validateAndFixNewsDates(newsArray) {
     const now = new Date();
-    const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    const oneYearAgo = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000); // 1년 전
     
     return newsArray.map(item => {
         let fixedItem = { ...item };
@@ -492,14 +513,14 @@ function validateAndFixNewsDates(newsArray) {
                     console.warn('잘못된 날짜 감지, 현재 시간으로 수정:', item.pubDate);
                     fixedItem.pubDate = now.toISOString();
                 } else {
-                    // 미래 날짜인지 확인 (잘못된 시간대 등)
+                    // 미래 날짜는 그대로 유지 (최신 뉴스로 처리)
                     if (originalDate > now) {
-                        console.warn('미래 날짜 감지, 현재 시간으로 수정:', item.pubDate);
-                        fixedItem.pubDate = now.toISOString();
+                        console.log('미래 날짜 뉴스 감지 (최신 뉴스로 처리):', item.pubDate);
+                        // 미래 날짜도 그대로 유지
                     }
-                    // 너무 오래된 날짜인지 확인 (1일 이상)
-                    else if (originalDate < oneDayAgo) {
-                        console.warn('너무 오래된 날짜 감지, 현재 시간으로 수정:', item.pubDate);
+                    // 너무 오래된 날짜인지 확인 (1년 이상)
+                    else if (originalDate < oneYearAgo) {
+                        console.warn('너무 오래된 날짜 감지 (1년 이상), 현재 시간으로 수정:', item.pubDate);
                         fixedItem.pubDate = now.toISOString();
                     }
                 }
@@ -740,8 +761,14 @@ function displayNews(news, isInitialLoad = true, currentTab = 'news') {
     // 초기 로드 시 전체 초기화
     if (isInitialLoad) {
         newsGrid.innerHTML = '';
-        currentDisplayCount = Math.min(10, news.length);
-        hasMoreNews = news.length > currentDisplayCount;
+        // 속보 탭에서는 더 많은 뉴스를 표시
+        if (currentTab === 'breaking') {
+            currentDisplayCount = Math.min(20, news.length); // 속보는 최대 20개 표시
+            hasMoreNews = news.length > currentDisplayCount;
+        } else {
+            currentDisplayCount = Math.min(10, news.length);
+            hasMoreNews = news.length > currentDisplayCount;
+        }
     }
     
     const fragment = document.createDocumentFragment();
@@ -899,12 +926,12 @@ function filterNews(source, currentTab = null) {
     
     let filteredNews;
     
-    // 속보 탭인 경우 중요도 5점만 필터링
+    // 속보 탭인 경우 중요도 4점 이상 필터링 (더 많은 뉴스 표시)
     if (currentTab === 'breaking') {
         filteredNews = window.newsItems.filter(item => {
             const importance = getNewsImportance(item);
             const sourceMatch = source === 'all' || item.source === source;
-            return importance === 5 && sourceMatch;
+            return importance >= 4 && sourceMatch;
         });
     } else {
         // 일반 뉴스 탭
@@ -957,9 +984,9 @@ function getRelativeTime(dateString) {
         
         const diffMs = now - date;
         
-        // 미래 날짜인지 확인 (잘못된 시간대 등)
+        // 미래 날짜인지 확인 (최신 뉴스로 처리)
         if (diffMs < 0) {
-            console.warn('미래 날짜 감지, 현재 시간으로 조정:', dateString);
+            // 미래 날짜는 "방금 전"으로 표시 (최신 뉴스)
             return '방금 전';
         }
         

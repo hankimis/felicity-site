@@ -1,0 +1,170 @@
+<!-- Taker CVD 분석 컨텐츠 -->
+<div class="taker-cvd-content">
+  <!-- 헤더 -->
+  <div class="header">
+    <div class="title-section">
+      <h1>비트코인: 선물 시장가 거래 누적 거래량 변화, 90일 (Taker CVD)</h1>
+      <p>Taker CVD는 시장가 매수(Taker Buy)와 시장가 매도(Taker Sell) 거래량의 차이를 누적하여 계산하는 지표입니다. 90일 기준으로 장기 트렌드를 분석하여 시장의 매집/분배 상태를 판단할 수 있습니다.</p>
+    </div>
+    <div class="controls">
+      <div class="control-group">
+        <label>심볼:</label>
+        <select id="symbol-select">
+          <option value="BTCUSDT" selected>BTCUSDT</option>
+          <option value="ETHUSDT">ETHUSDT</option>
+          <option value="BNBUSDT">BNBUSDT</option>
+          <option value="ADAUSDT">ADAUSDT</option>
+          <option value="SOLUSDT">SOLUSDT</option>
+        </select>
+      </div>
+      <div class="control-group">
+        <label>기간:</label>
+        <select id="period-select">
+          <option value="1d">1일</option>
+          <option value="1w">1주</option>
+          <option value="1M">1월</option>
+          <option value="1y">1년</option>
+          <option value="all" selected>전체</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- 차트 컨테이너 -->
+  <div class="chart-container">
+    <div class="chart-header">
+      <div class="chart-title">Taker CVD 및 가격 분석</div>
+      <div class="chart-controls">
+        <button class="timeframe-btn" data-timeframe="1d">1일</button>
+        <button class="timeframe-btn" data-timeframe="1w">1주</button>
+        <button class="timeframe-btn" data-timeframe="1M">1월</button>
+        <button class="timeframe-btn" data-timeframe="1y">1년</button>
+        <button class="timeframe-btn active" data-timeframe="all">전체</button>
+      </div>
+    </div>
+    
+    <div class="chart-area" id="chart-area">
+      <div class="loading">
+        <div class="loading-spinner"></div>
+        <div>데이터 로딩 중...</div>
+      </div>
+      <div class="watermark">Onbit</div>
+    </div>
+
+    <!-- 범례 -->
+    <div class="legend">
+      <div class="legend-item">
+        <div class="legend-dot neutral"></div>
+        <span>Neutral</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-dot buy-dominant"></div>
+        <span>Taker Buy Dominant</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-dot sell-dominant"></div>
+        <span>Taker Sell Dominant</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 통계 패널 -->
+  <div class="stats-panel">
+    <div class="stat-card">
+      <div class="stat-title">현재 90일 CVD</div>
+      <div class="stat-value" id="current-cvd">-</div>
+      <div class="stat-change" id="cvd-change">-</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-title">CVD 상태</div>
+      <div class="stat-value" id="cvd-status">-</div>
+      <div class="stat-change" id="status-description">-</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-title">90일 CVD 변화율</div>
+      <div class="stat-value" id="cvd-change-rate">-</div>
+      <div class="stat-change" id="change-rate-description">-</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-title">시장 신호</div>
+      <div class="stat-value" id="market-signal">-</div>
+      <div class="stat-change" id="signal-description">-</div>
+    </div>
+  </div>
+
+  <!-- 지표 설명 섹션 -->
+  <div class="indicator-guide">
+    <h3>지표 설명</h3>
+    <div class="guide-grid">
+      <div class="guide-card">
+        <h4>Taker CVD란?</h4>
+        <p>Taker CVD(Cumulative Volume Delta)는 시장가 매수(Taker Buy)와 시장가 매도(Taker Sell) 거래량의 차이를 누적하여 계산합니다.</p>
+        <ul>
+          <li><strong>양수 CVD</strong>: 시장가 매수가 매도보다 많음</li>
+          <li><strong>음수 CVD</strong>: 시장가 매도가 매수보다 많음</li>
+          <li><strong>90일 기준</strong>: 3개월 누적 데이터로 장기 트렌드 분석</li>
+          <li><strong>실시간 업데이트</strong>: 거래소 데이터 기반 실시간 계산</li>
+        </ul>
+      </div>
+      
+      <div class="guide-card">
+        <h4>시장 상태 해석</h4>
+        <p>90일 CVD 지표를 통해 시장의 매집/분배 상태를 판단할 수 있습니다.</p>
+        <ul>
+          <li><strong>매집 상태</strong>: 90일 CVD가 양수이면서 증가세</li>
+          <li><strong>분배 상태</strong>: 90일 CVD가 음수이면서 하락세</li>
+          <li><strong>중립 상태</strong>: CVD가 0에 가까우거나 변화 없음</li>
+          <li><strong>전환 신호</strong>: CVD 방향성 변화 시 주의 필요</li>
+        </ul>
+      </div>
+      
+      <div class="guide-card">
+        <h4>거래 전략</h4>
+        <p>Taker CVD를 활용한 거래 전략을 제시합니다.</p>
+        <ul>
+          <li><strong>매수 시점</strong>: CVD가 양수로 전환되며 증가할 때</li>
+          <li><strong>매도 시점</strong>: CVD가 음수로 전환되며 감소할 때</li>
+          <li><strong>홀딩 시점</strong>: CVD가 안정적으로 양수 유지할 때</li>
+          <li><strong>관망 시점</strong>: CVD가 중립 상태일 때</li>
+        </ul>
+      </div>
+      
+      <div class="guide-card">
+        <h4>데이터 출처</h4>
+        <p>다음 거래소들의 데이터를 종합하여 계산됩니다.</p>
+        <ul>
+          <li><strong>주요 거래소</strong>: Binance, Coinbase, Kraken, OKX</li>
+          <li><strong>한국 거래소</strong>: Bithumb, Upbit, Coinone, Gopax</li>
+          <li><strong>기타 거래소</strong>: Bybit, MEXC, KuCoin, Bitget 등</li>
+          <li><strong>업데이트</strong>: 2025년 4월 11일부터 Hyperliquid 추가</li>
+        </ul>
+      </div>
+    </div>
+    
+    <div class="trading-tips">
+      <h4>투자 팁</h4>
+      <div class="tips-grid">
+        <div class="tip-item">
+          <div>
+            <strong>매수 신호:</strong> 90일 CVD가 양수로 전환되며 증가할 때
+          </div>
+        </div>
+        <div class="tip-item">
+          <div>
+            <strong>매도 신호:</strong> 90일 CVD가 음수로 전환되며 감소할 때
+          </div>
+        </div>
+        <div class="tip-item">
+          <div>
+            <strong>홀딩 시점:</strong> CVD가 안정적으로 양수 유지할 때
+          </div>
+        </div>
+        <div class="tip-item">
+          <div>
+            <strong>관망 시점:</strong> CVD가 중립 상태이거나 불확실할 때
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div> 

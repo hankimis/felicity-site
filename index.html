@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Onbit - 암호화폐 거래소 정보 및 실시간 분석</title>
+  <title>온비트 - 국내 1위 수수료 페이백, 암호화폐 플랫폼</title>
   <meta name="description" content="실시간 암호화폐 분석, 고래 추적, 거래소 정보를 제공하는 Onbit에서 최신 코인 시장 동향을 확인하세요.">
   
   <!-- Preconnect to external domains for faster loading -->
@@ -17,6 +17,11 @@
   
   <!-- Critical CSS - Only essential above-the-fold styles -->
   <link rel="stylesheet" href="asset/css/sidebar.css">
+      <link rel="stylesheet" href="asset/mvrv-ratio/mvrv-styles.css">
+    <link rel="stylesheet" href="asset/taker-cvd/taker-cvd-styles.css">
+    <link rel="stylesheet" href="asset/volume-bubble-map/volume-bubble-styles.css">
+  <link rel="stylesheet" href="asset/exchange-netflow/exchange-netflow-styles.css">
+  <link rel="stylesheet" href="asset/exchange-holdings/exchange-holdings-styles.css">
   <style>
     /* Critical CSS Variables */
     :root {
@@ -75,18 +80,23 @@
       overflow: hidden;
     }
 
-    /* 메인 대시보드 섹션 스타일 */
-    .main-dashboard-section {
-      width: 100%;
-      padding: 20px 0;
+    /* 메인 컨텐츠 섹션 스타일 */
+    .main-content-section {
+      width: calc(100% - 250px); /* 사이드바 너비 제외 */
+      margin-left: 250px; /* 사이드바 너비만큼 오른쪽으로 이동 */
       background: var(--bg-secondary);
     }
 
-    .dashboard-container {
+    .content-container {
       width: 100%;
-      max-width: 1920px;
-      margin: 0 auto;
-      /* 메인페이지에서는 사이드바가 없으므로 margin-left 제거 */
+      max-width: 2000px; /* 최대 너비를 2000px로 변경 */
+      margin: 0 auto; /* 중앙 정렬 */
+      padding: 20px;
+    }
+
+    .dashboard-section {
+      padding: 20px 0;
+      background: var(--bg-secondary);
     }
 
     .main-dashboard-grid {
@@ -130,8 +140,18 @@
 
 
 
-    /* 반응형 디자인 */
+        /* 반응형 디자인 */
     @media (max-width: 1200px) {
+      .main-content-section {
+        width: calc(100% - 250px);
+        margin-left: 250px;
+      }
+
+      .content-container {
+        max-width: 100%;
+        padding: 15px;
+      }
+
       .main-dashboard-grid {
         grid-template-columns: 1fr 1fr;
         grid-template-rows: 1fr 1fr;
@@ -146,8 +166,27 @@
     }
 
     @media (max-width: 768px) {
-      .dashboard-container {
+      .main-content-section {
+        width: 100% !important;
+        margin-left: 0 !important;
+      }
+
+      #tradingview-ticker-tape {
+        width: 100% !important;
+        margin-left: 0 !important;
+        margin-top: 0 !important;
+      }
+
+      .partner-slider-section {
+        width: 100% !important;
+        margin-left: 0 !important;
+        padding-left: 10px !important;
+        padding-right: 10px !important;
+      }
+
+      .content-container {
         width: 95%;
+        padding: 10px;
       }
 
       .main-dashboard-grid {
@@ -205,7 +244,8 @@
   <link rel="stylesheet" href="css/popup-banner.css">
   <link rel="stylesheet" href="auth.css">
   
-  <!-- 메인페이지에서는 사이드바 CSS 제외 -->
+  <!-- 메인페이지 사이드바 CSS 추가 -->
+  <link rel="stylesheet" href="asset/css/sidebar.css">
   
   <!-- Card-specific CSS files -->
   <link rel="stylesheet" href="css/cards/trading-charts.css">
@@ -503,12 +543,70 @@
   <div id="header-placeholder"></div>
 
   <!-- TradingView Ticker Tape Widget BEGIN -->
-  <div id="tradingview-ticker-tape"></div>
+  <div id="tradingview-ticker-tape" style="width: 100%;">
+    <!-- TradingView Ticker Tape 위젯이 여기에 로드됩니다 -->
+  </div>
   <!-- TradingView Ticker Tape Widget END -->
 
-  <!-- 메인 대시보드 섹션 -->
-  <section class="main-dashboard-section">
-    <div class="dashboard-container">
+  <!-- 사이드바 추가 -->
+  <aside class="sidebar" id="sidebar">
+    
+    <nav class="sidebar-nav">
+      <ul class="nav-list">
+        <li class="nav-item active">
+          <a href="#" class="nav-link" data-action="load-home">
+            <i class="fas fa-home nav-icon"></i>
+            <span class="nav-text">홈</span>
+          </a>
+        </li>
+                   <li class="nav-item">
+             <div class="nav-link" onclick="toggleSubmenu('market-indicators')">
+               <div style="display: flex; align-items: center;">
+                 <i class="fas fa-chart-line nav-icon"></i>
+                 <span class="nav-text">시장지표</span>
+               </div>
+               <i class="fas fa-chevron-down menu-toggle" id="market-indicators-toggle"></i>
+             </div>
+             <div class="submenu" id="market-indicators-submenu">
+               <a href="#" class="submenu-item" data-action="load-mvrv">
+                 <i class="fas fa-chart-bar" style="margin-right: 8px;"></i>
+                 MVRV 비율
+               </a>
+               <a href="#" class="submenu-item" data-action="load-taker-cvd">
+                 <i class="fas fa-chart-line" style="margin-right: 8px;"></i>
+                 Taker CVD
+               </a>
+               <a href="#" class="submenu-item" data-action="load-volume-bubble">
+                 <i class="fas fa-chart-pie" style="margin-right: 8px;"></i>
+                 Volume Bubble Map
+               </a>
+             </div>
+           </li>
+                           <li class="nav-item">
+                  <a href="#" class="nav-link" data-action="load-exchange-netflow">
+                    <div style="display: flex; align-items: center;">
+                      <i class="fas fa-exchange-alt nav-icon"></i>
+                      <span class="nav-text">거래소 자금 흐름</span>
+                    </div>
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a href="#" class="nav-link" data-action="load-exchange-holdings">
+                    <div style="display: flex; align-items: center;">
+                      <i class="fas fa-chart-line nav-icon"></i>
+                      <span class="nav-text">거래소 보유량</span>
+                    </div>
+                  </a>
+                </li>
+      </ul>
+    </nav>
+  </aside>
+
+  <!-- 메인 컨텐츠 섹션 -->
+  <section class="main-content-section">
+    <div class="content-container">
+      <!-- 메인 대시보드 -->
+      <div class="dashboard-section">
       <!-- 메인 그리드: 2fr 1fr 1fr 1fr -->
       <div class="main-dashboard-grid">
         <!-- 비트코인 차트 (2fr) -->
@@ -571,15 +669,10 @@
         </div>
       </div>
       </div>
-    </div>
-  </section>
-  
 
-
-
-  <!-- 실시간 코인 시세 테이블 섹션 -->
-    <section class="crypto-table-section">
-      <div class="section-header">
+      <!-- 실시간 코인 시세 테이블 -->
+      <div class="crypto-table-section">
+        <div class="section-header">
         <h3 class="section-title">
           <i class="fas fa-coins"></i>
           실시간 코인 시세
@@ -634,7 +727,8 @@
           <button class="page-btn" id="next-page">다음</button>
         </div>
       </div>
-    </section>
+    </div>
+  </section>
 
 
 
@@ -657,8 +751,9 @@
   </div>
 
   <!-- 공식 파트너 슬라이드 시작 -->
-  <section class="partner-slider-section">
-    <div class="partner-grid-header">
+  <section class="partner-slider-section" style="width: calc(100% - 250px); margin-left: 250px; padding: 20px 0;">
+    <div class="partner-slider-container" style="width: 100%; max-width: 2000px; margin: 0 auto; padding-left: 20px; padding-right: 20px;">
+      <div class="partner-grid-header">
         <p class="partner-grid-pre-title">주요 파트너사들과 공식계약 체결</p>
         <h2 class="partner-grid-title">세계 최고의 가상 자산 거래소들과<br>함께하는 ONBit</h2>
     </div>
@@ -699,6 +794,7 @@
             <div class="partner-logo-item"><img src="assets/partner/lbank.png" alt="Lbank"></div>
             <div class="partner-logo-item"><img src="assets/partner/bitget.png" alt="Bitget"></div>
         </div>
+      </div>
     </div>
 </section>
 
@@ -719,6 +815,12 @@
   <script src="js/auth.js"></script>
   <script src="components/header/header-loader.js"></script>
   <script src="js/footer-loader.js"></script>
+  <script src="asset/js/sidebar.js"></script>
+      <script src="asset/mvrv-ratio/mvrv-script.js"></script>
+    <script src="asset/taker-cvd/taker-cvd-script.js"></script>
+    <script src="asset/volume-bubble-map/volume-bubble-script.js"></script>
+      <script src="asset/exchange-netflow/exchange-netflow-script.js"></script>
+    <script src="asset/exchange-holdings/exchange-holdings-script.js"></script>
   
   <!-- 뉴스 기능 로드 (속보 카드에 필요) -->
   <script src="js/news.js"></script>
@@ -727,6 +829,425 @@
   
   <!-- 🚀 지연 로딩으로 무거운 모듈들 관리 -->
   <script>
+    // MVRV 컨텐츠 로드 함수
+    async function loadMVRVContent() {
+      try {
+        // 기존 컨텐츠 숨기기
+        const dashboardSection = document.querySelector('.dashboard-section');
+        const cryptoTableSection = document.querySelector('.crypto-table-section');
+        const partnerSliderSection = document.querySelector('.partner-slider-section');
+        
+        if (dashboardSection) dashboardSection.style.display = 'none';
+        if (cryptoTableSection) cryptoTableSection.style.display = 'none';
+        if (partnerSliderSection) partnerSliderSection.style.display = 'none';
+        
+        // MVRV 컨텐츠 로드
+        const response = await fetch('asset/mvrv-ratio/mvrv-content.html');
+        const mvrvHtml = await response.text();
+        
+        // content-container에 MVRV 컨텐츠 삽입
+        const contentContainer = document.querySelector('.content-container');
+        contentContainer.innerHTML = mvrvHtml;
+        
+        // MVRV 분석기 초기화
+        if (typeof initMVRVAnalyzer === 'function') {
+          setTimeout(() => {
+            initMVRVAnalyzer();
+          }, 100);
+        }
+        
+        // 사이드바 활성 상태 업데이트
+        updateSidebarActiveState('mvrv');
+        
+      } catch (error) {
+        console.error('MVRV 컨텐츠 로드 실패:', error);
+      }
+    }
+    
+    // 홈 컨텐츠 로드 함수
+    function loadHomeContent() {
+      // 기존 컨텐츠 복원
+      const dashboardSection = document.querySelector('.dashboard-section');
+      const cryptoTableSection = document.querySelector('.crypto-table-section');
+      const partnerSliderSection = document.querySelector('.partner-slider-section');
+      
+      if (dashboardSection) dashboardSection.style.display = 'block';
+      if (cryptoTableSection) cryptoTableSection.style.display = 'block';
+      if (partnerSliderSection) partnerSliderSection.style.display = 'block';
+      
+      // content-container를 원래 상태로 복원
+      const contentContainer = document.querySelector('.content-container');
+      contentContainer.innerHTML = `
+        <!-- 메인 대시보드 -->
+        <div class="dashboard-section">
+          <div class="main-dashboard-grid">
+            <!-- 비트코인 차트 (2fr) -->
+            <div class="dashboard-card bitcoin-chart-card">
+              <div id="tradingview-btc-chart"></div>
+            </div>
+
+            <!-- 기술적 분석 (1fr) -->
+            <div class="dashboard-card technical-analysis-card">
+            <div class="card-header">
+              <h3>
+                <i class="fas fa-chart-line" style="color: #3b82f6;"></i>
+                기술적 분석
+              </h3>
+              <p>실시간 기술적 분석 지표</p>
+            </div>
+            <div id="tradingview-technical-analysis"></div>
+          </div>
+
+            <!-- 고래 거래 추적 (1fr) -->
+            <div class="dashboard-card whale-tracker-card">
+            <div class="card-header">
+              <h3>
+                <i class="fas fa-fish" style="color: #10b981;"></i>
+                고래 거래 추적
+              </h3>
+              <p>대형 거래 실시간 모니터링</p>
+            </div>
+            <div class="whale-content">
+              <!-- 고래 거래 목록 -->
+              <div id="whale-transactions">
+                <div style="display: flex; align-items: center; justify-content: center; height: 100%; color: #6b7280;">
+                  <div style="text-align: center;">
+                    <i class="fas fa-spinner fa-spin" style="font-size: 2rem; margin-bottom: 1rem;"></i>
+                    <div>고래 거래 연결 중...</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+            <!-- 속보 뉴스 (1fr) -->
+            <div class="dashboard-card breaking-news-card">
+            <div class="card-header">
+              <h3>
+                <i class="fas fa-newspaper" style="color: #ef4444;"></i>
+                속보 뉴스
+              </h3>
+              <p>중요도 높은 암호화폐 뉴스</p>
+            </div>
+            <div class="breaking-news-content">
+              <div id="breaking-news-list">
+                <div style="display: flex; align-items: center; justify-content: center; height: 400px; color: #6b7280;">
+                  <div style="text-align: center;">
+                    <i class="fas fa-spinner fa-spin" style="font-size: 2rem; margin-bottom: 1rem;"></i>
+                    <div>속보 뉴스 로딩 중...</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          </div>
+        </div>
+
+        <!-- 실시간 코인 시세 테이블 -->
+        <div class="crypto-table-section">
+          <div class="section-header">
+            <h3 class="section-title">
+              <i class="fas fa-coins"></i>
+              실시간 코인 시세
+            </h3>
+            <div class="table-controls">
+              <div class="search-box">
+                <i class="fas fa-search"></i>
+                <input type="text" id="coin-search" placeholder="코인 검색...">
+              </div>
+              <button class="refresh-btn" id="refresh-data">
+                <i class="fas fa-sync-alt"></i>
+              </button>
+            </div>
+          </div>
+          
+          <div class="crypto-table-wrapper">
+                       <div class="table-tabs">
+                 <button class="tab-btn active" data-category="all">전체</button>
+                 <button class="tab-btn" data-category="gainers">상승</button>
+                 <button class="tab-btn" data-category="losers">하락</button>
+               </div>
+              
+              <div class="crypto-table-container">
+                           <table class="crypto-table" id="crypto-table">
+                   <thead>
+                     <tr>
+                       <th class="sortable rank-col" data-sort="rank">순위</th>
+                       <th class="sortable name-col" data-sort="name">코인</th>
+                       <th class="sortable price-col" data-sort="price">가격</th>
+                       <th class="sortable change-col" data-sort="change1h">가격(1H%)</th>
+                       <th class="sortable change-col" data-sort="change24h">가격(24H %)</th>
+                       <th class="sortable funding-col" data-sort="fundingRate">자금 조달 비율</th>
+                       <th class="sortable volume-col" data-sort="volume">24H 볼륨($)</th>
+                       <th class="sortable oi-col" data-sort="openInterest">OI($)</th>
+                       <th class="sortable oi-change-col" data-sort="oiChange1h">OI(1H%)</th>
+                       <th class="sortable oi-change-col" data-sort="oiChange4h">OI(4H%)</th>
+                       <th class="sortable market-col" data-sort="marketCap">Market Cap($)</th>
+                       <th class="sortable liquidation-col" data-sort="liquidation1h">1H 청산($)</th>
+                       <th class="sortable liquidation-col" data-sort="liquidation24h">24H 청산($)</th>
+                       <th class="chart-col">차트</th>
+                     </tr>
+                   </thead>
+                  <tbody id="crypto-table-body">
+                    <!-- 코인 데이터가 여기에 동적으로 추가됩니다 -->
+                  </tbody>
+                </table>
+              </div>
+              
+              <div class="table-pagination">
+                <button class="page-btn" id="prev-page" disabled>이전</button>
+                <span class="page-info" id="page-info">1 / 1</span>
+                <button class="page-btn" id="next-page">다음</button>
+              </div>
+            </div>
+        </div>
+      `;
+      
+      // 사이드바 활성 상태 업데이트
+      updateSidebarActiveState('home');
+    }
+    
+         // Taker CVD 컨텐츠 로드 함수
+     async function loadTakerCVDContent() {
+       try {
+         // 기존 컨텐츠 숨기기
+         const dashboardSection = document.querySelector('.dashboard-section');
+         const cryptoTableSection = document.querySelector('.crypto-table-section');
+         const partnerSliderSection = document.querySelector('.partner-slider-section');
+         
+         if (dashboardSection) dashboardSection.style.display = 'none';
+         if (cryptoTableSection) cryptoTableSection.style.display = 'none';
+         if (partnerSliderSection) partnerSliderSection.style.display = 'none';
+         
+         // Taker CVD 컨텐츠 로드
+         const response = await fetch('asset/taker-cvd/taker-cvd-content.html');
+         const takerCvdHtml = await response.text();
+         
+         // content-container에 Taker CVD 컨텐츠 삽입
+         const contentContainer = document.querySelector('.content-container');
+         contentContainer.innerHTML = takerCvdHtml;
+         
+         // Taker CVD 분석기 초기화
+         if (typeof initTakerCVDAnalyzer === 'function') {
+           setTimeout(() => {
+             initTakerCVDAnalyzer();
+           }, 100);
+         }
+         
+         // 사이드바 활성 상태 업데이트
+         updateSidebarActiveState('taker-cvd');
+         
+       } catch (error) {
+         console.error('Taker CVD 컨텐츠 로드 실패:', error);
+       }
+     }
+
+     // Volume Bubble Map 컨텐츠 로드 함수
+     async function loadVolumeBubbleContent() {
+       try {
+         // 기존 컨텐츠 숨기기
+         const dashboardSection = document.querySelector('.dashboard-section');
+         const cryptoTableSection = document.querySelector('.crypto-table-section');
+         const partnerSliderSection = document.querySelector('.partner-slider-section');
+         
+         if (dashboardSection) dashboardSection.style.display = 'none';
+         if (cryptoTableSection) cryptoTableSection.style.display = 'none';
+         if (partnerSliderSection) partnerSliderSection.style.display = 'none';
+         
+         // Volume Bubble Map 컨텐츠 로드
+         const response = await fetch('asset/volume-bubble-map/volume-bubble-content.html');
+         const volumeBubbleHtml = await response.text();
+         
+         // content-container에 Volume Bubble Map 컨텐츠 삽입
+         const contentContainer = document.querySelector('.content-container');
+         contentContainer.innerHTML = volumeBubbleHtml;
+         
+         // Volume Bubble Map 분석기 초기화
+         if (typeof initVolumeBubbleMapManager === 'function') {
+           setTimeout(() => {
+             initVolumeBubbleMapManager();
+           }, 100);
+         }
+         
+         // 사이드바 활성 상태 업데이트
+         updateSidebarActiveState('volume-bubble');
+         
+       } catch (error) {
+         console.error('Volume Bubble Map 컨텐츠 로드 실패:', error);
+       }
+     }
+
+     // Exchange Netflow 컨텐츠 로드 함수
+     async function loadExchangeNetflowContent() {
+       try {
+         // 기존 컨텐츠 숨기기
+         const dashboardSection = document.querySelector('.dashboard-section');
+         const cryptoTableSection = document.querySelector('.crypto-table-section');
+         const partnerSliderSection = document.querySelector('.partner-slider-section');
+         
+         if (dashboardSection) dashboardSection.style.display = 'none';
+         if (cryptoTableSection) cryptoTableSection.style.display = 'none';
+         if (partnerSliderSection) partnerSliderSection.style.display = 'none';
+         
+         // Exchange Netflow 컨텐츠 로드
+         const response = await fetch('asset/exchange-netflow/exchange-netflow-content.html');
+         const exchangeNetflowHtml = await response.text();
+         
+         // content-container에 Exchange Netflow 컨텐츠 삽입
+         const contentContainer = document.querySelector('.content-container');
+         contentContainer.innerHTML = exchangeNetflowHtml;
+         
+         // Exchange Netflow 분석기 초기화
+         if (typeof initExchangeNetflowAnalyzer === 'function') {
+           setTimeout(() => {
+             initExchangeNetflowAnalyzer();
+           }, 100);
+         }
+         
+         // 사이드바 활성 상태 업데이트
+         updateSidebarActiveState('exchange-netflow');
+         
+       } catch (error) {
+         console.error('Exchange Netflow 컨텐츠 로드 실패:', error);
+       }
+     }
+
+     // Exchange Holdings 컨텐츠 로드 함수
+     async function loadExchangeHoldingsContent() {
+       try {
+         // 기존 컨텐츠 숨기기
+         const dashboardSection = document.querySelector('.dashboard-section');
+         const cryptoTableSection = document.querySelector('.crypto-table-section');
+         const partnerSliderSection = document.querySelector('.partner-slider-section');
+         
+         if (dashboardSection) dashboardSection.style.display = 'none';
+         if (cryptoTableSection) cryptoTableSection.style.display = 'none';
+         if (partnerSliderSection) partnerSliderSection.style.display = 'none';
+         
+         // Exchange Holdings 컨텐츠 로드
+         const response = await fetch('asset/exchange-holdings/exchange-holdings-content.html');
+         const exchangeHoldingsHtml = await response.text();
+         
+         // content-container에 Exchange Holdings 컨텐츠 삽입
+         const contentContainer = document.querySelector('.content-container');
+         contentContainer.innerHTML = exchangeHoldingsHtml;
+         
+         // Exchange Holdings 분석기 초기화
+         if (typeof initExchangeHoldingsAnalyzer === 'function') {
+           setTimeout(() => {
+             initExchangeHoldingsAnalyzer();
+           }, 100);
+         }
+         
+         // 사이드바 활성 상태 업데이트
+         updateSidebarActiveState('exchange-holdings');
+         
+       } catch (error) {
+         console.error('Exchange Holdings 컨텐츠 로드 실패:', error);
+       }
+     }
+     
+     // 사이드바 이벤트 리스너 설정
+     document.addEventListener('DOMContentLoaded', function() {
+       // 사이드바 메뉴 클릭 이벤트
+       document.addEventListener('click', function(e) {
+         const target = e.target.closest('[data-action]');
+         if (!target) return;
+         
+         const action = target.getAttribute('data-action');
+         
+         switch (action) {
+           case 'load-home':
+             loadHomeContent();
+             break;
+           case 'load-mvrv':
+             loadMVRVContent();
+             break;
+           case 'load-taker-cvd':
+             loadTakerCVDContent();
+             break;
+           case 'load-volume-bubble':
+             loadVolumeBubbleContent();
+             break;
+           case 'load-exchange-netflow':
+             loadExchangeNetflowContent();
+             break;
+           case 'load-exchange-holdings':
+             loadExchangeHoldingsContent();
+             break;
+         }
+       });
+     });
+     
+     // 사이드바 활성 상태 업데이트 함수
+     function updateSidebarActiveState(page) {
+       // 모든 활성 상태 제거
+       document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+       document.querySelectorAll('.submenu-item').forEach(item => item.classList.remove('active'));
+       
+       if (page === 'home') {
+         // 홈 메뉴 활성화
+         const homeItem = document.querySelector('.nav-item:first-child');
+         if (homeItem) homeItem.classList.add('active');
+       } else if (page === 'mvrv') {
+         // MVRV 메뉴 활성화
+         const marketIndicatorsItem = document.querySelector('.nav-item:nth-child(2)');
+         const mvrvSubmenuItem = document.querySelector('.submenu-item[data-action="load-mvrv"]');
+         
+         if (marketIndicatorsItem) {
+           marketIndicatorsItem.classList.add('active');
+           // 서브메뉴 열기
+           const submenu = document.getElementById('market-indicators-submenu');
+           const toggle = document.getElementById('market-indicators-toggle');
+           if (submenu && toggle) {
+             submenu.classList.add('open');
+             toggle.classList.add('rotated');
+           }
+         }
+         if (mvrvSubmenuItem) mvrvSubmenuItem.classList.add('active');
+       } else if (page === 'taker-cvd') {
+         // Taker CVD 메뉴 활성화
+         const marketIndicatorsItem = document.querySelector('.nav-item:nth-child(2)');
+         const takerCvdSubmenuItem = document.querySelector('.submenu-item[data-action="load-taker-cvd"]');
+         
+         if (marketIndicatorsItem) {
+           marketIndicatorsItem.classList.add('active');
+           // 서브메뉴 열기
+           const submenu = document.getElementById('market-indicators-submenu');
+           const toggle = document.getElementById('market-indicators-toggle');
+           if (submenu && toggle) {
+             submenu.classList.add('open');
+             toggle.classList.add('rotated');
+           }
+         }
+         if (takerCvdSubmenuItem) takerCvdSubmenuItem.classList.add('active');
+       } else if (page === 'volume-bubble') {
+         // Volume Bubble Map 메뉴 활성화
+         const marketIndicatorsItem = document.querySelector('.nav-item:nth-child(2)');
+         const volumeBubbleSubmenuItem = document.querySelector('.submenu-item[data-action="load-volume-bubble"]');
+         
+         if (marketIndicatorsItem) {
+           marketIndicatorsItem.classList.add('active');
+           // 서브메뉴 열기
+           const submenu = document.getElementById('market-indicators-submenu');
+           const toggle = document.getElementById('market-indicators-toggle');
+           if (submenu && toggle) {
+             submenu.classList.add('open');
+             toggle.classList.add('rotated');
+           }
+         }
+         if (volumeBubbleSubmenuItem) volumeBubbleSubmenuItem.classList.add('active');
+       } else if (page === 'exchange-netflow') {
+         // Exchange Netflow 메뉴 활성화 (별도 메뉴)
+         const exchangeNetflowItem = document.querySelector('.nav-item[data-action="load-exchange-netflow"]');
+         if (exchangeNetflowItem) exchangeNetflowItem.classList.add('active');
+       } else if (page === 'exchange-holdings') {
+         // Exchange Holdings 메뉴 활성화 (별도 메뉴)
+         const exchangeHoldingsItem = document.querySelector('.nav-item[data-action="load-exchange-holdings"]');
+         if (exchangeHoldingsItem) exchangeHoldingsItem.classList.add('active');
+       }
+     }
+    
     // 성능 최적화를 위한 지연 로딩 시스템
     window.LazyLoader = {
       loadedModules: new Set(),
@@ -1772,18 +2293,8 @@
 
   </script>
 
-  <!-- 사이드바 스크립트 (메인페이지에서는 로드하지 않음) -->
-  <script>
-    // 메인페이지에서는 사이드바를 로드하지 않음
-    const currentPath = window.location.pathname;
-    const isMainPage = currentPath === '/' || currentPath === '/index.html' || currentPath.endsWith('/');
-    
-    if (!isMainPage) {
-      const script = document.createElement('script');
-      script.src = 'asset/js/sidebar.js';
-      document.head.appendChild(script);
-    }
-  </script>
+  <!-- 사이드바 스크립트 -->
+  <script src="asset/js/sidebar.js"></script>
 
 </body>
 </html>

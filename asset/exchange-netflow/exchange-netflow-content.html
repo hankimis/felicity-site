@@ -1,0 +1,156 @@
+<!-- Exchange Netflow 분석 컨텐츠 -->
+<div class="exchange-netflow-content">
+  <!-- 헤더 -->
+  <div class="header">
+    <div class="title-section">
+      <h1>비트코인: 거래소 순입출금량 (Netflow) - 전체 거래소</h1>
+      <p>거래소로 입금된 코인 양에서 출금된 양을 뺀 값으로, 양수일 때 거래소의 총 코인 보유량이 증가합니다.</p>
+    </div>
+    <div class="controls">
+      <div class="control-group">
+        <label>기간:</label>
+        <select id="period-select">
+          <option value="1d">1일</option>
+          <option value="1w">1주</option>
+          <option value="1M">1월</option>
+          <option value="1y">1년</option>
+          <option value="all" selected>전체</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- 차트 컨테이너 -->
+  <div class="chart-container">
+    <div class="chart-header">
+      <div class="chart-title">거래소 순입출금량 분석</div>
+      <div class="chart-controls">
+        <button class="timeframe-btn" data-timeframe="1d">1일</button>
+        <button class="timeframe-btn" data-timeframe="1w">1주</button>
+        <button class="timeframe-btn" data-timeframe="1M">1월</button>
+        <button class="timeframe-btn" data-timeframe="1y">1년</button>
+        <button class="timeframe-btn active" data-timeframe="all">전체</button>
+      </div>
+    </div>
+    
+    <div class="chart-area" id="chart-area">
+      <div class="loading">
+        <div class="loading-spinner"></div>
+        <div>데이터 로딩 중...</div>
+      </div>
+      <div class="watermark">Onbit</div>
+    </div>
+
+    <!-- 범례 -->
+    <div class="legend">
+      <div class="legend-item">
+        <div class="legend-dot price"></div>
+        <span>가격(USD)</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-dot netflow"></div>
+        <span>거래소 순입출금량 (Netflow)</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 통계 패널 -->
+  <div class="stats-panel">
+    <div class="stat-card">
+      <div class="stat-title">현재 순입출금량</div>
+      <div class="stat-value" id="current-netflow">-</div>
+      <div class="stat-change" id="netflow-change">-</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-title">현재 가격</div>
+      <div class="stat-value" id="current-price">-</div>
+      <div class="stat-change" id="price-change">-</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-title">순입출금 상태</div>
+      <div class="stat-value" id="flow-status">-</div>
+      <div class="stat-change" id="flow-description">-</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-title">시장 신호</div>
+      <div class="stat-value" id="market-signal">-</div>
+      <div class="stat-change" id="signal-description">-</div>
+    </div>
+  </div>
+
+  <!-- 지표 설명 섹션 -->
+  <div class="indicator-guide">
+    <h3>지표 설명</h3>
+    <div class="guide-grid">
+      <div class="guide-card">
+        <h4>거래소 순입출금량 (Netflow)</h4>
+        <p>거래소로 입금된 코인 양에서 출금된 양을 뺀 값을 나타내는 지표입니다.</p>
+        <ul>
+          <li><strong>양수 (Netflow > 0)</strong>: 거래소로 순유입, 보유량 증가</li>
+          <li><strong>음수 (Netflow < 0)</strong>: 거래소에서 순유출, 보유량 감소</li>
+          <li><strong>0 (Netflow = 0)</strong>: 입출금 균형, 보유량 유지</li>
+          <li><strong>급격한 변화</strong>: 대량 자금 이동으로 인한 시장 변동 가능성</li>
+        </ul>
+      </div>
+      
+      <div class="guide-card">
+        <h4>현물 vs 선물 거래소</h4>
+        <p>현물과 선물 거래소에서 순입출금량의 의미가 다릅니다.</p>
+        <ul>
+          <li><strong>현물 거래소</strong>: 순유입 시 매도 압력 증가, 순유출 시 매수 압력 증가</li>
+          <li><strong>선물 거래소</strong>: 순유입 시 변동성 리스크 증가</li>
+          <li><strong>전체 거래소</strong>: 시장 전체의 자금 흐름 방향</li>
+          <li><strong>개별 거래소</strong>: 특정 거래소의 자금 이동 패턴</li>
+        </ul>
+      </div>
+      
+      <div class="guide-card">
+        <h4>가격과의 관계</h4>
+        <p>순입출금량과 코인 가격은 복잡한 상관관계를 보입니다.</p>
+        <ul>
+          <li><strong>순유입 + 가격 상승</strong>: 매수 압력이 높아지는 신호</li>
+          <li><strong>순유출 + 가격 하락</strong>: 매도 압력이 높아지는 신호</li>
+          <li><strong>순유입 + 가격 하락</strong>: 거래소 보유량 증가로 매도 압력</li>
+          <li><strong>순유출 + 가격 상승</strong>: 거래소에서 빠져나가 매수 압력</li>
+        </ul>
+      </div>
+      
+      <div class="guide-card">
+        <h4>시장 분석</h4>
+        <p>순입출금량을 통해 시장의 자금 흐름을 분석할 수 있습니다.</p>
+        <ul>
+          <li><strong>대량 순유입</strong>: 거래소 보유량 증가, 단기 매도 압력</li>
+          <li><strong>대량 순유출</strong>: 거래소 보유량 감소, 단기 매수 압력</li>
+          <li><strong>지속적 순유입</strong>: 장기적 매도 압력 누적</li>
+          <li><strong>지속적 순유출</strong>: 장기적 매수 압력 누적</li>
+        </ul>
+      </div>
+    </div>
+    
+    <div class="trading-tips">
+      <h4>투자 팁</h4>
+      <div class="tips-grid">
+        <div class="tip-item">
+          <div>
+            <strong>매수 시점:</strong> 순유출이 지속되고 가격이 상승할 때
+          </div>
+        </div>
+        <div class="tip-item">
+          <div>
+            <strong>매도 시점:</strong> 순유입이 급증하고 가격이 하락할 때
+          </div>
+        </div>
+        <div class="tip-item">
+          <div>
+            <strong>관망 시점:</strong> 순입출금량이 안정적일 때
+          </div>
+        </div>
+        <div class="tip-item">
+          <div>
+            <strong>주의 시점:</strong> 대량 순유입과 가격 상승이 동반될 때
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div> 

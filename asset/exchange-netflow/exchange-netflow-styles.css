@@ -1,0 +1,351 @@
+.exchange-netflow-content {
+  padding: 20px;
+}
+
+.exchange-netflow-content .header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+  padding: 20px;
+  background: var(--bg-secondary);
+  border-radius: 12px;
+  position: relative;
+  top: auto;
+  left: auto;
+  right: auto;
+  z-index: auto;
+  border-bottom: none;
+  box-shadow: none;
+}
+
+.exchange-netflow-content .title-section h1 {
+  font-size: 24px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.exchange-netflow-content .title-section p {
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.exchange-netflow-content .controls {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+}
+
+.exchange-netflow-content .control-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.exchange-netflow-content .control-group label {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.exchange-netflow-content .control-group select,
+.exchange-netflow-content .control-group input {
+  padding: 8px 12px;
+  border: 1px solid var(--border-default);
+  border-radius: 6px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 14px;
+}
+
+.exchange-netflow-content .chart-container {
+  background: var(--chart-bg);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+  position: relative;
+  min-height: 600px;
+}
+
+.exchange-netflow-content .chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.exchange-netflow-content .chart-title {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.exchange-netflow-content .chart-controls {
+  display: flex;
+  gap: 10px;
+}
+
+.exchange-netflow-content .timeframe-btn {
+  padding: 6px 12px;
+  border: 1px solid var(--border-default);
+  border-radius: 6px;
+  background: var(--bg-primary);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.3s ease;
+}
+
+.exchange-netflow-content .timeframe-btn.active {
+  background: var(--accent-blue);
+  color: white;
+  border-color: var(--accent-blue);
+}
+
+.exchange-netflow-content .chart-area {
+  position: relative;
+  height: 500px;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--chart-bg);
+}
+
+.exchange-netflow-content .loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--text-secondary);
+}
+
+.exchange-netflow-content .loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--border-default);
+  border-top: 3px solid var(--accent-blue);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-right: 15px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.exchange-netflow-content .legend {
+  display: flex;
+  gap: 20px;
+  margin-top: 15px;
+  padding: 15px;
+  background: var(--bg-secondary);
+  border-radius: 8px;
+}
+
+.exchange-netflow-content .legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.exchange-netflow-content .legend-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.exchange-netflow-content .legend-dot.price { background: #000000; }
+.exchange-netflow-content .legend-dot.netflow { background: #10b981; }
+
+.exchange-netflow-content .stats-panel {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.exchange-netflow-content .stat-card {
+  background: var(--bg-secondary);
+  padding: 20px;
+  border-radius: 12px;
+}
+
+.exchange-netflow-content .stat-title {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+}
+
+.exchange-netflow-content .stat-value {
+  font-size: 24px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.exchange-netflow-content .stat-change {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.exchange-netflow-content .stat-change.positive { color: #10b981; }
+.exchange-netflow-content .stat-change.negative { color: #ef4444; }
+
+.exchange-netflow-content .watermark {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: rgba(59, 130, 246, 0.25);
+  font-size: 64px;
+  font-weight: bold;
+  font-family: 'Arial', sans-serif;
+  pointer-events: none;
+  z-index: 1;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+.exchange-netflow-content .indicator-guide {
+  background: var(--bg-secondary);
+  border-radius: 12px;
+  padding: 30px;
+  margin-top: 30px;
+}
+
+.exchange-netflow-content .indicator-guide h3 {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 25px;
+  color: var(--text-primary);
+}
+
+.exchange-netflow-content .guide-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.exchange-netflow-content .guide-card {
+  background: var(--bg-primary);
+  padding: 20px;
+  border-radius: 8px;
+}
+
+.exchange-netflow-content .guide-card h4 {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: var(--text-primary);
+}
+
+.exchange-netflow-content .guide-card p {
+  color: var(--text-secondary);
+  font-size: 14px;
+  margin-bottom: 12px;
+  line-height: 1.5;
+}
+
+.exchange-netflow-content .guide-card ul {
+  list-style: none;
+  padding: 0;
+}
+
+.exchange-netflow-content .guide-card li {
+  color: var(--text-secondary);
+  font-size: 13px;
+  margin-bottom: 8px;
+  padding-left: 15px;
+  position: relative;
+  line-height: 1.4;
+}
+
+.exchange-netflow-content .guide-card li:before {
+  content: "•";
+  color: var(--accent-blue);
+  position: absolute;
+  left: 0;
+  font-weight: bold;
+}
+
+.exchange-netflow-content .trading-tips {
+  background: var(--bg-secondary);
+  border-radius: 12px;
+  padding: 25px;
+  margin-top: 20px;
+}
+
+.exchange-netflow-content .trading-tips h4 {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 20px;
+  color: var(--text-primary);
+}
+
+.exchange-netflow-content .tips-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 15px;
+}
+
+.exchange-netflow-content .tip-item {
+  background: var(--bg-primary);
+  padding: 15px;
+  border-radius: 8px;
+  border-left: 3px solid var(--accent-blue);
+}
+
+.exchange-netflow-content .tip-item div {
+  color: var(--text-secondary);
+  font-size: 13px;
+  margin-bottom: 5px;
+}
+
+.exchange-netflow-content .tip-item strong {
+  color: var(--text-primary);
+  font-size: 14px;
+}
+
+@media (max-width: 768px) {
+  .exchange-netflow-content .header {
+    flex-direction: column;
+    gap: 20px;
+    align-items: flex-start;
+  }
+
+  .exchange-netflow-content .controls {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .exchange-netflow-content .chart-header {
+    flex-direction: column;
+    gap: 15px;
+    align-items: flex-start;
+  }
+
+  .exchange-netflow-content .chart-controls {
+    flex-wrap: wrap;
+  }
+
+  .exchange-netflow-content .legend {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .exchange-netflow-content .stats-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .exchange-netflow-content .guide-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .exchange-netflow-content .tips-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .exchange-netflow-content .indicator-guide {
+    padding: 20px;
+  }
+} 

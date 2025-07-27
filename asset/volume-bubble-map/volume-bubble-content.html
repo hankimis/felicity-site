@@ -1,0 +1,93 @@
+<!-- Header Section -->
+<div class="volume-bubble-content">
+  <div class="header">
+  <div class="title-section">
+    <h1>비트코인: 선물 Volume Bubble Map</h1>
+    <p>거래량과 거래량 변화율을 시각화한 버블맵</p>
+  </div>
+  <div class="controls">
+    <div class="control-group">
+      <label for="symbol-select">심볼:</label>
+      <select id="symbol-select">
+        <option value="BTCUSDT">BTCUSDT</option>
+        <option value="ETHUSDT">ETHUSDT</option>
+      </select>
+    </div>
+  </div>
+</div>
+
+<!-- Chart Container -->
+<div class="chart-container">
+  <div class="chart-header">
+    <div class="chart-title">Volume Bubble Map</div>
+    <div class="chart-controls">
+      <button class="timeframe-btn" data-period="1d">1일</button>
+      <button class="timeframe-btn" data-period="1w">1주</button>
+      <button class="timeframe-btn" data-period="1m">1월</button>
+      <button class="timeframe-btn" data-period="1y">1년</button>
+      <button class="timeframe-btn active" data-period="all">전체</button>
+    </div>
+  </div>
+  <div class="chart-area" id="chart-area">
+    <div class="loading">
+      <div class="loading-spinner"></div>
+      데이터 로딩 중...
+    </div>
+  </div>
+</div>
+
+<!-- Legend -->
+<div class="legend">
+  <div class="legend-item">
+    <div class="legend-dot neutral"></div>
+    <span>중립 (Neutral)</span>
+  </div>
+  <div class="legend-item">
+    <div class="legend-dot cooling"></div>
+    <span>냉각 (Cooling)</span>
+  </div>
+  <div class="legend-item">
+    <div class="legend-dot heating"></div>
+    <span>과열 (Heating)</span>
+  </div>
+  <div class="legend-item">
+    <div class="legend-dot overheating"></div>
+    <span>매우 과열 (Overheating)</span>
+  </div>
+</div>
+
+<!-- Stats Panel -->
+<div class="stats-panel">
+  <div class="stat-card">
+    <div class="stat-title">현재 거래량</div>
+    <div class="stat-value" id="current-volume">-</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-title">거래량 변화율</div>
+    <div class="stat-value" id="volume-change">-</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-title">최고 거래량</div>
+    <div class="stat-value" id="max-volume">-</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-title">평균 거래량</div>
+    <div class="stat-value" id="avg-volume">-</div>
+  </div>
+</div>
+
+<!-- Description Section -->
+<div class="description-section">
+  <h3>차트 설명</h3>
+  <p><strong>원의 크기:</strong> 거래량을 나타냅니다. 원이 클수록 거래량이 높습니다.</p>
+  <p><strong>원의 색깔:</strong> 거래량의 증가율을 나타냅니다.</p>
+  <ul style="color: var(--text-secondary); margin-left: 20px; margin-top: 10px;">
+    <li><strong>회색 (중립):</strong> 거래량에 큰 변화가 없음</li>
+    <li><strong>녹색 (냉각):</strong> 거래량이 감소하고 있음</li>
+    <li><strong>주황색 (과열):</strong> 거래량이 증가하고 있음</li>
+    <li><strong>빨간색 (매우 과열):</strong> 거래량이 가파르게 증가하고 있음</li>
+  </ul>
+  <p><strong>분배단계 (Distribution Phase):</strong> 상승장의 후반부에서 거래량이 매우 높지만 가격 상승이 부진할 때, 새로운 투자자가 시장에 유입되면서 손바뀜이 일어나는 단계를 나타냅니다.</p>
+</div>
+
+</div> 
