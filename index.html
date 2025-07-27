@@ -89,7 +89,7 @@
 
     .content-container {
       width: 100%;
-      max-width: 2000px; /* 최대 너비를 2000px로 변경 */
+      max-width: 1600px; /* 최대 너비를 2000px로 변경 */
       margin: 0 auto; /* 중앙 정렬 */
       padding: 20px;
     }
@@ -103,7 +103,7 @@
       display: grid;
       grid-template-columns: 2fr 1fr 1fr 1fr;
       gap: 20px;
-      height: 450px;
+      height: 400px;
     }
 
     .dashboard-card {
@@ -616,13 +616,6 @@
 
         <!-- 기술적 분석 (1fr) -->
         <div class="dashboard-card technical-analysis-card">
-        <div class="card-header">
-          <h3>
-            <i class="fas fa-chart-line" style="color: #3b82f6;"></i>
-            기술적 분석
-          </h3>
-          <p>실시간 기술적 분석 지표</p>
-        </div>
         <div id="tradingview-technical-analysis"></div>
       </div>
 
@@ -815,7 +808,7 @@
   <script src="js/auth.js"></script>
   <script src="components/header/header-loader.js"></script>
   <script src="js/footer-loader.js"></script>
-  <script src="asset/js/sidebar.js"></script>
+  <!-- 사이드바 스크립트는 페이지 하단에서 한 번만 로드됩니다 -->
       <script src="asset/mvrv-ratio/mvrv-script.js"></script>
     <script src="asset/taker-cvd/taker-cvd-script.js"></script>
     <script src="asset/volume-bubble-map/volume-bubble-script.js"></script>
@@ -888,13 +881,6 @@
 
             <!-- 기술적 분석 (1fr) -->
             <div class="dashboard-card technical-analysis-card">
-            <div class="card-header">
-              <h3>
-                <i class="fas fa-chart-line" style="color: #3b82f6;"></i>
-                기술적 분석
-              </h3>
-              <p>실시간 기술적 분석 지표</p>
-            </div>
             <div id="tradingview-technical-analysis"></div>
           </div>
 

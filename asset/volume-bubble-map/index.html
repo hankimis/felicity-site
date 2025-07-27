@@ -425,33 +425,7 @@
     // 페이지별 초기화 함수
     function initializePage() {
       console.log('Volume-Bubble-Map 페이지 초기화 시작');
-      
-      // 사이드바가 이미 로드되었는지 확인
-      if (typeof SidebarManager !== 'undefined' && window.sidebarManager) {
-        console.log('사이드바가 이미 초기화되어 있습니다.');
-        return;
-      }
-      
-      // 사이드바 스크립트가 이미 로드되었는지 확인
-      const existingScript = document.querySelector('script[src*="sidebar.js"]');
-      if (existingScript) {
-        console.log('사이드바 스크립트가 이미 로드되어 있습니다.');
-        return;
-      }
-      
-      // 사이드바 로드
-      const sidebarScript = document.createElement('script');
-      sidebarScript.src = '../../asset/js/sidebar.js';
-      sidebarScript.onload = () => {
-        if (typeof SidebarManager !== 'undefined' && !window.sidebarManager) {
-          window.sidebarManager = new SidebarManager();
-          console.log('사이드바 초기화 완료');
-        }
-      };
-      sidebarScript.onerror = (error) => {
-        console.error('사이드바 스크립트 로드 실패:', error);
-      };
-      document.head.appendChild(sidebarScript);
+      // 사이드바는 메인페이지에서만 작동하므로 여기서는 제거
     }
     
     // 페이지 로드 시 초기화

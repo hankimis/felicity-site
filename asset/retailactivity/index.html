@@ -626,17 +626,7 @@
         console.log('Firebase initialized in retail-activity page');
       }
       
-      // 사이드바 로드 및 초기화
-      const sidebarScript = document.createElement('script');
-      sidebarScript.src = '../../asset/js/sidebar.js';
-      sidebarScript.onload = () => {
-        // 사이드바 스크립트 로드 완료 후 초기화
-        if (typeof SidebarManager !== 'undefined') {
-          window.sidebarManager = new SidebarManager();
-          console.log('Sidebar initialized in retail-activity page');
-        }
-      };
-      document.head.appendChild(sidebarScript);
+      // 사이드바는 메인페이지에서만 작동하므로 여기서는 제거
     });
   </script>
   
