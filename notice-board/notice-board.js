@@ -47,22 +47,11 @@ async function checkAdminPermission() {
         } else {
             // adminAuthManager가 작동하지 않을 때 하드코딩된 관리자 이메일 사용
             const adminEmails = ['admin@site.com'];
-            console.log('🔐 하드코딩된 관리자 이메일 확인:', {
-                currentUser: currentUser ? currentUser.email : 'none',
-                adminEmails: adminEmails,
-                isAdmin: currentUser && adminEmails.includes(currentUser.email)
-            });
             return currentUser && adminEmails.includes(currentUser.email);
         }
     } catch (error) {
-        console.error('❌ 관리자 권한 확인 중 오류:', error);
         // 에러 발생 시 하드코딩된 관리자 이메일 사용
-        const adminEmails = ['admin@site.com', 'admin@onbit.com', 'admin@felicity.com'];
-        console.log('🔐 에러 발생 시 하드코딩된 관리자 이메일 확인:', {
-            currentUser: currentUser ? currentUser.email : 'none',
-            adminEmails: adminEmails,
-            isAdmin: currentUser && adminEmails.includes(currentUser.email)
-        });
+        const adminEmails = ['admin@site.com'];
         return currentUser && adminEmails.includes(currentUser.email);
     }
 }
@@ -212,28 +201,22 @@ async function loadNoticesFromFirebase() {
 // 수정 모드 감지 및 초기화 (URL 파라미터 방식 제거)
 async function checkEditMode() {
   // URL 파라미터 방식 대신 직접 모달 열기 방식 사용
-  console.log('🔍 수정 모드 감지 - URL 파라미터 방식 비활성화');
 }
 
 // 수정할 공지사항 로드
 async function loadNoticeForEdit(noticeId) {
-  console.log('📝 수정할 공지사항 로드 시작:', noticeId);
-  
   try {
     const noticeDoc = await getDoc(doc(db, 'notices', noticeId));
     
     if (!noticeDoc.exists()) {
-      console.error('❌ 수정할 공지사항을 찾을 수 없음:', noticeId);
       alert('수정할 공지사항을 찾을 수 없습니다.');
       return;
     }
     
     editingNoticeData = noticeDoc.data();
-    console.log('✅ 수정할 공지사항 데이터 로드 완료:', editingNoticeData);
     showEditModal();
     
   } catch (error) {
-    console.error('❌ 공지사항 로드 중 오류:', error);
     alert('공지사항을 불러오는 중 오류가 발생했습니다.');
   }
 }
@@ -524,13 +507,7 @@ async function showWriteModal() {
 
 // 수정 모달 표시
 async function showEditModal() {
-  console.log('🎨 수정 모달 표시 시작:', {
-    editingNoticeData: editingNoticeData ? '있음' : '없음',
-    editingNoticeId: editingNoticeId
-  });
-  
   if (!editingNoticeData) {
-    console.error('❌ 수정할 데이터가 없습니다.');
     return;
   }
 
@@ -636,10 +613,9 @@ async function showEditModal() {
       closeEditModal();
       loadNoticesFromFirebase(); // 목록 새로고침
       
-    } catch (error) {
-      console.error('공지사항 수정 중 오류:', error);
-      alert('❌ 공지사항 수정 중 오류가 발생했습니다.');
-    }
+          } catch (error) {
+        alert('❌ 공지사항 수정 중 오류가 발생했습니다.');
+      }
   });
 }
 
@@ -656,8 +632,6 @@ window.closeEditModal = function() {
 
 // 공지사항 수정 (전역 함수)
 window.editNotice = async function(noticeId) {
-  console.log('✏️ 수정 버튼 클릭:', { noticeId, isAdmin });
-  
   const adminStatus = await checkAdminPermission();
   if (!adminStatus) {
     alert('관리자 권한이 필요합니다.');
@@ -671,8 +645,6 @@ window.editNotice = async function(noticeId) {
 
 // 공지사항 삭제 (전역 함수)
 window.deleteNotice = async function(noticeId) {
-  console.log('🗑️ 삭제 버튼 클릭:', { noticeId, isAdmin });
-  
   const adminStatus = await checkAdminPermission();
   if (!adminStatus) {
     alert('관리자 권한이 필요합니다.');
@@ -717,7 +689,6 @@ window.deleteNotice = async function(noticeId) {
     loadNoticesFromFirebase(); // 목록 새로고침
     
   } catch (error) {
-    console.error('공지사항 삭제 중 오류:', error);
     alert('공지사항 삭제 중 오류가 발생했습니다.');
   }
 };
