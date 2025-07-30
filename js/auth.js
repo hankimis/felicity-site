@@ -55,8 +55,19 @@ function initializeFirebase() {
                 
                 // Auth 상태 변경 리스너 설정 (FOUC 방지를 위해 즉시 호출)
                 window.auth.onAuthStateChanged((user) => {
+                    console.log('Auth state changed:', user ? 'logged in' : 'logged out');
                     updateAuthUI(user);
                 });
+                
+                // 현재 사용자 상태 즉시 확인
+                const currentUser = window.auth.currentUser;
+                if (currentUser) {
+                    console.log('Current user found:', currentUser.email);
+                    updateAuthUI(currentUser);
+                } else {
+                    console.log('No current user found');
+                    updateAuthUI(null);
+                }
                 
                 // 테마 적용 및 헤더 버튼 이벤트 리스너 초기화
                 applyTheme();
@@ -95,6 +106,7 @@ async function startApp() {
     }
 }
 window.startApp = startApp;
+window.updateAuthUI = updateAuthUI;
 
 // 헤더 관련 이벤트 리스너 초기화 함수 (인증 관련만)
 function initializeHeaderEventListeners() {
@@ -109,6 +121,8 @@ window.currentUser = null;
 // 3. 핵심 헬퍼 함수
 const getElement = (id) => document.getElementById(id);
 
+// 모달 제어 함수 (비활성화됨)
+/*
 function controlModal(modalId, show) {
     const modal = getElement(modalId);
     console.log(`controlModal: Attempting to ${show ? 'show' : 'hide'} modal with ID #${modalId}. Element found:`, modal);
@@ -141,6 +155,7 @@ function controlModal(modalId, show) {
         console.log(`controlModal: Modal #${modalId} class list:`, modal.classList);
     }
 }
+*/
 
 function applyTheme() {
     const theme = localStorage.getItem('theme') || 'light';
@@ -240,9 +255,24 @@ async function updateAuthUI(user) {
             console.log("User data fetched:", currentUser);
 
             // 로그인 상태 UI 업데이트
-            if (userProfile) userProfile.style.display = 'flex';
-            if (authButtons) authButtons.style.display = 'none';
-            if (getElement('user-display-name')) getElement('user-display-name').textContent = currentUser.displayName;
+            console.log('UI 요소 상태:', {
+                userProfile: !!userProfile,
+                authButtons: !!authButtons,
+                userDisplayName: !!getElement('user-display-name')
+            });
+            
+            if (userProfile) {
+                userProfile.style.display = 'flex';
+                console.log('사용자 프로필 표시됨');
+            }
+            if (authButtons) {
+                authButtons.style.display = 'none';
+                console.log('인증 버튼 숨김');
+            }
+            if (getElement('user-display-name')) {
+                getElement('user-display-name').textContent = currentUser.displayName;
+                console.log('사용자 이름 설정:', currentUser.displayName);
+            }
             
             // 레벨 정보 업데이트
             updateUserLevelDisplay();
@@ -271,11 +301,23 @@ async function updateAuthUI(user) {
         }
     } else {
         // 로그아웃 상태
+        console.log('로그아웃 상태 - UI 업데이트');
         currentUser = null;
         window.currentUser = null;
         
-        if (userProfile) userProfile.style.display = 'none';
-        if (authButtons) authButtons.style.display = 'flex';
+        console.log('로그아웃 UI 요소 상태:', {
+            userProfile: !!userProfile,
+            authButtons: !!authButtons
+        });
+        
+        if (userProfile) {
+            userProfile.style.display = 'none';
+            console.log('사용자 프로필 숨김');
+        }
+        if (authButtons) {
+            authButtons.style.display = 'flex';
+            console.log('인증 버튼 표시');
+        }
         if (adminPageLink) adminPageLink.style.display = 'none';
         if (getElement('mobile-admin-link')) getElement('mobile-admin-link').style.display = 'none';
         
@@ -311,12 +353,12 @@ function updateMobileMenuUserInfo() {
         // 로그인/회원가입 버튼 (비로그인 시)
         mobileAuthSection.innerHTML = `
             <div class="mobile-auth-buttons">
-                <button class="mobile-auth-btn login" data-action="open-login-modal">
+                <a href="/login/" class="mobile-auth-btn login">
                     <i class="fas fa-sign-in-alt"></i> 로그인
-                </button>
-                <button class="mobile-auth-btn signup" data-action="open-signup-modal">
+                </a>
+                <a href="/signup/" class="mobile-auth-btn signup">
                     <i class="fas fa-user-plus"></i> 회원가입
-                </button>
+                </a>
             </div>
         `;
         return;
@@ -414,19 +456,6 @@ function handleGlobalClick(e) {
     console.log("Handling action:", action);
 
     const actions = {
-        'open-login': () => controlModal('login-modal', true),
-        'open-signup': () => controlModal('signup-modal', true),
-        'open-login-modal': () => controlModal('login-modal', true),
-        'open-signup-modal': () => controlModal('signup-modal', true),
-        'close-modal': () => {
-            const modal = target.closest('.auth-modal');
-            if (modal) {
-                console.log("Closing modal:", modal.id);
-                controlModal(modal.id, false);
-            }
-        },
-        'show-signup': () => { controlModal('login-modal', false); controlModal('signup-modal', true); },
-        'show-login': () => { controlModal('signup-modal', false); controlModal('login-modal', true); },
         'toggle-theme': () => {
             console.log("Toggling theme");
             toggleTheme();
@@ -518,12 +547,12 @@ function createMobileMenuIfNeeded() {
         </div>
         <div class="mobile-auth-section">
             <div class="mobile-auth-buttons">
-                <button class="mobile-auth-btn login" data-action="open-login-modal">
+                <a href="/login/" class="mobile-auth-btn login">
                     <i class="fas fa-sign-in-alt"></i> 로그인
-                </button>
-                <button class="mobile-auth-btn signup" data-action="open-signup-modal">
+                </a>
+                <a href="/signup/" class="mobile-auth-btn signup">
                     <i class="fas fa-user-plus"></i> 회원가입
-                </button>
+                </a>
             </div>
         </div>
         <nav class="mobile-menu-nav">
@@ -601,157 +630,24 @@ function showBacktestMarkers(results) {
 // 강력한 폼 바인딩 시스템
 // =========================
 
+// 모달 기반 인증 폼 바인딩 (비활성화됨 - 페이지로 이동)
+
+// 빈 bindAuthForms 함수 (호환성 유지)
 if (!window.bindAuthForms) {
-    function bindAuthForms() {
-        console.log('🔧 폼 바인딩 시작...');
-        bindLoginForm();
-        bindSignupForm();
-    }
-    
-    function bindLoginForm() {
-        const loginForm = document.getElementById('login-form');
-        if (loginForm && !loginForm.dataset.bound) {
-            loginForm.dataset.bound = 'true';
-            console.log('✅ 로그인 폼 바인딩 완료');
-            loginForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const email = loginForm['login-email'].value;
-                const password = loginForm['login-password'].value;
-                const errorMsg = document.getElementById('login-error-message');
-                try {
-                    const userCredential = await window.auth.signInWithEmailAndPassword(email, password);
-                    const userDoc = await window.db.collection("users").doc(userCredential.user.uid).get();
-                    const _exists = typeof userDoc.exists === 'function' ? userDoc.exists() : userDoc.exists;
-                    if (!_exists) {
-                        await window.db.collection("users").doc(userCredential.user.uid).set({
-                            displayName: userCredential.user.displayName || "사용자",
-                            email,
-                            role: 'user',
-                            createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                        });
-                    }
-                    controlModal('login-modal', false);
-                    loginForm.reset();
-                } catch (error) {
-                    console.warn('로그인 오류:', error.code, error.message);
-                    if(errorMsg) {
-                        switch(error.code) {
-                            case 'auth/user-not-found':
-                                errorMsg.textContent = "등록되지 않은 이메일입니다.";
-                                break;
-                            case 'auth/wrong-password':
-                                errorMsg.textContent = "비밀번호가 잘못되었습니다.";
-                                break;
-                            case 'auth/invalid-email':
-                                errorMsg.textContent = "유효하지 않은 이메일 형식입니다.";
-                                break;
-                            case 'auth/user-disabled':
-                                errorMsg.textContent = "비활성화된 계정입니다.";
-                                break;
-                            case 'auth/too-many-requests':
-                                errorMsg.textContent = "너무 많은 로그인 시도가 있었습니다. 잠시 후 다시 시도해주세요.";
-                                break;
-                            default:
-                                errorMsg.textContent = "로그인 중 오류가 발생했습니다. 다시 시도해주세요.";
-                        }
-                    }
-                }
-            });
-        }
-    }
-    
-    function bindSignupForm() {
-        const signupForm = document.getElementById('signup-form');
-        if (signupForm && !signupForm.dataset.bound) {
-            signupForm.dataset.bound = 'true';
-            console.log('✅ [js/auth.js] 회원가입 폼 바인딩 완료');
-            
-            // TurnstileManager가 자동으로 처리 - 별도 호출 불필요
-            console.log('✅ [js/auth.js] TurnstileManager가 자동 처리');
-            
-            signupForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const name = signupForm['signup-name'].value;
-                const email = signupForm['signup-email'].value;
-                const password = signupForm['signup-password'].value;
-                const confirmPassword = signupForm['signup-confirm-password'].value;
-                const errorMsg = document.getElementById('signup-error-message');
-                
-                if (name.length > 8) {
-                    if(errorMsg) errorMsg.textContent = "닉네임은 8자 이하로 입력해주세요.";
-                    return;
-                }
-                if (password !== confirmPassword) {
-                    if(errorMsg) errorMsg.textContent = "비밀번호가 일치하지 않습니다.";
-                    return;
-                }
-                
-                // Turnstile 토큰 확인
-                const token = document.querySelector('#cf-turnstile input[name="cf-turnstile-response"]')?.value;
-                if (!token) {
-                    if(errorMsg) errorMsg.textContent = "자동 가입 방지 인증을 완료해 주세요.";
-                    if (typeof renderTurnstile === 'function') {
-                        renderTurnstile();
-                    }
-                    return;
-                }
-                
-                try {
-                    const userCredential = await window.auth.createUserWithEmailAndPassword(email, password);
-                    await userCredential.user.updateProfile({ displayName: name });
-                    const userDoc = await window.db.collection("users").doc(userCredential.user.uid).get();
-                    const _exists = typeof userDoc.exists === 'function' ? userDoc.exists() : userDoc.exists;
-                    if (!_exists) {
-                        await window.db.collection("users").doc(userCredential.user.uid).set({
-                            displayName: name,
-                            email,
-                            role: email === 'admin@site.com' ? 'admin' : 'user',
-                            createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                        });
-                    }
-                    controlModal('signup-modal', false);
-                    signupForm.reset();
-                    alert('회원가입이 완료되었습니다!');
-                } catch (error) {
-                    console.warn('회원가입 오류:', error.code, error.message);
-                    if(errorMsg) {
-                        switch(error.code) {
-                            case 'auth/email-already-in-use':
-                                errorMsg.textContent = "이미 사용 중인 이메일입니다.";
-                                break;
-                            case 'auth/invalid-email':
-                                errorMsg.textContent = "유효하지 않은 이메일 형식입니다.";
-                                break;
-                            case 'auth/weak-password':
-                                errorMsg.textContent = "비밀번호가 너무 약합니다. 6자 이상으로 설정해주세요.";
-                                break;
-                            case 'auth/operation-not-allowed':
-                                errorMsg.textContent = "회원가입이 현재 비활성화되어 있습니다.";
-                                break;
-                            default:
-                                errorMsg.textContent = "회원가입 중 오류가 발생했습니다. 다시 시도해주세요.";
-                        }
-                    }
-                }
-            });
-        }
-    }
-    
-    window.bindAuthForms = bindAuthForms;
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', bindAuthForms);
-    } else {
-        bindAuthForms();
-    }
+    window.bindAuthForms = function() {
+        console.log('bindAuthForms 호출됨 (페이지 기반 인증 사용 중)');
+    };
 }
 
-// Utility: hide any auth modals that might still be open
+// Utility: hide any auth modals that might still be open (비활성화됨)
+/*
 function hideOpenAuthModals() {
     document.querySelectorAll('.auth-modal.show, .auth-modal.active').forEach(modal => {
         modal.classList.remove('show', 'active');
     });
     document.body.style.overflow = '';
 }
+*/
 
 // Provide a minimal stub if level-system.js is not loaded
 if (!window.levelSystem) {

@@ -40,6 +40,7 @@ class CommunityChat {
         const isBreakingNews = msg.data.isBreakingNews || msg.data.uid === 'system-breaking-news';
         
         if (isSystemAlert) {
+            // 시스템 알람 메시지
             const alertClass = isBreakingNews ? 'system-alert breaking-news' : 'system-alert';
             const clickable = isBreakingNews && msg.data.newsLink ? 'clickable' : '';
             

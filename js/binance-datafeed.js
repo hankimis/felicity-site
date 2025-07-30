@@ -192,8 +192,15 @@ class BinanceDatafeed {
             channelString
         });
         
+        console.log(`📡 구독 정보 저장: ${subscriberUID} -> ${channelString}`);
+        
         this.connectWebSocket();
         this.subscribeToChannel(channelString);
+        
+        // 구독 상태 확인
+        setTimeout(() => {
+            console.log(`🔍 구독 상태 확인: ${this.subscribers.size}개 구독자, WebSocket 상태: ${this.ws ? this.ws.readyState : 'null'}`);
+        }, 1000);
     }
 
     // 실시간 데이터 구독 해제
@@ -210,6 +217,7 @@ class BinanceDatafeed {
     // WebSocket 연결
     connectWebSocket() {
         if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+            console.log('🔌 WebSocket 이미 연결됨');
             return;
         }
         
@@ -220,6 +228,11 @@ class BinanceDatafeed {
         this.ws.onopen = () => {
             console.log('✅ WebSocket 연결 성공');
             this.reconnectAttempts = 0;
+            
+            // 연결 후 기존 구독 채널들 재구독
+            this.subscribers.forEach(subscriber => {
+                this.subscribeToChannel(subscriber.channelString);
+            });
         };
         
         this.ws.onmessage = (event) => {
@@ -293,6 +306,8 @@ class BinanceDatafeed {
             const interval = kline.i;
             const channelString = `${symbol.toLowerCase()}@kline_${interval}`;
             
+            console.log(`📊 실시간 데이터 수신: ${symbol} ${interval} - ${kline.c}`);
+            
             // 해당 채널을 구독하는 모든 구독자에게 데이터 전송
             this.subscribers.forEach(subscriber => {
                 if (subscriber.channelString === channelString) {
@@ -305,7 +320,12 @@ class BinanceDatafeed {
                         volume: parseFloat(kline.v)
                     };
                     
-                    subscriber.onRealtimeCallback(bar);
+                    try {
+                        subscriber.onRealtimeCallback(bar);
+                        console.log(`✅ 실시간 데이터 전송 완료: ${symbol} ${interval}`);
+                    } catch (error) {
+                        console.error(`❌ 실시간 데이터 전송 실패: ${symbol} ${interval}`, error);
+                    }
                 }
             });
         }

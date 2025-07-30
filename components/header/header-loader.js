@@ -13,12 +13,13 @@ document.addEventListener('DOMContentLoaded', () => {
     // 경로별 헤더 파일 경로 결정
     let headerPath = 'components/header/header.html'; // 기본값
     
-    // 1단계 하위 디렉토리 (/event/, /community/, /bitcoin/ 등)
+    // 1단계 하위 디렉토리 (/event/, /community/, /bitcoin/, /login/, /signup/ 등)
     if (currentPath.includes('/event/') || currentPath.includes('/event-board/') || 
         currentPath.includes('/community/') || currentPath.includes('/news/') || 
         currentPath.includes('/affiliated/') || currentPath.includes('/notice-board/') || 
         currentPath.includes('/my-account/') || currentPath.includes('/admin/') ||
-        currentPath.includes('/bitcoin/')) {
+        currentPath.includes('/bitcoin/') || currentPath.includes('/login/') ||
+        currentPath.includes('/signup/')) {
         headerPath = '../components/header/header.html';
     }
     
@@ -53,6 +54,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     console.log(`Header loader: Current path: ${currentPath}, Header path: ${headerPath}`);
+    
+    // Font Awesome 로드 확인
+    if (!document.querySelector('link[href*="font-awesome"]')) {
+        const fontAwesomeLink = document.createElement('link');
+        fontAwesomeLink.rel = 'stylesheet';
+        fontAwesomeLink.href = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css';
+        document.head.appendChild(fontAwesomeLink);
+    }
     
     fetch(headerPath)
         .then(response => {
@@ -109,6 +118,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     // Attach auth form handlers now that header/DOM elements exist
                     if (typeof window.bindAuthForms === 'function') {
                         window.bindAuthForms();
+                    }
+                    
+                    // Firebase 초기화 후 현재 인증 상태 확인
+                    if (window.auth && typeof window.updateAuthUI === 'function') {
+                        const currentUser = window.auth.currentUser;
+                        console.log("Header loader: Checking current auth state:", currentUser ? 'logged in' : 'logged out');
+                        window.updateAuthUI(currentUser);
                     }
                     
                     // TurnstileManager가 모든 이벤트 처리 - 별도 설정 불필요

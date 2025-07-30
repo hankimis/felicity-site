@@ -43,6 +43,7 @@
         <div class="tab-navigation">
             <button class="tab-btn" data-tab="breaking">속보</button>
             <button class="tab-btn active" data-tab="news">뉴스</button>
+            <button class="tab-btn" data-tab="calendar">일정</button>
         </div>
 
         <!-- Breaking News Tab Content -->
@@ -85,10 +86,106 @@
             </div>
         </div>
 
+        <!-- Economic Calendar Tab Content -->
+        <div class="tab-content" id="calendarTab" style="display: none;">
+            <div class="calendar-filters">
+                <button class="filter-btn active" data-category="all">전체</button>
+                <button class="filter-btn" data-category="major-issue">주요이슈</button>
+                <button class="filter-btn" data-category="exchange">거래소</button>
+            </div>
+
+            <!-- 관리자 전용 버튼 -->
+            <div class="admin-controls" id="calendar-admin-controls" style="display: none;">
+                <button class="admin-btn add-event-btn" id="add-calendar-event">
+                    <i class="fas fa-plus"></i> 일정 추가
+                </button>
+            </div>
+
+
+
+            <div class="calendar-list" id="calendarList">
+                <!-- 경제 일정 아이템들이 여기에 표시됩니다 -->
+            </div>
+        </div>
+
 
     </main>
 
-
+    <!-- 경제 일정 등록/수정 모달 -->
+    <div id="calendar-modal" class="calendar-modal">
+        <div class="calendar-modal-content">
+            <span class="calendar-modal-close" id="close-calendar-modal">&times;</span>
+            <div style="padding: 20px;">
+                <h2 id="calendar-modal-title" style="margin: 0 0 20px 0; font-size: 18px;">
+                    <i class="fas fa-calendar-plus"></i> 경제 일정 등록
+                </h2>
+                
+                <form id="calendar-event-form">
+                    <div class="form-group">
+                        <label for="event-title">일정 제목 *</label>
+                        <input type="text" id="event-title" name="title" required placeholder="예: 미국 금리 결정">
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="event-date">날짜 *</label>
+                            <input type="date" id="event-date" name="date" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="event-time">시간</label>
+                            <input type="time" id="event-time" name="time" placeholder="예: 14:00">
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="event-category">카테고리 *</label>
+                            <select id="event-category" name="category" required>
+                                <option value="">카테고리 선택</option>
+                                <option value="major-issue">주요이슈</option>
+                                <option value="exchange">거래소</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="event-importance">중요도 *</label>
+                            <select id="event-importance" name="importance" required>
+                                <option value="">중요도 선택</option>
+                                <option value="1">1 (낮음)</option>
+                                <option value="2">2</option>
+                                <option value="3">3 (보통)</option>
+                                <option value="4">4</option>
+                                <option value="5">5 (높음)</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="event-impact">영향도 *</label>
+                        <select id="event-impact" name="impact" required>
+                            <option value="">영향도 선택</option>
+                            <option value="low">낮음</option>
+                            <option value="medium">보통</option>
+                            <option value="high">높음</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="event-description">설명</label>
+                        <textarea id="event-description" name="description" rows="3" placeholder="일정에 대한 추가 설명을 입력하세요"></textarea>
+                    </div>
+                    
+                    <div class="modal-actions">
+                        <button type="button" class="btn btn-secondary" id="cancel-calendar-event">취소</button>
+                        <button type="submit" class="btn btn-primary" id="save-calendar-event">
+                            <i class="fas fa-save"></i> 저장
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 
     <!-- Footer -->
     <div id="footer-placeholder"></div>

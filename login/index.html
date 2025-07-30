@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>로그인 - Onbit</title>
+    <meta name="description" content="Onbit에 로그인하여 암호화폐 거래 플랫폼의 모든 서비스를 이용하세요.">
+    
+    <!-- Preconnect to external domains for faster loading -->
+    <link rel="preconnect" href="https://www.gstatic.com">
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+    <link rel="preconnect" href="https://cdn.jsdelivr.net">
+    
+    <!-- Critical CSS Variables -->
+    <style>
+        :root {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8fafc;
+            --text-primary: #1f2937;
+            --text-secondary: #6b7280;
+            --accent-blue: #3b82f6;
+            --primary-color: #3b82f6;
+            --border-default: #e2e8f0;
+            --shadow-light: rgba(0, 0, 0, 0.08);
+            --card-bg: #ffffff;
+            --border-color: #e5e7eb;
+            --text-color: #1f2937;
+            --text-color-secondary: #6b7280;
+            --bg-secondary-color: #f3f4f6;
+            --shadow-color: rgba(0, 0, 0, 0.1);
+        }
+
+        [data-theme="dark"] {
+            --bg-primary: #1a1a1a;
+            --bg-secondary: #2a2a2a;
+            --text-primary: #ffffff;
+            --text-secondary: #cccccc;
+            --card-bg: #2a2a2a;
+            --border-color: #404040;
+            --text-color: #ffffff;
+            --text-color-secondary: #cccccc;
+            --bg-secondary-color: #404040;
+            --shadow-color: rgba(0, 0, 0, 0.3);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            transition: background-color 0.3s ease, color 0.3s ease;
+            line-height: 1.6;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 로그인 페이지 전용 스타일 */
+        .login-container {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            background-color: #ffffff;
+        }
+
+        .login-card {
+            background: #ffffff;
+            width: 540px;
+            padding: 2rem;
+        }
+
+        .login-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .login-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #000000;
+            margin: 0;
+        }
+
+
+
+        .login-form {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-input {
+            padding: 1rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 1rem;
+            background: #ffffff;
+            color: #000000;
+            transition: all 0.2s ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+        }
+
+        .form-input::placeholder {
+            color: #9ca3af;
+        }
+
+        .form-options {
+            margin-top: 0.5rem;
+        }
+
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.875rem;
+            color: #6b7280;
+            cursor: pointer;
+        }
+
+        .checkbox-container input[type="checkbox"] {
+            display: none;
+        }
+
+        .checkmark {
+            width: 18px;
+            height: 18px;
+            border: 2px solid #d1d5db;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .checkbox-container input[type="checkbox"]:checked + .checkmark {
+            background-color: #3b82f6;
+            border-color: #3b82f6;
+        }
+
+        .checkbox-container input[type="checkbox"]:checked + .checkmark::after {
+            content: '✓';
+            color: white;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+
+        .login-button {
+            background: #f3f4f6;
+            color: #000000;
+            border: none;
+            padding: 1rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-top: 1rem;
+        }
+
+        .login-button:hover {
+            background: #e5e7eb;
+        }
+
+        .login-button:disabled {
+            background: #f3f4f6;
+            color: #9ca3af;
+            cursor: not-allowed;
+        }
+
+        .error-message {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #dc2626;
+            padding: 1rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            display: none;
+        }
+
+        .success-message {
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            color: #16a34a;
+            padding: 1rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            display: none;
+        }
+
+        .login-footer {
+            margin-top: 2rem;
+            padding-top: 2rem;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .footer-link {
+            color: #6b7280;
+            text-decoration: none;
+            font-size: 0.875rem;
+            transition: color 0.2s ease;
+        }
+
+        .footer-link:hover {
+            color: #374151;
+        }
+
+        .separator {
+            color: #d1d5db;
+            font-size: 0.875rem;
+        }
+
+        .loading-spinner {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #ffffff;
+            border-top: 2px solid transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* 반응형 디자인 */
+        @media (max-width: 768px) {
+            .login-container {
+                padding: 1rem;
+            }
+
+            .login-card {
+                padding: 1.5rem;
+                max-width: 100%;
+            }
+
+            .login-header {
+                text-align: center;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .login-card {
+                padding: 1rem;
+            }
+
+            .login-title {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <!-- Header CSS -->
+    <link rel="stylesheet" href="../components/header/navbar.css">
+    
+    <!-- Header Loader -->
+    <script src="../components/header/header-loader.js"></script>
+    
+    <!-- Footer Loader -->
+    <script src="../js/footer-loader.js"></script>
+</head>
+<body>
+    <!-- Header Placeholder -->
+    <div id="header-placeholder"></div>
+
+    <!-- Login Container -->
+    <div class="login-container">
+        <div class="login-card">
+            <div class="login-header">
+                <h1 class="login-title">로그인</h1>
+            </div>
+
+            <form class="login-form" id="login-form">
+                <div class="error-message" id="error-message"></div>
+                <div class="success-message" id="success-message"></div>
+
+                <div class="form-group">
+                    <input 
+                        type="email" 
+                        id="email" 
+                        name="email" 
+                        class="form-input" 
+                        placeholder="이메일 주소"
+                        required
+                        autocomplete="email"
+                    >
+                </div>
+
+                <div class="form-group">
+                    <input 
+                        type="password" 
+                        id="password" 
+                        name="password" 
+                        class="form-input" 
+                        placeholder="비밀번호"
+                        required
+                        autocomplete="current-password"
+                    >
+                </div>
+
+                <div class="form-options">
+                    <label class="checkbox-container">
+                        <input type="checkbox" id="auto-login" name="auto-login">
+                        <span class="checkmark"></span>
+                        자동 로그인
+                    </label>
+                </div>
+
+                <button type="submit" class="login-button" id="login-button">
+                    <span id="login-text">로그인하기</span>
+                    <div class="loading-spinner" id="loading-spinner"></div>
+                </button>
+            </form>
+
+            <div class="login-footer">
+                <div class="footer-links">
+                    <a href="#" class="footer-link">비밀번호 찾기</a>
+                    <span class="separator">|</span>
+                    <a href="../signup/index.html" class="footer-link">회원가입</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer Placeholder -->
+    <div id="footer-placeholder"></div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+    
+    <!-- Firebase Configuration -->
+    <script src="../js/firebase-config.js" defer></script>
+    
+    <!-- Login Logic -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const loginForm = document.getElementById('login-form');
+            const loginButton = document.getElementById('login-button');
+            const loginText = document.getElementById('login-text');
+            const loadingSpinner = document.getElementById('loading-spinner');
+            const errorMessage = document.getElementById('error-message');
+            const successMessage = document.getElementById('success-message');
+
+            // Firebase 초기화 확인
+            function waitForFirebase() {
+                return new Promise((resolve) => {
+                    const maxAttempts = 100; // 10초 대기
+                    let attempts = 0;
+                    
+                    const checkFirebase = () => {
+                        attempts++;
+                        
+                        if (window.firebase && window.auth && window.db) {
+                            console.log('Firebase 초기화 완료');
+                            resolve();
+                        } else if (attempts < maxAttempts) {
+                            setTimeout(checkFirebase, 100);
+                        } else {
+                            console.warn('Firebase 초기화 타임아웃');
+                            resolve();
+                        }
+                    };
+                    
+                    checkFirebase();
+                });
+            }
+
+            // 로딩 상태 관리
+            function setLoading(loading) {
+                if (loading) {
+                    loginButton.disabled = true;
+                    loginText.style.display = 'none';
+                    loadingSpinner.style.display = 'block';
+                } else {
+                    loginButton.disabled = false;
+                    loginText.style.display = 'block';
+                    loadingSpinner.style.display = 'none';
+                }
+            }
+
+            // 메시지 표시
+            function showMessage(type, message) {
+                errorMessage.style.display = 'none';
+                successMessage.style.display = 'none';
+                
+                if (type === 'error') {
+                    errorMessage.textContent = message;
+                    errorMessage.style.display = 'block';
+                } else if (type === 'success') {
+                    successMessage.textContent = message;
+                    successMessage.style.display = 'block';
+                }
+            }
+
+            // 로그인 처리
+            async function handleLogin(email, password) {
+                try {
+                    setLoading(true);
+                    showMessage('', '');
+
+                    // Firebase 초기화 확인
+                    if (!window.auth || !window.db) {
+                        throw new Error('Firebase가 초기화되지 않았습니다.');
+                    }
+
+                    // Firebase 인증
+                    const userCredential = await window.auth.signInWithEmailAndPassword(email, password);
+                    const user = userCredential.user;
+
+                    // 사용자 정보 가져오기
+                    const userDoc = await window.db.collection('users').doc(user.uid).get();
+                    
+                    if (userDoc.exists) {
+                        const userData = userDoc.data();
+                        
+                        // 로컬 스토리지에 사용자 정보 저장
+                        localStorage.setItem('user', JSON.stringify({
+                            uid: user.uid,
+                            email: user.email,
+                            displayName: userData.displayName || user.email,
+                            level: userData.level || '일반',
+                            isAdmin: userData.isAdmin || false
+                        }));
+
+                        showMessage('success', '로그인 성공! 홈페이지로 이동합니다.');
+                        
+                        // Firebase auth state 변경이 전파될 시간을 확보한 후 이동
+                        setTimeout(() => {
+                            window.location.href = '../index.html';
+                        }, 500);
+                    } else {
+                        throw new Error('사용자 정보를 찾을 수 없습니다.');
+                    }
+                } catch (error) {
+                    console.error('로그인 오류:', error);
+                    
+                    let errorMessage = '로그인에 실패했습니다.';
+                    
+                    if (error.message === 'Firebase가 초기화되지 않았습니다.') {
+                        errorMessage = 'Firebase 연결에 문제가 있습니다. 페이지를 새로고침해주세요.';
+                    } else if (error.code) {
+                        switch (error.code) {
+                            case 'auth/user-not-found':
+                                errorMessage = '등록되지 않은 이메일입니다.';
+                                break;
+                            case 'auth/wrong-password':
+                            case 'auth/invalid-credential':
+                                errorMessage = '이메일 또는 비밀번호가 올바르지 않습니다.';
+                                break;
+                            case 'auth/invalid-email':
+                                errorMessage = '올바르지 않은 이메일 형식입니다.';
+                                break;
+                            case 'auth/too-many-requests':
+                                errorMessage = '너무 많은 로그인 시도가 있었습니다. 잠시 후 다시 시도해주세요.';
+                                break;
+                            case 'auth/user-disabled':
+                                errorMessage = '비활성화된 계정입니다.';
+                                break;
+                            case 'auth/network-request-failed':
+                                errorMessage = '네트워크 연결을 확인해주세요.';
+                                break;
+                            case 'auth/api-key-not-valid':
+                                errorMessage = 'Firebase 설정에 문제가 있습니다. 관리자에게 문의하세요.';
+                                break;
+                        }
+                    }
+                    
+                    showMessage('error', errorMessage);
+                } finally {
+                    setLoading(false);
+                }
+            }
+
+            // 폼 제출 이벤트
+            loginForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const email = document.getElementById('email').value.trim();
+                const password = document.getElementById('password').value;
+
+                // 입력 검증
+                if (!email) {
+                    showMessage('error', '이메일을 입력해주세요.');
+                    return;
+                }
+
+                if (!password) {
+                    showMessage('error', '비밀번호를 입력해주세요.');
+                    return;
+                }
+
+                // Firebase 초기화 대기
+                await waitForFirebase();
+                
+                // 로그인 실행
+                await handleLogin(email, password);
+            });
+
+            // 입력 필드에서 Enter 키 처리
+            document.getElementById('email').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    document.getElementById('password').focus();
+                }
+            });
+
+            document.getElementById('password').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    loginForm.dispatchEvent(new Event('submit'));
+                }
+            });
+        });
+    </script>
+</body>
+</html> 

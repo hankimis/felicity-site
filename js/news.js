@@ -37,6 +37,7 @@ function initializePage() {
     initializeInfiniteScroll();
     loadNewsImportanceData();
     loadNewsFeeds();
+    initializeEconomicCalendar();
     
     // 기본 탭을 뉴스로 설정
     switchTab('news');
@@ -904,9 +905,19 @@ function switchTab(tabName) {
             const activeFilter = selectedTabContent?.querySelector('.filter-btn.active');
             const source = activeFilter?.getAttribute('data-source') || 'all';
             
-                        resetInfiniteScroll();
+            resetInfiniteScroll();
             filterNews(source, tabName);
         }
+    } else if (tabName === 'calendar') {
+        // 경제 일정 탭
+        console.log('📅 경제 일정 탭 활성화');
+        
+        // 잠시 후 관리자 권한 체크 (DOM 렌더링 완료 후)
+        setTimeout(() => {
+            checkAdminPermissions();
+        }, 100);
+        
+        loadEconomicCalendar();
     }
     
     console.log(`📑 탭 전환: ${tabName}`);
@@ -1487,6 +1498,574 @@ function triggerBreakingNewsUpdate() {
 }
 
 
+
+// ===== 경제 일정 기능 =====
+
+// 경제 일정 초기화
+function initializeEconomicCalendar() {
+    console.log('📅 경제 일정 초기화');
+    
+    // 카테고리 필터 이벤트 설정
+    setupCalendarFilters();
+    
+    // 관리자 이벤트 설정
+    setupAdminEvents();
+    
+    // Firebase 인증 상태 감지
+    setupAuthStateListener();
+    
+    // 초기 권한 체크
+    setTimeout(() => {
+        checkAdminPermissions();
+    }, 1000);
+}
+
+
+
+// 경제 일정 카테고리 필터 설정
+function setupCalendarFilters() {
+    const calendarFilters = document.querySelectorAll('#calendarTab .filter-btn');
+    
+    calendarFilters.forEach(filter => {
+        filter.addEventListener('click', (e) => {
+            // 모든 필터 비활성화
+            calendarFilters.forEach(f => f.classList.remove('active'));
+            
+            // 클릭된 필터 활성화
+            e.target.classList.add('active');
+            
+            // 카테고리별 필터링
+            const category = e.target.getAttribute('data-category');
+            filterCalendarEvents(category);
+        });
+    });
+}
+
+// 경제 일정 로드
+function loadEconomicCalendar() {
+    const calendarList = document.getElementById('calendarList');
+    if (!calendarList) return;
+    
+    // 로딩 표시
+    calendarList.innerHTML = '<div class="loading">경제 일정을 불러오는 중...</div>';
+    
+    // Firebase에서 경제 일정 데이터 로드
+    loadCalendarEventsFromFirebase();
+}
+
+// Firebase에서 경제 일정 데이터 로드
+function loadCalendarEventsFromFirebase() {
+    if (!window.firebase || !window.firebase.firestore) {
+        console.error('Firebase가 초기화되지 않았습니다.');
+        const calendarList = document.getElementById('calendarList');
+        if (calendarList) {
+            calendarList.innerHTML = '<div class="loading">Firebase 연결 중...</div>';
+        }
+        return;
+    }
+    
+    const db = window.firebase.firestore();
+    
+    db.collection('calendarEvents')
+        .orderBy('date', 'asc')
+        .get()
+        .then((querySnapshot) => {
+            const events = [];
+            querySnapshot.forEach((doc) => {
+                events.push({
+                    id: doc.id,
+                    ...doc.data()
+                });
+            });
+            
+            renderCalendarEvents(events);
+        })
+        .catch((error) => {
+            console.error('경제 일정 로드 실패:', error);
+            const calendarList = document.getElementById('calendarList');
+            if (calendarList) {
+                calendarList.innerHTML = '<div class="loading">경제 일정을 불러올 수 없습니다.</div>';
+            }
+        });
+}
+
+// 경제 일정 이벤트 렌더링
+function renderCalendarEvents(events) {
+    const calendarList = document.getElementById('calendarList');
+    if (!calendarList) return;
+    
+    if (!events || events.length === 0) {
+        calendarList.innerHTML = '<div class="loading">등록된 경제 일정이 없습니다.</div>';
+        return;
+    }
+    
+    // 날짜별로 그룹화하고 월별로 정렬
+    const groupedEvents = groupEventsByMonth(events);
+    
+    let eventsHTML = '';
+    Object.keys(groupedEvents).sort().forEach(monthKey => {
+        const monthEvents = groupedEvents[monthKey];
+        const [year, month] = monthKey.split('-');
+        
+        // 월 구분선 추가
+        eventsHTML += `
+            <div class="calendar-month-separator">
+                <i class="fas fa-calendar"></i>
+                <span>${year}년${month}월</span>
+            </div>
+        `;
+        
+        // 해당 월의 이벤트들 추가
+        monthEvents.forEach(event => {
+            eventsHTML += createCalendarEventHTML(event);
+        });
+    });
+    
+    calendarList.innerHTML = eventsHTML;
+}
+
+// 이벤트를 월별로 그룹화하는 함수
+function groupEventsByMonth(events) {
+    const grouped = {};
+    
+    events.forEach(event => {
+        const date = new Date(event.date);
+        const year = date.getFullYear();
+        const month = date.getMonth() + 1;
+        const monthKey = `${year}-${month.toString().padStart(2, '0')}`;
+        
+        if (!grouped[monthKey]) {
+            grouped[monthKey] = [];
+        }
+        grouped[monthKey].push(event);
+    });
+    
+    // 각 월 내에서 날짜순으로 정렬
+    Object.keys(grouped).forEach(monthKey => {
+        grouped[monthKey].sort((a, b) => new Date(a.date) - new Date(b.date));
+    });
+    
+    return grouped;
+}
+
+// 경제 일정 이벤트 HTML 생성
+function createCalendarEventHTML(event) {
+    const date = new Date(event.date);
+    const day = date.getDate();
+    const weekday = getWeekdayFromDate(event.date);
+    
+    // 날짜별 보더 클래스 결정
+    const today = new Date();
+    const eventDate = new Date(event.date);
+    const diffTime = eventDate - today;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    let borderClass = '';
+    if (diffDays === 0) {
+        borderClass = 'today-border'; // 오늘
+    } else if (diffDays === 1) {
+        borderClass = 'tomorrow-border'; // D-1 (내일)
+    }
+    
+    // 카테고리 이름 매핑
+    const categoryNames = {
+        'major-issue': '주요이슈',
+        'exchange': '거래소'
+    };
+    
+    // 관리자인 경우 수정/삭제 버튼 추가
+    const isAdmin = checkIfUserIsAdmin();
+    const adminButtons = isAdmin ? `
+        <div class="calendar-item-actions">
+            <button class="admin-btn edit-btn" onclick="editCalendarEvent('${event.id}')">
+                <i class="fas fa-edit"></i>
+            </button>
+            <button class="admin-btn delete-btn" onclick="deleteCalendarEvent('${event.id}')">
+                <i class="fas fa-trash"></i>
+            </button>
+        </div>
+    ` : '';
+    
+    return `
+        <div class="calendar-item ${borderClass}" data-category="${event.category}" data-event-id="${event.id}">
+            <div class="calendar-date">
+                <div class="calendar-day">${day}</div>
+                <div class="calendar-weekday">${weekday}</div>
+            </div>
+            <div class="calendar-event">
+                <h3 class="calendar-title">${event.title}</h3>
+                <div class="calendar-meta">
+                    <span class="calendar-category ${event.category}">${categoryNames[event.category] || event.category}</span>
+                </div>
+            </div>
+            ${adminButtons}
+        </div>
+    `;
+}
+
+// 경제 일정 필터링
+function filterCalendarEvents(category) {
+    const calendarItems = document.querySelectorAll('.calendar-item');
+    
+    calendarItems.forEach(item => {
+        const itemCategory = item.getAttribute('data-category');
+        
+        if (category === 'all' || itemCategory === category) {
+            item.style.display = 'flex';
+        } else {
+            item.style.display = 'none';
+        }
+    });
+    
+    console.log(`📅 경제 일정 필터링: ${category}`);
+}
+
+// ===== 관리자 기능 =====
+
+// 관리자 권한 체크
+function checkIfUserIsAdmin() {
+    // 하드코딩된 관리자 이메일 목록
+    const adminEmails = [
+        'admin@site.com',
+        'admin@felicity-site.com'
+    ];
+    
+    // 여러 방법으로 현재 사용자 확인
+    let currentUser = null;
+    let userEmail = null;
+    
+    // 방법 1: window.firebase.auth().currentUser
+    if (window.firebase?.auth) {
+        try {
+            currentUser = window.firebase.auth().currentUser;
+            userEmail = currentUser?.email;
+        } catch (e) {
+            console.log('방법 1 실패:', e.message);
+        }
+    }
+    
+    // 방법 2: window.currentUser (auth.js에서 설정)
+    if (!currentUser && window.currentUser) {
+        currentUser = window.currentUser;
+        userEmail = window.currentUser.email;
+        console.log('방법 2로 사용자 확인:', userEmail);
+    }
+    
+    console.log('🔍 관리자 권한 체크:', {
+        isLoggedIn: !!currentUser,
+        userEmail: userEmail || 'None',
+        adminEmails: adminEmails,
+        isAdmin: userEmail ? adminEmails.includes(userEmail) : false,
+        windowCurrentUser: !!window.currentUser,
+        firebaseAuth: !!window.firebase?.auth
+    });
+    
+    if (!currentUser || !userEmail) {
+        console.log('❌ 로그인되지 않음');
+        return false;
+    }
+    
+    const isAdmin = adminEmails.includes(userEmail);
+    console.log(isAdmin ? '✅ 관리자 권한 확인됨' : '❌ 관리자 권한 없음');
+    return isAdmin;
+}
+
+// 관리자 권한 체크 및 UI 표시
+function checkAdminPermissions() {
+    const adminControls = document.getElementById('calendar-admin-controls');
+    console.log('🔍 관리자 UI 요소 확인:', !!adminControls);
+    
+    if (!adminControls) {
+        console.log('❌ calendar-admin-controls 요소를 찾을 수 없음');
+        return;
+    }
+    
+    const isAdmin = checkIfUserIsAdmin();
+    console.log('🔍 관리자 여부:', isAdmin);
+    
+    if (isAdmin) {
+        adminControls.style.display = 'flex';
+        adminControls.style.visibility = 'visible';
+        console.log('👑 관리자 권한 확인됨 - 경제 일정 관리 기능 활성화');
+        console.log('📍 관리자 UI 표시됨:', adminControls.style.display);
+    } else {
+        adminControls.style.display = 'none';
+        console.log('🚫 관리자 권한 없음 - 관리 기능 비활성화');
+    }
+}
+
+// Firebase 인증 상태 리스너 설정
+function setupAuthStateListener() {
+    // 방법 1: Firebase Auth 리스너
+    if (window.firebase?.auth) {
+        try {
+            window.firebase.auth().onAuthStateChanged((user) => {
+                console.log('🔄 Firebase 인증 상태 변경됨:', {
+                    isLoggedIn: !!user,
+                    email: user?.email || 'None'
+                });
+                
+                // 인증 상태 변경 시 관리자 권한 재체크
+                setTimeout(() => {
+                    checkAdminPermissions();
+                    
+                    // 일정 목록이 이미 로드된 경우 새로고침하여 관리 버튼 표시/숨김
+                    const calendarList = document.getElementById('calendarList');
+                    if (calendarList && calendarList.children.length > 0) {
+                        loadEconomicCalendar();
+                    }
+                }, 500);
+            });
+        } catch (e) {
+            console.log('Firebase Auth 리스너 설정 실패:', e.message);
+        }
+    }
+    
+    // 방법 2: window.currentUser 변경 감지 (폴백)
+    let lastUserEmail = null;
+    const checkUserChange = () => {
+        const currentUserEmail = window.currentUser?.email;
+        if (currentUserEmail !== lastUserEmail) {
+            console.log('🔄 window.currentUser 변경 감지:', {
+                before: lastUserEmail,
+                after: currentUserEmail
+            });
+            lastUserEmail = currentUserEmail;
+            
+            setTimeout(() => {
+                checkAdminPermissions();
+            }, 200);
+        }
+    };
+    
+    // 1초마다 사용자 변경 체크
+    setInterval(checkUserChange, 1000);
+}
+
+// 관리자 이벤트 설정
+function setupAdminEvents() {
+    // 일정 추가 버튼
+    const addEventBtn = document.getElementById('add-calendar-event');
+    if (addEventBtn) {
+        addEventBtn.addEventListener('click', openAddEventModal);
+    }
+    
+    // 모달 닫기 버튼들
+    const closeModalBtn = document.getElementById('close-calendar-modal');
+    const cancelBtn = document.getElementById('cancel-calendar-event');
+    
+    if (closeModalBtn) {
+        closeModalBtn.addEventListener('click', closeCalendarModal);
+    }
+    
+    if (cancelBtn) {
+        cancelBtn.addEventListener('click', closeCalendarModal);
+    }
+    
+    // 폼 제출
+    const eventForm = document.getElementById('calendar-event-form');
+    if (eventForm) {
+        eventForm.addEventListener('submit', handleEventFormSubmit);
+    }
+    
+    // 모달 외부 클릭 시 닫기
+    const modal = document.getElementById('calendar-modal');
+    if (modal) {
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                closeCalendarModal();
+            }
+        });
+    }
+}
+
+// 날짜에서 요일 구하기
+function getWeekdayFromDate(dateString) {
+    const weekdays = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'];
+    const date = new Date(dateString);
+    return weekdays[date.getDay()];
+}
+
+// 일정 추가 모달 열기
+function openAddEventModal() {
+    const modal = document.getElementById('calendar-modal');
+    const modalTitle = document.getElementById('calendar-modal-title');
+    const form = document.getElementById('calendar-event-form');
+    
+    if (modal && modalTitle && form) {
+        modalTitle.innerHTML = '<i class="fas fa-calendar-plus"></i> 경제 일정 등록';
+        form.reset();
+        form.removeAttribute('data-event-id');
+        modal.classList.add('show');
+    }
+}
+
+// 일정 수정 모달 열기
+function editCalendarEvent(eventId) {
+    if (!checkIfUserIsAdmin()) {
+        alert('관리자만 수정할 수 있습니다.');
+        return;
+    }
+    
+    const modal = document.getElementById('calendar-modal');
+    const modalTitle = document.getElementById('calendar-modal-title');
+    const form = document.getElementById('calendar-event-form');
+    
+    if (!modal || !modalTitle || !form) return;
+    
+    // Firebase에서 이벤트 데이터 로드
+    const db = window.firebase.firestore();
+    db.collection('calendarEvents').doc(eventId).get()
+        .then((doc) => {
+            if (doc.exists) {
+                const eventData = doc.data();
+                
+                // 폼에 데이터 채우기
+                document.getElementById('event-title').value = eventData.title || '';
+                document.getElementById('event-date').value = eventData.date || '';
+                document.getElementById('event-time').value = eventData.time || '';
+                document.getElementById('event-category').value = eventData.category || '';
+                document.getElementById('event-importance').value = eventData.importance || '';
+                document.getElementById('event-impact').value = eventData.impact || '';
+                document.getElementById('event-description').value = eventData.description || '';
+                
+                // 수정 모드로 설정
+                modalTitle.innerHTML = '<i class="fas fa-calendar-edit"></i> 경제 일정 수정';
+                form.setAttribute('data-event-id', eventId);
+                modal.classList.add('show');
+            }
+        })
+        .catch((error) => {
+            console.error('이벤트 데이터 로드 실패:', error);
+            alert('이벤트 데이터를 불러올 수 없습니다.');
+        });
+}
+
+// 일정 삭제
+function deleteCalendarEvent(eventId) {
+    if (!checkIfUserIsAdmin()) {
+        alert('관리자만 삭제할 수 있습니다.');
+        return;
+    }
+    
+    if (!confirm('정말 이 일정을 삭제하시겠습니까?')) {
+        return;
+    }
+    
+    const db = window.firebase.firestore();
+    db.collection('calendarEvents').doc(eventId).delete()
+        .then(() => {
+            console.log('✅ 경제 일정 삭제 완료:', eventId);
+            loadEconomicCalendar(); // 목록 새로고침
+        })
+        .catch((error) => {
+            console.error('❌ 경제 일정 삭제 실패:', error);
+            alert('일정 삭제에 실패했습니다.');
+        });
+}
+
+// 모달 닫기
+function closeCalendarModal() {
+    const modal = document.getElementById('calendar-modal');
+    if (modal) {
+        modal.classList.remove('show');
+    }
+}
+
+// 폼 제출 처리
+function handleEventFormSubmit(e) {
+    e.preventDefault();
+    
+    if (!checkIfUserIsAdmin()) {
+        alert('관리자만 등록/수정할 수 있습니다.');
+        return;
+    }
+    
+    const form = e.target;
+    const eventId = form.getAttribute('data-event-id');
+    const isEdit = !!eventId;
+    
+    // 폼 데이터 수집
+    const eventData = {
+        title: document.getElementById('event-title').value.trim(),
+        date: document.getElementById('event-date').value,
+        time: document.getElementById('event-time').value,
+        category: document.getElementById('event-category').value,
+        importance: parseInt(document.getElementById('event-importance').value),
+        impact: document.getElementById('event-impact').value,
+        description: document.getElementById('event-description').value.trim(),
+        updatedAt: new Date().toISOString()
+    };
+    
+    // 필수 필드 검증
+    if (!eventData.title || !eventData.date || !eventData.category || !eventData.importance || !eventData.impact) {
+        alert('필수 항목을 모두 입력해주세요.');
+        return;
+    }
+    
+    // 생성일 추가 (새 이벤트인 경우)
+    if (!isEdit) {
+        eventData.createdAt = new Date().toISOString();
+    }
+    
+    const db = window.firebase.firestore();
+    
+    if (isEdit) {
+        // 수정
+        db.collection('calendarEvents').doc(eventId).update(eventData)
+            .then(() => {
+                console.log('✅ 경제 일정 수정 완료:', eventId);
+                closeCalendarModal();
+                loadEconomicCalendar(); // 목록 새로고침
+            })
+            .catch((error) => {
+                console.error('❌ 경제 일정 수정 실패:', error);
+                alert('일정 수정에 실패했습니다.');
+            });
+    } else {
+        // 새 등록
+        db.collection('calendarEvents').add(eventData)
+            .then((docRef) => {
+                console.log('✅ 경제 일정 등록 완료:', docRef.id);
+                closeCalendarModal();
+                loadEconomicCalendar(); // 목록 새로고침
+            })
+            .catch((error) => {
+                console.error('❌ 경제 일정 등록 실패:', error);
+                alert('일정 등록에 실패했습니다.');
+            });
+    }
+}
+
+// 전역 함수로 등록 (HTML에서 호출 가능하도록)
+window.editCalendarEvent = editCalendarEvent;
+window.deleteCalendarEvent = deleteCalendarEvent;
+
+// 디버깅용 전역 함수들
+window.debugCalendarAdmin = function() {
+    console.log('=== 경제 일정 관리자 디버깅 ===');
+    console.log('1. Firebase 상태:', !!window.firebase);
+    console.log('2. Firebase Auth:', !!window.firebase?.auth);
+    console.log('3. Firebase currentUser:', window.firebase?.auth?.()?.currentUser);
+    console.log('4. window.currentUser:', window.currentUser);
+    console.log('5. 사용자 이메일 (Firebase):', window.firebase?.auth?.()?.currentUser?.email);
+    console.log('6. 사용자 이메일 (window):', window.currentUser?.email);
+    console.log('7. 관리자 여부:', checkIfUserIsAdmin());
+    
+    const adminControls = document.getElementById('calendar-admin-controls');
+    console.log('8. 관리자 UI 요소:', !!adminControls);
+    console.log('9. 관리자 UI 스타일:', adminControls?.style.display);
+    console.log('10. 현재 탭:', document.querySelector('.tab-btn.active')?.getAttribute('data-tab'));
+    
+    // 강제로 관리자 권한 체크
+    checkAdminPermissions();
+    
+    // 강제로 관리자 UI 표시 (테스트용)
+    if (adminControls) {
+        adminControls.style.display = 'flex';
+        console.log('🔧 관리자 UI 강제 표시됨');
+    }
+};
 
 // 페이지 언로드 시 정리
 window.addEventListener('beforeunload', () => {

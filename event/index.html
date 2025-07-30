@@ -52,7 +52,6 @@
     
     <style>
       .event-board-container {
-        max-width: 1200px;
         margin: 0 auto;
         padding: 40px 0 40px 0;
       }
@@ -85,35 +84,55 @@
       }
       .event-card-delete {
         position: absolute;
-        top: 18px;
-        right: 18px;
+        top: 12px;
+        right: 12px;
         margin: 0;
         color: #ef5350;
-        background: none;
+        background: rgba(255, 255, 255, 0.9);
         border: none;
-        font-size: 1.25em;
+        font-size: 1.1em;
         cursor: pointer;
-        transition: color 0.2s;
+        transition: all 0.2s;
         z-index: 2;
+        border-radius: 50%;
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        backdrop-filter: blur(4px);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
       }
       .event-card-delete:hover {
-        color: #b71c1c;
+        color: #fff;
+        background: #ef5350;
+        transform: scale(1.05);
       }
       .event-card-edit {
         position: absolute;
-        top: 18px;
-        right: 48px;
+        top: 12px;
+        right: 50px;
         margin: 0;
         color: #1976d2;
-        background: none;
+        background: rgba(255, 255, 255, 0.9);
         border: none;
-        font-size: 1.15em;
+        font-size: 1em;
         cursor: pointer;
-        transition: color 0.2s;
+        transition: all 0.2s;
         z-index: 2;
+        border-radius: 50%;
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        backdrop-filter: blur(4px);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
       }
       .event-card-edit:hover {
-        color: #0d47a1;
+        color: #fff;
+        background: #1976d2;
+        transform: scale(1.05);
       }
       .event-card-btn {
         width: 100%;
@@ -279,10 +298,17 @@
         .event-card-delete {
           top: 8px;
           right: 8px;
-          font-size: 1.15em;
-          padding: 4px;
+          font-size: 1em;
+          width: 28px;
+          height: 28px;
         }
-        .event-card-edit { top: 8px; right: 38px; font-size: 1em; }
+        .event-card-edit { 
+          top: 8px; 
+          right: 42px; 
+          font-size: 0.9em;
+          width: 28px;
+          height: 28px;
+        }
       }
       .floating-write-btn {
         position: fixed;
@@ -307,63 +333,232 @@
         background: var(--primary-color-dark);
       }
       .event-modal-content {
-        max-width: 480px;
+        max-width: 600px;
         width: 95vw;
-        padding: 40px 32px 32px 32px;
+        max-height: 90vh;
+        padding: 0;
         border-radius: 20px;
         background: var(--card-bg);
         box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+        overflow: hidden;
       }
-      .event-form h2 {
-        font-size: 1.4em;
+      
+      .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 24px 32px;
+        border-bottom: 1px solid var(--border-color);
+        background: var(--bg-color);
+      }
+      
+      .modal-header h2 {
+        font-size: 1.5em;
         font-weight: 700;
-        margin-bottom: 32px;
+        margin: 0;
         color: var(--text-color);
-        text-align: center;
         letter-spacing: -0.5px;
       }
-      .event-form .input-group {
-        margin-bottom: 24px;
+      
+      .auth-modal-close {
+        font-size: 1.5em;
+        color: var(--text-secondary);
+        cursor: pointer;
+        transition: color 0.2s;
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        background: transparent;
+        border: none;
       }
-      .event-form label {
-        font-size: 1em;
+      
+      .auth-modal-close:hover {
+        color: var(--text-color);
+        background: var(--bg-secondary-color);
+      }
+      
+      .event-form {
+        padding: 0;
+        max-height: calc(90vh - 80px);
+        overflow-y: auto;
+      }
+      
+      .form-section {
+        padding: 24px 32px;
+        border-bottom: 1px solid var(--border-color);
+      }
+      
+      .form-section:last-child {
+        border-bottom: none;
+      }
+      
+      .section-title {
+        font-size: 1.1em;
         font-weight: 600;
-        margin-bottom: 10px;
+        margin: 0 0 20px 0;
+        color: var(--text-color);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      
+      .section-title::before {
+        content: '';
+        width: 4px;
+        height: 20px;
+        background: var(--primary-color);
+        border-radius: 2px;
+      }
+      
+      .form-row {
+        margin-bottom: 20px;
+      }
+      
+      .form-row:last-child {
+        margin-bottom: 0;
+      }
+      
+      .event-form .input-group {
+        margin-bottom: 0;
+      }
+      
+      .event-form label {
+        font-size: 0.95em;
+        font-weight: 600;
+        margin-bottom: 8px;
         color: var(--text-color);
         display: block;
         letter-spacing: -0.3px;
       }
+      
+      .required {
+        color: #ef5350;
+        font-weight: 700;
+      }
+      
+      .input-hint {
+        font-size: 0.85em;
+        color: var(--text-secondary);
+        margin-top: 4px;
+      }
+      
       .event-form input, .event-form textarea, .event-form select {
-        font-size: 1.02em;
+        font-size: 1em;
         margin-bottom: 0;
-        border-radius: 12px;
-        padding: 16px 14px;
+        border-radius: 10px;
+        padding: 14px 16px;
         background: var(--bg-secondary-color);
         border: 2px solid var(--border-color);
         color: var(--text-color);
         width: 100%;
         box-sizing: border-box;
-        transition: border-color 0.2s, box-shadow 0.2s;
+        transition: all 0.2s;
         font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
       }
+      
       .event-form input:focus, .event-form textarea:focus, .event-form select:focus {
         outline: none;
         border-color: var(--primary-color);
         box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        background: var(--card-bg);
       }
-      .event-form select {
-        cursor: pointer;
-        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
-        background-position: right 12px center;
-        background-repeat: no-repeat;
-        background-size: 16px;
-        padding-right: 40px;
-      }
+      
       .event-form textarea {
-        min-height: 100px;
+        min-height: 80px;
         resize: vertical;
         line-height: 1.5;
       }
+      
+      .custom-exchange-inputs {
+        margin-top: 16px;
+        padding-top: 16px;
+        border-top: 1px solid var(--border-color);
+      }
+      
+      .image-upload-area {
+        background: var(--bg-secondary-color);
+        border-radius: 12px;
+        padding: 20px;
+        border: 2px dashed var(--border-color);
+        text-align: center;
+        transition: all 0.2s;
+      }
+      
+      .image-upload-area:hover {
+        border-color: var(--primary-color);
+        background: var(--card-bg);
+      }
+      
+      .upload-methods {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 16px;
+        justify-content: center;
+      }
+      
+      .upload-method-btn {
+        padding: 12px 20px;
+        border-radius: 8px;
+        border: none;
+        cursor: pointer;
+        font-size: 0.95em;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.2s;
+        min-width: 120px;
+        justify-content: center;
+      }
+      
+      .upload-method-btn.primary {
+        background: var(--primary-color);
+        color: white;
+      }
+      
+      .upload-method-btn.primary:hover {
+        background: var(--primary-color-dark);
+        transform: translateY(-1px);
+      }
+      
+      .upload-method-btn.secondary {
+        background: var(--card-bg);
+        color: var(--text-color);
+        border: 2px solid var(--border-color);
+      }
+      
+      .upload-method-btn.secondary:hover {
+        border-color: var(--primary-color);
+        background: var(--bg-secondary-color);
+      }
+      
+      .upload-info {
+        margin-bottom: 16px;
+      }
+      
+      .upload-info small {
+        color: var(--text-secondary);
+        font-size: 0.85em;
+      }
+      
+      .url-input-container {
+        margin-top: 16px;
+      }
+      
+      .url-input-container input {
+        text-align: center;
+        font-size: 0.95em;
+      }
+      
+      .form-actions {
+        padding: 24px 32px;
+        background: var(--bg-color);
+        border-top: 1px solid var(--border-color);
+      }
+      
       .event-form .submit-btn {
         width: 100%;
         padding: 16px;
@@ -374,203 +569,70 @@
         color: white;
         border: none;
         cursor: pointer;
-        transition: background 0.2s, transform 0.1s;
-        margin-top: 8px;
+        transition: all 0.2s;
+        margin: 0;
         letter-spacing: -0.3px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
       }
+      
       .event-form .submit-btn:hover {
         background: var(--primary-color-dark);
         transform: translateY(-1px);
-      }
-      .exchange-preview {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        margin-top: 12px;
-        padding: 12px;
-        background: var(--bg-secondary-color);
-        border-radius: 10px;
-        border: 1px solid var(--border-color);
-      }
-      .exchange-preview-logo {
-        width: 32px;
-        height: 32px;
-        border-radius: 50%;
-        object-fit: contain;
-        background: #fff;
-      }
-      .exchange-preview-name {
-        font-weight: 600;
-        color: var(--text-color);
-        font-size: 1.05em;
-      }
-      .preview-container {
-        margin-top: 12px;
-        position: relative;
-      }
-      .preview-image {
-        max-width: 100%;
-        border-radius: 10px;
-        box-shadow: 0 2px 8px var(--shadow-color);
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
       }
       
-      /* 🔥 이미지 업로드 관련 스타일 */
-      .image-upload-container {
-        margin-bottom: 12px;
-      }
-      .upload-btn {
-        background: var(--primary-color);
-        color: white;
-        border: none;
-        padding: 12px 20px;
-        border-radius: 8px;
-        cursor: pointer;
-        font-size: 1em;
-        font-weight: 600;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        transition: background 0.2s;
-        width: 100%;
-        justify-content: center;
-      }
-      .upload-btn:hover {
-        background: var(--primary-color-dark);
-      }
-      .upload-btn:disabled {
-        background: #ccc;
-        cursor: not-allowed;
-      }
-      .upload-info {
-        margin-top: 8px;
-        text-align: center;
-      }
-      .upload-info small {
-        color: var(--text-secondary);
-        font-size: 0.9em;
-      }
-      
-      /* 업로드 진행률 표시 */
-      .upload-progress {
-        margin-top: 12px;
-        padding: 8px;
-        background: var(--bg-secondary-color);
-        border-radius: 8px;
-        border: 1px solid var(--border-color);
-      }
-      .progress-bar {
-        width: 100%;
-        height: 8px;
-        background: var(--border-color);
-        border-radius: 4px;
-        overflow: hidden;
-        margin-bottom: 8px;
-      }
-      .progress-fill {
-        height: 100%;
-        background: var(--primary-color);
-        transition: width 0.3s ease;
-        width: 0%;
-      }
-      .progress-text {
-        font-size: 0.9em;
-        color: var(--text-color);
-        font-weight: 600;
-        display: block;
-        text-align: center;
-      }
-      
-      /* 이미지 제거 버튼 */
-      .remove-image-btn {
-        position: absolute;
-        top: 8px;
-        right: 8px;
-        background: rgba(239, 83, 80, 0.9);
-        color: white;
-        border: none;
-        border-radius: 50%;
-        width: 32px;
-        height: 32px;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 0.9em;
-        transition: background 0.2s;
-      }
-      .remove-image-btn:hover {
-        background: rgba(239, 83, 80, 1);
-      }
-      
-      /* URL 입력 토글 */
-      .url-input-toggle {
-        margin-top: 12px;
-        text-align: center;
-      }
-      .toggle-btn {
-        background: transparent;
-        color: var(--text-secondary);
-        border: 1px solid var(--border-color);
-        padding: 8px 16px;
-        border-radius: 6px;
-        cursor: pointer;
-        font-size: 0.9em;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        margin: 0 auto;
-        transition: all 0.2s;
-      }
-      .toggle-btn:hover {
-        background: var(--bg-secondary-color);
-        color: var(--text-color);
-      }
-      .url-input-container {
-        margin-top: 12px;
-      }
-      .url-input-container input {
-        width: 100%;
-        padding: 12px;
-        border: 2px solid var(--border-color);
-        border-radius: 8px;
-        background: var(--bg-secondary-color);
-        color: var(--text-color);
-        font-size: 1em;
-      }
       .form-message {
         margin-top: 12px;
         color: #ef5350;
-        font-size: 0.98em;
+        font-size: 0.95em;
         min-height: 20px;
         text-align: center;
         font-weight: 500;
       }
+      
       @media (max-width: 700px) {
-        .floating-write-btn {
-          right: 16px;
-          bottom: 16px;
-          padding: 14px 20px;
-          font-size: 1em;
-        }
         .event-modal-content {
-          padding: 28px 20px 24px 20px;
           max-width: none;
-          width: calc(100vw - 32px);
-          margin: 16px;
+          width: calc(100vw - 16px);
+          margin: 8px;
+          max-height: calc(100vh - 16px);
         }
-        .event-form h2 {
+        
+        .modal-header {
+          padding: 20px 24px;
+        }
+        
+        .modal-header h2 {
           font-size: 1.3em;
-          margin-bottom: 28px;
         }
-        .event-form .input-group {
-          margin-bottom: 20px;
+        
+        .form-section {
+          padding: 20px 24px;
         }
-        .event-form input, .event-form textarea, .event-form select {
-          font-size: 1em;
-          padding: 14px 12px;
+        
+        .section-title {
+          font-size: 1.05em;
+          margin-bottom: 16px;
         }
-        .event-form textarea {
-          min-height: 80px;
+        
+        .form-row {
+          margin-bottom: 16px;
+        }
+        
+        .upload-methods {
+          flex-direction: column;
+          gap: 8px;
+        }
+        
+        .upload-method-btn {
+          min-width: auto;
+        }
+        
+        .form-actions {
+          padding: 20px 24px;
         }
       }
       
@@ -775,6 +837,96 @@
         background: linear-gradient(135deg, #047857 0%, #10b981 100%);
         box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
       }
+       
+       .exchange-preview {
+         display: flex;
+         align-items: center;
+         gap: 12px;
+         margin-top: 12px;
+         padding: 12px;
+         background: var(--bg-secondary-color);
+         border-radius: 10px;
+         border: 1px solid var(--border-color);
+       }
+       
+       .exchange-preview-logo {
+         width: 32px;
+         height: 32px;
+         border-radius: 50%;
+         object-fit: contain;
+         background: #fff;
+       }
+       
+       .exchange-preview-name {
+         font-weight: 600;
+         color: var(--text-color);
+         font-size: 1.05em;
+       }
+       
+       .preview-container {
+         margin-top: 12px;
+         position: relative;
+       }
+       
+       .preview-image {
+         max-width: 100%;
+         border-radius: 10px;
+         box-shadow: 0 2px 8px var(--shadow-color);
+       }
+       
+       .upload-progress {
+         margin-top: 12px;
+         padding: 8px;
+         background: var(--bg-secondary-color);
+         border-radius: 8px;
+         border: 1px solid var(--border-color);
+       }
+       
+       .progress-bar {
+         width: 100%;
+         height: 8px;
+         background: var(--border-color);
+         border-radius: 4px;
+         overflow: hidden;
+         margin-bottom: 8px;
+       }
+       
+       .progress-fill {
+         height: 100%;
+         background: var(--primary-color);
+         transition: width 0.3s ease;
+         width: 0%;
+       }
+       
+       .progress-text {
+         font-size: 0.9em;
+         color: var(--text-color);
+         font-weight: 600;
+         display: block;
+         text-align: center;
+       }
+       
+       .remove-image-btn {
+         position: absolute;
+         top: 8px;
+         right: 8px;
+         background: rgba(239, 83, 80, 0.9);
+         color: white;
+         border: none;
+         border-radius: 50%;
+         width: 32px;
+         height: 32px;
+         cursor: pointer;
+         display: flex;
+         align-items: center;
+         justify-content: center;
+         font-size: 0.9em;
+         transition: background 0.2s;
+       }
+       
+       .remove-image-btn:hover {
+         background: rgba(239, 83, 80, 1);
+       }
     </style>
   </head>
   <body>
@@ -796,85 +948,143 @@
     <!-- 이벤트 작성 모달 -->
     <div id="event-modal" class="auth-modal" style="display:none;">
       <div class="auth-modal-content event-modal-content">
-        <span class="auth-modal-close" id="close-event-modal">&times;</span>
-        <form id="event-form" class="auth-form event-form">
+        <div class="modal-header">
           <h2>이벤트 작성</h2>
-          <div class="input-group">
-            <label for="event-title">제목</label>
-            <input type="text" id="event-title" placeholder="이벤트 제목을 입력하세요" required maxlength="40" />
+          <span class="auth-modal-close" id="close-event-modal">&times;</span>
+        </div>
+        
+        <form id="event-form" class="event-form">
+          <!-- 기본 정보 섹션 -->
+          <div class="form-section">
+            <h3 class="section-title">기본 정보</h3>
+            
+            <div class="form-row">
+              <div class="input-group">
+                <label for="event-title">제목 <span class="required">*</span></label>
+                <input type="text" id="event-title" placeholder="이벤트 제목" required maxlength="40" />
+                <div class="input-hint">40자 이하</div>
+              </div>
+            </div>
+            
+            <div class="form-row">
+              <div class="input-group">
+                <label for="event-desc">설명 <span class="required">*</span></label>
+                <textarea id="event-desc" placeholder="이벤트 설명을 입력하세요" required maxlength="120" rows="3"></textarea>
+                <div class="input-hint">120자 이하</div>
+              </div>
+            </div>
+            
+            <div class="form-row">
+              <div class="input-group">
+                <label for="event-period">이벤트 기간 <span class="required">*</span></label>
+                <input type="text" id="event-period" placeholder="예: 2025.01.15 ~ 2025.01.31" required maxlength="30" />
+              </div>
+            </div>
           </div>
-          <div class="input-group">
-            <label for="event-desc">설명</label>
-            <textarea id="event-desc" placeholder="이벤트 설명을 입력하세요&#10;(최대 120자, 줄바꿈 가능)" required maxlength="120"></textarea>
-          </div>
-          <div class="input-group">
-            <label for="event-period">기간</label>
-            <input type="text" id="event-period" placeholder="예: 25.06.01 ~ 25.06.30" required maxlength="30" />
-          </div>
-          <div class="input-group">
-            <label for="event-exchange">거래소 선택</label>
-            <select id="event-exchange" required>
-              <option value="">거래소를 선택하세요</option>
-              <option value="Bitmex" data-logo="../assets/tradelogo/Bitmexlogo.png">Bitmex</option>
-              <option value="Bitget" data-logo="../assets/tradelogo/bitgetlogo.png">Bitget</option>
-              <option value="Blofin" data-logo="../assets/tradelogo/blofinlogo.png">Blofin</option>
-              <option value="LBank" data-logo="../assets/tradelogo/lbanklogo.png">LBank</option>
-              <option value="기타" data-logo="">기타 (직접 입력)</option>
-            </select>
+
+          <!-- 거래소 정보 섹션 -->
+          <div class="form-section">
+            <h3 class="section-title">거래소 정보</h3>
+            
+            <div class="form-row">
+              <div class="input-group">
+                <label for="event-exchange">거래소 <span class="required">*</span></label>
+                <select id="event-exchange" required>
+                  <option value="">거래소를 선택하세요</option>
+                  <option value="Bitmex" data-logo="../assets/tradelogo/Bitmexlogo.png">Bitmex</option>
+                  <option value="Bitget" data-logo="../assets/tradelogo/bitgetlogo.png">Bitget</option>
+                  <option value="Blofin" data-logo="../assets/tradelogo/blofinlogo.png">Blofin</option>
+                  <option value="LBank" data-logo="../assets/tradelogo/lbanklogo.png">LBank</option>
+                  <option value="기타" data-logo="">기타 (직접 입력)</option>
+                </select>
+              </div>
+            </div>
+            
             <div id="exchange-preview" class="exchange-preview" style="display:none;">
               <img id="exchange-preview-logo" class="exchange-preview-logo" src="" alt="" />
               <span id="exchange-preview-name" class="exchange-preview-name"></span>
             </div>
-          </div>
-          <div class="input-group" id="custom-exchange-group" style="display:none;">
-            <label for="custom-exchange-name">거래소명 (직접 입력)</label>
-            <input type="text" id="custom-exchange-name" placeholder="거래소명을 입력하세요" maxlength="20" />
-          </div>
-          <div class="input-group" id="custom-logo-group" style="display:none;">
-            <label for="custom-logo-url">거래소 로고 URL</label>
-            <input type="url" id="custom-logo-url" placeholder="거래소 로고 URL을 입력하세요" />
-          </div>
-          <div class="input-group">
-            <label for="event-img">이벤트 이미지</label>
-            <div class="image-upload-container">
-              <input type="file" id="event-img-file" accept="image/*" style="display: none;" />
-              <button type="button" id="upload-image-btn" class="upload-btn">
-                <i class="fas fa-upload"></i>
-                이미지 업로드
-              </button>
-              <div class="upload-info">
-                <small>JPG, PNG, GIF 파일만 업로드 가능 (최대 5MB)</small>
+            
+            <div class="custom-exchange-inputs" style="display:none;">
+              <div class="form-row" id="custom-exchange-group" style="display:none;">
+                <div class="input-group">
+                  <label for="custom-exchange-name">거래소명</label>
+                  <input type="text" id="custom-exchange-name" placeholder="거래소명 입력" maxlength="20" />
+                </div>
               </div>
+              
+              <div class="form-row" id="custom-logo-group" style="display:none;">
+                <div class="input-group">
+                  <label for="custom-logo-url">로고 URL</label>
+                  <input type="url" id="custom-logo-url" placeholder="거래소 로고 URL 입력" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 이미지 업로드 섹션 -->
+          <div class="form-section">
+            <h3 class="section-title">이벤트 이미지</h3>
+            
+            <div class="image-upload-area">
+              <input type="file" id="event-img-file" accept="image/*" style="display: none;" />
+              
+              <div class="upload-methods">
+                <button type="button" id="upload-image-btn" class="upload-method-btn primary">
+                  <i class="fas fa-upload"></i>
+                  <span>파일 업로드</span>
+                </button>
+                
+                <button type="button" id="toggle-url-input" class="upload-method-btn secondary">
+                  <i class="fas fa-link"></i>
+                  <span>URL 입력</span>
+                </button>
+              </div>
+              
+              <div class="upload-info">
+                <small>JPG, PNG, GIF 형식 지원 • 최대 5MB</small>
+              </div>
+              
               <div class="upload-progress" id="upload-progress" style="display: none;">
                 <div class="progress-bar">
                   <div class="progress-fill" id="progress-fill"></div>
                 </div>
                 <span class="progress-text" id="progress-text">0%</span>
               </div>
-            </div>
-            <div class="preview-container">
-              <img id="preview-event-img" class="preview-image" style="display:none;" />
-              <button type="button" id="remove-image-btn" class="remove-image-btn" style="display:none;">
-                <i class="fas fa-times"></i>
-              </button>
-            </div>
-            <!-- URL 입력 옵션 (기존 기능 유지) -->
-            <div class="url-input-toggle">
-              <button type="button" id="toggle-url-input" class="toggle-btn">
-                <i class="fas fa-link"></i>
-                URL로 입력하기
-              </button>
-            </div>
-            <div class="url-input-container" id="url-input-container" style="display: none;">
-              <input type="url" id="event-img-url" placeholder="이벤트 이미지 URL을 입력하세요" />
+              
+              <div class="url-input-container" id="url-input-container" style="display: none;">
+                <input type="url" id="event-img-url" placeholder="이미지 URL을 입력하세요" />
+              </div>
+              
+              <div class="preview-container">
+                <img id="preview-event-img" class="preview-image" style="display:none;" />
+                <button type="button" id="remove-image-btn" class="remove-image-btn" style="display:none;">
+                  <i class="fas fa-times"></i>
+                </button>
+              </div>
             </div>
           </div>
-          <div class="input-group">
-            <label for="event-link">이벤트 링크 (URL)</label>
-            <input type="url" id="event-link" placeholder="이벤트 상세 페이지 링크를 입력하세요" required />
+
+          <!-- 링크 섹션 -->
+          <div class="form-section">
+            <h3 class="section-title">이벤트 링크</h3>
+            
+            <div class="form-row">
+              <div class="input-group">
+                <label for="event-link">이벤트 페이지 URL <span class="required">*</span></label>
+                <input type="url" id="event-link" placeholder="https://..." required />
+              </div>
+            </div>
           </div>
-          <button type="submit" class="submit-btn">등록</button>
-          <div id="event-form-message" class="form-message"></div>
+
+          <!-- 제출 버튼 -->
+          <div class="form-actions">
+            <button type="submit" class="submit-btn">
+              <i class="fas fa-save"></i>
+              등록하기
+            </button>
+            <div id="event-form-message" class="form-message"></div>
+          </div>
         </form>
       </div>
     </div>

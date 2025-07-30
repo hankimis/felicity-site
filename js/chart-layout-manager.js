@@ -496,6 +496,16 @@ class ChartLayoutManager {
             if (loading) {
                 loading.style.display = 'none';
             }
+            
+            // 🔥 실시간 데이터 구독 상태 확인
+            setTimeout(() => {
+                console.log(`🔄 차트 ${index} 실시간 데이터 구독 상태 확인: ${symbol} ${interval}`);
+                if (window.chartStorage && window.chartStorage.datafeed) {
+                    console.log(`✅ 차트 ${index} 데이터피드 확인됨`);
+                } else {
+                    console.warn(`⚠️ 차트 ${index} 데이터피드 확인 실패`);
+                }
+            }, 1000);
         });
 
         this.widgets.push(widget);

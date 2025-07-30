@@ -107,10 +107,9 @@
     }
     
     .layout-btn {
-        padding: 6px 8px;
-        font-size: 0.7rem;
-        min-height: 44px;
-        min-width: 44px;
+        width: 36px;
+        height: 36px;
+        padding: 6px;
     }
     
     .layout-btn span {
@@ -254,10 +253,9 @@
     }
     
     .layout-btn {
-        padding: 4px 6px;
-        font-size: 0.65rem;
-        min-height: 40px;
-        min-width: 40px;
+        width: 32px;
+        height: 32px;
+        padding: 4px;
     }
     
     .card-header {
@@ -414,9 +412,12 @@
         border: 1px solid rgba(255, 255, 255, 0.1);
     }
     
-    .layout-btn {
-        background: rgba(255, 255, 255, 0.05);
-        border-color: rgba(255, 255, 255, 0.1);
+    .layout-btn:hover {
+        background: rgba(255, 255, 255, 0.1);
+    }
+    
+    .layout-btn.active {
+        background: rgba(var(--primary-color-rgb), 0.2);
     }
 }
 

@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>회원가입 - Onbit</title>
+    <meta name="description" content="Onbit에 회원가입하여 암호화폐 거래 플랫폼의 모든 서비스를 이용하세요.">
+    
+    <!-- Preconnect to external domains for faster loading -->
+    <link rel="preconnect" href="https://www.gstatic.com">
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+    <link rel="preconnect" href="https://cdn.jsdelivr.net">
+    
+    <!-- Critical CSS Variables -->
+    <style>
+        :root {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8fafc;
+            --text-primary: #1f2937;
+            --text-secondary: #6b7280;
+            --accent-blue: #3b82f6;
+            --primary-color: #3b82f6;
+            --border-default: #e2e8f0;
+            --shadow-light: rgba(0, 0, 0, 0.08);
+            --card-bg: #ffffff;
+            --border-color: #e5e7eb;
+            --text-color: #1f2937;
+            --text-color-secondary: #6b7280;
+            --bg-secondary-color: #f3f4f6;
+            --shadow-color: rgba(0, 0, 0, 0.1);
+        }
+
+        [data-theme="dark"] {
+            --bg-primary: #1a1a1a;
+            --bg-secondary: #2a2a2a;
+            --text-primary: #ffffff;
+            --text-secondary: #cccccc;
+            --card-bg: #2a2a2a;
+            --border-color: #404040;
+            --text-color: #ffffff;
+            --text-color-secondary: #cccccc;
+            --bg-secondary-color: #404040;
+            --shadow-color: rgba(0, 0, 0, 0.3);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            transition: background-color 0.3s ease, color 0.3s ease;
+            line-height: 1.6;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 회원가입 페이지 전용 스타일 */
+        .signup-container {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            background-color: #ffffff;
+        }
+
+        .signup-card {
+            background: #ffffff;
+            width: 540px;
+            padding: 2rem;
+        }
+
+        .signup-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .signup-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #000000;
+            margin: 0;
+        }
+
+        .signup-form {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-input {
+            padding: 1rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 1rem;
+            background: #ffffff;
+            color: #000000;
+            transition: all 0.2s ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+        }
+
+        .form-input::placeholder {
+            color: #9ca3af;
+        }
+
+        .form-input.error {
+            border-color: #dc2626;
+        }
+
+        .form-input.success {
+            border-color: #16a34a;
+        }
+
+        .signup-button {
+            background: #f3f4f6;
+            color: #000000;
+            border: none;
+            padding: 1rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-top: 1rem;
+        }
+
+        .signup-button:hover {
+            background: #e5e7eb;
+        }
+
+        .signup-button:disabled {
+            background: #f3f4f6;
+            color: #9ca3af;
+            cursor: not-allowed;
+        }
+
+        /* 입력 필드와 버튼 조합 */
+        .input-with-button {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .input-with-button .form-input {
+            flex: 1;
+        }
+
+        .action-button {
+            background: #f3f4f6;
+            color: #6b7280;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .action-button:hover {
+            background: #e5e7eb;
+            color: #374151;
+        }
+
+        /* 추천인 섹션 */
+        .referral-section {
+            margin-top: 2rem;
+            padding-top: 2rem;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .referral-text {
+            margin-bottom: 1rem;
+        }
+
+        .referral-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #000000;
+            margin-bottom: 0.25rem;
+        }
+
+        .referral-subtitle {
+            font-size: 0.875rem;
+            color: #6b7280;
+            line-height: 1.4;
+        }
+
+        /* 약관 섹션 */
+        .terms-section {
+            margin-top: 2rem;
+            padding-top: 2rem;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .terms-header {
+            margin-bottom: 1rem;
+        }
+
+        .master-checkbox {
+            font-weight: 600;
+            color: #000000;
+        }
+
+        .terms-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .term-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 0;
+        }
+
+        .term-item .checkbox-container {
+            flex: 1;
+            font-size: 0.875rem;
+            color: #6b7280;
+        }
+
+        .view-details {
+            color: #3b82f6;
+            text-decoration: none;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .view-details:hover {
+            text-decoration: underline;
+        }
+
+        /* 체크박스 스타일 */
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+        }
+
+        .checkbox-container input[type="checkbox"] {
+            display: none;
+        }
+
+        .checkmark {
+            width: 18px;
+            height: 18px;
+            border: 2px solid #d1d5db;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .checkbox-container input[type="checkbox"]:checked + .checkmark {
+            background-color: #3b82f6;
+            border-color: #3b82f6;
+        }
+
+        .checkbox-container input[type="checkbox"]:checked + .checkmark::after {
+            content: '✓';
+            color: white;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+
+        .error-message {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #dc2626;
+            padding: 1rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            display: none;
+        }
+
+        .success-message {
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            color: #16a34a;
+            padding: 1rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            display: none;
+        }
+
+        .signup-footer {
+            margin-top: 2rem;
+            padding-top: 2rem;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .footer-link {
+            color: #6b7280;
+            text-decoration: none;
+            font-size: 0.875rem;
+            transition: color 0.2s ease;
+        }
+
+        .footer-link:hover {
+            color: #374151;
+        }
+
+        .loading-spinner {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #ffffff;
+            border-top: 2px solid transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* 반응형 디자인 */
+        @media (max-width: 768px) {
+            .signup-container {
+                padding: 1rem;
+            }
+
+            .signup-card {
+                padding: 1.5rem;
+                max-width: 100%;
+            }
+
+            .signup-title {
+                font-size: 1.5rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .signup-card {
+                padding: 1rem;
+            }
+
+            .signup-title {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <!-- Header CSS -->
+    <link rel="stylesheet" href="../components/header/navbar.css">
+    
+    <!-- Header Loader -->
+    <script src="../components/header/header-loader.js"></script>
+    
+    <!-- Footer Loader -->
+    <script src="../js/footer-loader.js"></script>
+</head>
+<body>
+    <!-- Header Placeholder -->
+    <div id="header-placeholder"></div>
+
+    <!-- Signup Container -->
+    <div class="signup-container">
+        <div class="signup-card">
+            <div class="signup-header">
+                <h1 class="signup-title">회원가입</h1>
+            </div>
+
+            <form class="signup-form" id="signup-form">
+                <div class="error-message" id="error-message"></div>
+                <div class="success-message" id="success-message"></div>
+
+                <div class="form-group">
+                    <input 
+                        type="email" 
+                        id="email" 
+                        name="email" 
+                        class="form-input" 
+                        placeholder="이메일"
+                        required
+                        autocomplete="email"
+                    >
+                </div>
+
+                <div class="form-group">
+                    <input 
+                        type="password" 
+                        id="password" 
+                        name="password" 
+                        class="form-input" 
+                        placeholder="비밀번호"
+                        required
+                        autocomplete="new-password"
+                    >
+                </div>
+
+                <div class="form-group">
+                    <input 
+                        type="password" 
+                        id="confirm-password" 
+                        name="confirm-password" 
+                        class="form-input" 
+                        placeholder="비밀번호 재입력"
+                        required
+                        autocomplete="new-password"
+                    >
+                </div>
+
+                <div class="form-group">
+                    <div class="input-with-button">
+                        <input 
+                            type="text" 
+                            id="nickname" 
+                            name="nickname" 
+                            class="form-input" 
+                            placeholder="닉네임"
+                            required
+                        >
+                        <button type="button" class="action-button" id="check-duplicate-btn">
+                            중복체크
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 추천인 섹션 완전 삭제 -->
+
+                <div class="terms-section">
+                    <div class="terms-header">
+                        <label class="checkbox-container master-checkbox">
+                            <input type="checkbox" id="agree-all" name="agree-all">
+                            <span class="checkmark"></span>
+                            약관에 모두 동의
+                        </label>
+                    </div>
+                    
+                    <div class="terms-list">
+                        <div class="term-item">
+                            <label class="checkbox-container">
+                                <input type="checkbox" id="agree-privacy" name="agree-privacy" required>
+                                <span class="checkmark"></span>
+                                개인정보 수집 및 이용에 대한 동의
+                            </label>
+                            <a href="#" class="view-details" data-term="privacy">내용보기</a>
+                        </div>
+                        
+                        <div class="term-item">
+                            <label class="checkbox-container">
+                                <input type="checkbox" id="agree-service" name="agree-service" required>
+                                <span class="checkmark"></span>
+                                서비스 이용정책
+                            </label>
+                            <a href="#" class="view-details" data-term="service">내용보기</a>
+                        </div>
+                        
+                        <div class="term-item">
+                            <label class="checkbox-container">
+                                <input type="checkbox" id="agree-community" name="agree-community" required>
+                                <span class="checkmark"></span>
+                                커뮤니티 운영정책
+                            </label>
+                            <a href="#" class="view-details" data-term="community">내용보기</a>
+                        </div>
+                        
+                        <div class="term-item">
+                            <label class="checkbox-container">
+                                <input type="checkbox" id="agree-marketing" name="agree-marketing">
+                                <span class="checkmark"></span>
+                                마케팅 수신 동의사항 (선택)
+                            </label>
+                            <a href="#" class="view-details" data-term="marketing">내용보기</a>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="signup-button" id="signup-button">
+                    <span id="signup-text">고생하셨어요. 누르시면 회원가입 완료!</span>
+                    <div class="loading-spinner" id="loading-spinner"></div>
+                </button>
+            </form>
+
+            <div class="signup-footer">
+                <div class="footer-links">
+                    <a href="../login/index.html" class="footer-link">로그인</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer Placeholder -->
+    <div id="footer-placeholder"></div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+    
+    <!-- Firebase Configuration -->
+    <script src="../js/firebase-config.js" defer></script>
+    
+    <!-- Signup Logic -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const signupForm = document.getElementById('signup-form');
+            const signupButton = document.getElementById('signup-button');
+            const signupText = document.getElementById('signup-text');
+            const loadingSpinner = document.getElementById('loading-spinner');
+            const errorMessage = document.getElementById('error-message');
+            const successMessage = document.getElementById('success-message');
+            
+            // 약관 동의 관련 요소들
+            const agreeAllCheckbox = document.getElementById('agree-all');
+            const agreePrivacyCheckbox = document.getElementById('agree-privacy');
+            const agreeServiceCheckbox = document.getElementById('agree-service');
+            const agreeCommunityCheckbox = document.getElementById('agree-community');
+            const agreeMarketingCheckbox = document.getElementById('agree-marketing');
+            
+            // 액션 버튼들
+            const checkDuplicateBtn = document.getElementById('check-duplicate-btn');
+            
+            // 입력 필드들
+            const emailInput = document.getElementById('email');
+            const nicknameInput = document.getElementById('nickname');
+            const passwordInput = document.getElementById('password');
+            const confirmPasswordInput = document.getElementById('confirm-password');
+
+            // Firebase 초기화 확인
+            function waitForFirebase() {
+                return new Promise((resolve) => {
+                    const maxAttempts = 100;
+                    let attempts = 0;
+                    
+                    const checkFirebase = () => {
+                        attempts++;
+                        
+                        if (window.firebase && window.auth && window.db) {
+                            console.log('Firebase 초기화 완료');
+                            resolve();
+                        } else if (attempts < maxAttempts) {
+                            setTimeout(checkFirebase, 100);
+                        } else {
+                            console.warn('Firebase 초기화 타임아웃');
+                            resolve();
+                        }
+                    };
+                    
+                    checkFirebase();
+                });
+            }
+
+            // 로딩 상태 관리
+            function setLoading(loading) {
+                if (loading) {
+                    signupButton.disabled = true;
+                    signupText.style.display = 'none';
+                    loadingSpinner.style.display = 'block';
+                } else {
+                    signupButton.disabled = false;
+                    signupText.style.display = 'block';
+                    loadingSpinner.style.display = 'none';
+                }
+            }
+
+            // 메시지 표시
+            function showMessage(type, message) {
+                errorMessage.style.display = 'none';
+                successMessage.style.display = 'none';
+                
+                if (type === 'error') {
+                    errorMessage.textContent = message;
+                    errorMessage.style.display = 'block';
+                } else if (type === 'success') {
+                    successMessage.textContent = message;
+                    successMessage.style.display = 'block';
+                }
+            }
+
+            // 이메일 유효성 검사
+            function isValidEmail(email) {
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                return emailRegex.test(email);
+            }
+
+            // 비밀번호 유효성 검사 (간단한 버전)
+            function validatePassword(password) {
+                return password.length >= 6;
+            }
+
+            // 비밀번호 확인 검사
+            function validateConfirmPassword(password, confirmPassword) {
+                return password === confirmPassword;
+            }
+
+            // 약관 동의 기능
+            function setupTermsAgreement() {
+                if (!agreeAllCheckbox) return;
+                
+                // 전체 동의 체크박스 이벤트
+                agreeAllCheckbox.addEventListener('change', function() {
+                    const isChecked = this.checked;
+                    if (agreePrivacyCheckbox) agreePrivacyCheckbox.checked = isChecked;
+                    if (agreeServiceCheckbox) agreeServiceCheckbox.checked = isChecked;
+                    if (agreeCommunityCheckbox) agreeCommunityCheckbox.checked = isChecked;
+                    if (agreeMarketingCheckbox) agreeMarketingCheckbox.checked = isChecked;
+                });
+
+                // 개별 체크박스 이벤트
+                [agreePrivacyCheckbox, agreeServiceCheckbox, agreeCommunityCheckbox, agreeMarketingCheckbox].forEach(checkbox => {
+                    if (checkbox) {
+                        checkbox.addEventListener('change', function() {
+                            const allRequired = agreePrivacyCheckbox && agreeServiceCheckbox && agreeCommunityCheckbox
+                                             ? (agreePrivacyCheckbox.checked && agreeServiceCheckbox.checked && agreeCommunityCheckbox.checked)
+                                             : false;
+                            const allChecked = allRequired && agreeMarketingCheckbox && agreeMarketingCheckbox.checked;
+                            if (agreeAllCheckbox) agreeAllCheckbox.checked = allChecked;
+                        });
+                    }
+                });
+            }
+
+            // 약관 내용보기 클릭 시 alert로 표시
+            function setupTermsView() {
+                const termsContent = {
+                    privacy: '개인정보 수집 및 이용에 대한 동의\n\n1. 수집하는 개인정보 항목\n- 이메일, 닉네임\n\n2. 개인정보의 수집 및 이용목적\n- 회원 관리, 서비스 제공\n\n3. 개인정보의 보유 및 이용기간\n- 회원 탈퇴 시까지',
+                    service: '서비스 이용정책\n\n1. 서비스 이용 규칙\n- 타인에게 피해를 주는 행위 금지\n- 부정한 방법으로 서비스 이용 금지\n\n2. 계정 관리\n- 개인정보 보안 유지 의무\n- 계정 공유 금지',
+                    community: '커뮤니티 운영정책\n\n1. 게시물 작성 규칙\n- 욕설, 비방 금지\n- 스팸, 광고성 게시물 금지\n\n2. 제재 정책\n- 규칙 위반 시 경고 또는 이용 정지',
+                    marketing: '마케팅 수신 동의사항 (선택)\n\n1. 마케팅 정보 수신\n- 이벤트, 혜택 정보 알림\n- 새로운 서비스 소식\n\n2. 수신 방법\n- 이메일, 앱 푸시 알림\n\n※ 언제든지 수신 거부 가능'
+                };
+                
+                document.querySelectorAll('.view-details').forEach(link => {
+                    link.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        const term = this.getAttribute('data-term');
+                        alert(termsContent[term] || '약관 내용이 준비되지 않았습니다.');
+                    });
+                });
+            }
+
+            // 닉네임 중복체크 버튼
+            function setupNicknameCheck() {
+                if (!checkDuplicateBtn || !nicknameInput) return;
+                
+                checkDuplicateBtn.addEventListener('click', function() {
+                    const nickname = nicknameInput.value.trim();
+                    if (!nickname) {
+                        showMessage('error', '닉네임을 입력해주세요.');
+                        return;
+                    }
+                    
+                    if (nickname.length > 8) {
+                        showMessage('error', '닉네임은 8자 이하로 입력해주세요.');
+                        return;
+                    }
+                    
+                    this.disabled = true;
+                    this.textContent = '확인중...';
+                    this.style.background = '#e5e7eb';
+                    
+                    setTimeout(() => {
+                        this.textContent = '사용가능';
+                        this.style.background = '#d1fae5';
+                        this.style.color = '#065f46';
+                        showMessage('success', '사용 가능한 닉네임입니다.');
+                    }, 1000);
+                });
+            }
+
+            // 회원가입 처리
+            async function handleSignup(nickname, email, password) {
+                try {
+                    setLoading(true);
+                    showMessage('', '');
+
+                    if (!window.auth || !window.db) {
+                        throw new Error('Firebase가 초기화되지 않았습니다.');
+                    }
+
+                    const userCredential = await window.auth.createUserWithEmailAndPassword(email, password);
+                    const user = userCredential.user;
+
+                    await user.updateProfile({
+                        displayName: nickname
+                    });
+
+                    await window.db.collection('users').doc(user.uid).set({
+                        displayName: nickname,
+                        email: email,
+                        level: '일반',
+                        isAdmin: false,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                        lastLoginAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+
+                    showMessage('success', '회원가입 성공! 홈페이지로 이동합니다.');
+                    
+                    setTimeout(() => {
+                        window.location.href = '../index.html';
+                    }, 1500);
+                } catch (error) {
+                    console.error('회원가입 오류:', error);
+                    
+                    let errorMessage = '회원가입에 실패했습니다.';
+                    
+                    if (error.code) {
+                        switch (error.code) {
+                            case 'auth/email-already-in-use':
+                                errorMessage = '이미 사용 중인 이메일입니다.';
+                                break;
+                            case 'auth/invalid-email':
+                                errorMessage = '유효하지 않은 이메일 형식입니다.';
+                                break;
+                            case 'auth/weak-password':
+                                errorMessage = '비밀번호가 너무 약합니다. 6자 이상으로 설정해주세요.';
+                                break;
+                            case 'auth/operation-not-allowed':
+                                errorMessage = '회원가입이 현재 비활성화되어 있습니다.';
+                                break;
+                            default:
+                                errorMessage = `회원가입 오류: ${error.message}`;
+                        }
+                    }
+                    
+                    showMessage('error', errorMessage);
+                } finally {
+                    setLoading(false);
+                }
+            }
+
+            // 폼 제출 이벤트
+            if (signupForm) {
+                signupForm.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    
+                    const nickname = nicknameInput ? nicknameInput.value.trim() : '';
+                    const email = emailInput ? emailInput.value.trim() : '';
+                    const password = passwordInput ? passwordInput.value : '';
+                    const confirmPassword = confirmPasswordInput ? confirmPasswordInput.value : '';
+
+                    // 입력 검증
+                    if (!nickname) {
+                        showMessage('error', '닉네임을 입력해주세요.');
+                        return;
+                    }
+
+                    if (nickname.length > 8) {
+                        showMessage('error', '닉네임은 8자 이하로 입력해주세요.');
+                        return;
+                    }
+
+                    if (!email) {
+                        showMessage('error', '이메일을 입력해주세요.');
+                        return;
+                    }
+
+                    if (!isValidEmail(email)) {
+                        showMessage('error', '올바른 이메일 형식을 입력해주세요.');
+                        return;
+                    }
+
+                    if (!password) {
+                        showMessage('error', '비밀번호를 입력해주세요.');
+                        return;
+                    }
+
+                    if (!validatePassword(password)) {
+                        showMessage('error', '비밀번호는 6자 이상이어야 합니다.');
+                        return;
+                    }
+
+                    if (!validateConfirmPassword(password, confirmPassword)) {
+                        showMessage('error', '비밀번호가 일치하지 않습니다.');
+                        return;
+                    }
+
+                    // 필수 약관 동의 확인
+                    if (!agreePrivacyCheckbox || !agreeServiceCheckbox || !agreeCommunityCheckbox ||
+                        !agreePrivacyCheckbox.checked || !agreeServiceCheckbox.checked || !agreeCommunityCheckbox.checked) {
+                        showMessage('error', '필수 약관에 동의해주세요.');
+                        return;
+                    }
+
+                    await waitForFirebase();
+                    await handleSignup(nickname, email, password);
+                });
+            }
+
+            // 비밀번호 확인 입력 이벤트
+            if (passwordInput && confirmPasswordInput) {
+                confirmPasswordInput.addEventListener('input', function() {
+                    const password = passwordInput.value;
+                    const confirmPassword = this.value;
+                    
+                    if (confirmPassword && !validateConfirmPassword(password, confirmPassword)) {
+                        this.style.borderColor = '#dc2626';
+                    } else {
+                        this.style.borderColor = '#e5e7eb';
+                    }
+                });
+            }
+
+            // 페이지 로드 시 초기화
+            waitForFirebase().then(() => {
+                console.log('Firebase 초기화 완료, 회원가입 폼 준비 완료');
+                setupTermsAgreement();
+                setupTermsView();
+                setupNicknameCheck();
+            });
+        });
+    </script>
+</body>
+</html> 

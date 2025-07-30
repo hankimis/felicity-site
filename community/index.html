@@ -133,9 +133,6 @@
                         <div class="chat-section-header">
                             <h2>실시간 채팅</h2>
                             <div class="chat-header-controls">
-                                <button id="price-alert-settings" class="alert-settings-btn" title="가격 알람 설정">
-                                    <i class="fas fa-bell"></i>
-                                </button>
                                 <div class="chat-users-count">
                                     <i class="fas fa-user"></i>
                                     <span id="chat-users-count">0</span>
@@ -261,56 +258,7 @@
         </div>
     </div>
 
-    <!-- 가격 알람 설정 모달 -->
-    <div id="price-alert-modal" class="auth-modal">
-        <div class="auth-modal-content" style="max-width: 400px;">
-            <span class="auth-modal-close" data-action="close-modal">&times;</span>
-            <div style="padding: 20px;">
-                <h2 style="margin: 0 0 20px 0; font-size: 18px;">
-                    <i class="fas fa-bell"></i> 비트코인 가격 알람 설정
-                </h2>
-                
-                <div style="margin-bottom: 20px;">
-                    <label style="display: block; margin-bottom: 8px; font-size: 14px; color: var(--text-color);">
-                        알람 단위 (달러)
-                    </label>
-                    <select id="alert-threshold" style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--card-bg); color: var(--text-color);">
-                        <option value="500">500달러</option>
-                        <option value="1000" selected>1,000달러</option>
-                        <option value="2000">2,000달러</option>
-                        <option value="5000">5,000달러</option>
-                        <option value="10000">10,000달러</option>
-                    </select>
-                </div>
-                
-                <div style="margin-bottom: 20px;">
-                    <label style="display: block; margin-bottom: 8px; font-size: 14px; color: var(--text-color);">
-                        알람 쿨다운 (초)
-                    </label>
-                    <select id="alert-cooldown" style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--card-bg); color: var(--text-color);">
-                        <option value="10000">10초</option>
-                        <option value="30000" selected>30초</option>
-                        <option value="60000">1분</option>
-                        <option value="300000">5분</option>
-                    </select>
-                </div>
-                
-                <div style="margin-bottom: 20px;">
-                    <label style="display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--text-color);">
-                        <input type="checkbox" id="browser-notifications" checked>
-                        브라우저 알림 표시
-                    </label>
-                </div>
-                
 
-                
-                <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 30px;">
-                    <button class="chart-settings-btn" id="save-alert-settings">저장</button>
-                    <button class="chart-settings-btn secondary" data-action="close-modal">취소</button>
-                </div>
-            </div>
-        </div>
-    </div>
 
     <!-- html2canvas for screenshots -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -321,7 +269,6 @@
     <!-- Custom Scripts -->
     <script src="../js/community.js"></script>
     <script src="../js/community-chat.js"></script>
-    <script src="../js/bitcoin-price-alert.js"></script>
     
     <!-- WhaleTracker 초기화 스크립트 -->
     <script type="module">
@@ -486,74 +433,7 @@
             observer.observe(chartSaveModal, { attributes: true });
         }
 
-        // 가격 알람 설정 모달 이벤트
-        const priceAlertModal = document.getElementById('price-alert-modal');
-        const priceAlertSettingsBtn = document.getElementById('price-alert-settings');
-        const saveAlertSettingsBtn = document.getElementById('save-alert-settings');
-        const alertThresholdSelect = document.getElementById('alert-threshold');
-        const alertCooldownSelect = document.getElementById('alert-cooldown');
-        const browserNotificationsCheckbox = document.getElementById('browser-notifications');
 
-        // 알람 설정 버튼 클릭
-        if (priceAlertSettingsBtn) {
-            priceAlertSettingsBtn.addEventListener('click', () => {
-                if (priceAlertModal) {
-                    priceAlertModal.style.display = 'flex';
-                    
-                    // 현재 설정값 로드
-                    if (window.BitcoinPriceAlert && window.BitcoinPriceAlert.getInstance()) {
-                        const alert = window.BitcoinPriceAlert.getInstance();
-                        alertThresholdSelect.value = alert.alertThreshold || 1000;
-                        alertCooldownSelect.value = alert.alertCooldown || 30000;
-                    }
-                }
-            });
-        }
-
-        // 알람 설정 저장
-        if (saveAlertSettingsBtn) {
-            saveAlertSettingsBtn.addEventListener('click', () => {
-                const threshold = parseInt(alertThresholdSelect.value);
-                const cooldown = parseInt(alertCooldownSelect.value);
-                const browserNotifications = browserNotificationsCheckbox.checked;
-
-                if (window.BitcoinPriceAlert && window.BitcoinPriceAlert.getInstance()) {
-                    window.BitcoinPriceAlert.updateSettings(threshold, cooldown);
-                    
-                    // 설정을 로컬 스토리지에 저장
-                    localStorage.setItem('bitcoinAlertSettings', JSON.stringify({
-                        threshold,
-                        cooldown,
-                        browserNotifications
-                    }));
-                }
-
-                if (priceAlertModal) {
-                    priceAlertModal.style.display = 'none';
-                }
-            });
-        }
-
-        // 모달 닫기 이벤트
-        document.addEventListener('click', (e) => {
-            if (e.target.classList.contains('auth-modal-close') || 
-                e.target.getAttribute('data-action') === 'close-modal') {
-                if (priceAlertModal) {
-                    priceAlertModal.style.display = 'none';
-                }
-            }
-        });
-
-
-
-        // 모달 외부 클릭 시 닫기
-        if (priceAlertModal) {
-            priceAlertModal.addEventListener('click', (e) => {
-                if (e.target === priceAlertModal) {
-                    priceAlertModal.style.display = 'none';
-                }
-            });
-        }
       });
     </script>
     <div id="rocket-overlay" style="display:none; position:fixed; left:0; top:0; width:100vw; height:100vh; pointer-events:none; z-index:2000;"></div>

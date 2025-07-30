@@ -13,7 +13,7 @@
 .tab-navigation {
     display: flex;
     gap: 0;
-    margin: 0 auto 2rem auto;
+    margin: 0 auto 1rem auto;
     padding: 0 1rem;
     max-width: 1000px;
     border-bottom: 2px solid var(--border-color);
@@ -378,6 +378,362 @@
     100% { opacity: 0.6; }
 }
 
+/* ===== 경제 일정 스타일 ===== */
+
+/* 경제 일정 필터 */
+.calendar-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 2rem auto 24px auto;
+    padding: 0 1rem;
+    max-width: 1200px;
+    align-items: center;
+    justify-content: center;
+}
+
+
+
+/* 경제 일정 리스트 */
+.calendar-list {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+/* 월 구분선 */
+.calendar-month-separator {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 20px 0 16px 0;
+    padding: 12px 16px;
+    background: var(--bg-secondary-color);
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+.calendar-month-separator i {
+    color: var(--primary-color);
+    font-size: 14px;
+}
+
+/* 경제 일정 아이템 */
+.calendar-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    margin-bottom: 8px;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    min-height: 100px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.calendar-item:hover {
+    background: var(--bg-secondary-color);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+/* 날짜 및 시간 */
+.calendar-date {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 50px;
+    text-align: center;
+}
+
+.calendar-day {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-color);
+    line-height: 1;
+}
+
+.calendar-weekday {
+    font-size: 12px;
+    color: var(--text-color-secondary);
+    font-weight: 500;
+}
+
+/* 이벤트 정보 */
+.calendar-event {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.calendar-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-color);
+    margin: 0;
+    line-height: 1.3;
+}
+
+.calendar-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--text-color-secondary);
+}
+
+.calendar-category {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 6px;
+    border-radius: 12px;
+    font-size: 10px;
+    font-weight: 500;
+    text-transform: uppercase;
+}
+
+/* 카테고리별 색상 */
+.calendar-category.major-issue {
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+}
+
+.calendar-category.exchange {
+    background: rgba(59, 130, 246, 0.1);
+    color: #3b82f6;
+}
+
+/* 중요도 표시 제거됨 */
+
+/* 시간 표시 */
+.calendar-time {
+    font-size: 11px;
+    color: var(--text-color-secondary);
+    padding: 2px 6px;
+    background: rgba(0,0,0,0.05);
+    border-radius: 4px;
+}
+
+/* 날짜별 보더 스타일 */
+.calendar-item.today-border {
+    border-left: 4px solid #ef4444;
+}
+
+.calendar-item.tomorrow-border {
+    border-left: 4px solid #f59e0b;
+}
+
+/* ===== 관리자 기능 스타일 ===== */
+
+/* 관리자 컨트롤 */
+.admin-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    margin-top: 10px;
+    padding: 10px 140px;
+}
+
+.admin-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.admin-btn:hover {
+    background: #2563eb;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+}
+
+.admin-btn:active {
+    transform: translateY(0);
+}
+
+.admin-btn.delete-btn {
+    background: #ef4444;
+}
+
+.admin-btn.delete-btn:hover {
+    background: #dc2626;
+}
+
+.admin-btn.edit-btn {
+    background: #f59e0b;
+}
+
+.admin-btn.edit-btn:hover {
+    background: #d97706;
+}
+
+/* 경제 일정 아이템에 관리자 버튼 추가 */
+.calendar-item-actions {
+    display: flex;
+    gap: 6px;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.calendar-item:hover .calendar-item-actions {
+    opacity: 1;
+}
+
+.calendar-item-actions .admin-btn {
+    padding: 4px 8px;
+    font-size: 12px;
+    min-width: auto;
+}
+
+/* 모달 폼 스타일 */
+.form-group {
+    margin-bottom: 16px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 500;
+    color: var(--text-color);
+    font-size: 14px;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    font-size: 14px;
+    color: var(--text-color);
+    background: var(--bg-color);
+    transition: border-color 0.2s ease;
+    box-sizing: border-box;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+.form-row {
+    display: flex;
+    gap: 16px;
+}
+
+.form-row .form-group {
+    flex: 1;
+}
+
+.modal-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border-color);
+}
+
+.btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.btn-primary {
+    background: var(--primary-color);
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #2563eb;
+    transform: translateY(-1px);
+}
+
+.btn-secondary {
+    background: var(--bg-secondary-color);
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+}
+
+.btn-secondary:hover {
+    background: var(--border-color);
+}
+
+/* 경제 일정 모달 독립 스타일 */
+.calendar-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 9999;
+    /* 기본적으로 숨김 */
+    display: none;
+}
+
+/* 모달이 활성화되었을 때 flex 적용 */
+.calendar-modal.show {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+}
+
+.calendar-modal-content {
+    position: relative;
+    max-width: 600px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+    background: var(--bg-color);
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    margin: 0;
+    transform: none;
+}
+
+/* 모달 닫기 버튼 */
+.calendar-modal-close {
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    font-size: 24px;
+    color: var(--text-color-secondary);
+    cursor: pointer;
+    transition: color 0.2s ease;
+    z-index: 10;
+}
+
+.calendar-modal-close:hover {
+    color: var(--text-color);
+}
+
 /* 반응형 디자인 */
 @media (max-width: 768px) {
     .page-title {
@@ -474,6 +830,44 @@
         gap: 15px;
         padding: 0 15px;
     }
+    
+    /* 경제 일정 반응형 - 태블릿 */
+    .calendar-filters {
+        gap: 8px;
+        justify-content: flex-start;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+        padding: 0 1rem 0.5rem 1rem;
+    }
+    
+    .calendar-filters::-webkit-scrollbar {
+        display: none;
+    }
+    
+
+    
+    .calendar-list {
+        padding: 0 15px;
+    }
+    
+    .calendar-item {
+        gap: 10px;
+        padding: 10px 12px;
+    }
+    
+    .calendar-title {
+        font-size: 15px;
+    }
+    
+    .calendar-date {
+        min-width: 45px;
+    }
+    
+    .calendar-day {
+        font-size: 16px;
+    }
 }
 
 @media (max-width: 480px) {
@@ -552,5 +946,80 @@
     .news-list {
         gap: 12px;
         padding: 0 10px;
+    }
+    
+    /* 경제 일정 반응형 - 모바일 */
+    .calendar-filters {
+        gap: 6px;
+        padding: 0 0.5rem 0.5rem 0.5rem;
+    }
+    
+    .calendar-list {
+        padding: 0 10px;
+    }
+    
+    .calendar-item {
+        gap: 8px;
+        padding: 8px 10px;
+        margin-bottom: 6px;
+    }
+    
+    .calendar-month-separator {
+        margin: 16px 0 12px 0;
+        padding: 10px 12px;
+        font-size: 14px;
+    }
+    
+    .calendar-title {
+        font-size: 14px;
+    }
+    
+    .calendar-date {
+        min-width: 40px;
+    }
+    
+    .calendar-day {
+        font-size: 15px;
+    }
+    
+    .calendar-weekday {
+        font-size: 11px;
+    }
+    
+    .calendar-meta {
+        font-size: 11px;
+        gap: 6px;
+    }
+    
+    .calendar-category {
+        font-size: 9px;
+        padding: 1px 4px;
+    }
+    
+    .calendar-time {
+        font-size: 10px;
+        padding: 1px 4px;
+    }
+    
+    /* 경제 일정 모달 모바일 반응형 */
+    .calendar-modal-content {
+        width: 95%;
+        max-height: 85vh;
+        margin: 10px;
+    }
+    
+    .calendar-modal .form-row {
+        flex-direction: column;
+        gap: 12px;
+    }
+    
+    .calendar-modal .modal-actions {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .calendar-modal .btn {
+        width: 100%;
+        justify-content: center;
     }
 } 

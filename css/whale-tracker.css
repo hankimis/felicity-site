@@ -89,7 +89,7 @@
 }
 
 .whale-section-header h2::before {
-    content: "🐋";
+    content: "";
     font-size: 18px;
 }
 

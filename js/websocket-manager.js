@@ -1,9 +1,12 @@
-// WebSocket 관련 전역 변수
+// WebSocket 관련 전역 변수 (BinanceDatafeed와 충돌 방지를 위해 비활성화)
 let websocket = null;
 let activeSubscriptions = new Map();
 
-// WebSocket 연결 관리
+// WebSocket 연결 관리 (BinanceDatafeed가 대신 처리하므로 비활성화)
 function connectWebSocket() {
+    console.log('⚠️ websocket-manager.js의 connectWebSocket은 BinanceDatafeed에 의해 대체되었습니다');
+    return;
+    
     if (websocket !== null) {
         if (websocket.readyState === WebSocket.OPEN) return;
         websocket.close();
@@ -74,8 +77,11 @@ function connectWebSocket() {
     };
 }
 
-// 심볼 구독 함수
+// 심볼 구독 함수 (BinanceDatafeed가 대신 처리하므로 비활성화)
 function subscribeToSymbol(symbol, resolution, callback) {
+    console.log('⚠️ websocket-manager.js의 subscribeToSymbol은 BinanceDatafeed에 의해 대체되었습니다');
+    return;
+    
     if (!websocket || websocket.readyState !== WebSocket.OPEN) {
         connectWebSocket();
     }

@@ -16,7 +16,7 @@
 
   
   <!-- Critical CSS - Only essential above-the-fold styles -->
-  <link rel="stylesheet" href="asset/css/sidebar.css">
+  <!-- <link rel="stylesheet" href="asset/css/sidebar.css"> 사이드바 비활성화됨 -->
       <link rel="stylesheet" href="asset/mvrv-ratio/mvrv-styles.css">
     <link rel="stylesheet" href="asset/taker-cvd/taker-cvd-styles.css">
     <link rel="stylesheet" href="asset/volume-bubble-map/volume-bubble-styles.css">
@@ -80,10 +80,15 @@
       overflow: hidden;
     }
 
+    /* 사이드바 숨김 */
+    .sidebar {
+      display: none !important;
+    }
+
     /* 메인 컨텐츠 섹션 스타일 */
     .main-content-section {
-      width: calc(100% - 250px); /* 사이드바 너비 제외 */
-      margin-left: 250px; /* 사이드바 너비만큼 오른쪽으로 이동 */
+      width: 100%; /* 전체 너비 사용 */
+      margin-left: 0; /* 사이드바 여백 제거 */
       background: var(--bg-secondary);
     }
 
@@ -244,8 +249,8 @@
   <link rel="stylesheet" href="css/popup-banner.css">
   <link rel="stylesheet" href="auth.css">
   
-  <!-- 메인페이지 사이드바 CSS 추가 -->
-  <link rel="stylesheet" href="asset/css/sidebar.css">
+  <!-- 메인페이지 사이드바 CSS 추가 (비활성화됨) -->
+  <!-- <link rel="stylesheet" href="asset/css/sidebar.css"> -->
   
   <!-- Card-specific CSS files -->
   <link rel="stylesheet" href="css/cards/trading-charts.css">
@@ -548,7 +553,8 @@
   </div>
   <!-- TradingView Ticker Tape Widget END -->
 
-  <!-- 사이드바 추가 -->
+  <!-- 사이드바 추가 (비활성화됨) -->
+  <!--
   <aside class="sidebar" id="sidebar">
     
     <nav class="sidebar-nav">
@@ -601,6 +607,7 @@
       </ul>
     </nav>
   </aside>
+  -->
 
   <!-- 메인 컨텐츠 섹션 -->
   <section class="main-content-section">
@@ -849,8 +856,8 @@
           }, 100);
         }
         
-        // 사이드바 활성 상태 업데이트
-        updateSidebarActiveState('mvrv');
+        // 사이드바 활성 상태 업데이트 (비활성화됨)
+        // updateSidebarActiveState('mvrv');
         
       } catch (error) {
         console.error('MVRV 컨텐츠 로드 실패:', error);
@@ -989,8 +996,8 @@
         </div>
       `;
       
-      // 사이드바 활성 상태 업데이트
-      updateSidebarActiveState('home');
+      // 사이드바 활성 상태 업데이트 (비활성화됨)
+      // updateSidebarActiveState('home');
     }
     
          // Taker CVD 컨텐츠 로드 함수
@@ -1020,8 +1027,8 @@
            }, 100);
          }
          
-         // 사이드바 활성 상태 업데이트
-         updateSidebarActiveState('taker-cvd');
+         // 사이드바 활성 상태 업데이트 (비활성화됨)
+         // updateSidebarActiveState('taker-cvd');
          
        } catch (error) {
          console.error('Taker CVD 컨텐츠 로드 실패:', error);
@@ -1055,8 +1062,8 @@
            }, 100);
          }
          
-         // 사이드바 활성 상태 업데이트
-         updateSidebarActiveState('volume-bubble');
+         // 사이드바 활성 상태 업데이트 (비활성화됨)
+         // updateSidebarActiveState('volume-bubble');
          
        } catch (error) {
          console.error('Volume Bubble Map 컨텐츠 로드 실패:', error);
@@ -1090,8 +1097,8 @@
            }, 100);
          }
          
-         // 사이드바 활성 상태 업데이트
-         updateSidebarActiveState('exchange-netflow');
+         // 사이드바 활성 상태 업데이트 (비활성화됨)
+         // updateSidebarActiveState('exchange-netflow');
          
        } catch (error) {
          console.error('Exchange Netflow 컨텐츠 로드 실패:', error);
@@ -1125,8 +1132,8 @@
            }, 100);
          }
          
-         // 사이드바 활성 상태 업데이트
-         updateSidebarActiveState('exchange-holdings');
+         // 사이드바 활성 상태 업데이트 (비활성화됨)
+         // updateSidebarActiveState('exchange-holdings');
          
        } catch (error) {
          console.error('Exchange Holdings 컨텐츠 로드 실패:', error);
@@ -1165,7 +1172,8 @@
        });
      });
      
-     // 사이드바 활성 상태 업데이트 함수
+     // 사이드바 활성 상태 업데이트 함수 (비활성화됨)
+     /*
      function updateSidebarActiveState(page) {
        // 모든 활성 상태 제거
        document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
@@ -1233,6 +1241,7 @@
          if (exchangeHoldingsItem) exchangeHoldingsItem.classList.add('active');
        }
      }
+     */
     
     // 성능 최적화를 위한 지연 로딩 시스템
     window.LazyLoader = {
@@ -2278,12 +2287,6 @@
     });
 
   </script>
-
-  <!-- 사이드바 스크립트 -->
-  <script src="asset/js/sidebar.js"></script>
-
-</body>
-</html>
 
 </body>
 </html>
