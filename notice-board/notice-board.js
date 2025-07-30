@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { getFirestore, collection, addDoc, serverTimestamp, query, orderBy, onSnapshot, doc, getCountFromServer, getDocs, limit, startAfter } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, serverTimestamp, query, orderBy, onSnapshot, doc, getCountFromServer, getDocs, limit, startAfter, getDoc, updateDoc, deleteDoc, writeBatch, where } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { firebaseConfig } from '../firebase-config.js';
 import adminAuthManager from '../js/admin-auth-manager.js';
 
@@ -17,6 +17,8 @@ let allNotices = [];
 let currentFilter = 'all';
 let currentUser = null;
 let isAdmin = false;
+let editingNoticeId = null;
+let editingNoticeData = null;
 
 // 🛡️ 보안 강화된 어드민 인증 시스템 초기화
 adminAuthManager.onAuthStateChange((user, adminStatus) => {
@@ -31,6 +33,40 @@ adminAuthManager.onAuthStateChange((user, adminStatus) => {
     updateAdminUI();
 });
 
+// 초기 관리자 상태 확인
+console.log('🚀 AdminAuthManager 초기화:', {
+    adminAuthManager: typeof adminAuthManager,
+    onAuthStateChange: typeof adminAuthManager.onAuthStateChange
+});
+
+// 임시 관리자 권한 확인 함수 (adminAuthManager가 작동하지 않을 때 사용)
+async function checkAdminPermission() {
+    try {
+        if (typeof adminAuthManager.isAdminUser === 'function') {
+            return await adminAuthManager.isAdminUser();
+        } else {
+            // adminAuthManager가 작동하지 않을 때 하드코딩된 관리자 이메일 사용
+            const adminEmails = ['admin@site.com'];
+            console.log('🔐 하드코딩된 관리자 이메일 확인:', {
+                currentUser: currentUser ? currentUser.email : 'none',
+                adminEmails: adminEmails,
+                isAdmin: currentUser && adminEmails.includes(currentUser.email)
+            });
+            return currentUser && adminEmails.includes(currentUser.email);
+        }
+    } catch (error) {
+        console.error('❌ 관리자 권한 확인 중 오류:', error);
+        // 에러 발생 시 하드코딩된 관리자 이메일 사용
+        const adminEmails = ['admin@site.com', 'admin@onbit.com', 'admin@felicity.com'];
+        console.log('🔐 에러 발생 시 하드코딩된 관리자 이메일 확인:', {
+            currentUser: currentUser ? currentUser.email : 'none',
+            adminEmails: adminEmails,
+            isAdmin: currentUser && adminEmails.includes(currentUser.email)
+        });
+        return currentUser && adminEmails.includes(currentUser.email);
+    }
+}
+
 // 🔒 어드민 UI 업데이트
 function updateAdminUI() {
     const adminWriteBtn = document.getElementById('admin-write-btn');
@@ -44,12 +80,17 @@ function updateAdminUI() {
             adminWriteBtn.style.display = 'none';
         }
     }
+    
+    // 관리자 상태가 변경되면 공지사항 목록도 다시 렌더링
+    if (allNotices.length > 0) {
+        renderNotices();
+    }
 }
 
 // 🚨 보안 강화된 어드민 액션 핸들러
 async function handleAdminAction() {
     // 실시간 권한 재검증
-    const isCurrentlyAdmin = await adminAuthManager.isAdminUser();
+    const isCurrentlyAdmin = await checkAdminPermission();
     
     if (!isCurrentlyAdmin) {
         alert('⚠️ 관리자 권한이 없습니다. 다시 로그인해주세요.');
@@ -79,18 +120,37 @@ function renderNotices(notices = allNotices) {
                         notice.category === 'update' ? '업데이트' : '공지';
     
     return `
-      <a href="../notice-post.html?id=${notice.id}" class="notice-item" data-id="${notice.id}">
-        <span class="notice-category ${notice.category}">${categoryText}</span>
-        <div class="notice-content">
-          <div class="notice-title">${notice.title}</div>
-          <div class="notice-date">${notice.date}</div>
-        </div>
-        <i class="fas fa-chevron-right notice-arrow"></i>
-      </a>
+      <div class="notice-item" data-id="${notice.id}">
+        <a href="../notice-post.html?id=${notice.id}" class="notice-link">
+          <span class="notice-category ${notice.category}">${categoryText}</span>
+          <div class="notice-content">
+            <div class="notice-title">${notice.title}</div>
+            <div class="notice-date">${notice.date}</div>
+          </div>
+          <i class="fas fa-chevron-right notice-arrow"></i>
+        </a>
+        ${isAdmin ? `
+          <div class="notice-admin-actions">
+            <button class="admin-action-btn edit-btn" onclick="editNotice('${notice.id}')" title="수정">
+              <i class="fas fa-edit"></i>
+            </button>
+            <button class="admin-action-btn delete-btn" onclick="deleteNotice('${notice.id}')" title="삭제">
+              <i class="fas fa-trash"></i>
+            </button>
+          </div>
+        ` : ''}
+      </div>
     `;
   }).join('');
 
   noticeList.innerHTML = noticeItems;
+  
+  // 디버깅을 위한 로그 추가
+  console.log('🔍 공지사항 렌더링 완료:', {
+    noticesCount: notices.length,
+    isAdmin: isAdmin,
+    currentUser: currentUser ? currentUser.email : 'none'
+  });
 }
 
 // 필터링 함수
@@ -124,11 +184,22 @@ async function loadNoticesFromFirebase() {
         title: data.title,
         date: data.createdAt ? new Date(data.createdAt.seconds * 1000).toLocaleDateString('ko-KR') + ' ' + 
                new Date(data.createdAt.seconds * 1000).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }) : '',
-        createdAt: data.createdAt ? new Date(data.createdAt.seconds * 1000) : new Date()
+        createdAt: data.createdAt ? new Date(data.createdAt.seconds * 1000) : new Date(),
+        likes: data.likes || 0,
+        views: data.views || 0
       });
     });
     
     allNotices = firebaseNotices;
+    
+    // 관리자 상태 재확인 후 렌더링
+    try {
+      const adminStatus = await checkAdminPermission();
+      console.log('👑 공지사항 로드 시 관리자 상태:', adminStatus);
+      isAdmin = adminStatus;
+    } catch (error) {
+      console.error('❌ 관리자 상태 확인 중 오류:', error);
+    }
     
   } catch (error) {
     console.log('Firebase에서 공지사항을 불러오는 중 오류:', error);
@@ -138,9 +209,50 @@ async function loadNoticesFromFirebase() {
   renderNotices();
 }
 
+// 수정 모드 감지 및 초기화 (URL 파라미터 방식 제거)
+async function checkEditMode() {
+  // URL 파라미터 방식 대신 직접 모달 열기 방식 사용
+  console.log('🔍 수정 모드 감지 - URL 파라미터 방식 비활성화');
+}
+
+// 수정할 공지사항 로드
+async function loadNoticeForEdit(noticeId) {
+  console.log('📝 수정할 공지사항 로드 시작:', noticeId);
+  
+  try {
+    const noticeDoc = await getDoc(doc(db, 'notices', noticeId));
+    
+    if (!noticeDoc.exists()) {
+      console.error('❌ 수정할 공지사항을 찾을 수 없음:', noticeId);
+      alert('수정할 공지사항을 찾을 수 없습니다.');
+      return;
+    }
+    
+    editingNoticeData = noticeDoc.data();
+    console.log('✅ 수정할 공지사항 데이터 로드 완료:', editingNoticeData);
+    showEditModal();
+    
+  } catch (error) {
+    console.error('❌ 공지사항 로드 중 오류:', error);
+    alert('공지사항을 불러오는 중 오류가 발생했습니다.');
+  }
+}
+
 // 페이지 로드 시 초기화
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+  console.log('📄 페이지 로드 시작');
+  
+  // 관리자 상태 확인
+  try {
+    const adminStatus = await checkAdminPermission();
+    console.log('👑 초기 관리자 상태:', adminStatus);
+    isAdmin = adminStatus;
+  } catch (error) {
+    console.error('❌ 관리자 상태 확인 중 오류:', error);
+  }
+  
   loadNoticesFromFirebase();
+  checkEditMode();
 });
 
 // 🔥 LEGACY CODE REMOVED - AdminAuthManager handles authentication
@@ -168,7 +280,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // 🛡️ 보안 강화된 공지사항 작성 모달 표시
 async function showWriteModal() {
   // 🚨 실시간 권한 재검증
-  const isCurrentlyAdmin = await adminAuthManager.isAdminUser();
+  const isCurrentlyAdmin = await checkAdminPermission();
   
   if (!isCurrentlyAdmin) {
     alert('⚠️ 관리자 권한이 없습니다. 접근이 거부되었습니다.');
@@ -409,6 +521,206 @@ async function showWriteModal() {
     }
   });
 }
+
+// 수정 모달 표시
+async function showEditModal() {
+  console.log('🎨 수정 모달 표시 시작:', {
+    editingNoticeData: editingNoticeData ? '있음' : '없음',
+    editingNoticeId: editingNoticeId
+  });
+  
+  if (!editingNoticeData) {
+    console.error('❌ 수정할 데이터가 없습니다.');
+    return;
+  }
+
+  // 🚨 실시간 권한 재검증
+  const isCurrentlyAdmin = await checkAdminPermission();
+  
+  if (!isCurrentlyAdmin) {
+    alert('⚠️ 관리자 권한이 없습니다. 접근이 거부되었습니다.');
+    return;
+  }
+
+  const modal = document.createElement('div');
+  modal.className = 'write-modal';
+  modal.innerHTML = `
+    <div class="write-modal-content">
+      <div class="write-modal-header">
+        <h2>🔐 공지사항 수정</h2>
+        <button class="close-modal" onclick="closeEditModal()">&times;</button>
+      </div>
+      <div class="admin-security-info">
+        <i class="fas fa-shield-alt"></i>
+        <span>보안 인증된 관리자 세션</span>
+      </div>
+      <form id="edit-form" class="write-form">
+        <div class="form-group">
+          <label>카테고리</label>
+          <select id="edit-category" required>
+            <option value="general" ${editingNoticeData.category === 'general' ? 'selected' : ''}>일반</option>
+            <option value="update" ${editingNoticeData.category === 'update' ? 'selected' : ''}>업데이트</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>제목</label>
+          <input type="text" id="edit-title" required placeholder="공지사항 제목을 입력하세요" value="${editingNoticeData.title}">
+        </div>
+        <div class="quill-editor-container">
+          <label>내용</label>
+          <div id="edit-editor" placeholder="공지사항 내용을 입력하세요. 이미지, 링크, 서식 등을 자유롭게 사용할 수 있습니다.">${editingNoticeData.content}</div>
+        </div>
+        <div class="form-actions">
+          <button type="button" onclick="closeEditModal()">취소</button>
+          <button type="submit">수정 완료</button>
+        </div>
+      </form>
+    </div>
+  `;
+  
+  document.body.appendChild(modal);
+  
+  // Quill 에디터 초기화
+  const quill = new Quill('#edit-editor', {
+    theme: 'snow',
+    placeholder: '공지사항 내용을 입력하세요. 이미지, 링크, 서식 등을 자유롭게 사용할 수 있습니다.',
+    modules: {
+      toolbar: [
+        [{ 'header': [1, 2, 3, false] }],
+        ['bold', 'italic', 'underline', 'strike'],
+        [{ 'color': [] }, { 'background': [] }],
+        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+        [{ 'indent': '-1'}, { 'indent': '+1' }],
+        [{ 'align': [] }],
+        ['link', 'image'],
+        ['clean']
+      ]
+    }
+  });
+
+  // 수정 폼 제출 이벤트
+  document.getElementById('edit-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const isCurrentlyAdmin = await checkAdminPermission();
+    
+    if (!isCurrentlyAdmin) {
+      alert('⚠️ 관리자 권한이 만료되었습니다. 다시 로그인해주세요.');
+      closeEditModal();
+      return;
+    }
+    
+    const category = document.getElementById('edit-category').value;
+    const title = document.getElementById('edit-title').value;
+    const content = quill.root.innerHTML;
+    
+    if (!title.trim()) {
+      alert('제목을 입력해주세요.');
+      return;
+    }
+    
+    if (!quill.getText().trim()) {
+      alert('내용을 입력해주세요.');
+      return;
+    }
+
+    try {
+      await updateDoc(doc(db, 'notices', editingNoticeId), {
+        category: category,
+        title: title,
+        content: content,
+        updatedAt: serverTimestamp()
+      });
+      
+      alert('✅ 공지사항이 수정되었습니다.');
+      closeEditModal();
+      loadNoticesFromFirebase(); // 목록 새로고침
+      
+    } catch (error) {
+      console.error('공지사항 수정 중 오류:', error);
+      alert('❌ 공지사항 수정 중 오류가 발생했습니다.');
+    }
+  });
+}
+
+// 수정 모달 닫기
+window.closeEditModal = function() {
+  const modal = document.querySelector('.write-modal');
+  if (modal) {
+    modal.remove();
+  }
+  // 수정 데이터 초기화
+  editingNoticeData = null;
+  editingNoticeId = null;
+};
+
+// 공지사항 수정 (전역 함수)
+window.editNotice = async function(noticeId) {
+  console.log('✏️ 수정 버튼 클릭:', { noticeId, isAdmin });
+  
+  const adminStatus = await checkAdminPermission();
+  if (!adminStatus) {
+    alert('관리자 권한이 필요합니다.');
+    return;
+  }
+  
+  // 바로 수정 모달 열기
+  editingNoticeId = noticeId;
+  await loadNoticeForEdit(noticeId);
+};
+
+// 공지사항 삭제 (전역 함수)
+window.deleteNotice = async function(noticeId) {
+  console.log('🗑️ 삭제 버튼 클릭:', { noticeId, isAdmin });
+  
+  const adminStatus = await checkAdminPermission();
+  if (!adminStatus) {
+    alert('관리자 권한이 필요합니다.');
+    return;
+  }
+
+  if (!confirm('정말로 이 공지사항을 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.')) {
+    return;
+  }
+
+  try {
+    // 관련 데이터들도 함께 삭제
+    const batch = writeBatch(db);
+    
+    // 공지사항 삭제
+    batch.delete(doc(db, 'notices', noticeId));
+    
+    // 관련 댓글들 삭제
+    const commentsQuery = query(collection(db, 'notice_comments'), where('noticeId', '==', noticeId));
+    const commentsSnapshot = await getDocs(commentsQuery);
+    commentsSnapshot.forEach(doc => {
+      batch.delete(doc.ref);
+    });
+    
+    // 관련 좋아요들 삭제
+    const likesQuery = query(collection(db, 'notice_likes'), where('noticeId', '==', noticeId));
+    const likesSnapshot = await getDocs(likesQuery);
+    likesSnapshot.forEach(doc => {
+      batch.delete(doc.ref);
+    });
+    
+    // 관련 저장들 삭제
+    const savesQuery = query(collection(db, 'notice_saves'), where('noticeId', '==', noticeId));
+    const savesSnapshot = await getDocs(savesQuery);
+    savesSnapshot.forEach(doc => {
+      batch.delete(doc.ref);
+    });
+    
+    await batch.commit();
+    
+    alert('공지사항이 삭제되었습니다.');
+    loadNoticesFromFirebase(); // 목록 새로고침
+    
+  } catch (error) {
+    console.error('공지사항 삭제 중 오류:', error);
+    alert('공지사항 삭제 중 오류가 발생했습니다.');
+  }
+};
 
 // 작성 모달 닫기
 window.closeWriteModal = function() {

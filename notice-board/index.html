@@ -121,15 +121,23 @@
     .notice-item {
       display: flex;
       align-items: center;
+      justify-content: space-between;
       padding: 20px 0;
       border-bottom: 1px solid var(--border-color);
-      cursor: pointer;
       transition: all 0.2s ease;
-      text-decoration: none;
-      color: inherit;
     }
 
-    .notice-item:hover {
+    .notice-link {
+      display: flex;
+      align-items: center;
+      flex: 1;
+      cursor: pointer;
+      text-decoration: none;
+      color: inherit;
+      transition: all 0.2s ease;
+    }
+
+    .notice-item:hover .notice-link {
       background: var(--bg-secondary-color);
       margin: 0 -20px;
       padding-left: 20px;
@@ -176,10 +184,75 @@
       color: var(--text-color-secondary);
     }
 
+    .notice-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .notice-stats {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .stat-item {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.8rem;
+      color: var(--text-color-secondary);
+    }
+
+    .stat-item i {
+      font-size: 0.75rem;
+    }
+
     .notice-arrow {
       color: var(--text-color-secondary);
       font-size: 1.2rem;
       margin-left: 16px;
+    }
+
+    .notice-admin-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-left: 16px;
+    }
+
+    .admin-action-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      border: none;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .admin-action-btn.edit-btn {
+      background: var(--primary-color);
+      color: white;
+    }
+
+    .admin-action-btn.edit-btn:hover {
+      background: var(--primary-color-dark);
+      transform: translateY(-1px);
+    }
+
+    .admin-action-btn.delete-btn {
+      background: #dc3545;
+      color: white;
+    }
+
+    .admin-action-btn.delete-btn:hover {
+      background: #c82333;
+      transform: translateY(-1px);
     }
 
     .admin-btn {
@@ -604,6 +677,39 @@
 
       .notice-date {
         font-size: 0.8rem;
+      }
+
+      .notice-item {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+      }
+
+      .notice-link {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+      }
+
+      .notice-admin-actions {
+        align-self: flex-end;
+        margin-left: 0;
+      }
+
+      .admin-action-btn {
+        width: 32px;
+        height: 32px;
+        font-size: 0.8rem;
+      }
+
+      .notice-category {
+        align-self: flex-start;
+        margin-right: 0;
+        margin-bottom: 8px;
+      }
+
+      .notice-arrow {
+        display: none;
       }
     }
   </style>
