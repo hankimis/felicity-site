@@ -3,7 +3,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // 메인페이지의 속보뉴스 카드를 위한 뉴스 데이터 로드
     const breakingNewsCard = document.querySelector('.breaking-news-card');
     if (breakingNewsCard) {
-        console.log('📰 메인페이지 속보뉴스 카드 감지, 뉴스 데이터 로드 시작');
         loadNewsForMainPage();
     }
     
@@ -29,7 +28,6 @@ function initializePage() {
     // 뉴스 페이지인지 확인
     const newsGrid = document.getElementById('newsGrid');
     if (!newsGrid) {
-        console.log('📰 뉴스 페이지가 아니므로 뉴스 초기화를 건너뜁니다.');
         return;
     }
     
@@ -48,7 +46,6 @@ function initializeInfiniteScroll() {
     // 뉴스 페이지인지 확인
     const newsGrid = document.getElementById('newsGrid');
     if (!newsGrid) {
-        console.log('📰 뉴스 페이지가 아니므로 무한스크롤 초기화를 건너뜁니다.');
         return;
     }
     
@@ -152,9 +149,6 @@ function loadMoreNews() {
         
         hideLoadingIndicator();
         isLoading = false;
-        
-        const tabLabel = currentTab === 'breaking' ? '속보' : '뉴스';
-        console.log(`📰 ${tabLabel} 추가 로드: ${currentDisplayCount}/${totalNews} 표시`);
     }, 500);
 }
 
@@ -205,7 +199,6 @@ function initializeNewsUI() {
     // 뉴스 페이지인지 확인
     const newsGrid = document.getElementById('newsGrid');
     if (!newsGrid) {
-        console.log('📰 뉴스 페이지가 아니므로 UI 초기화를 건너뜁니다.');
         return;
     }
     
@@ -269,7 +262,6 @@ async function loadNewsFeeds() {
 
     // newsGrid가 없으면 함수 종료
     if (!newsGrid) {
-        console.warn('❌ newsGrid 요소를 찾을 수 없습니다. 뉴스 페이지가 아닙니다.');
         return;
     }
 
@@ -282,8 +274,6 @@ async function loadNewsFeeds() {
                 
                 // 캐시가 있으면 즉시 표시 (만료되어도 일단 표시)
                 if (cacheData.data && cacheData.data.length > 0) {
-                    console.log('📰 캐시된 뉴스 즉시 표시');
-                    
                     // 캐시된 데이터의 시간 정보 검증 및 수정
                     const validatedData = validateAndFixNewsDates(cacheData.data);
                     window.newsItems = validatedData;
@@ -292,14 +282,13 @@ async function loadNewsFeeds() {
                     
                     // 캐시가 만료되었으면 백그라운드에서 새 데이터 가져오기
                     if (age >= CACHE_DURATION_MS) {
-                        console.log('📰 캐시 만료, 백그라운드에서 새 데이터 로딩');
                         setTimeout(() => loadFreshNews(true), 100);
                     }
                     return;
                 }
             }
         } catch (e) {
-            console.warn('캐시 읽기 실패:', e);
+            // 캐시 읽기 실패 시 무시
         }
     
     // 캐시가 없으면 로딩 메시지 표시하고 새 데이터 로드
@@ -321,7 +310,6 @@ async function loadFreshNews(isBackgroundUpdate = false) {
     
     // newsGrid가 없으면 함수 종료
     if (!newsGrid) {
-        console.warn('❌ newsGrid 요소를 찾을 수 없습니다. 뉴스 페이지가 아닙니다.');
         return;
     }
     
@@ -351,7 +339,6 @@ async function loadFreshNews(isBackgroundUpdate = false) {
                     setTimeout(() => reject(new Error('Timeout')), 5000)
                 )
             ]).catch(error => {
-                console.warn(`${feed.source} 피드 로딩 실패:`, error.message);
                 return []; // 실패한 피드는 빈 배열 반환
             })
         );
@@ -367,7 +354,6 @@ async function loadFreshNews(isBackgroundUpdate = false) {
             if (result && result.length > 0) {
                 allNews.push(...result);
                 successCount++;
-                console.log(`✅ ${feedName}: ${result.length}개 뉴스 로드`);
             }
         });
 
@@ -393,10 +379,6 @@ async function loadFreshNews(isBackgroundUpdate = false) {
             
             // 속보 뉴스 카드 업데이트 (index.html의 카드가 있을 때)
             setTimeout(() => triggerBreakingNewsUpdate(), 500);
-            
-
-            
-            console.log(`📰 빠른 로딩 완료: ${successCount}개 소스에서 ${uniqueNews.length}개 뉴스`);
         }
 
         // 2단계: 나머지 피드들 백그라운드에서 로드 (5초 타임아웃)
@@ -407,7 +389,6 @@ async function loadFreshNews(isBackgroundUpdate = false) {
                     setTimeout(() => reject(new Error('Timeout')), 5000)
                 )
             ]).catch(error => {
-                console.warn(`${feed.source} 피드 로딩 실패:`, error.message);
                 return [];
             })
         );
@@ -420,13 +401,12 @@ async function loadFreshNews(isBackgroundUpdate = false) {
             if (result && result.length > 0) {
                 allNews.push(...result);
                 successCount++;
-                console.log(`✅ ${feedName}: ${result.length}개 뉴스 로드`);
             }
         });
 
         // 최종 결과 처리
         if (allNews.length === 0) {
-            throw new Error('모든 뉴스 피드를 가져오는데 실패했습니다.');
+            throw new Error('뉴스 데이터를 가져올 수 없습니다.');
         }
 
         // 중복 제거 및 정렬
@@ -459,16 +439,9 @@ async function loadFreshNews(isBackgroundUpdate = false) {
             
             // 백그라운드 업데이트에서도 속보 카드 업데이트
             setTimeout(() => triggerBreakingNewsUpdate(), 500);
-            
-
-            
-            console.log(`📰 백그라운드 업데이트 완료: ${validatedNews.length}개 뉴스`);
         }
-        
-        console.log(`📰 뉴스 로딩 완료: ${successCount}/${feeds.length} 소스 성공, ${uniqueNews.length}개 뉴스`);
 
     } catch (error) {
-        console.error('뉴스 로딩 실패:', error);
         if (!isBackgroundUpdate) {
             newsGrid.innerHTML = `
                 <div class="loading">
@@ -511,17 +484,14 @@ function validateAndFixNewsDates(newsArray) {
                 
                 // 잘못된 날짜인지 확인
                 if (isNaN(originalDate.getTime())) {
-                    console.warn('잘못된 날짜 감지, 현재 시간으로 수정:', item.pubDate);
                     fixedItem.pubDate = now.toISOString();
                 } else {
                     // 미래 날짜는 그대로 유지 (최신 뉴스로 처리)
                     if (originalDate > now) {
-                        console.log('미래 날짜 뉴스 감지 (최신 뉴스로 처리):', item.pubDate);
                         // 미래 날짜도 그대로 유지
                     }
                     // 너무 오래된 날짜인지 확인 (1년 이상)
                     else if (originalDate < oneYearAgo) {
-                        console.warn('너무 오래된 날짜 감지 (1년 이상), 현재 시간으로 수정:', item.pubDate);
                         fixedItem.pubDate = now.toISOString();
                     }
                 }
@@ -530,7 +500,6 @@ function validateAndFixNewsDates(newsArray) {
                 fixedItem.pubDate = now.toISOString();
             }
         } catch (error) {
-            console.error('날짜 검증 중 오류:', error);
             fixedItem.pubDate = now.toISOString();
         }
         
@@ -669,7 +638,7 @@ async function fetchAndParseFeed({ url, source }) {
             }
         } catch (error) {
             if (retry === maxRetries) {
-                console.warn(`❌ ${source}: 최종 실패 - ${error.message}`);
+                // 최종 실패 시 무시
             }
             
             // 빠른 재시도 (대기 시간 단축)
@@ -910,7 +879,6 @@ function switchTab(tabName) {
         }
     } else if (tabName === 'calendar') {
         // 경제 일정 탭
-        console.log('📅 경제 일정 탭 활성화');
         
         // 잠시 후 관리자 권한 체크 (DOM 렌더링 완료 후)
         setTimeout(() => {
@@ -919,8 +887,6 @@ function switchTab(tabName) {
         
         loadEconomicCalendar();
     }
-    
-    console.log(`📑 탭 전환: ${tabName}`);
 }
 
 
@@ -958,9 +924,6 @@ function filterNews(source, currentTab = null) {
     
     // 필터링된 뉴스 표시
     displayNews(filteredNews, true, currentTab);
-    
-    const tabLabel = currentTab === 'breaking' ? '속보' : '뉴스';
-    console.log(`🔍 ${tabLabel} 필터링 완료: ${source} (${filteredNews.length}개)`);
 }
 
 // 상대적 시간 표시 함수 (개선된 버전)
@@ -983,7 +946,6 @@ function getRelativeTime(dateString) {
                 date = new Date(cleanedString);
                 
                 if (isNaN(date.getTime())) {
-                    console.warn('날짜 파싱 실패:', dateString);
                     return '시간 정보 없음';
                 }
             }
@@ -1017,7 +979,6 @@ function getRelativeTime(dateString) {
         });
         
     } catch (error) {
-        console.error('시간 계산 오류:', error, dateString);
         return '시간 정보 없음';
     }
 }
@@ -1094,7 +1055,6 @@ async function loadNewsImportanceData() {
     // 뉴스 페이지인지 확인
     const newsGrid = document.getElementById('newsGrid');
     if (!newsGrid) {
-        console.log('📰 뉴스 페이지가 아니므로 중요도 데이터 로드를 건너뜁니다.');
         return;
     }
     
@@ -1107,7 +1067,6 @@ async function loadNewsImportanceData() {
             
             if (age < IMPORTANCE_CACHE_DURATION) {
                 newsImportanceData = cacheData.data || {};
-                console.log('📊 뉴스 중요도 데이터 캐시에서 로드됨');
                 return;
             }
         }
@@ -1127,11 +1086,8 @@ async function loadNewsImportanceData() {
                 data: newsImportanceData,
                 timestamp: Date.now()
             }));
-            
-            console.log('📊 뉴스 중요도 데이터 Firebase에서 로드됨');
         }
     } catch (error) {
-        console.warn('뉴스 중요도 데이터 로드 실패:', error);
         newsImportanceData = {};
     }
 }
@@ -1234,11 +1190,7 @@ function analyzeNewsImportance(newsItem) {
     const finalScore = Math.max(1, Math.min(5, Math.round(score)));
     analysisDetails.finalScore = finalScore;
     
-    // 분석 결과 로그
-    if (matchedKeywords.length > 0) {
-        console.log(`🤖 뉴스 분석 완료: "${title.substring(0, 50)}..." = ${finalScore}점`);
-        console.log(`   매칭 키워드: ${matchedKeywords.map(k => k.keyword).join(', ')}`);
-    }
+
     
     return {
         score: finalScore,
@@ -1274,11 +1226,9 @@ async function saveNewsImportance(newsId, importance, analysisDetails = null) {
                 data: newsImportanceData,
                 timestamp: Date.now()
             }));
-            
-            console.log(`🤖 뉴스 중요도 자동 분석 저장됨: ${newsId} = ${importance}점`);
         }
     } catch (error) {
-        console.error('뉴스 중요도 저장 실패:', error);
+        // 저장 실패 시 무시
     }
 }
 
@@ -1361,7 +1311,6 @@ async function reanalyzeNewsImportance(newsItem) {
     const analysis = analyzeNewsImportance(newsItem);
     await saveNewsImportance(newsId, analysis.score, analysis.details);
     
-    console.log(`🔄 뉴스 재분석 완료: ${newsId} = ${analysis.score}점`);
     return analysis.score;
 }
 
@@ -1378,7 +1327,6 @@ async function loadNewsForMainPage() {
             const age = Date.now() - cacheData.timestamp;
             
             if (cacheData.data && cacheData.data.length > 0) {
-                console.log('📰 메인페이지: 캐시된 뉴스 데이터 사용');
                 window.newsItems = cacheData.data;
                 
                 // 속보뉴스 카드 업데이트
@@ -1390,18 +1338,16 @@ async function loadNewsForMainPage() {
                 
                 // 캐시가 만료되었으면 백그라운드에서 새 데이터 가져오기
                 if (age >= CACHE_DURATION_MS) {
-                    console.log('📰 메인페이지: 캐시 만료, 백그라운드에서 새 데이터 로딩');
                     setTimeout(() => loadFreshNewsForMainPage(), 100);
                 }
                 return;
             }
         }
     } catch (e) {
-        console.warn('메인페이지 캐시 읽기 실패:', e);
+        // 캐시 읽기 실패 시 무시
     }
     
     // 캐시가 없으면 새 데이터 로드
-    console.log('📰 메인페이지: 새 뉴스 데이터 로딩 시작');
     await loadFreshNewsForMainPage();
 }
 
@@ -1426,7 +1372,6 @@ async function loadFreshNewsForMainPage() {
                     setTimeout(() => reject(new Error('Timeout')), 5000)
                 )
             ]).catch(error => {
-                console.warn(`${feed.source} 피드 로딩 실패:`, error.message);
                 return [];
             })
         );
@@ -1442,7 +1387,6 @@ async function loadFreshNewsForMainPage() {
             if (result && result.length > 0) {
                 allNews.push(...result);
                 successCount++;
-                console.log(`✅ 메인페이지 ${feedName}: ${result.length}개 뉴스 로드`);
             }
         });
 
@@ -1469,15 +1413,11 @@ async function loadFreshNewsForMainPage() {
                     window.updateBreakingNewsCard();
                 }
             }, 100);
-            
-
-            
-            console.log(`📰 메인페이지 뉴스 로딩 완료: ${successCount}개 소스에서 ${validatedNews.length}개 뉴스`);
         } else {
-            console.warn('📰 메인페이지: 뉴스 데이터를 가져올 수 없습니다');
+            // 뉴스 데이터를 가져올 수 없음
         }
     } catch (error) {
-        console.error('📰 메인페이지 뉴스 로딩 실패:', error);
+        // 뉴스 로딩 실패 시 무시
     }
 }
 
@@ -1503,8 +1443,6 @@ function triggerBreakingNewsUpdate() {
 
 // 경제 일정 초기화
 function initializeEconomicCalendar() {
-    console.log('📅 경제 일정 초기화');
-    
     // 카테고리 필터 이벤트 설정
     setupCalendarFilters();
     
@@ -1581,7 +1519,6 @@ function loadCalendarEventsFromFirebase() {
             renderCalendarEvents(events);
         })
         .catch((error) => {
-            console.error('경제 일정 로드 실패:', error);
             const calendarList = document.getElementById('calendarList');
             if (calendarList) {
                 calendarList.innerHTML = '<div class="loading">경제 일정을 불러올 수 없습니다.</div>';
@@ -1610,7 +1547,7 @@ function renderCalendarEvents(events) {
         // 월 구분선 추가
         eventsHTML += `
             <div class="calendar-month-separator">
-                <i class="fas fa-calendar"></i>
+                <img src="/assets/icon/Date_range_duotone.svg" alt="달력 아이콘" class="calendar-icon">
                 <span>${year}년${month}월</span>
             </div>
         `;
@@ -1716,8 +1653,6 @@ function filterCalendarEvents(category) {
             item.style.display = 'none';
         }
     });
-    
-    console.log(`📅 경제 일정 필터링: ${category}`);
 }
 
 // ===== 관리자 기능 =====

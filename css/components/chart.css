@@ -314,7 +314,7 @@
 }
 
 .layout-btn.active .chart-box {
-    border-color: var(--primary-color);
+    border-color: var(--text-color);
     opacity: 1;
 }
 

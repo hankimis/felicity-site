@@ -56,7 +56,7 @@ class CommunityChat {
             `;
         }
         
-        const profileImg = msg.data.photoThumbURL || msg.data.photoURL || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMjAiIGN5PSIyMCIgcj0iMjAiIGZpbGw9IiM2Mjc0OGEiLz4KPHBhdGggZD0iTTIwIDEwQzIyLjIwOTEgMTAgMjQgMTEuNzkwOSAyNCAxNEMyNCAxNi4yMDkxIDIyLjIwOTEgMTggMjAgMThDMTcuNzkwOSAxOCAxNiAxNi4yMDkxIDE2IDE0QzE2IDExLjc5MDkgMTcuNzkwOSAxMCAyMCAxMFoiIGZpbGw9IiNmZmZmZmYiLz4KPHBhdGggZD0iTTI4IDI4QzI4IDI0LjY4NjMgMjQuNDE4MyAyMiAyMCAyMkMxNS41ODE3IDIyIDEyIDI0LjY4NjMgMTIgMjhIMjhaIiBmaWxsPSIjZmZmZmZmIi8+Cjwvc3ZnPgo=';
+        const profileImg = msg.data.photoThumbURL || msg.data.photoURL || '/assets/icon/profileicon.png';
         
         let isMyMessage = false;
         if (window.currentUser && msg.data.uid === window.currentUser.uid) {
@@ -72,7 +72,7 @@ class CommunityChat {
         return `
             <div class="message-item ${myMessageClass}" id="${msg.id}" data-uid="${msg.data.uid}">
                 <div class="chat-profile-pic-wrap">
-                    <img class="chat-profile-pic" src="${profileImg}" alt="프로필" loading="lazy" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMjAiIGN5PSIyMCIgcj0iMjAiIGZpbGw9IiM2Mjc0OGEiLz4KPHBhdGggZD0iTTIwIDEwQzIyLjIwOTEgMTAgMjQgMTEuNzkwOSAyNCAxNEMyNCAxNi4yMDkxIDIyLjIwOTEgMTggMjAgMThDMTcuNzkwOSAxOCAxNiAxNi4yMDkxIDE2IDE0QzE2IDExLjc5MDkgMTcuNzkwOSAxMCAyMCAxMFoiIGZpbGw9IiNmZmZmZmYiLz4KPHBhdGggZD0iTTI4IDI4QzI4IDI0LjY4NjMgMjQuNDE4MyAyMiAyMCAyMkMxNS41ODE3IDIyIDEyIDI0LjY4NjMgMTIgMjhIMjhaIiBmaWxsPSIjZmZmZmZmIi8+Cjwvc3ZnPgo='" />
+                    <img class="chat-profile-pic" src="${profileImg}" alt="프로필" loading="lazy" onerror="this.src='/assets/icon/profileicon.png'" />
                 </div>
                 <div class="message-content">
                     <div class="message-sender">

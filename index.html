@@ -89,7 +89,7 @@
     .main-content-section {
       width: 100%; /* 전체 너비 사용 */
       margin-left: 0; /* 사이드바 여백 제거 */
-      background: var(--bg-secondary);
+      background: var(--bg-primary);
     }
 
     .content-container {
@@ -101,7 +101,6 @@
 
     .dashboard-section {
       padding: 20px 0;
-      background: var(--bg-secondary);
     }
 
     .main-dashboard-grid {
@@ -117,8 +116,6 @@
       padding: 0;
       box-shadow: 0 4px 20px var(--shadow-light);
       overflow: hidden;
-      display: flex;
-      flex-direction: column;
     }
 
     .dashboard-card .card-header {
@@ -132,6 +129,7 @@
       font-weight: 600;
       margin: 0;
       color: var(--text-primary);
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
     }
 
     .dashboard-card .card-header p {
@@ -314,7 +312,10 @@
             locale: "kr",
             colorTheme: "light",
             autosize: true,
-            showVolume: true
+            showVolume: true,
+            lineColor: "rgba(41, 98, 255, 1)",
+            "topColor": "rgba(41, 98, 255, 0.2)",
+            "bottomColor": "rgba(41, 98, 255, 0)"
           }
         },
         'eth-chart': {
@@ -630,7 +631,6 @@
         <div class="dashboard-card whale-tracker-card">
         <div class="card-header">
           <h3>
-            <i class="fas fa-fish" style="color: #10b981;"></i>
             고래 거래 추적
           </h3>
           <p>대형 거래 실시간 모니터링</p>
@@ -652,7 +652,6 @@
         <div class="dashboard-card breaking-news-card">
         <div class="card-header">
           <h3>
-            <i class="fas fa-newspaper" style="color: #ef4444;"></i>
             속보 뉴스
           </h3>
           <p>중요도 높은 암호화폐 뉴스</p>
@@ -674,7 +673,6 @@
       <div class="crypto-table-section">
         <div class="section-header">
         <h3 class="section-title">
-          <i class="fas fa-coins"></i>
           실시간 코인 시세
         </h3>
         <div class="table-controls">

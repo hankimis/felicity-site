@@ -768,12 +768,12 @@ class WhaleTracker {
 
     formatValue(value) {
         if (value >= 1000000) {
-            return `$${(value / 1000000).toFixed(1)} M`;
+            return `<i class="fas fa-dollar-sign"></i>${(value / 1000000).toFixed(1)} M`;
         }
         if (value >= 1000) {
-            return `$${(value / 1000).toFixed(1)} K`;
+            return `<i class="fas fa-dollar-sign"></i>${(value / 1000).toFixed(1)} K`;
         }
-        return `$${value.toFixed(0)}`;
+        return `<i class="fas fa-dollar-sign"></i>${value.toFixed(0)}`;
     }
 
     formatTimeAgo(timestamp) {
@@ -993,7 +993,7 @@ class WhaleTracker {
                 </div>
                 <div class="market-controls">
                     <div class="threshold-slider">
-                        <label>최소금액: <span class="threshold-value">$${(market.threshold / 1000)}k</span></label>
+                        <label>최소금액: <span class="threshold-value"><i class="fas fa-dollar-sign"></i>${(market.threshold / 1000)}k</span></label>
                         <input type="range" min="10000" max="1000000" step="10000" value="${market.threshold}" class="slider">
                     </div>
                     <label class="switch">
@@ -1015,7 +1015,7 @@ class WhaleTracker {
         document.querySelectorAll('.market-setting-item .slider').forEach(slider => {
             slider.addEventListener('input', (e) => {
                 const valueEl = e.target.previousElementSibling.querySelector('.threshold-value');
-                valueEl.textContent = `$${(e.target.value / 1000)}k`;
+                valueEl.innerHTML = `<i class="fas fa-dollar-sign"></i>${(e.target.value / 1000)}k`;
             });
         });
     }
@@ -1296,10 +1296,10 @@ function updateWhaleStats() {
         
         if (totalTradesEl) totalTradesEl.textContent = stats.totalTrades;
         if (totalVolumeEl) {
-            totalVolumeEl.textContent = stats.totalValue >= 1000000 ? 
-                `$${(stats.totalValue/1000000).toFixed(1)}M` :
-                stats.totalValue >= 1000 ? `$${(stats.totalValue/1000).toFixed(0)}K` : 
-                `$${stats.totalValue}`;
+            totalVolumeEl.innerHTML = stats.totalValue >= 1000000 ? 
+                `<i class="fas fa-dollar-sign"></i>${(stats.totalValue/1000000).toFixed(1)}M` :
+                stats.totalValue >= 1000 ? `<i class="fas fa-dollar-sign"></i>${(stats.totalValue/1000).toFixed(0)}K` : 
+                `<i class="fas fa-dollar-sign"></i>${stats.totalValue}`;
         }
         if (buyTradesEl) buyTradesEl.textContent = stats.buyTrades;
         if (sellTradesEl) sellTradesEl.textContent = stats.sellTrades;

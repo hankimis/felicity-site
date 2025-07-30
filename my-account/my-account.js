@@ -283,7 +283,7 @@ async function loadUserData(user) {
             if (userData.photoURL) {
                 profilePicPreview.src = userData.photoURL;
             } else {
-                profilePicPreview.src = 'assets/@default-profile.png';
+                profilePicPreview.src = 'assets/icon/profileicon.png';
             }
         } else {
             // 사용자 문서가 없는 경우 기본 데이터로 생성
@@ -295,7 +295,7 @@ async function loadUserData(user) {
             
             displayNameInput.value = currentUser.displayName;
             emailInput.value = currentUser.email;
-            profilePicPreview.src = 'assets/@default-profile.png';
+            profilePicPreview.src = 'assets/icon/profileicon.png';
             
             // Firestore에 기본 사용자 데이터 생성
             try {
@@ -322,7 +322,7 @@ async function loadUserData(user) {
         
         displayNameInput.value = currentUser.displayName;
         emailInput.value = currentUser.email;
-        profilePicPreview.src = 'assets/@default-profile.png';
+        profilePicPreview.src = 'assets/icon/profileicon.png';
     }
 }
 

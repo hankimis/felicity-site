@@ -87,15 +87,12 @@
 /* 🔥 프로필 사진 */
 .chat-profile-pic-wrap {
     flex-shrink: 0;
-    width: 32px;
-    height: 32px;
+    width: 36px;
     margin: 0 8px 0 0;
 }
 
 .chat-profile-pic {
-    width: 32px;
-    height: 32px;
-    border-radius: 30%;
+    border-radius: 40%;
     object-fit: cover;
     display: flex;
     align-items: center;
@@ -183,11 +180,6 @@
     background-color: #f1f1f1;
 }
 
-.message-item.my-message .message-text {
-    background: #FFE22D;
-    color: #333;
-}
-
 /* 🔥 채팅 입력 폼 */
 .chat-input-form {
     display: flex;
@@ -219,7 +211,7 @@
 .chat-input-form button {
     padding: 0px 20px;
     border: none;
-    border-radius: 5px;
+    border-radius: 12px;
     background-color: var(--primary-color);
     color: white;
     cursor: pointer;
@@ -443,15 +435,6 @@
 :root.dark-mode .message-text {
     color: var(--text-color);
     background-color: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-/* 다크모드 내 메시지 스타일 */
-:root.dark-mode .message-item.my-message .message-text {
-    background: linear-gradient(135deg, #FFE22D, #FDD835);
-    color: #1a1a1a;
-    border: 1px solid #FDD835;
-    box-shadow: 0 2px 4px rgba(255, 226, 45, 0.2);
 }
 
 /* 라이트모드 메시지 텍스트 */
@@ -463,15 +446,8 @@
 
 :root:not(.dark-mode) .message-text {
     color: var(--text-color);
-    background-color: #f1f1f1;
-    border: 1px solid #e5e5e5;
+    background-color: #f2f3f5;
 }
 
-/* 라이트모드 내 메시지 스타일 */
-:root:not(.dark-mode) .message-item.my-message .message-text {
-    background: #FFE22D;
-    color: #333;
-    border: 1px solid #FDD835;
-} 
 
  
