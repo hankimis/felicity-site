@@ -21,11 +21,11 @@
     "@context": "https://schema.org",
     "@type": "WebSite",
     "name": "온비트",
-    "url": "https://onbit.kr",
+    "url": "https://onbitlabs.com",
     "description": "국내 1위 수수료 페이백, 암호화폐 플랫폼",
     "potentialAction": {
       "@type": "SearchAction",
-      "target": "https://onbit.kr/search?q={search_term_string}",
+      "target": "https://onbitlabs.com/search?q={search_term_string}",
       "query-input": "required name=search_term_string"
     }
   }
@@ -171,11 +171,10 @@
 
 
 
-        /* 반응형 디자인 */
+        /* ================================================
+        반응형 디자인        1200px
+        ================================================ */
     @media (max-width: 1200px) {
-      .main-content-section {
-        width: calc(100% - 250px);
-      }
 
       .content-container {
         max-width: 100%;
@@ -183,15 +182,19 @@
       }
 
       .main-dashboard-grid {
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: 1fr 1fr 1fr;
         grid-template-rows: 1fr 1fr;
         height: auto;
         gap: 15px;
       }
       
       .bitcoin-chart-card {
-        grid-column: 1 / 3;
+        grid-column: 1 / span 3;
         grid-row: 1 / 2;
+        height: 450px;
+      }
+      .dashboard-card {
+        height: 450px;
       }
     }
 
@@ -322,7 +325,7 @@
             showSymbolLogo: true,
             isTransparent: false,
             displayMode: "adaptive",
-            colorTheme: "light",
+            colorTheme: document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light',
             locale: "kr",
             width: "100%",
             height: 46
@@ -337,7 +340,7 @@
             width: "100%",
             height: "100%",
             locale: "kr",
-            colorTheme: "light",
+            colorTheme: document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light',
             autosize: true,
             showVolume: true,
             lineColor: "rgba(41, 98, 255, 1)",
@@ -353,7 +356,7 @@
             chartOnly: false,
             dateRange: "1M",
             noTimeScale: false,
-            colorTheme: "light",
+            colorTheme: document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light',
             isTransparent: false,
             locale: "kr",
             width: "100%",
@@ -369,7 +372,7 @@
             chartOnly: false,
             dateRange: "1M",
             noTimeScale: false,
-            colorTheme: "light",
+            colorTheme: document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light',
             isTransparent: false,
             locale: "kr",
             width: "100%",
@@ -381,7 +384,7 @@
           container: 'tradingview-technical-analysis',
           script: 'embed-widget-technical-analysis.js',
           config: {
-            colorTheme: "light",
+            colorTheme: document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light',
             displayMode: "single",
             isTransparent: false,
             locale: "kr",
@@ -405,7 +408,7 @@
             width: "100%",
             height: "100%",
             locale: "kr",
-            colorTheme: "light",
+            colorTheme: document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light',
             autosize: true
           }
         },
@@ -413,7 +416,7 @@
           container: 'tradingview-dominance-widget',
           script: 'embed-widget-market-overview.js',
           config: {
-            colorTheme: "light",
+            colorTheme: document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light',
             dateRange: "12M",
             locale: "kr",
             isTransparent: false,
@@ -437,7 +440,7 @@
             blockSize: "market_cap_calc",
             blockColor: "24h_close_change|5",
             locale: "kr",
-            colorTheme: "light",
+            colorTheme: document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light',
             width: "100%",
             height: "100%"
           }
@@ -446,7 +449,7 @@
           container: 'tradingview-sp500-heatmap',
           script: 'embed-widget-stock-heatmap.js',
           config: {
-            colorTheme: "light",
+            colorTheme: document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light',
             locale: "kr",
             isTransparent: false,
             width: "100%",
@@ -532,6 +535,13 @@
           // 기존 내용 제거
           container.innerHTML = '';
           
+          // 현재 테마에 따라 colorTheme 업데이트
+          const currentTheme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+          const updatedConfig = {
+            ...config.config,
+            colorTheme: currentTheme
+          };
+          
           // 스크립트 태그 생성
           const script = document.createElement('script');
           script.type = 'text/javascript';
@@ -539,17 +549,31 @@
           script.async = true;
           
           // JSON 설정을 스크립트 태그 내부에 추가
-          const configJson = JSON.stringify(config.config, null, 2);
+          const configJson = JSON.stringify(updatedConfig, null, 2);
           script.textContent = configJson;
           
           container.appendChild(script);
           
           this.widgets[key] = script;
-          console.log(`✅ ${key} 위젯 생성 완료`);
+          console.log(`✅ ${key} 위젯 생성 완료 (테마: ${currentTheme})`);
           
         } catch (error) {
           console.warn(`⚠️ ${key} 위젯 생성 실패:`, error);
         }
+      },
+
+      // 🎯 테마 변경 시 위젯 업데이트
+      updateWidgetTheme() {
+        const currentTheme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+        console.log(`🎨 TradingView 위젯 테마 변경: ${currentTheme}`);
+        
+        // 모든 위젯 재생성
+        Object.keys(this.widgets).forEach(key => {
+          const config = this.widgetConfigs[key];
+          if (config) {
+            this.createWidget(key, config);
+          }
+        });
       },
 
 
@@ -563,6 +587,26 @@
         window.TradingViewManager.initializeWidgets();
       });
     }
+
+    // 🎨 테마 변경 감지 및 위젯 업데이트
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.type === 'attributes' && mutation.attributeName === 'data-theme') {
+          // 테마 변경 시 약간의 지연 후 위젯 업데이트 (DOM 업데이트 완료 대기)
+          setTimeout(() => {
+            if (window.TradingViewManager && window.TradingViewManager.updateWidgetTheme) {
+              window.TradingViewManager.updateWidgetTheme();
+            }
+          }, 100);
+        }
+      });
+    });
+
+    // document.documentElement의 data-theme 속성 변경 감지
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['data-theme']
+    });
   </script>
   
   <!-- Critical Firebase Scripts -->
@@ -577,66 +621,8 @@
 
   <!-- TradingView Ticker Tape Widget BEGIN -->
   <div id="tradingview-ticker-tape" style="width: 100%;">
-    <!-- TradingView Ticker Tape 위젯이 여기에 로드됩니다 -->
   </div>
-  <!-- TradingView Ticker Tape Widget END -->
-
-  <!-- 사이드바 추가 (비활성화됨) -->
-  <!--
-  <aside class="sidebar" id="sidebar">
-    
-    <nav class="sidebar-nav">
-      <ul class="nav-list">
-        <li class="nav-item active">
-          <a href="#" class="nav-link" data-action="load-home">
-            <i class="fas fa-home nav-icon"></i>
-            <span class="nav-text">홈</span>
-          </a>
-        </li>
-                   <li class="nav-item">
-             <div class="nav-link" onclick="toggleSubmenu('market-indicators')">
-               <div style="display: flex; align-items: center;">
-                 <i class="fas fa-chart-line nav-icon"></i>
-                 <span class="nav-text">시장지표</span>
-               </div>
-               <i class="fas fa-chevron-down menu-toggle" id="market-indicators-toggle"></i>
-             </div>
-             <div class="submenu" id="market-indicators-submenu">
-               <a href="#" class="submenu-item" data-action="load-mvrv">
-                 <i class="fas fa-chart-bar" style="margin-right: 8px;"></i>
-                 MVRV 비율
-               </a>
-               <a href="#" class="submenu-item" data-action="load-taker-cvd">
-                 <i class="fas fa-chart-line" style="margin-right: 8px;"></i>
-                 Taker CVD
-               </a>
-               <a href="#" class="submenu-item" data-action="load-volume-bubble">
-                 <i class="fas fa-chart-pie" style="margin-right: 8px;"></i>
-                 Volume Bubble Map
-               </a>
-             </div>
-           </li>
-                           <li class="nav-item">
-                  <a href="#" class="nav-link" data-action="load-exchange-netflow">
-                    <div style="display: flex; align-items: center;">
-                      <i class="fas fa-exchange-alt nav-icon"></i>
-                      <span class="nav-text">거래소 자금 흐름</span>
-                    </div>
-                  </a>
-                </li>
-                <li class="nav-item">
-                  <a href="#" class="nav-link" data-action="load-exchange-holdings">
-                    <div style="display: flex; align-items: center;">
-                      <i class="fas fa-chart-line nav-icon"></i>
-                      <span class="nav-text">거래소 보유량</span>
-                    </div>
-                  </a>
-                </li>
-      </ul>
-    </nav>
-  </aside>
-  -->
-
+  
   <!-- 메인 컨텐츠 섹션 -->
   <section class="main-content-section">
     <div class="content-container">
@@ -840,13 +826,6 @@
   <script src="js/auth.js"></script>
   <script src="components/header/header-loader.js"></script>
   <script src="js/footer-loader.js"></script>
-  <!-- 사이드바 스크립트는 페이지 하단에서 한 번만 로드됩니다 -->
-      <script src="asset/mvrv-ratio/mvrv-script.js"></script>
-    <script src="asset/taker-cvd/taker-cvd-script.js"></script>
-    <script src="asset/volume-bubble-map/volume-bubble-script.js"></script>
-      <script src="asset/exchange-netflow/exchange-netflow-script.js"></script>
-    <script src="asset/exchange-holdings/exchange-holdings-script.js"></script>
-  
   <!-- 뉴스 기능 로드 (속보 카드에 필요) -->
   <script src="js/news.js"></script>
   
@@ -1196,77 +1175,6 @@
          }
        });
      });
-     
-     // 사이드바 활성 상태 업데이트 함수 (비활성화됨)
-     /*
-     function updateSidebarActiveState(page) {
-       // 모든 활성 상태 제거
-       document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
-       document.querySelectorAll('.submenu-item').forEach(item => item.classList.remove('active'));
-       
-       if (page === 'home') {
-         // 홈 메뉴 활성화
-         const homeItem = document.querySelector('.nav-item:first-child');
-         if (homeItem) homeItem.classList.add('active');
-       } else if (page === 'mvrv') {
-         // MVRV 메뉴 활성화
-         const marketIndicatorsItem = document.querySelector('.nav-item:nth-child(2)');
-         const mvrvSubmenuItem = document.querySelector('.submenu-item[data-action="load-mvrv"]');
-         
-         if (marketIndicatorsItem) {
-           marketIndicatorsItem.classList.add('active');
-           // 서브메뉴 열기
-           const submenu = document.getElementById('market-indicators-submenu');
-           const toggle = document.getElementById('market-indicators-toggle');
-           if (submenu && toggle) {
-             submenu.classList.add('open');
-             toggle.classList.add('rotated');
-           }
-         }
-         if (mvrvSubmenuItem) mvrvSubmenuItem.classList.add('active');
-       } else if (page === 'taker-cvd') {
-         // Taker CVD 메뉴 활성화
-         const marketIndicatorsItem = document.querySelector('.nav-item:nth-child(2)');
-         const takerCvdSubmenuItem = document.querySelector('.submenu-item[data-action="load-taker-cvd"]');
-         
-         if (marketIndicatorsItem) {
-           marketIndicatorsItem.classList.add('active');
-           // 서브메뉴 열기
-           const submenu = document.getElementById('market-indicators-submenu');
-           const toggle = document.getElementById('market-indicators-toggle');
-           if (submenu && toggle) {
-             submenu.classList.add('open');
-             toggle.classList.add('rotated');
-           }
-         }
-         if (takerCvdSubmenuItem) takerCvdSubmenuItem.classList.add('active');
-       } else if (page === 'volume-bubble') {
-         // Volume Bubble Map 메뉴 활성화
-         const marketIndicatorsItem = document.querySelector('.nav-item:nth-child(2)');
-         const volumeBubbleSubmenuItem = document.querySelector('.submenu-item[data-action="load-volume-bubble"]');
-         
-         if (marketIndicatorsItem) {
-           marketIndicatorsItem.classList.add('active');
-           // 서브메뉴 열기
-           const submenu = document.getElementById('market-indicators-submenu');
-           const toggle = document.getElementById('market-indicators-toggle');
-           if (submenu && toggle) {
-             submenu.classList.add('open');
-             toggle.classList.add('rotated');
-           }
-         }
-         if (volumeBubbleSubmenuItem) volumeBubbleSubmenuItem.classList.add('active');
-       } else if (page === 'exchange-netflow') {
-         // Exchange Netflow 메뉴 활성화 (별도 메뉴)
-         const exchangeNetflowItem = document.querySelector('.nav-item[data-action="load-exchange-netflow"]');
-         if (exchangeNetflowItem) exchangeNetflowItem.classList.add('active');
-       } else if (page === 'exchange-holdings') {
-         // Exchange Holdings 메뉴 활성화 (별도 메뉴)
-         const exchangeHoldingsItem = document.querySelector('.nav-item[data-action="load-exchange-holdings"]');
-         if (exchangeHoldingsItem) exchangeHoldingsItem.classList.add('active');
-       }
-     }
-     */
     
     // 성능 최적화를 위한 지연 로딩 시스템
     window.LazyLoader = {
