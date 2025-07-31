@@ -1,0 +1,396 @@
+/* ================================================
+ * Bitget 거래소 상세 페이지 스타일
+ * ================================================ */
+
+/* 메인 컨테이너 */
+.main-container.lbank-detail-page {
+  max-width: 1000px !important;
+  margin: 0 auto !important;
+}
+
+/* 거래소 소개 카드 */
+.exchange-intro-card.info-card {
+  text-align: center;
+  margin-top: 40px;
+}
+
+.exchange-logo {
+  width: 110px;
+  height: 110px;
+  border-radius: 24px;
+  background: #fff;
+  object-fit: contain;
+  margin-bottom: 18px;
+}
+
+.exchange-title {
+  font-size: 2.2em;
+  font-weight: 900;
+  letter-spacing: 2px;
+  margin-bottom: 8px;
+}
+
+.exchange-desc {
+  font-size: 1.13em;
+  color: var(--text-color-secondary);
+  margin-bottom: 30px;
+}
+
+.lbank-join-btn.signup-button.filled {
+  font-size: 1.15em;
+  padding: 14px 38px;
+  margin-bottom: 0;
+}
+
+/* 혜택 카드 */
+.exchange-benefit-card.info-card {
+  margin-top: 32px;
+}
+
+.section-title {
+  margin-bottom: 18px;
+}
+
+/* 혜택 리스트 */
+.exchange-benefit-card ul {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.exchange-benefit-card li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.exchange-benefit-card .fas.fa-fire {
+  color: #ff5252;
+}
+
+.exchange-benefit-card .fas.fa-gift {
+  color: #ffd700;
+}
+
+.exchange-benefit-card .fas.fa-rocket {
+  color: #8b5cf6;
+}
+
+.exchange-benefit-card .fas.fa-wallet {
+  color: #22c55e;
+}
+
+.exchange-benefit-card b {
+  color: #3182f6;
+}
+
+.exchange-benefit-card span {
+  color: var(--text-color-secondary);
+}
+
+/* 수수료 카드 */
+.exchange-fee-card.info-card {
+  margin-top: 32px;
+}
+
+.exchange-fee-card > div {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  align-items: flex-start;
+  margin-bottom: 10px;
+}
+
+.exchange-fee-card > div > div {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 1.18em;
+}
+
+.exchange-fee-card span:first-child {
+  min-width: 60px;
+  color: var(--text-color-secondary);
+  font-weight: 700;
+}
+
+.exchange-fee-card span:nth-child(2) {
+  color: #888;
+  text-decoration: line-through;
+  font-weight: 600;
+  margin-right: 6px;
+}
+
+.exchange-fee-card span:last-child {
+  color: #3182f6;
+  font-weight: 700;
+  font-size: 1.13em;
+}
+
+/* 특징 카드 */
+.exchange-features-card.info-card {
+  margin-top: 32px;
+}
+
+.exchange-features-card ul {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.exchange-features-card li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.exchange-features-card .fas.fa-globe {
+  color: #06b6d4;
+}
+
+.exchange-features-card .fas.fa-coins {
+  color: #f59e0b;
+}
+
+.exchange-features-card .fas.fa-tachometer-alt {
+  color: #22c55e;
+}
+
+.exchange-features-card .fas.fa-mobile-alt {
+  color: #8b5cf6;
+}
+
+.exchange-features-card .fas.fa-headset {
+  color: #ef4444;
+}
+
+.exchange-features-card b {
+  font-weight: 600;
+}
+
+.exchange-features-card span {
+  color: var(--text-color-secondary);
+}
+
+/* 서비스 카드 */
+.exchange-services-card.info-card {
+  margin-top: 32px;
+}
+
+.exchange-services-card > div {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.exchange-services-card > div > div {
+  text-align: center;
+  padding: 16px;
+  background: var(--bg-tertiary-color);
+  border-radius: 8px;
+}
+
+.exchange-services-card .fas.fa-exchange-alt {
+  font-size: 2rem;
+  color: #3182f6;
+  margin-bottom: 8px;
+}
+
+.exchange-services-card .fas.fa-chart-line {
+  font-size: 2rem;
+  color: #10b981;
+  margin-bottom: 8px;
+}
+
+.exchange-services-card .fas.fa-chart-area {
+  font-size: 2rem;
+  color: #10b981;
+  margin-bottom: 8px;
+}
+
+.exchange-services-card .fas.fa-copy {
+  font-size: 2rem;
+  color: #f59e0b;
+  margin-bottom: 8px;
+}
+
+.exchange-services-card .fas.fa-chart-bar {
+  font-size: 2rem;
+  color: #8b5cf6;
+  margin-bottom: 8px;
+}
+
+.exchange-services-card .fas.fa-piggy-bank {
+  font-size: 2rem;
+  color: #8b5cf6;
+  margin-bottom: 8px;
+}
+
+.exchange-services-card h3 {
+  margin: 0 0 4px 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.exchange-services-card p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--text-color-secondary);
+}
+
+/* 뒤로가기 버튼 */
+.back-btn-modern {
+  margin: 40px 0 32px 0;
+}
+
+/* 수수료 안내 노트 */
+.fee-note {
+  font-size: 0.9em;
+  color: var(--text-color-secondary);
+  margin-top: 8px;
+}
+
+/* 특징 그리드 */
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 18px;
+  margin-bottom: 20px;
+}
+
+.feature-item {
+  background: var(--bg-tertiary-color);
+  padding: 20px;
+  border-radius: 12px;
+  text-align: center;
+}
+
+.feature-item i {
+  font-size: 2.5em;
+  margin-bottom: 12px;
+}
+
+.feature-item .fas.fa-chart-line {
+  color: #3182f6;
+}
+
+.feature-item .fas.fa-shield-alt {
+  color: #22c55e;
+}
+
+.feature-item .fas.fa-tachometer-alt {
+  color: #f59e0b;
+}
+
+.feature-item h3 {
+  margin-bottom: 8px;
+  font-size: 1.1em;
+}
+
+.feature-item p {
+  color: var(--text-color-secondary);
+  font-size: 0.9em;
+  line-height: 1.4;
+}
+
+/* CTA 카드 */
+.exchange-cta-card.info-card {
+  margin-top: 32px;
+  text-align: center;
+  background: var(--bg-tertiary-color);
+}
+
+.exchange-cta-card h2 {
+  margin-bottom: 16px;
+  font-size: 1.8em;
+}
+
+.exchange-cta-card p {
+  margin-bottom: 24px;
+  color: var(--text-color-secondary);
+  font-size: 1.1em;
+}
+
+.exchange-cta-card .lbank-join-btn.signup-button.filled {
+  font-size: 1.2em;
+  padding: 16px 40px;
+  margin-right: 12px;
+}
+
+.exchange-cta-card .fas.fa-rocket {
+  margin-right: 8px;
+}
+
+/* ================================================
+ * 반응형 디자인
+ * ================================================ */
+@media (max-width: 768px) {
+  .main-container.lbank-detail-page {
+    padding: 0 16px;
+  }
+  
+  .exchange-title {
+    font-size: 1.8em;
+  }
+  
+  .exchange-desc {
+    font-size: 1em;
+  }
+  
+  .exchange-services-card > div {
+    grid-template-columns: 1fr;
+  }
+  
+  .exchange-fee-card > div > div {
+    font-size: 1em;
+  }
+  
+  .exchange-fee-card span:first-child {
+    min-width: 50px;
+  }
+}
+
+@media (max-width: 480px) {
+  .exchange-logo {
+    width: 80px;
+    height: 80px;
+  }
+  
+  .exchange-title {
+    font-size: 1.5em;
+  }
+  
+  .lbank-join-btn.signup-button.filled {
+    font-size: 1em;
+    padding: 12px 24px;
+  }
+  
+  .features-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .feature-item {
+    padding: 16px;
+  }
+  
+  .feature-item i {
+    font-size: 2em;
+  }
+  
+  .exchange-cta-card h2 {
+    font-size: 1.5em;
+  }
+  
+  .exchange-cta-card p {
+    font-size: 1em;
+  }
+  
+  .exchange-cta-card .lbank-join-btn.signup-button.filled {
+    font-size: 1em;
+    padding: 12px 24px;
+  }
+} 

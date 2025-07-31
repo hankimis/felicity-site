@@ -29,8 +29,14 @@ async function loadFooter() {
         }
         
         // 2단계 하위 디렉토리 (/currencies/bitcoin/ 등)
-        if (currentPath.includes('/currencies/bitcoin/')) {
+        if (currentPath.includes('/currencies/bitcoin/') || 
+            currentPath.includes('/affiliated/exchange-guide/')) {
             footerPath = '../../_footer.html';
+        }
+
+        // 3단계 하위 디렉토리 (/affiliated/exchange-guide/exchange-guide/ 등)
+        if (currentPath.includes('/affiliated/exchange-guide/exchange-guide/')) {
+            footerPath = '../../../_footer.html';
         }
         
         const response = await fetch(footerPath);

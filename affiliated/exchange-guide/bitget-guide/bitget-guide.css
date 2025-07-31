@@ -1,0 +1,263 @@
+/* ================================================
+ * Bitget Guide FAQ 페이지 스타일
+ * ================================================ */
+
+/* FAQ 컨테이너 */
+.faq-container { 
+  max-width: 700px; 
+  margin: 40px auto; 
+  padding: 0 16px 60px 16px; 
+}
+
+/* FAQ 헤더 */
+.faq-header { 
+  display: flex; 
+  align-items: center; 
+  gap: 24px; 
+  margin-bottom: 24px; 
+  background: var(--card-bg); 
+  border-radius: 18px; 
+  box-shadow: 0 2px 12px rgba(0,0,0,0.04); 
+  padding: 28px 24px; 
+}
+
+.faq-header .avatar {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  background: var(--faq-avatar-bg, #f3f4f8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.8em;
+  color: var(--faq-avatar-icon, #3a3a3a);
+  font-weight: 900;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  transition: background 0.2s, color 0.2s;
+}
+
+.faq-title { 
+  font-size: 2.3em; 
+  font-weight: 900; 
+  margin: 0 0 10px 0; 
+  letter-spacing: -1px; 
+  color: var(--text-color); 
+}
+
+.faq-subtitle { 
+  color: var(--text-color-secondary); 
+  font-size: 1.15em; 
+  margin: 0; 
+  font-weight: 500; 
+}
+
+/* FAQ 리스트 */
+.faq-list { 
+  display: flex; 
+  flex-direction: column; 
+  gap: 18px; 
+}
+
+/* FAQ 카드 */
+.faq-card { 
+  background: var(--card-bg); 
+  border: 1px solid var(--border-color); 
+  border-radius: 16px; 
+  padding: 22px 28px; 
+  box-shadow: 0 2px 12px rgba(0,0,0,0.04); 
+  display: flex; 
+  align-items: center; 
+  gap: 18px; 
+  cursor: pointer; 
+  transition: all 0.2s ease; 
+  position: relative; 
+}
+
+.faq-card:hover, 
+.faq-card:focus-within { 
+  transform: translateY(-3px); 
+  box-shadow: 0 4px 24px rgba(0,0,0,0.08); 
+  border-color: var(--primary-color); 
+}
+
+/* FAQ 번호 아이콘 */
+.faq-number {
+  min-width: 38px;
+  min-height: 38px;
+  background: var(--faq-number-bg, #e9eaf0);
+  color: var(--faq-number-icon, #3a3a3a);
+  font-weight: 700;
+  font-size: 1.25em;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 8px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  transition: background 0.2s, color 0.2s;
+}
+
+/* FAQ 콘텐츠 */
+.faq-content { 
+  flex: 1; 
+  display: flex; 
+  flex-direction: column; 
+  gap: 2px; 
+}
+
+.faq-question { 
+  font-size: 1.13em; 
+  font-weight: 700; 
+  color: var(--primary-color); 
+  margin-bottom: 2px; 
+}
+
+.faq-answer { 
+  font-size: 1em; 
+  color: var(--text-color-secondary); 
+  font-weight: 400; 
+}
+
+/* FAQ 액션 버튼 */
+.faq-card .faq-action { 
+  position: absolute; 
+  right: 24px; 
+  top: 50%; 
+  transform: translateY(-50%); 
+  background: var(--primary-color); 
+  color: #fff; 
+  font-size: 0.98em; 
+  font-weight: 700; 
+  border-radius: 8px; 
+  padding: 7px 20px; 
+  border: none; 
+  cursor: pointer; 
+  transition: background 0.18s; 
+  opacity: 0; 
+}
+
+.faq-card:hover .faq-action, 
+.faq-card:focus-within .faq-action { 
+  opacity: 1; 
+}
+
+/* FAQ 네비게이션 */
+.faq-nav { 
+  display: flex; 
+  justify-content: space-between; 
+  gap: 12px; 
+  margin-top: 40px; 
+}
+
+.faq-nav-btn { 
+  flex: 1; 
+  background: var(--primary-color); 
+  color: #fff; 
+  font-weight: 700; 
+  border-radius: 10px; 
+  padding: 14px 0; 
+  border: none; 
+  font-size: 1.08em; 
+  cursor: pointer; 
+  transition: background 0.18s; 
+  display: flex; 
+  align-items: center; 
+  justify-content: center; 
+  gap: 8px; 
+}
+
+.faq-nav-btn:hover { 
+  background: var(--primary-color-dark); 
+}
+
+/* 테마별 변수 설정 */
+:root:not(.dark-mode) {
+  --faq-avatar-bg: #f3f4f8;
+  --faq-avatar-icon: #3a3a3a;
+  --faq-number-bg: #e9eaf0;
+  --faq-number-icon: #3a3a3a;
+}
+
+.dark-mode {
+  --faq-avatar-bg: #232a3a;
+  --faq-avatar-icon: #fff;
+  --faq-number-bg: #232a3a;
+  --faq-number-icon: #fff;
+}
+
+/* 라이트/다크 모드 텍스트 색상 */
+:root:not(.dark-mode) .faq-title { 
+  color: #000; 
+}
+
+:root:not(.dark-mode) .faq-question { 
+  color: #000; 
+}
+
+.dark-mode .faq-question { 
+  color: #fff; 
+}
+
+/* ================================================
+ * 반응형 디자인
+ * ================================================ */
+@media (max-width: 768px) {
+  
+  .faq-container { 
+    margin: 16px auto; 
+    max-width: 99vw; 
+    padding: 0 2px 32px 2px; 
+  }
+  
+  .faq-header { 
+    flex-direction: column; 
+    text-align: center; 
+    gap: 14px; 
+    padding: 18px 8px; 
+  }
+  
+  .faq-header .avatar { 
+    width: 48px; 
+    height: 48px; 
+    font-size: 1.7em; 
+  }
+  
+  .faq-title { 
+    font-size: 1.3em; 
+    margin-bottom: 6px; 
+  }
+  
+  .faq-subtitle { 
+    font-size: 1em; 
+  }
+  
+  .faq-card { 
+    padding: 16px 10px; 
+    flex-direction: column; 
+    align-items: flex-start; 
+  }
+  
+  .faq-number { 
+    min-width: 32px; 
+    min-height: 32px; 
+    font-size: 1.1em; 
+  }
+  
+  .faq-card .faq-action { 
+    opacity: 1; 
+    position: static; 
+    transform: none; 
+    margin-top: 12px; 
+    padding: 8px 16px; 
+  }
+  
+  .faq-nav { 
+    flex-direction: column; 
+    gap: 10px; 
+  }
+  
+  .faq-nav-btn { 
+    padding: 12px 0; 
+    font-size: 1em; 
+  }
+} 

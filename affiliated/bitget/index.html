@@ -18,6 +18,9 @@
     <!-- Custom CSS -->
     <link rel="stylesheet" href="../../css/style.css"/>
     <link rel="stylesheet" href="../../auth.css"/>
+    <link rel="stylesheet" href="../exchange.css"/>
+
+    <!-- Pretendard -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" />
     <link rel="icon" type="image/png" href="/onbit/favicon-96x96.png" sizes="96x96" />
     <link rel="icon" type="image/svg+xml" href="/onbit/favicon.svg" />
@@ -35,77 +38,77 @@
     <!-- 헤더 플레이스홀더 -->
     <div id="header-placeholder"></div>
     
-    <main class="main-container lbank-detail-page" style="max-width: 1000px !important; margin: 0 auto !important;">
-      <section class="exchange-intro-card info-card" style="text-align:center; margin-top:40px;">
-        <img src="../../assets/tradelogo/bitgetlogo.png" alt="Bitget 로고" class="exchange-logo" style="width:110px; height:110px; border-radius:24px; background:#fff; object-fit:contain; margin-bottom:18px;" />
-        <h1 class="exchange-title" style="font-size:2.2em; font-weight:900; letter-spacing:2px; margin-bottom:8px;">Bitget</h1>
-        <p class="exchange-desc" style="font-size:1.13em; color:var(--text-color-secondary); margin-bottom:30px;">Bitget은 글로벌 1위 카피트레이딩 플랫폼으로, 다양한 파생상품과 혁신적인 거래 서비스를 제공합니다.</p>
-        <a href="https://partner.bitget.com/bg/onbit2" target="_blank" class="lbank-join-btn signup-button filled" style="font-size:1.15em; padding:14px 38px; margin-bottom:0;">가입하기</a>
+    <main class="main-container lbank-detail-page">
+      <section class="exchange-intro-card info-card">
+        <img src="../../assets/tradelogo/bitgetlogo.png" alt="Bitget 로고" class="exchange-logo" />
+        <h1 class="exchange-title">Bitget</h1>
+        <p class="exchange-desc">Bitget은 글로벌 1위 카피트레이딩 플랫폼으로, 다양한 파생상품과 혁신적인 거래 서비스를 제공합니다.</p>
+        <a href="https://partner.bitget.com/bg/onbit2" target="_blank" class="lbank-join-btn signup-button filled">가입하기</a>
       </section>
 
-      <section class="exchange-benefit-card info-card" style="margin-top:32px;">
-        <h2 class="section-title" style="margin-bottom:18px;">주요 혜택</h2>
-        <ul style="list-style:none; padding:0; display:flex; flex-direction:column; gap:12px;">
-          <li style="display:flex;align-items:center;gap:10px;"><i class="fas fa-fire" style="color:#ff5252;"></i> <b style="color:#3182f6;">수수료 20% 페이백</b> <span style="color:var(--text-color-secondary);">(해당 링크 가입 유저)</span></li>
-          <li style="display:flex;align-items:center;gap:10px;"><i class="fas fa-gift" style="color:#ffd700;"></i> <b style="color:#3182f6;">신규 가입 보너스</b> <span style="color:var(--text-color-secondary);">(가입 시 추가 보너스 지급)</span></li>
-          <li style="display:flex;align-items:center;gap:10px;"><i class="fas fa-rocket" style="color:#8b5cf6;"></i> <b style="color:#3182f6;">카피트레이딩</b> <span style="color:var(--text-color-secondary);">(전문 트레이더 거래 복사)</span></li>
+      <section class="exchange-benefit-card info-card">
+        <h2 class="section-title">주요 혜택</h2>
+        <ul>
+          <li><i class="fas fa-fire"></i> <b>수수료 20% 페이백</b> <span>(해당 링크 가입 유저)</span></li>
+          <li><i class="fas fa-gift"></i> <b>신규 가입 보너스</b> <span>(가입 시 추가 보너스 지급)</span></li>
+          <li><i class="fas fa-rocket"></i> <b>카피트레이딩</b> <span>(전문 트레이더 거래 복사)</span></li>
         </ul>
       </section>
 
-      <section class="exchange-fee-card info-card" style="margin-top:32px;">
-        <h2 class="section-title" style="margin-bottom:18px;">수수료 안내</h2>
-        <div style="display:flex; flex-direction:column; gap:14px; align-items:flex-start; margin-bottom:10px;">
-          <div style="display:flex; align-items:center; gap:14px; font-size:1.18em;">
-            <span style="min-width:60px; color:var(--text-color-secondary); font-weight:700;">지정가</span>
-            <span style="color:#888; text-decoration:line-through; font-weight:600; margin-right:6px;">0.04%</span>
-            <span style="color:#3182f6; font-weight:700; font-size:1.13em;">0.032%</span>
+      <section class="exchange-fee-card info-card">
+        <h2 class="section-title">수수료 안내</h2>
+        <div>
+          <div>
+            <span>지정가</span>
+            <span>0.04%</span>
+            <span>0.032%</span>
           </div>
-          <div style="display:flex; align-items:center; gap:14px; font-size:1.18em;">
-            <span style="min-width:60px; color:var(--text-color-secondary); font-weight:700;">시장가</span>
-            <span style="color:#888; text-decoration:line-through; font-weight:600; margin-right:6px;">0.06%</span>
-            <span style="color:#3182f6; font-weight:700; font-size:1.13em;">0.048%</span>
+          <div>
+            <span>시장가</span>
+            <span>0.06%</span>
+            <span>0.048%</span>
           </div>
         </div>
       </section>
 
-      <section class="exchange-features-card info-card" style="margin-top:32px;">
-        <h2 class="section-title" style="margin-bottom:18px;">주요 특징</h2>
-        <ul style="list-style:none; padding:0; display:flex; flex-direction:column; gap:12px;">
-          <li style="display:flex;align-items:center;gap:10px;"><i class="fas fa-globe" style="color:#06b6d4;"></i> <b>글로벌 1위 카피트레이딩</b> <span style="color:var(--text-color-secondary);">- 전문 트레이더 거래 복사</span></li>
-          <li style="display:flex;align-items:center;gap:10px;"><i class="fas fa-coins" style="color:#f59e0b;"></i> <b>500+ 거래 가능 코인</b> <span style="color:var(--text-color-secondary);">- 다양한 암호화폐 지원</span></li>
-          <li style="display:flex;align-items:center;gap:10px;"><i class="fas fa-tachometer-alt" style="color:#22c55e;"></i> <b>고속 거래 엔진</b> <span style="color:var(--text-color-secondary);">- 빠른 주문 체결 시스템</span></li>
-          <li style="display:flex;align-items:center;gap:10px;"><i class="fas fa-mobile-alt" style="color:#8b5cf6;"></i> <b>모바일 최적화</b> <span style="color:var(--text-color-secondary);">- 편리한 모바일 거래</span></li>
-          <li style="display:flex;align-items:center;gap:10px;"><i class="fas fa-headset" style="color:#ef4444;"></i> <b>24/7 한국어 지원</b> <span style="color:var(--text-color-secondary);">- 연중무휴 고객지원</span></li>
+      <section class="exchange-features-card info-card">
+        <h2 class="section-title">주요 특징</h2>
+        <ul>
+          <li><i class="fas fa-globe"></i> <b>글로벌 1위 카피트레이딩</b> <span>- 전문 트레이더 거래 복사</span></li>
+          <li><i class="fas fa-coins"></i> <b>500+ 거래 가능 코인</b> <span>- 다양한 암호화폐 지원</span></li>
+          <li><i class="fas fa-tachometer-alt"></i> <b>고속 거래 엔진</b> <span>- 빠른 주문 체결 시스템</span></li>
+          <li><i class="fas fa-mobile-alt"></i> <b>모바일 최적화</b> <span>- 편리한 모바일 거래</span></li>
+          <li><i class="fas fa-headset"></i> <b>24/7 한국어 지원</b> <span>- 연중무휴 고객지원</span></li>
         </ul>
       </section>
 
-      <section class="exchange-services-card info-card" style="margin-top:32px;">
-        <h2 class="section-title" style="margin-bottom:18px;">제공 서비스</h2>
-        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:16px;">
-          <div style="text-align:center; padding:16px; background:var(--bg-tertiary-color); border-radius:8px;">
-            <i class="fas fa-exchange-alt" style="font-size:2rem; color:#3182f6; margin-bottom:8px;"></i>
-            <h3 style="margin:0 0 4px 0; font-size:1rem; font-weight:600;">스팟 거래</h3>
-            <p style="margin:0; font-size:0.9rem; color:var(--text-color-secondary);">현물 거래</p>
+      <section class="exchange-services-card info-card">
+        <h2 class="section-title">제공 서비스</h2>
+        <div>
+          <div>
+            <i class="fas fa-exchange-alt"></i>
+            <h3>스팟 거래</h3>
+            <p>현물 거래</p>
           </div>
-          <div style="text-align:center; padding:16px; background:var(--bg-tertiary-color); border-radius:8px;">
-            <i class="fas fa-chart-line" style="font-size:2rem; color:#10b981; margin-bottom:8px;"></i>
-            <h3 style="margin:0 0 4px 0; font-size:1rem; font-weight:600;">선물 거래</h3>
-            <p style="margin:0; font-size:0.9rem; color:var(--text-color-secondary);">레버리지 거래</p>
+          <div>
+            <i class="fas fa-chart-line"></i>
+            <h3>선물 거래</h3>
+            <p>레버리지 거래</p>
           </div>
-          <div style="text-align:center; padding:16px; background:var(--bg-tertiary-color); border-radius:8px;">
-            <i class="fas fa-copy" style="font-size:2rem; color:#f59e0b; margin-bottom:8px;"></i>
-            <h3 style="margin:0 0 4px 0; font-size:1rem; font-weight:600;">카피트레이딩</h3>
-            <p style="margin:0; font-size:0.9rem; color:var(--text-color-secondary);">전문가 거래 복사</p>
+          <div>
+            <i class="fas fa-copy"></i>
+            <h3>카피트레이딩</h3>
+            <p>전문가 거래 복사</p>
           </div>
-          <div style="text-align:center; padding:16px; background:var(--bg-tertiary-color); border-radius:8px;">
-            <i class="fas fa-chart-bar" style="font-size:2rem; color:#8b5cf6; margin-bottom:8px;"></i>
-            <h3 style="margin:0 0 4px 0; font-size:1rem; font-weight:600;">옵션 거래</h3>
-            <p style="margin:0; font-size:0.9rem; color:var(--text-color-secondary);">파생상품 거래</p>
+          <div>
+            <i class="fas fa-chart-bar"></i>
+            <h3>옵션 거래</h3>
+            <p>파생상품 거래</p>
           </div>
         </div>
       </section>
 
-      <button class="back-btn-modern" style="margin:40px 0 32px 0;" onclick="window.location.href='../'"><i class='fas fa-arrow-left'></i> 거래소 목록으로</button>
+      <button class="back-btn-modern" onclick="window.location.href='../'"><i class='fas fa-arrow-left'></i> 거래소 목록으로</button>
     </main>
 
     <!-- Footer -->
