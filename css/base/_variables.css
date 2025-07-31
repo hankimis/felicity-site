@@ -16,12 +16,17 @@
     /* 🔥 Background Colors */
     --bg-color: #f8f9fa;
     --bg-secondary-color: #f1f3f5;
-  --card-bg: #ffffff;
+    --card-bg: #ffffff;
+    --bg-primary: #ffffff;
+    --bg-secondary: #f8fafc;
+    --bg-tertiary: #f3f4f6;
     
     /* 🔥 Border Colors */
     --border-color: #e9ecef;
     --border-color-light: #f1f3f5;
     --border-color-dark: #dee2e6;
+    --border-color-button: #dbdfe6;
+    --border-default: #e2e8f0;
     
     /* 🔥 Shadow Colors */
     --shadow-color: rgba(0, 0, 0, 0.1);
@@ -90,12 +95,18 @@
   --bg-color: #1a1a1a;
     --bg-secondary-color: #2d2d2d;
     --card-bg: #2d2d2d;
-    
+    --card-bg-secondary: #333;
     --border-color: #404040;
     --border-color-light: #333333;
     --border-color-dark: #555555;
-    
-  --shadow-color: rgba(0, 0, 0, 0.3);
+    --border-color-button: #666;
+    --border-default: #404040;
+    --bg-primary: #1a1a1a;
+    --bg-secondary: #2d2d2d;
+    --bg-tertiary: #333;
+    --border-default: #404040;
+
+    --shadow-color: rgba(0, 0, 0, 0.3);
     --shadow-color-light: rgba(0, 0, 0, 0.2);
     --shadow-color-dark: rgba(0, 0, 0, 0.5);
 }

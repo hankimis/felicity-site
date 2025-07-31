@@ -29,6 +29,7 @@
     <!-- Component CSS -->
     <link rel="stylesheet" href="../components/header/navbar.css" />
     <link rel="stylesheet" href="../css/components/_modal.css" />
+        <link rel="stylesheet" href="../community/community.css" />
     <link rel="stylesheet" href="../css/components/chat.css" />
     <link rel="stylesheet" href="../css/components/chart.css" />
     
@@ -151,94 +152,6 @@
             </div>
         </div>
     </main>
-
-    <!-- Auth Modals are now in components/header/header.html -->
-
-    <!-- 차트 설정 모달 -->
-    <div id="chart-settings-modal" class="auth-modal">
-        <div class="auth-modal-content" style="max-width: 500px;">
-            <span class="auth-modal-close" data-action="close-modal">&times;</span>
-            <div style="padding: 20px;">
-                <h2 style="margin: 0 0 20px 0; font-size: 18px;">차트 설정</h2>
-                
-                <div style="margin-bottom: 20px;">
-                    <h3 style="margin: 0 0 10px 0; font-size: 14px; color: var(--text-color);">차트 스타일</h3>
-                    <div style="display: flex; gap: 10px;">
-                        <button class="chart-style-btn active" data-style="candle">캔들</button>
-                        <button class="chart-style-btn" data-style="line">라인</button>
-                        <button class="chart-style-btn" data-style="area">영역</button>
-                    </div>
-                </div>
-                
-                <div style="margin-bottom: 20px;">
-                    <h3 style="margin: 0 0 10px 0; font-size: 14px; color: var(--text-color);">색상 설정</h3>
-                    <div style="display: flex; gap: 10px; align-items: center;">
-                        <label style="font-size: 12px;">상승:</label>
-                        <input type="color" id="up-color" value="#26a69a" style="width: 40px; height: 30px; border: none; border-radius: 4px;">
-                        <label style="font-size: 12px;">하락:</label>
-                        <input type="color" id="down-color" value="#ef5350" style="width: 40px; height: 30px; border: none; border-radius: 4px;">
-                    </div>
-                </div>
-                
-                <div style="margin-bottom: 20px;">
-                    <h3 style="margin: 0 0 10px 0; font-size: 14px; color: var(--text-color);">그리드 설정</h3>
-                    <label style="display: flex; align-items: center; gap: 8px; font-size: 12px;">
-                        <input type="checkbox" id="show-grid" checked>
-                        그리드 표시
-                    </label>
-                </div>
-                
-                <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 30px;">
-                    <button class="chart-settings-btn" id="apply-settings">적용</button>
-                    <button class="chart-settings-btn secondary" data-action="close-modal">취소</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- 차트 저장 관리 모달 -->
-    <div id="chart-save-modal" class="auth-modal">
-        <div class="auth-modal-content" style="max-width: 600px;">
-            <span class="auth-modal-close" data-action="close-modal">&times;</span>
-            <div style="padding: 20px;">
-                <h2 style="margin: 0 0 20px 0; font-size: 18px;">
-                    <i class="fas fa-save"></i> 차트 저장 관리
-                </h2>
-                
-                <div style="margin-bottom: 20px;">
-                    <button id="manual-save-btn" class="chart-settings-btn" style="margin-right: 10px;">
-                        <i class="fas fa-save"></i> 수동 저장
-                    </button>
-                    <button id="refresh-charts-btn" class="chart-settings-btn secondary">
-                        <i class="fas fa-sync"></i> 목록 새로고침
-                    </button>
-                </div>
-                
-                <div id="saved-charts-list" style="max-height: 400px; overflow-y: auto;">
-                    <!-- 저장된 차트 목록이 여기에 표시됩니다 -->
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Coin Search Modal -->
-    <div id="coin-search-modal" class="coin-search-modal">
-        <div class="coin-search-content">
-            <div class="coin-search-header">
-                <h3>코인 선택</h3>
-                <button id="coin-search-close" class="coin-search-close">&times;</button>
-            </div>
-            <div class="coin-search-input-wrapper">
-                <input type="text" id="coin-search-input" class="coin-search-input" placeholder="코인 검색...">
-            </div>
-            <div class="coin-search-tabs">
-                <button class="coin-search-tab active" data-tab="all">전체</button>
-                <button class="coin-search-tab" data-tab="spot">현물</button>
-                <button class="coin-search-tab" data-tab="futures">선물</button>
-            </div>
-            <div id="coin-search-list" class="coin-search-list"></div>
-        </div>
-    </div>
 
     <!-- 고래 거래 설정 모달 -->
     <div id="whale-settings-modal" class="modal-overlay" style="display: none;">

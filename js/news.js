@@ -1504,7 +1504,12 @@ function loadCalendarEventsFromFirebase() {
     
     const db = window.firebase.firestore();
     
+    // 오늘 날짜 기준으로 필터링 (Firebase 쿼리에서 미리 필터링)
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
     db.collection('calendarEvents')
+        .where('date', '>=', today.toISOString().split('T')[0]) // YYYY-MM-DD 형식으로 변환
         .orderBy('date', 'asc')
         .get()
         .then((querySnapshot) => {
@@ -1536,8 +1541,23 @@ function renderCalendarEvents(events) {
         return;
     }
     
+    // 오늘 날짜 기준으로 지난 일정 필터링
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // 시간을 00:00:00으로 설정
+    
+    const futureEvents = events.filter(event => {
+        const eventDate = new Date(event.date);
+        eventDate.setHours(0, 0, 0, 0); // 시간을 00:00:00으로 설정
+        return eventDate >= today; // 오늘 날짜 이상인 일정만 포함
+    });
+    
+    if (futureEvents.length === 0) {
+        calendarList.innerHTML = '<div class="loading">예정된 경제 일정이 없습니다.</div>';
+        return;
+    }
+    
     // 날짜별로 그룹화하고 월별로 정렬
-    const groupedEvents = groupEventsByMonth(events);
+    const groupedEvents = groupEventsByMonth(futureEvents);
     
     let eventsHTML = '';
     Object.keys(groupedEvents).sort().forEach(monthKey => {

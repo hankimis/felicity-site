@@ -55,11 +55,6 @@ a:hover {
     color: var(--primary-hover);
 }
 
-a:focus {
-    outline: 2px solid var(--primary-color);
-    outline-offset: 2px;
-}
-
 /* 🔥 Code */
 code {
     font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Consolas', monospace;
@@ -115,7 +110,6 @@ li {
 table {
     width: 100%;
     border-collapse: collapse;
-    margin-bottom: var(--spacing-lg);
 }
 
 th, td {

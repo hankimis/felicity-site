@@ -41,7 +41,7 @@
 
 .tab-btn.active {
     color: var(--text-color);
-    border-bottom-color: var(--text-color);
+    border-bottom: 4px solid var(--text-color);
     background: var(--bg-color);
 }
 

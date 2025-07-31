@@ -1,0 +1,407 @@
+/* Affiliated Page Styles */
+/* ===================== 메인 컨테이너 ===================== */
+main.main-container.affiliated-page {
+    margin: 0 auto !important;
+    padding: 0 20px !important;
+    box-sizing: border-box !important;
+    width: 100% !important;
+    max-width:  1200px !important;
+    }
+
+/* 온비트 페이백 메인 배너 */
+.onbit-payback-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--card-bg);
+    border-radius: 24px;
+    padding: 2rem 1.5rem 2rem 2rem;
+    margin-bottom: 2rem;
+    gap: 1.5rem;
+    width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+    margin-top: 2rem;
+}
+/* 온비트 페이백 메인 배너 이미지 */
+.onbit-payback-banner .banner-image-container {
+    flex: none;
+    display: flex;
+    justify-content: flex-start;
+    min-width: 200px;
+}
+
+.onbit-payback-banner .banner-image {
+    width: 250px;
+    max-width: 250px;
+    min-width: 0;
+    height: auto;
+    object-fit: contain;
+    filter: drop-shadow(0 8px 32px rgba(0,0,0,0.10));
+    background: none;
+    border-radius: 18px;
+}
+/* 온비트 페이백 메인 배너 컨텐츠 */
+.onbit-payback-banner .banner-content {
+    flex: 1;
+    min-width: 200px;
+}
+/* 온비트 페이백 메인 배너 타이틀*/
+/* 메인 베너 타이틀*/
+.onbit-payback-title {
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--text-color);
+    line-height: 1.2;
+    margin-bottom: 2rem;
+    letter-spacing: -2px;
+    word-break: keep-all;
+    }
+    @media (max-width: 600px) {
+    .onbit-payback-title {
+      font-size: 1.5rem;
+      margin-bottom: 1.2rem;
+    }
+    }
+/* 온비트 페이백 배너 숫자/설명 스타일 */
+.payback-stats-row {
+    display: flex;
+    gap: 2.5rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    }
+    
+    /* 온비트 페이백 배너 숫자 */
+    .payback-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    min-width: 120px;
+    }
+/* 메인 베너 수치*/
+.payback-stat-value {
+    font-size: 26px;
+    font-weight: 500;
+    color: var(--text-color);
+    } 
+/* 메인 베너 설명*/
+.payback-stat-label {
+    font-size: 1rem;
+    color: var(--text-color-secondary);
+    }
+/* ===================== 2번 제휴 이벤트 그리드 ===================== */
+/* 가이드 및 페이백 */
+/* Pre-check Section */
+.pre-check-section {
+    margin-bottom: 2rem;
+    box-sizing: border-box;
+}
+.check-card-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+  }
+  /* 카드 색션 css */
+  .check-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 24px;
+    padding: 32px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+  /* 카드 색션 아이콘 */
+  .check-card .card-icon-wrapper {
+    background: var(--bg-secondary-color);
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4em;
+    color: var(--primary-color);
+    flex-shrink: 0;
+  }
+  /* 카드 색션 텍스트 */
+  .check-card .card-text p {
+    font-size: 1.25em;
+    font-weight: 600;
+    margin-bottom: 2px;
+    color: var(--text-color);
+  }  
+  .check-card .card-text p.secondary {
+    font-size: 1em;
+    font-weight: 400;
+    color: var(--text-color-secondary);
+}
+/* ===================== 3번 제휴 이벤트 그리드 ===================== */
+ /*제휴 카드 섹션*/
+.affiliated-cards-section {
+    width: 100%;
+    margin: 0 auto 2rem auto;
+    display: flex;
+    justify-content: center;
+    align-items: stretch;
+    gap: 2.5rem;
+    flex-wrap: wrap;
+    }
+ /*제휴 카드 카드*/
+ .affiliated-card {
+    flex: 1 1 300px;
+    background: var(--card-bg);
+    border-radius: 24px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2.5rem 2rem 2rem 2rem;
+    text-align: center;
+    transition: box-shadow 0.2s, transform 0.2s;
+    }
+ /*제휴 카드 카드 열 배치*/
+/* 카드 가로(row) 배치 스타일 */
+.affiliated-card-row {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 1.5rem;
+    width: 100%;
+    height: 100%;
+    }
+/* 카드 이미지*/
+.affiliated-card-img {
+    width: 100px;
+    height: 100px;
+    object-fit: contain;
+    }
+/* 카드 컨테이너*/
+.affiliated-card-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    min-width: 0;
+    }
+/* 카드 타이틀*/
+.affiliated-card-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: 0.7rem;
+    color: var(--text-color);
+    }
+/* 카드 설명*/
+.affiliated-card-desc {
+    font-size: 1rem;
+    color: var(--text-color-secondary);
+    margin-bottom: 0;
+    line-height: 1.5;
+    }
+
+/* ===================== 테이블 디자인 ===================== */
+.full-exchange-table-section {
+    width: 100%;
+    margin: 0 auto;
+    box-sizing: border-box;
+    background: var(--bg-primary);
+    border-radius: 24px;
+}
+.table-tabs.swiper {
+    padding: 2px 24px;
+    border-bottom: 1px solid var(--border-default);
+    background: var(--bg-secondary);
+    border-radius: 24px 24px 0 0;
+}
+/*테이블 헤더 탭*/
+.table-tabs .swiper-wrapper {
+    display: flex;
+    align-items: center;
+  }
+  .table-tabs .swiper-slide {
+    padding: 12px 24px;
+    font-weight: 600;
+    color: var(--text-color-secondary);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -9px;
+    width: auto !important;
+    text-align: center;
+    transition: color 0.2s, border-color 0.2s;
+  }
+  .table-tabs .swiper-slide:hover {
+    color: var(--primary-color);
+  }
+  .table-tabs .swiper-slide.active {
+    color: var(--primary-color);
+    border-bottom-color: var(--primary-color);
+  }
+  .table-tabs .swiper-slide:not(:last-child) {
+    margin-right: 24px;
+  }
+/* 테이블 디자인*/
+.exchange-table-wrapper.large-table {
+    display: block;
+    overflow-x: auto;
+  }
+
+  .exchange-table-wrapper.large-table table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: auto;
+  }
+
+  /* 테이블 디자인 th td*/
+  .exchange-table-wrapper.large-table th {
+    padding: 15px 30px;
+    text-align: center;
+    vertical-align: middle;
+    border-bottom: 1px solid var(--border-default);
+    white-space: nowrap;
+    font-size: 0.95rem;
+    color: var(--text-color);
+    background: var(--bg-secondary);
+  }
+  
+  .exchange-table-wrapper.large-table td {
+    padding: 15px 30px;
+    text-align: center;
+    vertical-align: middle;
+    border-bottom: 1px solid var(--border-default);
+    white-space: nowrap;
+    font-size: 0.95rem;
+    color: var(--text-color);
+  }
+  
+/* ===================== 테이블 내 거래소 로고 이미지 ===================== */
+  .large-table .exchange-logo {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: contain;
+    display: block;
+  }
+/* exchange-info 컨테이너 내에서 exchange-logo 중앙 정렬 */
+.exchange-table-wrapper .exchange-info {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 12px;
+    padding-left: 10px;
+    font-weight: 600;
+  }  
+/* ===================== 테이블 내 거래소 태그 ===================== */
+/* 태그 뱃지/카드/이미지/부스트 뱃지 아이콘 크기 및 색상 (라이트 모드, 강제) ===================== */
+.tag-badge i,
+.tag-card i,
+.tag-image i,
+.boost-badge i,
+.tag i {
+  font-size: 18px;
+  margin-right: 4px;
+  vertical-align: middle;
+  display: inline-block;
+  color: #3182f6 !important; /* 라이트 모드에서 아이콘 색상 강제 적용 */
+  opacity: 1 !important;
+}
+/* ===================== Comming Soon 버튼 라이트 모드 가시성 ===================== */
+.signup-button {
+    color: #ffffff !important;
+    font-weight: 600;
+    font-size: 0.95rem !important;
+    opacity: 1 !important;
+    background: var(--primary-color);
+    padding: 3px 16px;
+    border-radius: 16px;
+  }
+
+/* ===================== 태그/버튼/뱃지 스타일 ===================== */
+/* ===================== 태그 뱃지/카드/이미지/부스트 뱃지 및 이미지 크기 (최신 samplecss) ===================== */
+.tag-badge, .tag-card, .tag-image {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 32px;
+    min-width: 64px;
+    max-width: 180px;
+    border-radius: 999px;
+    color: var(--text-color);
+    font-size: 0.98em;
+    font-weight: 600;
+    padding: 0 16px;
+    border: 1px solid var(--border-default);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    box-sizing: border-box;
+    margin: 0;
+    gap: 6px;
+  }
+  
+  .red-highlight {
+    color: #3182f6 !important;
+    font-weight: 800;
+  }
+  
+  .tag-cell {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    background: var(--bg-secondary-color);
+    border-radius: 30px;
+    padding: 4px 12px;
+  }
+
+
+
+
+
+
+
+
+/* ===================== 반응형 디자인 ===================== */
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+    .onbit-payback-banner {
+        flex-direction: column;
+        padding: 1.5rem 1rem;
+        gap: 1rem;
+    }
+    
+    .onbit-payback-banner .banner-image-container {
+        min-width: auto;
+        justify-content: center;
+    }
+    
+    .onbit-payback-banner .banner-image {
+        width: 200px;
+        max-width: 200px;
+    }
+    
+    .onbit-payback-banner .banner-content {
+        min-width: auto;
+        text-align: center;
+    }
+} 
+/* ===================== 카드 쉐도우 통합 및 호버 통합===================== */
+.onbit-payback-banner,
+.affiliated-card,
+.affiliate-card,
+.check-card,
+.affiliate-card.event,
+.affiliate-card.featured,
+.full-exchange-table-section {
+box-shadow: 0 4px 20px rgba(0,0,0,0.05) !important;
+transition: box-shadow 0.2s, transform 0.2s;
+}
+.affiliated-card:hover,
+.affiliate-card:hover,
+.affiliate-card.event:hover,
+.check-card:hover,
+.affiliate-card.featured:hover {
+box-shadow: 0 8px 30px rgba(0,0,0,0.15) !important;
+transform: translateY(-4px) scale(1.03);
+}

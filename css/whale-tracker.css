@@ -158,7 +158,6 @@
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     background: #ffffff;
     color: #ffffff;
-    border-radius: 8px;
     padding: 0;
     margin: 0;
     overflow-y: auto;
@@ -196,7 +195,7 @@
 
 .whale-trades-list {
     list-style: none;
-    padding: 2px;
+    padding: 1px;
     margin: 0;
     overflow-y: auto;
     overflow-x: hidden; /* 🔥 가로 스크롤 방지 */
@@ -1089,7 +1088,6 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    /* 🔥 박스 제거 - 깔끔한 아이콘만 표시 */
 }
 
 /* 🔥 거래소 SVG 아이콘 스타일 */
@@ -1098,7 +1096,6 @@
     height: 20px;
     object-fit: contain;
     transition: all 0.3s ease;
-    /* 🔥 박스 제거 - 아이콘만 깔끔하게 표시 */
 }
 
 /* 🔥 간단한 반짝임 애니메이션 */

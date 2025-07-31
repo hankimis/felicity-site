@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>ONBit - 제휴 거래소</title>
+    <title>Onbit - 제휴 거래소</title>
     
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
@@ -17,163 +17,8 @@
     <!-- Custom CSS -->
     <link rel="stylesheet" href="../css/style.css"/>
     <link rel="stylesheet" href="../auth.css"/>
-
-    <link rel="stylesheet" href="../css/pages/_affiliated.css"/>
-    
-    <style>
-        /* 다크모드 CSS 변수 */
-        :root {
-            --card-bg: white;
-            --card-border: #f1f5f9;
-            --card-shadow: rgba(0, 0, 0, 0.08);
-            --card-shadow-hover: rgba(0, 0, 0, 0.12);
-            --text-primary: #1f2937;
-            --text-secondary: #6b7280;
-        }
-
-        [data-theme="dark"] {
-            --card-bg: #1e293b;
-            --card-border: #334155;
-            --card-shadow: rgba(0, 0, 0, 0.3);
-            --card-shadow-hover: rgba(0, 0, 0, 0.4);
-            --text-primary: #f1f5f9;
-            --text-secondary: #94a3b8;
-        }
-
-        .info-cards-container {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 2rem;
-            margin-top: 2rem;
-        }
-        
-        .info-card {
-            background: var(--card-bg);
-            border-radius: 16px;
-            padding: 1.5rem;
-            box-shadow: 0 4px 20px var(--card-shadow);
-            border: 1px solid var(--card-border);
-            transition: all 0.3s ease;
-        }
-        
-        .info-card:hover {
-            box-shadow: 0 8px 32px var(--card-shadow-hover);
-            transform: translateY(-2px);
-        }
-        
-        .card-title {
-            font-size: 1.2rem;
-            font-weight: 600;
-            margin: 0 0 1rem 0;
-            color: var(--text-primary);
-        }
-        
-        .banner-link {
-            display: flex;
-            align-items: center;
-            text-decoration: none;
-            gap: 1rem;
-        }
-        
-        .banner-image {
-            width: 60px;
-            height: 60px;
-            object-fit: contain;
-            border-radius: 8px;
-            flex-shrink: 0;
-            background: var(--card-bg);
-            padding: 4px;
-        }
-        
-        .banner-content {
-            flex: 1;
-        }
-        
-        .banner-card-title {
-            font-size: 1.1rem;
-            font-weight: 600;
-            color: var(--text-primary);
-            margin: 0 0 0.5rem 0;
-        }
-        
-        .banner-card-desc {
-            font-size: 0.9rem;
-            color: var(--text-secondary);
-            margin: 0;
-        }
-
-        /* 다크모드에서 거래소 테이블 스타일 개선 */
-        [data-theme="dark"] .exchange-table-wrapper {
-            background: var(--card-bg);
-            border: 1px solid var(--card-border);
-        }
-
-        [data-theme="dark"] .exchange-table-wrapper table {
-            background: transparent;
-        }
-
-        [data-theme="dark"] .exchange-table-wrapper th {
-            background: #334155;
-            color: var(--text-primary);
-            border-bottom: 1px solid var(--card-border);
-        }
-
-        [data-theme="dark"] .exchange-table-wrapper td {
-            background: transparent;
-            color: var(--text-primary);
-            border-bottom: 1px solid var(--card-border);
-        }
-
-        [data-theme="dark"] .exchange-table-wrapper tr:hover td {
-            background: #334155 !important;
-        }
-
-        /* 다크모드에서 탭 스타일 개선 */
-        [data-theme="dark"] .table-tabs .swiper-slide {
-            color: var(--text-secondary);
-            background: transparent;
-        }
-
-        [data-theme="dark"] .table-tabs .swiper-slide.active {
-            color: var(--text-primary);
-            background: var(--card-bg);
-            border: 1px solid var(--card-border);
-        }
-
-        /* 다크모드에서 파트너 섹션 스타일 */
-        [data-theme="dark"] .partner-grid-title {
-            color: var(--text-primary);
-        }
-
-        [data-theme="dark"] .partner-grid-pre-title {
-            color: var(--text-secondary);
-        }
-
-        [data-theme="dark"] .partner-logo-item {
-            background: var(--card-bg);
-            border: 1px solid var(--card-border);
-            border-radius: 8px;
-            padding: 8px;
-        }
-
-        /* 반응형 디자인 */
-        @media (max-width: 768px) {
-            .info-cards-container {
-                grid-template-columns: 1fr;
-                gap: 1rem;
-            }
-            
-            .banner-link {
-                flex-direction: column;
-                text-align: center;
-            }
-            
-            .banner-image {
-                width: 80px;
-                height: 80px;
-            }
-        }
-    </style>
+    <link rel="stylesheet" href="../css/pages/partnerslide.css"/>
+    <link rel="stylesheet" href="affiliated.css"/>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" />
     <link rel="stylesheet" href="https://unpkg.com/swiper/swiper-bundle.min.css" />
     <link rel="icon" type="image/png" href="/onbit/favicon-96x96.png" sizes="96x96" />
@@ -195,8 +40,31 @@
     <div id="header-placeholder"></div>
     
     <main class="main-container affiliated-page">
+        <!-- 온비트 페이백 메인 배너 -->
+        <section class="onbit-payback-banner">
+          <div class="banner-image-container">
+            <img src="../assets/affiliated-banner/bannerpics.png" alt="온비트 페이백 배너" class="banner-image">
+          </div>
+          <div class="banner-content">
+            <h1 class="onbit-payback-title">수수료, 제휴 거래소에서 바로 페이백</h1>
+            <div class="payback-stats-row">
+              <div class="payback-stat">
+                <div id="payback-users" class="payback-stat-value">0</div>
+                <div class="payback-stat-label">온비트 페이백 가입자 수</div>
+              </div>
+              <div class="payback-stat">
+                <div id="payback-volume" class="payback-stat-value">0</div>
+                <div class="payback-stat-label">하루 평균 페이백 거래량 (USD)</div>
+              </div>
+              <div class="payback-stat">
+                <div id="payback-reward" class="payback-stat-value">0</div>
+                <div class="payback-stat-label">최고 리워드 비율</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
         <section class="pre-check-section">
-            <h3 class="section-title">거래소 선택 전, 꼭 확인하세요!</h3>
             <div class="check-card-container">
                 <a href="exchange-guide/index.html" class="check-card">
                     <div class="card-icon-wrapper"><i class="fas fa-lightbulb"></i></div>
@@ -215,32 +83,35 @@
             </div>
         </section>
 
-        <section class="affiliate-section">
-            <div class="section-header">
-                <p class="section-title">Onbit 제휴거래소</p>
-            </div>
-            <div class="info-cards-container">
-                <div class="info-card">
-                  <p class="card-title">인기 이벤트 <i class="fas fa-fire" style="color: #ff5252;"></i></p>
-                  <a href="../event-board.html" class="banner-link">
-                    <img src="../assets/tradelogo/lbank event.jpg" alt="banner" class="banner-image">
-                    <div class="banner-content">
-                        <p class="banner-card-title">Lbank 신규 가입 이벤트</p>
-                        <p class="banner-card-desc"><strong>#Lbank</strong> 500USDT 입급시 200USDT 추가 지급</p>
+        <!-- 3개 그리드 카드 섹션 -->
+        <section class="affiliated-cards-section">
+          <a class="affiliated-card" href="lbank/">
+            <div class="affiliated-card-row">
+              <img class="affiliated-card-img" src="../assets/affiliatedcard/payback.png" alt="수수료 최대 65% 페이백">
+              <div class="affiliated-card-content">
+                <div class="affiliated-card-title">수수료 최대 <span style='color:#2563eb;'>65%</span> 페이백</div>
+                <div class="affiliated-card-desc">온비트 유저 전용 특별 리워드<br>거래할수록 수수료 페이백</div>
+              </div>
                     </div>
                   </a>
+          <a class="affiliated-card" href="lbank/">
+            <div class="affiliated-card-row">
+              <img class="affiliated-card-img" src="../assets/affiliatedcard/event.png" alt="지금 가입하면 20% 리워드">
+              <div class="affiliated-card-content">
+                <div class="affiliated-card-title">지금 가입하면 <span style='color:#2563eb;'>20%</span> 리워드</div>
+                <div class="affiliated-card-desc">신규 유저 전용 웰컴 보너스<br>가입만 하면 자동 지급</div>
                 </div>
-                <div class="info-card">
-                  <p class="card-title">주목할 거래소 <i class="fas fa-star" style="color: #ffc107;"></i></p>
-                  <a href="lbank/" class="banner-link">
-                    <img src="../assets/tradelogo/lbanklogo.png" alt="banner" class="banner-image">
-                    <div class="banner-content">
-                        <p class="banner-card-title">Lbank 거래소</p>
-                        <p class="banner-card-desc"><strong>#Lbank</strong> 50% 페이백</p>
                     </div>
                   </a>
+          <a class="affiliated-card" href="lbank/">
+            <div class="affiliated-card-row">
+              <img class="affiliated-card-img" src="../assets/affiliatedcard/lbank.png" alt="글로벌 유저들이 선택한 거래소">
+              <div class="affiliated-card-content">
+                <div class="affiliated-card-title"><span style='color:#2563eb;'>글로벌</span> 유저들이 선택한 거래소</div>
+                <div class="affiliated-card-desc">전 세계 900만 회원<br>일일 거래량 2조 원</div>
                 </div>
             </div>
+          </a>
         </section>
 
         <section class="full-exchange-table-section">
@@ -256,7 +127,6 @@
             </div>
             <div class="exchange-table-wrapper large-table">
                 <div class="table-background">
-                    <img src="https://i.imgur.com/JjJgT20.png" alt="Onbit Logo Background" />
                 </div>
                 <table>
                     <thead>
@@ -370,6 +240,37 @@
             </div>
         </section>
     </main>
+<script>
+function animateCountUp(id, target, duration, options = {}) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  let start = 0;
+  const startTime = performance.now();
+  const isComma = options.comma;
+  const isPercent = options.percent;
+
+  function update(now) {
+    const elapsed = now - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+    let value = Math.floor(progress * (target - start) + start);
+    if (progress === 1) value = target;
+    let display = value;
+    if (isComma) display = value.toLocaleString();
+    if (isPercent) display += '%';
+    el.textContent = display;
+    if (progress < 1) {
+      requestAnimationFrame(update);
+    }
+  }
+  requestAnimationFrame(update);
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  animateCountUp('payback-users', 2000, 1200, { comma: false });
+  animateCountUp('payback-volume', 12112621210, 1500, { comma: true });
+  animateCountUp('payback-reward', 65, 1000, { percent: true });
+});
+</script>
 
     <!-- Footer -->
     <div id="footer-placeholder"></div>

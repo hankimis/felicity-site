@@ -123,7 +123,8 @@
 .header-right {
   display: flex;
   align-items: center;
-  gap: 16px;
+  flex-direction: row;
+  gap: 8px;
 }
 
 .auth-buttons {
@@ -132,16 +133,19 @@
   gap: 12px;
 }
 
-.auth-buttons a {
-  text-decoration: none;
-  padding: 8px 16px;
-  border-radius: 8px;
-  font-weight: 600;
-  transition: all 0.2s;
-}
-
 .auth-buttons .login {
-  color: var(--primary-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 78px;
+  height: 30px;
+  color: var(--text-color);
+  border: 1px solid var(--border-color-button, #dbdfe6);
+  text-decoration: none;
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: 14px;
+  transition: all 0.2s;
 }
 
 .auth-buttons .login:hover {
@@ -714,21 +718,6 @@ body.dark-mode .navbar nav a:hover:after {
   }
 }
 
-@media (min-width: 900px) {
-  .header-right {
-    flex-direction: row;
-    gap: 16px;
-  }
-  
-  .theme-button,
-  #theme-toggle {
-    display: block !important;
-  }
-  
-  .mobile-menu-button {
-    order: unset;
-  }
-}
 
 /* 터치 디바이스 최적화 */
 @media (hover: none) and (pointer: coarse) {

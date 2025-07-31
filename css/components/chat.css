@@ -11,7 +11,6 @@
 .chat-section {
     display: flex;
     flex-direction: column;
-    flex: 0 0 350px;
     min-width: 320px;
     background: var(--card-bg);
     overflow: hidden;
@@ -184,7 +183,7 @@
 .chat-input-form {
     display: flex;
     gap: 8px;
-    padding: 8px 8px;
+    padding: 10px 8px;
     flex-shrink: 0;
     box-sizing: border-box;
     height: 60px;
@@ -422,7 +421,7 @@
 :root.dark-mode .chat-wrapper,
 :root.dark-mode #chat-messages,
 :root.dark-mode .chat-input-form {
-    background-color: var(--card-bg);
+    background-color: var(--bg-primary);
 }
 
 :root.dark-mode #message-input {
