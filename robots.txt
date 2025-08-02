@@ -1,4 +1,28 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://onbitlabs.com/sitemap.xml 
+# 크롤링 지연 설정 (서버 부하 방지)
+Crawl-delay: 1
+
+# 특정 파일/폴더 제외
+Disallow: /admin/
+Disallow: /functions/
+Disallow: /*.json$
+Disallow: /*firebase*
+Disallow: /node_modules/
+
+# 검색엔진별 최적화
+User-agent: Googlebot
+Allow: /
+Crawl-delay: 1
+
+User-agent: Yeti
+Allow: /
+Crawl-delay: 1
+
+User-agent: NaverBot
+Allow: /
+Crawl-delay: 1
+
+# 사이트맵 위치
+Sitemap: https://onbitlabs.com/sitemap.xml
