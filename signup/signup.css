@@ -1,0 +1,327 @@
+:root {
+    --bg-primary: #ffffff;
+    --bg-secondary: #f8fafc;
+    --text-primary: #1f2937;
+    --text-secondary: #6b7280;
+    --accent-blue: #3b82f6;
+    --primary-color: #3b82f6;
+    --border-default: #e2e8f0;
+    --shadow-light: rgba(0, 0, 0, 0.08);
+    --card-bg: #ffffff;
+    --border-color: #e5e7eb;
+    --text-color: #1f2937;
+    --text-color-secondary: #6b7280;
+    --bg-secondary-color: #f3f4f6;
+    --shadow-color: rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="dark"] {
+    --bg-primary: #1a1a1a;
+    --bg-secondary: #2a2a2a;
+    --text-primary: #ffffff;
+    --text-secondary: #cccccc;
+    --card-bg: #2a2a2a;
+    --border-color: #404040;
+    --text-color: #ffffff;
+    --text-color-secondary: #cccccc;
+    --bg-secondary-color: #404040;
+    --shadow-color: rgba(0, 0, 0, 0.3);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+body {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    transition: background-color 0.3s ease, color 0.3s ease;
+    line-height: 1.6;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* 회원가입 페이지 전용 스타일 */
+.signup-container {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+}
+
+.signup-card {
+    width: 540px;
+    padding: 2rem;
+}
+
+.signup-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.signup-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-color);
+    margin: 0;
+}
+
+.signup-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-input {
+    padding: 1rem;
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 1rem;
+    background: var(--card-bg);
+    color: var(--text-color);
+    transition: all 0.2s ease;
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+}
+
+.form-input::placeholder {
+    color: var(--text-color-secondary);
+}
+
+.form-input.error {
+    border-color: var(--primary-color);
+}
+
+.form-input.success {
+    border-color: var(--primary-color);
+}
+
+.signup-button {
+    background: var(--bg-secondary-color);
+    color: var(--text-color);
+    border: none;
+    padding: 1rem;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-top: 1rem;
+}
+
+.signup-button:hover {
+    background: var(--bg-secondary-color);
+}
+
+.signup-button:disabled {
+    background: var(--bg-secondary-color);
+    color: var(--text-color-secondary);
+    cursor: not-allowed;
+}
+
+/* 입력 필드와 버튼 조합 */
+.input-with-button {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.input-with-button .form-input {
+    flex: 1;
+}
+
+.action-button {
+    background: var(--bg-secondary-color);
+    color: var(--text-color-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.action-button:hover {
+    background: var(--bg-secondary-color);
+    color: var(--text-color);
+}
+
+/* 약관 섹션 */
+.terms-section {
+    margin-top: 2rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.terms-header {
+    margin-bottom: 1rem;
+}
+
+.master-checkbox {
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+.terms-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.term-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0;
+}
+
+.term-item .checkbox-container {
+    flex: 1;
+    font-size: 0.875rem;
+    color: var(--text-color-secondary);
+}
+
+.view-details {
+    color: var(--primary-color);
+    text-decoration: none;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.view-details:hover {
+    text-decoration: underline;
+}
+
+/* 체크박스 스타일 */
+.checkbox-container {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+}
+
+.checkbox-container input[type="checkbox"] {
+    display: none;
+}
+
+.checkmark {
+    width: 18px;
+    height: 18px;
+    border: 2px solid var(--border-color);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.checkbox-container input[type="checkbox"]:checked + .checkmark {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.checkbox-container input[type="checkbox"]:checked + .checkmark::after {
+    content: '✓';
+    color: white;
+    font-size: 0.75rem;
+    font-weight: bold;
+}
+
+.error-message {
+    background: var(--bg-secondary-color);
+    border: 1px solid var(--border-color);
+    color: var(--text-color);
+    padding: 1rem;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    display: none;
+}
+
+.success-message {
+    background: var(--bg-secondary-color);
+    border: 1px solid var(--border-color);
+    color: var(--text-color);
+    padding: 1rem;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    display: none;
+}
+
+.signup-footer {
+    margin-top: 2rem;
+    padding-top: 2rem;
+}
+
+.footer-links {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+}
+
+.footer-link {
+    color: var(--text-color-secondary);
+    text-decoration: none;
+    font-size: 0.875rem;
+    transition: color 0.2s ease;
+}
+
+.footer-link:hover {
+    color: var(--text-color);
+}
+
+.loading-spinner {
+    display: none;
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--card-bg);
+    border-top: 2px solid transparent;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+    .signup-container {
+        padding: 1rem;
+    }
+
+    .signup-card {
+        padding: 1.5rem;
+        max-width: 100%;
+    }
+
+    .signup-title {
+        font-size: 1.5rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .signup-card {
+        padding: 1rem;
+    }
+
+    .signup-title {
+        font-size: 1.5rem;
+    }
+}

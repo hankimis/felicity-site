@@ -10,271 +10,8 @@
     <link rel="preconnect" href="https://www.gstatic.com">
     <link rel="preconnect" href="https://cdnjs.cloudflare.com">
     <link rel="preconnect" href="https://cdn.jsdelivr.net">
-    
-    <!-- Critical CSS Variables -->
-    <style>
-        :root {
-            --bg-primary: #ffffff;
-            --bg-secondary: #f8fafc;
-            --text-primary: #1f2937;
-            --text-secondary: #6b7280;
-            --accent-blue: #3b82f6;
-            --primary-color: #3b82f6;
-            --border-default: #e2e8f0;
-            --shadow-light: rgba(0, 0, 0, 0.08);
-            --card-bg: #ffffff;
-            --border-color: #e5e7eb;
-            --text-color: #1f2937;
-            --text-color-secondary: #6b7280;
-            --bg-secondary-color: #f3f4f6;
-            --shadow-color: rgba(0, 0, 0, 0.1);
-        }
 
-        [data-theme="dark"] {
-            --bg-primary: #1a1a1a;
-            --bg-secondary: #2a2a2a;
-            --text-primary: #ffffff;
-            --text-secondary: #cccccc;
-            --card-bg: #2a2a2a;
-            --border-color: #404040;
-            --text-color: #ffffff;
-            --text-color-secondary: #cccccc;
-            --bg-secondary-color: #404040;
-            --shadow-color: rgba(0, 0, 0, 0.3);
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
-        }
-
-        body {
-            background-color: var(--bg-primary);
-            color: var(--text-primary);
-            transition: background-color 0.3s ease, color 0.3s ease;
-            line-height: 1.6;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
-
-        /* 로그인 페이지 전용 스타일 */
-        .login-container {
-            flex: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 2rem;
-            background-color: #ffffff;
-        }
-
-        .login-card {
-            background: #ffffff;
-            width: 540px;
-            padding: 2rem;
-        }
-
-        .login-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 2rem;
-        }
-
-        .login-title {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: #000000;
-            margin: 0;
-        }
-
-
-
-        .login-form {
-            display: flex;
-            flex-direction: column;
-            gap: 1.5rem;
-        }
-
-        .form-group {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .form-input {
-            padding: 1rem;
-            border: 2px solid #e5e7eb;
-            border-radius: 8px;
-            font-size: 1rem;
-            background: #ffffff;
-            color: #000000;
-            transition: all 0.2s ease;
-        }
-
-        .form-input:focus {
-            outline: none;
-            border-color: #3b82f6;
-        }
-
-        .form-input::placeholder {
-            color: #9ca3af;
-        }
-
-        .form-options {
-            margin-top: 0.5rem;
-        }
-
-        .checkbox-container {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            font-size: 0.875rem;
-            color: #6b7280;
-            cursor: pointer;
-        }
-
-        .checkbox-container input[type="checkbox"] {
-            display: none;
-        }
-
-        .checkmark {
-            width: 18px;
-            height: 18px;
-            border: 2px solid #d1d5db;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s ease;
-        }
-
-        .checkbox-container input[type="checkbox"]:checked + .checkmark {
-            background-color: #3b82f6;
-            border-color: #3b82f6;
-        }
-
-        .checkbox-container input[type="checkbox"]:checked + .checkmark::after {
-            content: '✓';
-            color: white;
-            font-size: 0.75rem;
-            font-weight: bold;
-        }
-
-        .login-button {
-            background: #f3f4f6;
-            color: #000000;
-            border: none;
-            padding: 1rem;
-            border-radius: 8px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            margin-top: 1rem;
-        }
-
-        .login-button:hover {
-            background: #e5e7eb;
-        }
-
-        .login-button:disabled {
-            background: #f3f4f6;
-            color: #9ca3af;
-            cursor: not-allowed;
-        }
-
-        .error-message {
-            background: #fef2f2;
-            border: 1px solid #fecaca;
-            color: #dc2626;
-            padding: 1rem;
-            border-radius: 8px;
-            font-size: 0.9rem;
-            display: none;
-        }
-
-        .success-message {
-            background: #f0fdf4;
-            border: 1px solid #bbf7d0;
-            color: #16a34a;
-            padding: 1rem;
-            border-radius: 8px;
-            font-size: 0.9rem;
-            display: none;
-        }
-
-        .login-footer {
-            margin-top: 2rem;
-            padding-top: 2rem;
-        }
-
-        .footer-links {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 1rem;
-        }
-
-        .footer-link {
-            color: #6b7280;
-            text-decoration: none;
-            font-size: 0.875rem;
-            transition: color 0.2s ease;
-        }
-
-        .footer-link:hover {
-            color: #374151;
-        }
-
-        .separator {
-            color: #d1d5db;
-            font-size: 0.875rem;
-        }
-
-        .loading-spinner {
-            display: none;
-            width: 20px;
-            height: 20px;
-            border: 2px solid #ffffff;
-            border-top: 2px solid transparent;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 0 auto;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        /* 반응형 디자인 */
-        @media (max-width: 768px) {
-            .login-container {
-                padding: 1rem;
-            }
-
-            .login-card {
-                padding: 1.5rem;
-                max-width: 100%;
-            }
-
-            .login-header {
-                text-align: center;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .login-card {
-                padding: 1rem;
-            }
-
-            .login-title {
-                font-size: 1.5rem;
-            }
-        }
-    </style>
+    <link rel="stylesheet" href="login.css"/>
 
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -541,6 +278,99 @@
                 }
             });
         });
+
+        // 🎨 테마 초기화 및 변경 처리
+        function initializeTheme() {
+            // 저장된 테마 불러오기 또는 기본값 설정
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+            
+            console.log(`🎨 로그인 페이지 테마 초기화: ${savedTheme}`);
+            
+            // 초기 테마 아이콘 설정
+            updateThemeIcon(savedTheme);
+        }
+
+        // 테마 아이콘 업데이트 함수
+        function updateThemeIcon(theme) {
+            const themeButton = document.querySelector('#theme-toggle');
+            if (themeButton) {
+                const icon = themeButton.querySelector('i');
+                if (icon) {
+                    if (theme === 'dark') {
+                        icon.className = 'fas fa-sun';
+                    } else {
+                        icon.className = 'fas fa-moon';
+                    }
+                }
+            }
+        }
+
+        // 테마 변경 이벤트 리스너
+        function setupThemeListener() {
+            // 헤더의 테마 토글 버튼 감지 (ID와 data-action 모두 체크)
+            document.addEventListener('click', function(e) {
+                const target = e.target.closest('#theme-toggle, [data-action="toggle-theme"]');
+                if (target) {
+                    e.preventDefault();
+                    
+                    const currentTheme = document.documentElement.getAttribute('data-theme');
+                    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+                    
+                    // 테마 변경
+                    document.documentElement.setAttribute('data-theme', newTheme);
+                    localStorage.setItem('theme', newTheme);
+                    
+                    // 테마 아이콘 업데이트
+                    updateThemeIcon(newTheme);
+                    
+                    console.log(`🎨 테마 변경: ${currentTheme} → ${newTheme}`);
+                    
+                    // 커스텀 이벤트 발생 (다른 컴포넌트에서 감지할 수 있도록)
+                    document.dispatchEvent(new CustomEvent('themeChanged', { 
+                        detail: { theme: newTheme } 
+                    }));
+                }
+            });
+            
+            // 테마 변경 감지 (다른 탭에서 변경된 경우)
+            window.addEventListener('storage', function(e) {
+                if (e.key === 'theme') {
+                    document.documentElement.setAttribute('data-theme', e.newValue);
+                    console.log(`🎨 외부 테마 변경 감지: ${e.newValue}`);
+                }
+            });
+        }
+
+        // 헤더 로드 대기 및 테마 초기화
+        function waitForHeaderAndInitialize() {
+            // 헤더가 로드될 때까지 기다림
+            const checkHeader = () => {
+                const themeButton = document.querySelector('#theme-toggle');
+                if (themeButton) {
+                    console.log('🎯 헤더 로드 완료, 테마 초기화 시작');
+                    initializeTheme();
+                    setupThemeListener();
+                } else {
+                    // 100ms 후 다시 체크
+                    setTimeout(checkHeader, 100);
+                }
+            };
+            
+            // 즉시 테마 적용 (헤더 로드 전에도)
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+            
+            // 헤더 체크 시작
+            checkHeader();
+        }
+
+        // 페이지 로드 시 실행
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', waitForHeaderAndInitialize);
+        } else {
+            waitForHeaderAndInitialize();
+        }
     </script>
 </body>
 </html> 

@@ -324,29 +324,6 @@
     box-shadow: 0 2px 8px rgba(255, 152, 0, 0.4);
 }
 
-/* 🔥 태블릿 반응형 */
-@media (max-width: 1024px) {
-    .chat-section {
-        flex: 0 0 300px;
-        width: 300px;
-        min-width: 280px;
-    }
-    
-    .message-item {
-        max-width: 90%;
-    }
-    
-    .chat-profile-pic,
-    .chat-profile-pic-wrap {
-        width: 28px;
-        height: 28px;
-    }
-    
-    .message-text {
-        font-size: 13px;
-        padding: 7px 10px;
-    }
-}
 
 /* 🔥 모바일 반응형 */
 @media (max-width: 768px) {

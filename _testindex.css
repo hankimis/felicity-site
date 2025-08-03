@@ -1105,6 +1105,9 @@ body {
     font-size: 0.9rem;
   }
 
+  .dashboard-card {
+    box-shadow: none;
+  }
 
   
   .main-banner .exchange-item {
@@ -1164,7 +1167,6 @@ body {
   }
   
   .table-controls {
-    flex-direction: column;
     gap: 0.5rem;
   }
   
