@@ -109,11 +109,6 @@
     transform: translateY(0);
 }
 
-/* 드롭다운 화살표 없음 - 아이콘만 표시 */
-
-/* 🔥 드롭다운 메뉴 화살표 */
-
-
 /* 🔥 드롭다운 아이템 */
 .layout-dropdown-item {
     display: flex;

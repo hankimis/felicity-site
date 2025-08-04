@@ -1014,14 +1014,6 @@
     font-size: 0.9em;
 }
 
-.whale-trade-side-buy {
-    color: #4caf50;
-}
-
-.whale-trade-side-sell {
-    color: #f44336;
-} /* 🔥 펄스 애니메이션 */
-
 /* 🔥 고래 에러 메시지 스타일 */
 .whale-error-message {
     display: flex;
@@ -1062,15 +1054,6 @@
     background-color: #2563eb;
 }
 
-/* 🔥 숏 1M 이상 거래 전용 애니메이션 - GIF 효과 */
-
-
-
-/* 🔥 롱 1M 이상 거래 전용 애니메이션 - GIF 효과 */
-
-
-
-/* 🔥 롱 1M 이상 거래 특별 애니메이션 효과 */
 
 
 /* 🔥 텍스트 콘텐츠가 애니메이션 위에 표시되도록 */

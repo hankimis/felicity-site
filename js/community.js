@@ -7,6 +7,9 @@ let isChartReady = false;
 let autoSaveEnabled = true;
 
 // Firebase 초기화 대기
+
+
+
 function waitForFirebase() {
     return new Promise((resolve) => {
         const checkFirebase = () => {
