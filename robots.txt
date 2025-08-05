@@ -25,4 +25,4 @@ Allow: /
 Crawl-delay: 1
 
 # 사이트맵 위치
-Sitemap: https://onbitlabs.com/sitemap.xml
+Sitemap: https://www.onbitlabs.com/sitemap.xml
