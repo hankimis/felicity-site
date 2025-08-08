@@ -270,6 +270,7 @@ function updateLogos() {
 async function updateAuthUI(user) {
     const mobileAuthSection = document.querySelector('.mobile-auth-section');
     const userProfile = getElement('user-profile');
+    const mobileUserProfile = getElement('mobile-user-profile');
     const authButtons = document.querySelector('.auth-buttons');
     const adminPageLink = getElement('admin-page-link');
 
@@ -283,8 +284,10 @@ async function updateAuthUI(user) {
 
             // 로그인 상태 UI 업데이트
             if (userProfile) userProfile.style.display = 'flex';
-        if (authButtons) authButtons.style.display = 'none';
+            if (mobileUserProfile) mobileUserProfile.style.display = 'flex';
+            if (authButtons) authButtons.style.display = 'none';
             if (getElement('user-display-name')) getElement('user-display-name').textContent = currentUser.displayName;
+            if (getElement('mobile-user-display-name')) getElement('mobile-user-display-name').textContent = currentUser.displayName;
             
             // 레벨 정보 업데이트
             updateUserLevelDisplay();
@@ -295,11 +298,13 @@ async function updateAuthUI(user) {
             const mobileAdminLink = getElement('mobile-admin-link');
             if (mobileAdminLink) mobileAdminLink.style.display = currentUser.role === 'admin' ? 'block' : 'none';
 
-            // 모바일 메뉴 업데이트
-            updateMobileMenuUserInfo();
-            
             // 주기적 사용자 데이터 새로고침 시작
             startUserDataRefresh();
+            
+            // 모바일에서 로그인 시 커뮤니티 페이지로 이동
+            if (window.innerWidth <= 768 && !window.location.pathname.includes('/community/')) {
+                window.location.href = '/community/';
+            }
         } catch (error) {
             // 에러 발생 시 로그아웃 처리
             auth.signOut().catch(() => {});
@@ -313,22 +318,9 @@ async function updateAuthUI(user) {
 
         // 로그아웃 상태 UI 업데이트
         if (userProfile) userProfile.style.display = 'none';
+        if (mobileUserProfile) mobileUserProfile.style.display = 'none';
         if (authButtons) authButtons.style.display = 'flex';
         if (adminPageLink) adminPageLink.style.display = 'none';
-
-        // 모바일 메뉴 업데이트
-    if (mobileAuthSection) {
-            mobileAuthSection.innerHTML = `
-                <div style="display:flex; flex-direction:column; gap:12px; padding:20px 0;">
-                    <button class="mobile-auth-btn login" data-action="open-login-modal" style="font-size:1.15rem; padding:14px 0; border-radius:12px; font-weight:700; display:flex; align-items:center; justify-content:center; gap:8px; background:var(--primary-color); color:#fff; border:none;">
-                        <i class="fas fa-sign-in-alt"></i> 로그인
-                    </button>
-                    <button class="mobile-auth-btn signup" data-action="open-signup-modal" style="font-size:1.15rem; padding:14px 0; border-radius:12px; font-weight:700; display:flex; align-items:center; justify-content:center; gap:8px; background:var(--bg-secondary-color); color:var(--primary-color); border:1.5px solid var(--primary-color);">
-                        <i class="fas fa-user-plus"></i> 회원가입
-                    </button>
-                </div>
-            `;
-        }
     }
 }
 
@@ -369,47 +361,6 @@ function updateUserLevelDisplay() {
     window.currentUserData = currentUser;
 }
 
-// 모바일 메뉴 사용자 정보 업데이트
-function updateMobileMenuUserInfo() {
-    const mobileAuthSection = document.querySelector('.mobile-auth-section');
-    if (!mobileAuthSection) return;
-    
-    if (!currentUser) {
-        // 로그인/회원가입 버튼 (비로그인 시)
-        mobileAuthSection.innerHTML = `
-            <div style="display:flex; flex-direction:column; gap:12px; padding:20px 0;">
-                <button class="mobile-auth-btn login" data-action="open-login-modal" style="font-size:1.15rem; padding:14px 0; border-radius:12px; font-weight:700; display:flex; align-items:center; justify-content:center; gap:8px; background:var(--primary-color); color:#fff; border:none;">
-                    <i class="fas fa-sign-in-alt"></i> 로그인
-                </button>
-                <button class="mobile-auth-btn signup" data-action="open-signup-modal" style="font-size:1.15rem; padding:14px 0; border-radius:12px; font-weight:700; display:flex; align-items:center; justify-content:center; gap:8px; background:var(--bg-secondary-color); color:var(--primary-color); border:1.5px solid var(--primary-color);">
-                    <i class="fas fa-user-plus"></i> 회원가입
-                </button>
-            </div>
-        `;
-        return;
-    }
-    
-    // 레벨 시스템이 로드될 때까지 기다림
-    if (!window.levelSystem) {
-        setTimeout(updateMobileMenuUserInfo, 100);
-        return;
-    }
-    
-    const levelInfo = window.levelSystem.calculateLevel(currentUser.points || 0);
-    
-    mobileAuthSection.innerHTML = `
-        <div class="mobile-user-profile">
-            <div class="mobile-user-info">
-                <span class="mobile-user-name">${currentUser.displayName}님</span>
-                <span class="mobile-user-level" style="color: ${levelInfo.color || levelInfo.gradient || '#22c55e'}">${levelInfo.name}</span>
-            </div>
-            <div class="mobile-user-stats">
-                <span class="mobile-user-points">${(currentUser.points || 0).toLocaleString()}P</span>
-            </div>
-            <button class="mobile-logout-btn" data-action="logout">로그아웃</button>
-                </div>`;
-}
-
 // 사용자 데이터 새로고침 함수 (관리자가 포인트 변경 시 호출)
 window.refreshUserData = async function() {
     if (auth.currentUser) {
@@ -428,9 +379,6 @@ window.refreshUserData = async function() {
                 
                 // 헤더 레벨 업데이트
                 updateUserLevelDisplay();
-                
-                // 모바일 메뉴 업데이트
-                updateMobileMenuUserInfo();
                 
                 // 채팅에서 사용할 수 있도록 전역 변수 업데이트
                 window.currentUserLevel = window.levelSystem.calculateLevel(newUserData.points || 0);
@@ -514,40 +462,22 @@ function handleGlobalClick(e) {
             toggleTheme();
         },
         'logout': () => {
+            // 로그아웃 후 즉시 UI 업데이트
+            const userProfile = getElement('user-profile');
+            const mobileUserProfile = getElement('mobile-user-profile');
+            const authButtons = document.querySelector('.auth-buttons');
+            
+            // 즉시 UI 업데이트
+            if (userProfile) userProfile.style.display = 'none';
+            if (mobileUserProfile) mobileUserProfile.style.display = 'none';
+            if (authButtons) authButtons.style.display = 'flex';
+            
+            // Firebase 로그아웃
             auth.signOut().catch(() => {});
         },
         'my-page': () => {
             if (auth.currentUser) window.location.href = target.href;
             else alert('로그인이 필요합니다.');
-        },
-        'open-mobile-menu': () => {
-            // 모바일 메뉴가 없으면 생성
-            if (!getElement('mobile-menu')) {
-                createMobileMenuIfNeeded();
-            }
-            const mobileMenu = getElement('mobile-menu');
-            if (mobileMenu) {
-                // 900px 미만에서 메뉴 열기
-                if (window.innerWidth < 900) {
-                    mobileMenu.style.display = 'flex';
-                }
-                mobileMenu.classList.add('is-open');
-                document.body.classList.add('mobile-menu-open');
-            }
-        },
-        'close-mobile-menu': () => {
-            const mobileMenu = getElement('mobile-menu');
-            if (mobileMenu) {
-                mobileMenu.classList.remove('is-open');
-                document.body.classList.remove('mobile-menu-open');
-                
-                // 링크 클릭 시 페이지 이동 허용
-                if (target.tagName === 'A' && target.href && !target.href.includes('#')) {
-                    setTimeout(() => {
-                window.location.href = target.href;
-                    }, 100);
-                }
-            }
         },
     };
 
@@ -556,64 +486,7 @@ function handleGlobalClick(e) {
     }
 }
 
-// 6. 초기화 함수
-function createMobileMenuIfNeeded() {
-    // 기존 모바일 메뉴와 오버레이 제거
-    const existingMenu = getElement('mobile-menu');
-    const existingOverlay = document.querySelector('.mobile-menu-overlay');
-    if (existingMenu) existingMenu.remove();
-    if (existingOverlay) existingOverlay.remove();
 
-    // 오버레이 생성
-    const overlay = document.createElement('div');
-    overlay.className = 'mobile-menu-overlay';
-    overlay.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        const mobileMenu = getElement('mobile-menu');
-        if (mobileMenu && mobileMenu.classList.contains('is-open')) {
-            mobileMenu.classList.remove('is-open');
-            document.body.classList.remove('mobile-menu-open');
-        }
-    });
-    document.body.appendChild(overlay);
-
-    // 메뉴 생성 (깔끔한 세로형, 큰 터치영역, 상단 사용자 정보)
-    const menu = document.createElement('div');
-    menu.id = 'mobile-menu';
-    menu.className = 'mobile-menu';
-    menu.innerHTML = `
-        <div class="mobile-menu-header">
-          <a href="index.html" class="logo-container"><img id="mobile-main-logo" src="" alt="Onbit Logo" height="36"/></a>
-          <button class="mobile-menu-close" data-action="close-mobile-menu" aria-label="메뉴 닫기"><i class="fas fa-times"></i></button>
-        </div>
-        <div class="mobile-auth-section">
-            <div style="display:flex; flex-direction:column; gap:12px; padding:20px 0;">
-                <button class="mobile-auth-btn login" data-action="open-login-modal" style="font-size:1.15rem; padding:14px 0; border-radius:12px; font-weight:700; display:flex; align-items:center; justify-content:center; gap:8px; background:var(--primary-color); color:#fff; border:none;">
-                    <i class="fas fa-sign-in-alt"></i> 로그인
-                </button>
-                <button class="mobile-auth-btn signup" data-action="open-signup-modal" style="font-size:1.15rem; padding:14px 0; border-radius:12px; font-weight:700; display:flex; align-items:center; justify-content:center; gap:8px; background:var(--bg-secondary-color); color:var(--primary-color); border:1.5px solid var(--primary-color);">
-                    <i class="fas fa-user-plus"></i> 회원가입
-                </button>
-            </div>
-        </div>
-        <nav class="mobile-menu-nav">
-          <ul>
-            <li><a href="affiliated.html" data-action="close-mobile-menu"><i class="fas fa-building"></i> 제휴 거래소</a></li>
-            <li><a href="community.html" data-action="close-mobile-menu"><i class="fas fa-comments"></i> 실시간 채팅</a></li>
-            <li><a href="community-board.html" data-action="close-mobile-menu"><i class="fas fa-clipboard-list"></i> 자유 게시판</a></li>
-            <li><a href="attendance.html" data-action="close-mobile-menu"><i class="fas fa-calendar-check"></i> 출석체크</a></li>
-            <li><a href="notice-board.html" data-action="close-mobile-menu"><i class="fas fa-bullhorn"></i> 공지사항</a></li>
-            <li><a href="my-account.html" data-action="close-mobile-menu"><i class="fas fa-user"></i> 마이페이지</a></li>
-            <li><a href="#" data-action="toggle-theme"><i class="fas fa-adjust"></i> 테마 변경</a></li>
-          </ul>
-        </nav>
-        <div class="mobile-menu-footer" style="margin-top:auto; padding-top:20px; border-top:1px solid var(--border-color); text-align:center; color:var(--text-color-secondary); font-size:0.95em;">
-          <span>© 2024 Onbit</span>
-        </div>`;
-    document.body.appendChild(menu);
-    updateMobileMenuUserInfo();
-}
 
 // 7. 스크립트 실행
 auth.onAuthStateChanged(async (user) => {
@@ -622,34 +495,9 @@ auth.onAuthStateChanged(async (user) => {
 });
 
 document.addEventListener('DOMContentLoaded', () => {
-    createMobileMenuIfNeeded();
     applyTheme();
     
-    // 모바일 메뉴 초기 상태 확실히 설정
-    setTimeout(() => {
-        const mobileMenu = getElement('mobile-menu');
-        if (mobileMenu) {
-            mobileMenu.classList.remove('is-open');
-            document.body.classList.remove('mobile-menu-open');
-            // PC에서는 완전히 숨김
-            if (window.innerWidth > 768) {
-                mobileMenu.style.display = 'none';
-            }
-        }
-    }, 100);
-    
     document.addEventListener('click', handleGlobalClick);
-    
-    // ESC 키로 모바일 메뉴 닫기
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') {
-            const mobileMenu = getElement('mobile-menu');
-            if (mobileMenu && mobileMenu.classList.contains('is-open')) {
-                mobileMenu.classList.remove('is-open');
-                document.body.classList.remove('mobile-menu-open');
-            }
-        }
-    });
 
     const loginForm = getElement('login-form');
     if (loginForm) {

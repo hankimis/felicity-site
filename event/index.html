@@ -3,6 +3,24 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    
+    <!-- 모바일 리다이렉트 스크립트 -->
+    <script>
+      // 모바일 디바이스 감지 및 community 페이지로 리다이렉트
+      (function() {
+        function isMobile() {
+          // 화면 너비가 768px 이하이거나 User-Agent가 모바일인 경우
+          return window.innerWidth <= 768 || 
+                 /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        }
+        
+        // 현재 페이지가 community 페이지가 아니고 모바일인 경우 리다이렉트
+        if (isMobile() && !window.location.pathname.includes('/community')) {
+          window.location.href = '/community/';
+        }
+      })();
+    </script>
+    
     <title>Onbit</title>
     
     <!-- 🚀 성능 최적화 메타 태그 -->

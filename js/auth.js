@@ -220,6 +220,7 @@ function getCurrentTheme() {
 async function updateAuthUI(user) {
     const mobileAuthSection = document.querySelector('.mobile-auth-section');
     const userProfile = getElement('user-profile');
+    const mobileUserProfile = getElement('mobile-user-profile');
     const authButtons = document.querySelector('.auth-buttons');
     const adminPageLink = getElement('admin-page-link');
     const mainHeader = getElement('main-header');
@@ -239,11 +240,17 @@ async function updateAuthUI(user) {
             if (userProfile) {
                 userProfile.style.display = 'flex';
             }
+            if (mobileUserProfile) {
+                mobileUserProfile.style.display = 'flex';
+            }
             if (authButtons) {
                 authButtons.style.display = 'none';
             }
             if (getElement('user-display-name')) {
                 getElement('user-display-name').textContent = currentUser.displayName;
+            }
+            if (getElement('mobile-user-display-name')) {
+                getElement('mobile-user-display-name').textContent = currentUser.displayName;
             }
             
             // 레벨 정보 업데이트
@@ -261,14 +268,26 @@ async function updateAuthUI(user) {
             // 사용자 데이터 새로고침 시작
             startUserDataRefresh();
             
+            // 모바일에서 로그인 시 커뮤니티 페이지로 이동
+            if (window.innerWidth <= 768 && !window.location.pathname.includes('/community/')) {
+                window.location.href = '/community/';
+            }
+            
         } catch (error) {
             // 에러 발생 시에도 기본 사용자 정보로 설정
             currentUser = { uid: user.uid, displayName: user.displayName || "사용자" };
             window.currentUser = currentUser;
             
             if (userProfile) userProfile.style.display = 'flex';
+            if (mobileUserProfile) mobileUserProfile.style.display = 'flex';
             if (authButtons) authButtons.style.display = 'none';
             if (getElement('user-display-name')) getElement('user-display-name').textContent = currentUser.displayName;
+            if (getElement('mobile-user-display-name')) getElement('mobile-user-display-name').textContent = currentUser.displayName;
+            
+            // 모바일에서 로그인 시 커뮤니티 페이지로 이동
+            if (window.innerWidth <= 768 && !window.location.pathname.includes('/community/')) {
+                window.location.href = '/community/';
+            }
         }
     } else {
         // 로그아웃 상태
@@ -278,6 +297,9 @@ async function updateAuthUI(user) {
         if (userProfile) {
             userProfile.style.display = 'none';
         }
+        if (mobileUserProfile) {
+            mobileUserProfile.style.display = 'none';
+        }
         if (authButtons) {
             authButtons.style.display = 'flex';
         }
@@ -286,9 +308,6 @@ async function updateAuthUI(user) {
         
         // 사용자 데이터 새로고침 중지
         stopUserDataRefresh();
-        
-        // 모바일 메뉴 초기화
-        updateMobileMenuUserInfo();
     }
     
     // FOUC 해결: 인증 상태 확인 후 헤더 표시
@@ -307,38 +326,6 @@ async function updateAuthUI(user) {
 // 사용자 레벨 표시 업데이트
 function updateUserLevelDisplay() { /* level system removed */ }
 
-// 모바일 메뉴 사용자 정보 업데이트
-function updateMobileMenuUserInfo() {
-    const mobileAuthSection = document.querySelector('.mobile-auth-section');
-    if (!mobileAuthSection) return;
-    
-    if (!currentUser) {
-        // 로그인/회원가입 버튼 (비로그인 시)
-        mobileAuthSection.innerHTML = `
-            <div class="mobile-auth-buttons">
-                <a href="/login/" class="mobile-auth-btn login">
-                    <i class="fas fa-sign-in-alt"></i> 로그인
-                </a>
-                <a href="/signup/" class="mobile-auth-btn signup">
-                    <i class="fas fa-user-plus"></i> 회원가입
-                </a>
-            </div>
-        `;
-        return;
-    }
-    
-    // 로그인 상태 - 사용자 프로필 표시
-    mobileAuthSection.innerHTML = `
-        <div class="mobile-user-profile">
-            <div class="mobile-user-info">
-                <span class="mobile-user-name">${currentUser.displayName}님</span>
-            </div>
-            <button class="mobile-logout-btn" data-action="logout">
-                <i class="fas fa-sign-out-alt"></i> 로그아웃
-            </button>
-        </div>`;
-}
-
 // 사용자 데이터 새로고침 함수
 window.refreshUserData = async function() {
     if (window.auth.currentUser) {
@@ -347,9 +334,6 @@ window.refreshUserData = async function() {
             const userDoc = await window.db.collection("users").doc(window.auth.currentUser.uid).get();
             if ( (typeof userDoc.exists === 'function' ? userDoc.exists() : userDoc.exists) ) {
                 const newUserData = userDoc.data();
-                
-                // 모바일 메뉴 업데이트
-                updateMobileMenuUserInfo();
                 
                 // 채팅에서 사용할 수 있도록 전역 변수 업데이트
                 window.currentUserData = { uid: window.auth.currentUser.uid, ...newUserData };
@@ -408,124 +392,33 @@ function handleGlobalClick(e) {
     const action = target.dataset.action;
     e.preventDefault();
 
-
-
     const actions = {
         'toggle-theme': () => {
             toggleTheme();
         },
         'logout': () => {
+            // 로그아웃 후 즉시 UI 업데이트
+            const userProfile = getElement('user-profile');
+            const mobileUserProfile = getElement('mobile-user-profile');
+            const authButtons = document.querySelector('.auth-buttons');
+            
+            // 즉시 UI 업데이트
+            if (userProfile) userProfile.style.display = 'none';
+            if (mobileUserProfile) mobileUserProfile.style.display = 'none';
+            if (authButtons) authButtons.style.display = 'flex';
+            
+            // Firebase 로그아웃
             window.auth.signOut().catch(() => {});
         },
         'my-page': () => {
             if (window.auth.currentUser) window.location.href = target.href;
             else alert('로그인이 필요합니다.');
         },
-        'open-mobile-menu': () => {
-            // 모바일 메뉴가 없으면 생성
-            if (!getElement('mobile-menu')) {
-                createMobileMenuIfNeeded();
-            }
-            const mobileMenu = getElement('mobile-menu');
-            if (mobileMenu) {
-                // 900px 미만에서 메뉴 열기
-                if (window.innerWidth < 900) {
-                    mobileMenu.style.display = 'flex';
-                }
-                mobileMenu.classList.add('is-open');
-                document.body.classList.add('mobile-menu-open');
-            }
-        },
-        'close-mobile-menu': () => {
-            const mobileMenu = getElement('mobile-menu');
-            if (mobileMenu) {
-                mobileMenu.classList.remove('is-open');
-                document.body.classList.remove('mobile-menu-open');
-                
-                // 링크 클릭 시 페이지 이동 허용
-                if (target.tagName === 'A' && target.href && !target.href.includes('#')) {
-                    setTimeout(() => {
-                window.location.href = target.href;
-                    }, 100);
-                }
-            }
-        },
     };
 
     if (actions[action]) {
         actions[action]();
     }
-}
-
-// 6. 초기화 함수
-function createMobileMenuIfNeeded() {
-    // 기존 모바일 메뉴와 오버레이 제거
-    const existingMenu = getElement('mobile-menu');
-    const existingOverlay = document.querySelector('.mobile-menu-overlay');
-    if (existingMenu) existingMenu.remove();
-    if (existingOverlay) existingOverlay.remove();
-
-    // 오버레이 생성
-    const overlay = document.createElement('div');
-    overlay.className = 'mobile-menu-overlay';
-    overlay.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        const mobileMenu = getElement('mobile-menu');
-        if (mobileMenu && mobileMenu.classList.contains('is-open')) {
-            mobileMenu.classList.remove('is-open');
-            document.body.classList.remove('mobile-menu-open');
-        }
-    });
-    document.body.appendChild(overlay);
-
-    // 메뉴 생성 (현대적인 사이드 슬라이드 디자인)
-    const menu = document.createElement('div');
-    menu.id = 'mobile-menu';
-    menu.className = 'mobile-menu';
-    menu.innerHTML = `
-        <div class="mobile-menu-header">
-          <div class="mobile-menu-title">
-            <span>Onbit</span>
-          </div>
-          <button class="mobile-menu-close" data-action="close-mobile-menu" aria-label="메뉴 닫기">
-            <i class="fas fa-times"></i>
-          </button>
-        </div>
-        <div class="mobile-auth-section">
-            <div class="mobile-auth-buttons">
-                <a href="/login/" class="mobile-auth-btn login">
-                    <i class="fas fa-sign-in-alt"></i> 로그인
-                </a>
-                <a href="/signup/" class="mobile-auth-btn signup">
-                    <i class="fas fa-user-plus"></i> 회원가입
-                </a>
-            </div>
-        </div>
-        <nav class="mobile-menu-nav">
-          <ul>
-            <li><a href="/affiliated/" data-action="close-mobile-menu"><i class="fas fa-building"></i> 제휴 거래소</a></li>
-            <li><a href="/community/" data-action="close-mobile-menu"><i class="fas fa-comments"></i> 실시간 채팅</a></li>
-            <li><a href="/news/" data-action="close-mobile-menu"><i class="fas fa-newspaper"></i> 뉴스</a></li>
-            <li><a href="/event-board.html" data-action="close-mobile-menu"><i class="fas fa-calendar-alt"></i> 이벤트</a></li>
-            <li><a href="/notice-board.html" data-action="close-mobile-menu"><i class="fas fa-bullhorn"></i> 공지사항</a></li>
-            <li><a href="/my-account.html" data-action="close-mobile-menu"><i class="fas fa-user"></i> 마이페이지</a></li>
-            <li><a href="#" data-action="toggle-theme"><i class="fas fa-adjust"></i> 테마 변경</a></li>
-          </ul>
-        </nav>
-        <div class="mobile-menu-actions">
-          <div class="mobile-action-grid">
-            <a href="/admin/" class="mobile-action-btn" id="mobile-admin-link" style="display: none;">
-              <i class="fas fa-shield-alt"></i>
-              <span>관리자</span>
-            </a>
-          </div>
-        </div>`;
-    document.body.appendChild(menu);
-    
-    // 모바일 메뉴는 텍스트 기반이므로 별도 로고 설정 불필요
-    
-    updateMobileMenuUserInfo();
 }
 
 // =========================

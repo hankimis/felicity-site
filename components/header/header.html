@@ -27,13 +27,20 @@
             </a>
             <button id="logout-btn" data-action="logout" title="로그아웃"><i class="fas fa-sign-out-alt"></i></button>
         </div>
+        <!-- 모바일용 사용자 정보 -->
+        <div class="mobile-user-info" id="mobile-user-profile" style="display: none;">
+            <div class="mobile-user-link">
+                <i class="fas fa-user-circle"></i>
+                <span class="mobile-user-name" id="mobile-user-display-name"></span>
+            </div>
+            <button id="mobile-logout-btn" data-action="logout" title="로그아웃">
+                <i class="fas fa-sign-out-alt"></i>
+            </button>
+        </div>
         <button class="theme-button" id="theme-toggle" data-action="toggle-theme" title="테마 변경">
             <i class="fas fa-moon"></i>
         </button>
         <a href="/my-account/" id="my-page-link" class="icon-button" data-action="my-page" aria-label="마이페이지"><i class="fas fa-user-circle"></i></a>
-        <button class="mobile-menu-button" id="mobile-menu-button" data-action="open-mobile-menu" aria-label="메뉴 열기">
-            <i class="fas fa-bars"></i>
-        </button>
     </div>
 </header>
 
@@ -78,10 +85,6 @@
     border-top-color: #3498db;
 }
 </style>
-
-<!-- Mobile Menu -->
-<!-- 모바일 메뉴는 auth.js에서 동적으로 생성됩니다 -->
-
 
 <script>
 // 헤더 스크립트 (TurnstileManager가 모든 이벤트 처리)
