@@ -40,7 +40,7 @@
     <link rel="stylesheet" href="../css/tradingview-symbol-icons.css" />
     
     <!-- Page CSS -->
-    <link rel="stylesheet" href="../css/pages/_community.css" />
+    <!-- 존재하지 않는 파일 경로 제거: ../css/pages/_community.css -->
 
     
     <!-- Auth CSS -->
@@ -187,22 +187,19 @@
     <script src="../js/community.js"></script>
     <script src="../js/community-chat.js"></script>
     
-    <!-- WhaleTracker 초기화 스크립트 -->
-    <script type="module">
-      // Whale Tracker 초기화
-      import { WhaleTracker } from '../js/analysis/whale-tracker.js';
-      
-      // WhaleTracker 클래스를 전역으로 등록
-      window.WhaleTracker = WhaleTracker;
-      
-      // DOM 로드 후 초기화
+    <!-- WhaleTracker 초기화 스크립트 (전역 window.WhaleTracker 사용) -->
+    <script>
       document.addEventListener('DOMContentLoaded', () => {
-        console.log('🔗 Community 페이지 WhaleTracker 클래스 등록 완료');
-        
-        // 분석 탭이 활성화될 때까지 대기하거나 즉시 초기화 시도
+        const WhaleTracker = window.WhaleTracker;
+        if (!WhaleTracker) {
+          console.error('❌ WhaleTracker 클래스를 로드하지 못했습니다.');
+          return;
+        }
+
+        console.log('🔗 Community 페이지 WhaleTracker 클래스 확인 완료');
+
         setTimeout(() => {
           try {
-            // 고래 추적기 컨테이너 확인 (분석 탭이 활성화되어야 컨테이너가 생성됨)
             const whaleContainer = document.getElementById('whale-trades-container');
             if (whaleContainer) {
               window.whaleTracker = new WhaleTracker();
