@@ -30,14 +30,25 @@
       "permanent": false
     },
     {
-      "source": "/(.*)",
+      "source": "/:path*",
       "has": [
         {
           "type": "host",
           "value": "onbitlabs.com"
         }
       ],
-      "destination": "https://www.onbitlabs.com/$1",
+      "destination": "https://www.onbitlabs.com/:path*",
+      "permanent": true
+    },
+    {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "www.onbitlabs.com"
+        }
+      ],
+      "destination": "https://www.onbitlabs.com/:path*",
       "permanent": true
     }
   ],
@@ -87,13 +98,6 @@
           "key": "Content-Security-Policy",
           "value": "frame-ancestors 'self';"
         }
-      ]
-    },
-    {
-      "redirects": [
-        { "source": "http://onbitlabs.com/(.*)",  "destination": "https://www.onbitlabs.com/$1", "permanent": true },
-        { "source": "https://onbitlabs.com/(.*)", "destination": "https://www.onbitlabs.com/$1", "permanent": true },
-        { "source": "http://www.onbitlabs.com/(.*)", "destination": "https://www.onbitlabs.com/$1", "permanent": true }
       ]
     }
   ]
