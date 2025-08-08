@@ -279,13 +279,11 @@
   }
   
   .change.positive {
-    color: var(--positive-text);
-    background: var(--positive-bg);
+    color: var(--long-color);
   }
   
   .change.negative {
-    color: var(--negative-text);
-    background: var(--negative-bg);
+    color: var(--short-color);
   }
   
   .change.neutral {
