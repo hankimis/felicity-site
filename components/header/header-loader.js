@@ -53,7 +53,7 @@ document.addEventListener('DOMContentLoaded', () => {
         headerPath = '../../../../components/header/header.html';
     }
     
-    console.log(`Header loader: Current path: ${currentPath}, Header path: ${headerPath}`);
+
     
     // Font Awesome 로드 확인
     if (!document.querySelector('link[href*="font-awesome"]')) {
@@ -66,7 +66,6 @@ document.addEventListener('DOMContentLoaded', () => {
     fetch(headerPath)
         .then(response => {
             if (!response.ok) {
-                console.error(`Header fetch failed: ${response.status} ${response.statusText}`);
                 throw new Error(`Could not load header: ${response.status}`);
             }
             return response.text();
@@ -80,7 +79,7 @@ document.addEventListener('DOMContentLoaded', () => {
             navbars.forEach((el, idx) => {
                 if (idx !== 0) el.remove();
             });
-            console.warn(`Removed ${navbars.length - 1} legacy navbar element(s).`);
+
         }
         ['login-modal', 'signup-modal'].forEach(id => {
             const duplicates = document.querySelectorAll(`#${id}`);
@@ -89,7 +88,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 duplicates.forEach((el, idx) => {
                     if (idx !== 0) el.remove();
                 });
-                console.warn(`Removed ${duplicates.length - 1} duplicate element(s) with id #${id}.`);
+
             }
         });
         
@@ -99,21 +98,19 @@ document.addEventListener('DOMContentLoaded', () => {
             topBars.forEach((el, idx) => {
                 if (idx !== 0) el.remove();
             });
-            console.warn(`Removed ${topBars.length - 1} legacy top-bar element(s).`);
+
         }
             
             // 헤더가 로드되면 즉시 표시
             const mainHeader = document.getElementById('main-header');
             if (mainHeader) {
                 mainHeader.style.opacity = '1';
-                console.log("Header loaded and displayed successfully.");
             }
             
             // 1. Start the main authentication and header logic (if startApp exists)
             if (typeof startApp === 'function') {
                 try {
                     await startApp(); // Wait for firebase etc. to be ready
-                    console.log("Header loader: Main app started.");
                     
                     // Attach auth form handlers now that header/DOM elements exist
                     if (typeof window.bindAuthForms === 'function') {
@@ -123,18 +120,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     // Firebase 초기화 후 현재 인증 상태 확인
                     if (window.auth && typeof window.updateAuthUI === 'function') {
                         const currentUser = window.auth.currentUser;
-                        console.log("Header loader: Checking current auth state:", currentUser ? 'logged in' : 'logged out');
                         window.updateAuthUI(currentUser);
                     }
                     
                     // TurnstileManager가 모든 이벤트 처리 - 별도 설정 불필요
-                    console.log("Header loader: TurnstileManager에서 모든 Turnstile 처리");
                 } catch (error) {
-                    console.error('startApp 실행 중 오류:', error);
                 }
             } else {
-                console.log('startApp function not found - continuing without Firebase initialization.');
-                
                 // startApp이 없어도 인증 폼 바인딩 시도
                 if (typeof window.bindAuthForms === 'function') {
                     window.bindAuthForms();
@@ -143,18 +135,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // 2. Run page-specific logic if it exists
             if (typeof initializePage === 'function') {
-                console.log("Header loader: Initializing page-specific script.");
                 try {
                     initializePage();
                 } catch (error) {
-                    console.error('initializePage 실행 중 오류:', error);
                 }
-            } else {
-                console.log("Header loader: No page-specific script (initializePage) found.");
             }
         })
         .catch(error => {
-            console.error('Error fetching or initializing header:', error);
             headerPlaceholder.innerHTML = `
                 <div style="
                     background: #1a1a1a; 

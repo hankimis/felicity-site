@@ -35,17 +35,13 @@ window.getElement = getElement;
 
 // 안전한 Turnstile 렌더링 함수
 function renderTurnstile() {
-    console.log('🎯 renderTurnstile 호출됨');
-    
     // 이미 렌더링 중이면 중단
     if (window.turnstileRenderingInProgress) {
-        console.log('⏳ Turnstile 렌더링이 이미 진행 중 - 건너뛰기');
         return;
     }
     
     // 이미 렌더링되어 있으면 건너뛰기
     if (window.turnstileAlreadyRendered) {
-        console.log('✅ Turnstile 이미 렌더링됨 - 건너뛰기');
         return;
     }
     
@@ -65,7 +61,6 @@ function renderTurnstile() {
 function ensureTurnstileScript() {
     return new Promise((resolve) => {
         if (window.turnstile) {
-            console.log('✅ Turnstile 스크립트 이미 로드됨');
             resolve();
             return;
         }
@@ -73,7 +68,6 @@ function ensureTurnstileScript() {
         // 기존 스크립트 확인
         const existingScript = document.querySelector('script[src*="turnstile"]');
         if (existingScript) {
-            console.log('⏳ 기존 Turnstile 스크립트 로딩 대기...');
             const checkLoaded = () => {
                 if (window.turnstile) {
                     resolve();
@@ -86,17 +80,14 @@ function ensureTurnstileScript() {
         }
         
         // 새 스크립트 추가
-        console.log('📥 Turnstile 스크립트 추가 중...');
         const script = document.createElement('script');
         script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js';
         script.async = true;
         script.defer = true;
         script.onload = () => {
-            console.log('✅ Turnstile 스크립트 로드 완료');
             resolve();
         };
         script.onerror = () => {
-            console.error('❌ Turnstile 스크립트 로드 실패');
             resolve(); // 계속 진행
         };
         document.head.appendChild(script);
@@ -109,27 +100,22 @@ function findOrCreateTurnstileElement() {
     let turnstileElement = document.getElementById('cf-turnstile');
     
     if (turnstileElement) {
-        console.log('✅ 기존 Turnstile 요소 발견');
         return turnstileElement;
     }
     
     // 중복 생성 방지
     if (document.querySelector('.cf-turnstile')) {
-        console.log('⚠️ Turnstile 요소가 이미 존재함 (다른 방식으로)');
         return document.querySelector('.cf-turnstile');
     }
     
-    console.log('📝 Turnstile 요소 동적 생성...');
     const signupForm = document.getElementById('signup-form');
     if (!signupForm) {
-        console.log('❌ 회원가입 폼을 찾을 수 없음');
         return null;
     }
     
     // 이미 input-group이 있는지 확인
     const existingInputGroup = signupForm.querySelector('.input-group:has(.cf-turnstile)');
     if (existingInputGroup) {
-        console.log('⚠️ Turnstile input-group이 이미 존재함');
         return existingInputGroup.querySelector('.cf-turnstile');
     }
     
@@ -141,7 +127,6 @@ function findOrCreateTurnstileElement() {
     if (submitButton) {
         signupForm.insertBefore(turnstileDiv, submitButton);
         turnstileElement = document.getElementById('cf-turnstile');
-        console.log('✅ Turnstile 요소 생성 완료');
     }
     
     return turnstileElement;
@@ -150,13 +135,11 @@ function findOrCreateTurnstileElement() {
 // 실제 Turnstile 렌더링 수행 (중복 방지)
 function performTurnstileRender(turnstileElement) {
     if (!window.turnstile) {
-        console.log('❌ Turnstile 스크립트가 로드되지 않음');
         return;
     }
     
     // 이미 렌더링되어 있는지 최종 확인
     if (turnstileElement.querySelector('iframe')) {
-        console.log('⚠️ Turnstile이 이미 렌더링되어 있음 - 건너뛰기');
         window.turnstileAlreadyRendered = true;
         return;
     }
@@ -167,7 +150,6 @@ function performTurnstileRender(turnstileElement) {
         existingWidgets.forEach((widget, index) => {
             const parent = widget.closest('.cf-turnstile');
             if (parent !== turnstileElement) {
-                console.log(`🗑️ 기존 Turnstile 위젯 ${index + 1} 제거`);
                 try {
                     window.turnstile.reset(parent);
                 } catch (e) {
@@ -176,13 +158,11 @@ function performTurnstileRender(turnstileElement) {
             }
         });
     } catch (error) {
-        console.warn('기존 위젯 정리 중 오류:', error);
+        // Silent error handling
     }
     
     // 새로 렌더링
     try {
-        console.log('🎨 Turnstile 렌더링 실행...');
-        
         // 기존 내용 제거
         turnstileElement.innerHTML = '';
         
@@ -190,12 +170,10 @@ function performTurnstileRender(turnstileElement) {
             sitekey: '0x4AAAAAABhG8vjyB5nsUxll',
             theme: document.documentElement.classList.contains('dark-mode') ? 'dark' : 'light',
             callback: function(token) {
-                console.log('✅ Turnstile 인증 완료!');
                 window.turnstileAlreadyRendered = true;
                 window.turnstileToken = token;
             },
             'error-callback': function(error) {
-                console.log('❌ Turnstile 오류:', error);
                 window.turnstileAlreadyRendered = false;
                 // 오류 발생 시 재시도 지연
                 setTimeout(() => {
@@ -206,15 +184,12 @@ function performTurnstileRender(turnstileElement) {
                 }, 3000);
             },
             'expired-callback': function() {
-                console.log('⏰ Turnstile 만료됨');
                 window.turnstileAlreadyRendered = false;
                 window.turnstileToken = null;
             }
         });
-        console.log('✅ Turnstile 렌더링 성공!');
         window.turnstileAlreadyRendered = true;
     } catch (error) {
-        console.error('❌ Turnstile 렌더링 실패:', error);
         window.turnstileAlreadyRendered = false;
         // 오류 발생 시 재시도 지연
         setTimeout(() => {
@@ -293,7 +268,6 @@ function updateLogos() {
 
 // 4. UI 업데이트 함수
 async function updateAuthUI(user) {
-    console.log("updateAuthUI called with user:", user);
     const mobileAuthSection = document.querySelector('.mobile-auth-section');
     const userProfile = getElement('user-profile');
     const authButtons = document.querySelector('.auth-buttons');
@@ -301,13 +275,11 @@ async function updateAuthUI(user) {
 
     if (user) {
         try {
-            console.log("Fetching user data for:", user.uid);
             const userDoc = await db.collection("users").doc(user.uid).get();
             currentUser = userDoc.exists 
                 ? { uid: user.uid, ...userDoc.data() } 
                 : { uid: user.uid, displayName: user.displayName || "사용자", points: 0, level: "새싹" };
             window.currentUser = currentUser;
-            console.log("User data fetched:", currentUser);
 
             // 로그인 상태 UI 업데이트
             if (userProfile) userProfile.style.display = 'flex';
@@ -329,12 +301,10 @@ async function updateAuthUI(user) {
             // 주기적 사용자 데이터 새로고침 시작
             startUserDataRefresh();
         } catch (error) {
-            console.error("Error fetching user data:", error);
             // 에러 발생 시 로그아웃 처리
-            auth.signOut().catch(console.error);
+            auth.signOut().catch(() => {});
         }
     } else {
-        console.log("User is logged out");
         currentUser = null;
         window.currentUser = null;
 
@@ -365,19 +335,16 @@ async function updateAuthUI(user) {
 // 사용자 레벨 표시 업데이트
 function updateUserLevelDisplay() {
     if (!currentUser) {
-        console.log('currentUser가 없어서 레벨 업데이트 중단');
         return;
     }
     
     // 레벨 시스템이 로드될 때까지 기다림
     if (!window.levelSystem) {
-        console.log('레벨 시스템 로딩 대기 중...');
         setTimeout(updateUserLevelDisplay, 200);
         return;
     }
     
     const levelInfo = window.levelSystem.calculateLevel(currentUser.points || 0);
-    console.log('헤더 레벨 업데이트:', currentUser.points, '->', levelInfo.name);
     
     // 헤더 레벨 업데이트 (여러 방법으로 시도)
     // getElement 함수가 정의되지 않은 경우를 대비한 안전한 호출
@@ -387,9 +354,6 @@ function updateUserLevelDisplay() {
     if (userLevelElement) {
         userLevelElement.textContent = levelInfo.name;
         userLevelElement.style.color = levelInfo.color || '#22c55e';
-        console.log('헤더 레벨 요소 업데이트 완료:', levelInfo.name);
-    } else {
-        console.log('user-level 요소를 찾을 수 없음');
     }
     
     // 모든 레벨 요소 업데이트
@@ -403,8 +367,6 @@ function updateUserLevelDisplay() {
     
     // 모든 페이지에서 사용할 수 있도록 전역 사용자 정보 업데이트
     window.currentUserData = currentUser;
-    
-    console.log('전역 레벨 정보 업데이트 완료:', window.currentUserLevel);
 }
 
 // 모바일 메뉴 사용자 정보 업데이트
@@ -453,17 +415,13 @@ window.refreshUserData = async function() {
     if (auth.currentUser) {
         // 최신 사용자 데이터를 다시 가져와서 업데이트
         try {
-            console.log('사용자 데이터 새로고침 시작...');
             const userDoc = await db.collection("users").doc(auth.currentUser.uid).get();
             if (userDoc.exists()) {
                 const oldPoints = currentUser ? currentUser.points : 0;
                 const newUserData = userDoc.data();
                 
-                console.log('포인트 변경:', oldPoints, '->', newUserData.points);
-                
                 // 레벨 시스템이 로드될 때까지 기다림
                 if (!window.levelSystem) {
-                    console.log('레벨 시스템 로딩 대기 중...');
                     setTimeout(window.refreshUserData, 200);
                     return;
                 }
@@ -483,15 +441,12 @@ window.refreshUserData = async function() {
                     detail: { user: window.currentUserData, level: window.currentUserLevel } 
                 }));
                 
-                console.log('사용자 데이터가 새로고침되었습니다:', window.currentUserData);
-                console.log('현재 레벨:', window.currentUserLevel);
-                
                 // currentUser 업데이트
                 currentUser = { uid: auth.currentUser.uid, ...newUserData };
                 window.currentUser = currentUser;
             }
         } catch (error) {
-            console.error('사용자 데이터 새로고침 오류:', error);
+            // Silent error handling
         }
     }
 }
@@ -512,12 +467,11 @@ function startUserDataRefresh() {
                     
                     // 포인트가 변경되었는지 확인
                     if (newUserData.points !== currentUser.points) {
-                        console.log('포인트 변경 감지:', currentUser.points, '->', newUserData.points);
                         await window.refreshUserData();
                     }
                 }
             } catch (error) {
-                console.error('주기적 사용자 데이터 확인 오류:', error);
+                // Silent error handling
             }
         }
     }, 3000); // 3초마다 확인
@@ -538,8 +492,6 @@ function handleGlobalClick(e) {
     const action = target.dataset.action;
     e.preventDefault();
 
-    console.log("Handling action:", action);
-
     const actions = {
         'open-login': () => controlModal('login-modal', true),
         'open-signup': () => controlModal('signup-modal', true),
@@ -550,7 +502,6 @@ function handleGlobalClick(e) {
         'close-modal': () => {
             const modal = target.closest('.auth-modal');
             if (modal) {
-                console.log("Closing modal:", modal.id);
                 controlModal(modal.id, false);
             }
         },
@@ -560,19 +511,16 @@ function handleGlobalClick(e) {
         },
         'show-login': () => { controlModal('signup-modal', false); controlModal('login-modal', true); },
         'toggle-theme': () => {
-            console.log("Toggling theme");
             toggleTheme();
         },
         'logout': () => {
-            console.log("Logging out");
-            auth.signOut().catch(console.error);
+            auth.signOut().catch(() => {});
         },
         'my-page': () => {
             if (auth.currentUser) window.location.href = target.href;
             else alert('로그인이 필요합니다.');
         },
         'open-mobile-menu': () => {
-            console.log('Opening mobile menu');
             // 모바일 메뉴가 없으면 생성
             if (!getElement('mobile-menu')) {
                 createMobileMenuIfNeeded();
@@ -585,18 +533,13 @@ function handleGlobalClick(e) {
                 }
                 mobileMenu.classList.add('is-open');
                 document.body.classList.add('mobile-menu-open');
-                console.log('Mobile menu opened');
-            } else {
-                console.log('Mobile menu element not found');
             }
         },
         'close-mobile-menu': () => {
-            console.log('Closing mobile menu');
             const mobileMenu = getElement('mobile-menu');
             if (mobileMenu) {
                 mobileMenu.classList.remove('is-open');
                 document.body.classList.remove('mobile-menu-open');
-                console.log('Mobile menu closed');
                 
                 // 링크 클릭 시 페이지 이동 허용
                 if (target.tagName === 'A' && target.href && !target.href.includes('#')) {
@@ -704,7 +647,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (mobileMenu && mobileMenu.classList.contains('is-open')) {
                 mobileMenu.classList.remove('is-open');
                 document.body.classList.remove('mobile-menu-open');
-                console.log('Mobile menu closed via ESC key');
             }
         }
     });

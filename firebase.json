@@ -1,5 +1,6 @@
 {
   "hosting": {
+    "site": "livechattest-35101",
     "public": ".",
     "ignore": [
       "firebase.json",

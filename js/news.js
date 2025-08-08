@@ -24,6 +24,46 @@ const loadMoreCount = 10; // 한 번에 더 로드할 개수
 let isLoading = false; // 로딩 중 여부
 let hasMoreNews = true; // 더 불러올 뉴스가 있는지
 
+// 🔥 분석 캐시 및 정규식 매처 캐시
+const newsAnalysisCache = new Map(); // key: newsId, value: { score, details }
+let keywordMatchersCache = null; // 최초 1회 컴파일된 정규식들
+
+function getOrBuildKeywordMatchers() {
+  if (keywordMatchersCache) return keywordMatchersCache;
+  const escape = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+  // 중요 키워드 집합(한국어+영문 혼용 강화)
+  const critical = ['ETF', 'ETF 승인', '상장', '상장폐지', '승인', '거래 중단', '입출금 중단', '출금 중단', '해킹', '피싱', '보안 사고', '메인넷', '런칭', '하드포크', '네트워크 다운', '규제', '조사', '기소', '벌금', '소송'];
+  const criticalEn = ['ETF', 'listing', 'delist', 'approval', 'halt', 'suspend', 'withdrawal', 'hack', 'phishing', 'security breach', 'mainnet', 'launch', 'hard fork', 'network outage', 'regulation', 'investigation', 'indict', 'fine', 'lawsuit'];
+
+  // 레벨별 키워드(기존 + 보강)
+  const level5 = [...(IMPORTANCE_KEYWORDS?.[5]?.keywords || []), ...critical, ...criticalEn];
+  const level4 = [...(IMPORTANCE_KEYWORDS?.[4]?.keywords || []), '상장 예정', '거버넌스 투표', '바이백', '토큰 소각', '파트너십', '체인 통합'];
+  const level3 = [...(IMPORTANCE_KEYWORDS?.[3]?.keywords || [])];
+  const level2 = [...(IMPORTANCE_KEYWORDS?.[2]?.keywords || [])];
+  const level1 = [...(IMPORTANCE_KEYWORDS?.[1]?.keywords || [])];
+
+  // 정규식 생성(단어 경계 고려)
+  const toRegex = (arr) => new RegExp(`(?:${arr.map(escape).join('|')})`, 'i');
+
+  keywordMatchersCache = {
+    levelMatchers: {
+      5: toRegex(level5),
+      4: toRegex(level4),
+      3: toRegex(level3),
+      2: toRegex(level2),
+      1: toRegex(level1)
+    },
+    special: {
+      positive: new RegExp(`(?:${(SPECIAL_KEYWORDS?.positive||[]).map(escape).join('|')})`, 'i'),
+      negative: new RegExp(`(?:${(SPECIAL_KEYWORDS?.negative||[]).map(escape).join('|')})`, 'i'),
+      urgent: new RegExp(`(?:${(SPECIAL_KEYWORDS?.urgent||[]).map(escape).join('|')})`, 'i'),
+      major: new RegExp(`(?:${(SPECIAL_KEYWORDS?.major||[]).map(escape).join('|')})`, 'i')
+    }
+  };
+  return keywordMatchersCache;
+}
+
 function initializePage() {
     // 뉴스 페이지인지 확인
     const newsGrid = document.getElementById('newsGrid');
@@ -1094,109 +1134,78 @@ async function loadNewsImportanceData() {
 
 // 뉴스 중요도 자동 분석
 function analyzeNewsImportance(newsItem) {
-    const title = newsItem.title || '';
-    const content = newsItem.contentSnippet || newsItem.content || '';
+  try {
+    const newsId = generateNewsId(newsItem);
+    if (newsId && newsAnalysisCache.has(newsId)) {
+      return newsAnalysisCache.get(newsId);
+    }
+
+    const title = (newsItem.title || '').trim();
+    const content = (newsItem.contentSnippet || newsItem.content || '').trim();
     const source = newsItem.source || '';
     const pubDate = newsItem.pubDate || '';
-    
-    // 분석할 텍스트 통합
-    const fullText = `${title} ${content}`.toLowerCase();
-    
-    let score = 0;
-    let matchedKeywords = [];
-    let analysisDetails = {
-        keywordMatches: [],
-        sourceBonus: 0,
-        timeBonus: 0,
-        specialBonus: 0,
-        finalScore: 0
-    };
-    
-    // 1. 키워드 분석
-    for (const [level, data] of Object.entries(IMPORTANCE_KEYWORDS)) {
-        const levelScore = parseInt(level);
-        let keywordMatches = 0;
-        
-        for (const keyword of data.keywords) {
-            if (fullText.includes(keyword.toLowerCase())) {
-                keywordMatches++;
-                matchedKeywords.push({keyword, level: levelScore});
-                analysisDetails.keywordMatches.push({keyword, level: levelScore});
-            }
-        }
-        
-        // 키워드 매칭 점수 계산 (매칭된 키워드 수에 따라 가중치 적용)
-        if (keywordMatches > 0) {
-            const keywordScore = Math.min(keywordMatches * 0.3, 1.0) * levelScore;
-            score += keywordScore;
-        }
-    }
-    
-    // 2. 소스 신뢰도 보너스
-    for (const [level, data] of Object.entries(IMPORTANCE_KEYWORDS)) {
-        for (const sourceKeyword of data.sources) {
-            if (fullText.includes(sourceKeyword.toLowerCase()) || source.toLowerCase().includes(sourceKeyword.toLowerCase())) {
-                const sourceBonus = parseInt(level) * 0.2;
-                score += sourceBonus;
-                analysisDetails.sourceBonus += sourceBonus;
-                break;
-            }
-        }
-    }
-    
-    // 3. 특별 키워드 보너스
-    for (const [type, keywords] of Object.entries(SPECIAL_KEYWORDS)) {
-        for (const keyword of keywords) {
-            if (fullText.includes(keyword.toLowerCase())) {
-                let bonus = 0;
-                switch(type) {
-                    case 'positive':
-                    case 'negative':
-                        bonus = 0.5;
-                        break;
-                    case 'urgent':
-                        bonus = 0.3;
-                        break;
-                    case 'major':
-                        bonus = 0.2;
-                        break;
-                }
-                score += bonus;
-                analysisDetails.specialBonus += bonus;
-                break;
-            }
-        }
-    }
-    
-    // 4. 시간 가중치 (최신 뉴스일수록 높은 점수)
-    if (pubDate) {
-        const newsDate = new Date(pubDate);
-        const now = new Date();
-        const hoursDiff = (now - newsDate) / (1000 * 60 * 60);
-        
-        if (hoursDiff < 1) {
-            score += 0.5; // 1시간 이내
-            analysisDetails.timeBonus = 0.5;
-        } else if (hoursDiff < 6) {
-            score += 0.3; // 6시간 이내
-            analysisDetails.timeBonus = 0.3;
-        } else if (hoursDiff < 24) {
-            score += 0.1; // 24시간 이내
-            analysisDetails.timeBonus = 0.1;
-        }
-    }
-    
-    // 5. 최종 점수 정규화 (1-5점)
-    const finalScore = Math.max(1, Math.min(5, Math.round(score)));
-    analysisDetails.finalScore = finalScore;
-    
 
-    
-    return {
-        score: finalScore,
-        details: analysisDetails,
-        matchedKeywords: matchedKeywords
+    const text = `${title} \n ${content}`;
+    const { levelMatchers, special } = getOrBuildKeywordMatchers();
+
+    let score = 0;
+
+    // 0) 초중요 이벤트 하드 부스트(제목 기준) → 즉시 상한에 가깝게
+    if (/(ETF|현물 ETF|선물 ETF|ETF 승인|상장 폐지|상장폐지|상장|해킹|출금\s*중단|입출금\s*중단|네트워크\s*다운|메인넷\s*런칭)/i.test(title)) {
+      score += 3.5;
+    }
+
+    // 1) 레벨 매칭(제목 우선 가중치)
+    const applyLevelMatch = (regex, baseWeight) => {
+      let w = 0;
+      if (regex.test(text)) w += baseWeight;
+      if (regex.test(title)) w += baseWeight * 0.5; // 제목 가산
+      return w;
     };
+
+    score += applyLevelMatch(levelMatchers[5], 2.5);
+    score += applyLevelMatch(levelMatchers[4], 1.5);
+    score += applyLevelMatch(levelMatchers[3], 0.9);
+    score += applyLevelMatch(levelMatchers[2], 0.4);
+    score += applyLevelMatch(levelMatchers[1], 0.2);
+
+    // 2) 특별 키워드
+    if (special.positive.test(text)) score += 0.3;
+    if (special.negative.test(text)) score += 0.7;
+    if (special.urgent.test(text)) score += 0.3;
+    if (special.major.test(text)) score += 0.2;
+
+    // 3) 소스 보너스
+    const trustedSources = ['SEC', '연준', 'Fed', '바이낸스', '코인베이스', '업비트', '빗썸', 'OKX'];
+    if (trustedSources.some((s) => (source || '').toLowerCase().includes(s.toLowerCase()) || text.toLowerCase().includes(s.toLowerCase()))) {
+      score += 0.4;
+    }
+
+    // 4) 시간 가중
+    if (pubDate) {
+      const d = new Date(pubDate);
+      if (!isNaN(d.getTime())) {
+        const hours = (Date.now() - d.getTime()) / 36e5;
+        if (hours < 1) score += 0.6;
+        else if (hours < 6) score += 0.4;
+        else if (hours < 24) score += 0.2;
+      }
+    }
+
+    // 5) 최종 정규화
+    const finalScore = Math.max(1, Math.min(5, Math.round(score)));
+
+    const result = {
+      score: finalScore,
+      details: { finalScore, score, source, pubDate },
+      matchedKeywords: []
+    };
+
+    if (newsId) newsAnalysisCache.set(newsId, result);
+    return result;
+  } catch (e) {
+    return { score: 3, details: { error: true }, matchedKeywords: [] };
+  }
 }
 
 // 뉴스 중요도 저장 (분석 결과 포함)
@@ -1234,24 +1243,27 @@ async function saveNewsImportance(newsId, importance, analysisDetails = null) {
 
 // 뉴스 중요도 가져오기 (캐시 우선, 없으면 분석)
 function getNewsImportance(newsItem) {
-    const newsId = generateNewsId(newsItem);
-    if (!newsId) return 1;
-    
-    // 캐시에서 확인
-    const cached = newsImportanceData[newsId];
-    if (cached && cached.importance) {
-        return cached.importance;
-    }
-    
-    // 캐시에 없으면 자동 분석
-    const analysis = analyzeNewsImportance(newsItem);
-    
-    // 백그라운드에서 저장 (비동기)
+  const newsId = generateNewsId(newsItem);
+  if (!newsId) return 1;
+
+  // 1) 항상 최신 분석 수행(메모이제이션으로 비용 낮음)
+  const analysis = analyzeNewsImportance(newsItem);
+  let finalScore = analysis.score;
+
+  // 2) 서버/로컬 캐시 점수와 비교하여 더 높은 점수를 사용
+  const cachedKV = newsImportanceData[newsId];
+  if (cachedKV && typeof cachedKV.importance === 'number') {
+    finalScore = Math.max(finalScore, cachedKV.importance);
+  }
+
+  // 3) 저장된 점수와 다르면 갱신(백그라운드)
+  if (!cachedKV || cachedKV.importance !== finalScore) {
     setTimeout(() => {
-        saveNewsImportance(newsId, analysis.score, analysis.details);
-    }, 100);
-    
-    return analysis.score;
+      saveNewsImportance(newsId, finalScore, analysis.details);
+    }, 50);
+  }
+
+  return finalScore;
 }
 
 // 뉴스 ID 생성 (URL 기반)
@@ -1494,7 +1506,6 @@ function loadEconomicCalendar() {
 // Firebase에서 경제 일정 데이터 로드
 function loadCalendarEventsFromFirebase() {
     if (!window.firebase || !window.firebase.firestore) {
-        console.error('Firebase가 초기화되지 않았습니다.');
         const calendarList = document.getElementById('calendarList');
         if (calendarList) {
             calendarList.innerHTML = '<div class="loading">Firebase 연결 중...</div>';
@@ -1695,7 +1706,7 @@ function checkIfUserIsAdmin() {
             currentUser = window.firebase.auth().currentUser;
             userEmail = currentUser?.email;
         } catch (e) {
-            console.log('방법 1 실패:', e.message);
+            // 무시
         }
     }
     
@@ -1703,49 +1714,31 @@ function checkIfUserIsAdmin() {
     if (!currentUser && window.currentUser) {
         currentUser = window.currentUser;
         userEmail = window.currentUser.email;
-        console.log('방법 2로 사용자 확인:', userEmail);
     }
     
-    console.log('🔍 관리자 권한 체크:', {
-        isLoggedIn: !!currentUser,
-        userEmail: userEmail || 'None',
-        adminEmails: adminEmails,
-        isAdmin: userEmail ? adminEmails.includes(userEmail) : false,
-        windowCurrentUser: !!window.currentUser,
-        firebaseAuth: !!window.firebase?.auth
-    });
-    
     if (!currentUser || !userEmail) {
-        console.log('❌ 로그인되지 않음');
         return false;
     }
     
     const isAdmin = adminEmails.includes(userEmail);
-    console.log(isAdmin ? '✅ 관리자 권한 확인됨' : '❌ 관리자 권한 없음');
     return isAdmin;
 }
 
 // 관리자 권한 체크 및 UI 표시
 function checkAdminPermissions() {
     const adminControls = document.getElementById('calendar-admin-controls');
-    console.log('🔍 관리자 UI 요소 확인:', !!adminControls);
     
     if (!adminControls) {
-        console.log('❌ calendar-admin-controls 요소를 찾을 수 없음');
         return;
     }
     
     const isAdmin = checkIfUserIsAdmin();
-    console.log('🔍 관리자 여부:', isAdmin);
     
     if (isAdmin) {
         adminControls.style.display = 'flex';
         adminControls.style.visibility = 'visible';
-        console.log('👑 관리자 권한 확인됨 - 경제 일정 관리 기능 활성화');
-        console.log('📍 관리자 UI 표시됨:', adminControls.style.display);
     } else {
         adminControls.style.display = 'none';
-        console.log('🚫 관리자 권한 없음 - 관리 기능 비활성화');
     }
 }
 
@@ -1755,11 +1748,6 @@ function setupAuthStateListener() {
     if (window.firebase?.auth) {
         try {
             window.firebase.auth().onAuthStateChanged((user) => {
-                console.log('🔄 Firebase 인증 상태 변경됨:', {
-                    isLoggedIn: !!user,
-                    email: user?.email || 'None'
-                });
-                
                 // 인증 상태 변경 시 관리자 권한 재체크
                 setTimeout(() => {
                     checkAdminPermissions();
@@ -1772,7 +1760,7 @@ function setupAuthStateListener() {
                 }, 500);
             });
         } catch (e) {
-            console.log('Firebase Auth 리스너 설정 실패:', e.message);
+            // 무시
         }
     }
     
@@ -1781,10 +1769,6 @@ function setupAuthStateListener() {
     const checkUserChange = () => {
         const currentUserEmail = window.currentUser?.email;
         if (currentUserEmail !== lastUserEmail) {
-            console.log('🔄 window.currentUser 변경 감지:', {
-                before: lastUserEmail,
-                after: currentUserEmail
-            });
             lastUserEmail = currentUserEmail;
             
             setTimeout(() => {
@@ -1891,7 +1875,6 @@ function editCalendarEvent(eventId) {
             }
         })
         .catch((error) => {
-            console.error('이벤트 데이터 로드 실패:', error);
             alert('이벤트 데이터를 불러올 수 없습니다.');
         });
 }
@@ -1910,11 +1893,9 @@ function deleteCalendarEvent(eventId) {
     const db = window.firebase.firestore();
     db.collection('calendarEvents').doc(eventId).delete()
         .then(() => {
-            console.log('✅ 경제 일정 삭제 완료:', eventId);
             loadEconomicCalendar(); // 목록 새로고침
         })
         .catch((error) => {
-            console.error('❌ 경제 일정 삭제 실패:', error);
             alert('일정 삭제에 실패했습니다.');
         });
 }
@@ -1969,24 +1950,20 @@ function handleEventFormSubmit(e) {
         // 수정
         db.collection('calendarEvents').doc(eventId).update(eventData)
             .then(() => {
-                console.log('✅ 경제 일정 수정 완료:', eventId);
                 closeCalendarModal();
                 loadEconomicCalendar(); // 목록 새로고침
             })
             .catch((error) => {
-                console.error('❌ 경제 일정 수정 실패:', error);
                 alert('일정 수정에 실패했습니다.');
             });
     } else {
         // 새 등록
         db.collection('calendarEvents').add(eventData)
             .then((docRef) => {
-                console.log('✅ 경제 일정 등록 완료:', docRef.id);
                 closeCalendarModal();
                 loadEconomicCalendar(); // 목록 새로고침
             })
             .catch((error) => {
-                console.error('❌ 경제 일정 등록 실패:', error);
                 alert('일정 등록에 실패했습니다.');
             });
     }
@@ -1998,27 +1975,13 @@ window.deleteCalendarEvent = deleteCalendarEvent;
 
 // 디버깅용 전역 함수들
 window.debugCalendarAdmin = function() {
-    console.log('=== 경제 일정 관리자 디버깅 ===');
-    console.log('1. Firebase 상태:', !!window.firebase);
-    console.log('2. Firebase Auth:', !!window.firebase?.auth);
-    console.log('3. Firebase currentUser:', window.firebase?.auth?.()?.currentUser);
-    console.log('4. window.currentUser:', window.currentUser);
-    console.log('5. 사용자 이메일 (Firebase):', window.firebase?.auth?.()?.currentUser?.email);
-    console.log('6. 사용자 이메일 (window):', window.currentUser?.email);
-    console.log('7. 관리자 여부:', checkIfUserIsAdmin());
-    
-    const adminControls = document.getElementById('calendar-admin-controls');
-    console.log('8. 관리자 UI 요소:', !!adminControls);
-    console.log('9. 관리자 UI 스타일:', adminControls?.style.display);
-    console.log('10. 현재 탭:', document.querySelector('.tab-btn.active')?.getAttribute('data-tab'));
-    
     // 강제로 관리자 권한 체크
     checkAdminPermissions();
     
     // 강제로 관리자 UI 표시 (테스트용)
+    const adminControls = document.getElementById('calendar-admin-controls');
     if (adminControls) {
         adminControls.style.display = 'flex';
-        console.log('🔧 관리자 UI 강제 표시됨');
     }
 };
 

@@ -34,13 +34,10 @@ class TradingChartsManager {
   
   changeSymbol(symbol) {
     this.currentSymbol = symbol;
-    console.log('심볼 변경:', symbol);
     
     // 전역 차트 심볼 변경 함수 호출
     if (typeof changeChartSymbol === 'function') {
       changeChartSymbol(symbol);
-    } else {
-      console.warn('changeChartSymbol 함수를 찾을 수 없습니다.');
     }
   }
   
@@ -66,7 +63,6 @@ class TradingChartsManager {
   initializeTradingViewChart(symbol = 'BTCUSDT', interval = null) {
     const chartContainer = document.getElementById('tradingview_chart');
     if (!chartContainer) {
-      console.warn('차트 컨테이너를 찾을 수 없습니다.');
       return;
     }
 
@@ -82,7 +78,7 @@ class TradingChartsManager {
         try {
           this.tvWidget.remove();
         } catch (e) {
-          console.warn('기존 위젯 제거 중 오류:', e);
+          // 무시
         }
       }
       
@@ -218,7 +214,6 @@ class TradingChartsManager {
       });
       
     } catch (error) {
-      console.error('TradingView 차트 초기화 실패:', error);
       // 백업 차트 표시
       chartContainer.innerHTML = `
         <div style="display: flex; align-items: center; justify-content: center; height: 100%; color: var(--text-secondary);">
@@ -265,14 +260,12 @@ window.changeChartSymbol = function(symbol) {
 document.addEventListener('DOMContentLoaded', () => {
   if (typeof TradingView !== 'undefined') {
     window.tradingChartsManager = new TradingChartsManager();
-    console.log('📊 TradingView 차트 매니저 초기화 완료');
   } else {
     // TradingView 라이브러리가 로드될 때까지 대기
     const checkTradingView = setInterval(() => {
       if (typeof TradingView !== 'undefined') {
         clearInterval(checkTradingView);
         window.tradingChartsManager = new TradingChartsManager();
-        console.log('📊 TradingView 차트 매니저 초기화 완료');
       }
     }, 100);
   }

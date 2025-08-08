@@ -7,14 +7,12 @@ class FeatureCardsManager {
   }
   
   init() {
-    console.log('🎯 3개 카드 기능 초기화 시작');
-    
     // 1. 고래 탐지 카드 초기화
     setTimeout(() => {
       try {
         this.initializeWhaleTrackerCard();
       } catch (error) {
-        console.error('❌ 고래 탐지 카드 초기화 실패:', error);
+        // Silent error handling
       }
     }, 500);
     
@@ -23,61 +21,109 @@ class FeatureCardsManager {
       try {
         this.initializeBreakingNewsCard();
       } catch (error) {
-        console.error('❌ 속보 뉴스 카드 초기화 실패:', error);
+        // Silent error handling
       }
     }, 1000); // 더 빠른 초기화
   }
 
   // 고래 탐지 카드 초기화
   initializeWhaleTrackerCard() {
-    console.log('🐋 고래 탐지 카드 초기화 시작');
-    
     // WhaleTracker 클래스가 로드될 때까지 대기
     const initWhaleTracker = () => {
       if (typeof window.WhaleTracker !== 'undefined') {
         const whaleContainer = document.getElementById('whale-transactions');
         if (whaleContainer) {
-          // 컨테이너를 WhaleTracker에 전달하여 카드 모드로 초기화
-          window.featureWhaleTracker = new window.WhaleTracker(whaleContainer);
-          console.log('🐋 고래 탐지 카드 초기화 완료 (카드 모드)');
+          try {
+            // 컨테이너를 WhaleTracker에 전달하여 카드 모드로 초기화
+            // 카드 모드용 설정
+            const cardSettings = {
+              largeTradeThreshold: 50000, // 카드에서는 더 낮은 임계값 사용
+              enableSound: false, // 카드에서는 소리 비활성화
+              cardMode: true
+            };
+            
+            window.featureWhaleTracker = new window.WhaleTracker(whaleContainer, cardSettings);
+            
+          } catch (error) {
+            this.showWhaleTrackerFallback();
+          }
+        } else {
+          this.showWhaleTrackerFallback();
         }
       } else {
-        console.warn('🐋 WhaleTracker 클래스를 찾을 수 없습니다');
         this.showWhaleTrackerFallback();
       }
     };
     
     // WhaleTracker가 로드되었는지 확인하고 초기화
     if (typeof window.WhaleTracker !== 'undefined') {
-      initWhaleTracker();
+      // 약간의 지연 후 초기화 (다른 스크립트들이 로드되기를 기다림)
+      setTimeout(initWhaleTracker, 100);
     } else {
-      // 최대 5초 동안 0.5초마다 재시도
+      // 최대 10초 동안 0.5초마다 재시도
       let attempts = 0;
-      const maxAttempts = 10;
+      const maxAttempts = 20;
       const retryInterval = setInterval(() => {
         attempts++;
+        
         if (typeof window.WhaleTracker !== 'undefined') {
           clearInterval(retryInterval);
-          initWhaleTracker();
+          setTimeout(initWhaleTracker, 100);
         } else if (attempts >= maxAttempts) {
           clearInterval(retryInterval);
-          console.warn('🐋 WhaleTracker 로딩 타임아웃');
           this.showWhaleTrackerFallback();
         }
       }, 500);
     }
   }
 
-  // 고래 탐지 대체 메시지
+  // 고래 탐지 연결 중 상태 표시
+  showWhaleTrackerConnecting() {
+    const whaleContainer = document.getElementById('whale-transactions');
+    if (whaleContainer) {
+      whaleContainer.innerHTML = `
+        <div style="display: flex; align-items: center; justify-content: center; height: 100%; color: #6b7280;">
+          <div style="text-align: center; padding: 20px;">
+            <i class="fas fa-fish whale-pulse" style="font-size: 2rem; margin-bottom: 1rem; color: #10b981;"></i>
+            <div style="margin-bottom: 0.5rem;">고래 탐지 시스템 연결 중...</div>
+            <div style="font-size: 0.9rem; color: #9ca3af;">거래소에 연결하고 있습니다</div>
+          </div>
+        </div>
+        <style>
+          .whale-pulse {
+            animation: whale-pulse 2s infinite;
+          }
+          @keyframes whale-pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.1); opacity: 0.7; }
+          }
+        </style>
+      `;
+    }
+  }
+
+  // 고래 탐지 대체 메시지 표시
   showWhaleTrackerFallback() {
     const whaleContainer = document.getElementById('whale-transactions');
     if (whaleContainer) {
       whaleContainer.innerHTML = `
         <div style="display: flex; align-items: center; justify-content: center; height: 100%; color: #6b7280;">
           <div style="text-align: center; padding: 20px;">
-            <i class="fas fa-fish" style="font-size: 2rem; margin-bottom: 1rem; color: #10b981;"></i>
-            <div style="margin-bottom: 0.5rem;">고래 탐지 서비스 준비 중</div>
-            <div style="font-size: 0.9rem; color: #9ca3af;">곧 실시간 대형 거래를 추적할 수 있습니다</div>
+            <i class="fas fa-exclamation-triangle" style="font-size: 2rem; margin-bottom: 1rem; color: #f59e0b;"></i>
+            <div style="margin-bottom: 0.5rem;">고래 탐지 서비스 일시 중단</div>
+            <div style="font-size: 0.9rem; color: #9ca3af;">시스템 점검 중입니다</div>
+            <button onclick="window.location.reload()" style="
+              margin-top: 1rem; 
+              padding: 0.5rem 1rem; 
+              border: 1px solid var(--border-default); 
+              border-radius: 6px; 
+              background: var(--accent-blue); 
+              color: white; 
+              cursor: pointer;
+              font-size: 0.9rem;
+            ">
+              다시 시도
+            </button>
           </div>
         </div>
       `;
@@ -86,11 +132,8 @@ class FeatureCardsManager {
 
   // 속보 뉴스 카드 초기화
   initializeBreakingNewsCard() {
-    console.log('📰 속보 뉴스 카드 초기화 시작');
-    
     // 즉시 뉴스 함수들이 있는지 확인
     if (typeof window.getNewsImportance === 'function' && window.newsItems && window.newsItems.length > 0) {
-      console.log('📰 뉴스 데이터가 이미 로드되어 있음, 즉시 표시');
       this.loadBreakingNews();
       return;
     }
@@ -99,7 +142,6 @@ class FeatureCardsManager {
     const checkNewsData = setInterval(() => {
       if (window.newsItems && window.newsItems.length > 0) {
         clearInterval(checkNewsData);
-        console.log('📰 뉴스 데이터 로드 완료, 속보 표시');
         this.loadBreakingNews();
       }
     }, 500); // 더 빠른 체크 간격
@@ -108,7 +150,6 @@ class FeatureCardsManager {
     setTimeout(() => {
       clearInterval(checkNewsData);
       if (!window.newsItems || window.newsItems.length === 0) {
-        console.log('📰 뉴스 데이터 로딩 타임아웃, 대체 메시지 표시');
         this.showBreakingNewsFallback();
       }
     }, 20000);
@@ -117,12 +158,9 @@ class FeatureCardsManager {
   // 속보 뉴스 로드 및 표시
   loadBreakingNews() {
     if (!window.newsItems || window.newsItems.length === 0) {
-      console.log('📰 뉴스 데이터가 없음, 대체 메시지 표시');
       this.showBreakingNewsFallback();
       return;
     }
-    
-    console.log(`📰 속보 뉴스 필터링 시작 (전체 ${window.newsItems.length}개 뉴스)`);
     
     // 중요도 5점 뉴스만 필터링 (속보)
     const breakingNews = window.newsItems.filter(item => {
@@ -137,8 +175,6 @@ class FeatureCardsManager {
         return urgentKeywords.some(keyword => title.includes(keyword));
       }
     });
-    
-    console.log(`📰 속보 뉴스 필터링 완료: ${breakingNews.length}개 발견`);
     
     // 최신 순으로 정렬하고 상위 10개만 표시
     const topBreakingNews = breakingNews
@@ -183,7 +219,6 @@ class FeatureCardsManager {
     }).join('');
     
     breakingContainer.innerHTML = newsHTML;
-    console.log(`📰 속보 뉴스 ${topBreakingNews.length}개 로드 완료`);
   }
 
   // 속보 뉴스 대체 메시지

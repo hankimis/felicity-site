@@ -15,5 +15,5 @@ if (typeof window !== 'undefined') {
     window.firebaseConfig = firebaseConfig;
 }
 
-// ES6 모듈 export (새로운 코드 호환성을 위해)
+// ES6 모듈 export
 export { firebaseConfig }; 

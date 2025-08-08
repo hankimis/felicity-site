@@ -88,8 +88,8 @@ async function initializeSingleChart() {
         fullscreen: false,
         autosize: true,
             
-            // 🔥 Binance 데이터피드 사용
-            datafeed: new BinanceDatafeed(),
+            // 🔥 Multi-Exchange 데이터피드 사용 (Binance + OKX + Bybit)
+            datafeed: new MultiExchangeDatafeed(),
             
             // 🔥 한국어 및 시간대 설정
             locale: 'ko',
@@ -227,6 +227,7 @@ async function initializeSingleChart() {
                 'show_symbol_logo_for_compare_studies', // 비교 지표용 심볼 로고 표시
                 'show_symbol_logo_in_legend',        // 범례에서 심볼 로고 표시
                 'show_percent_option_for_right_margin', // 오른쪽 여백 백분율 옵션 표시
+                'symbol_search_request_delay',       // 심볼 검색 요청 지연
                 'show_spread_operators',             // 스프레드 연산자 표시
                 'show_zoom_and_move_buttons_on_touch', // 터치에서 줌/이동 버튼 표시
                 'studies_symbol_search_spread_operators', // 지표 심볼 검색 스프레드 연산자
@@ -286,7 +287,7 @@ async function initializeSingleChart() {
                 'widget_logo'                        // 위젯 로고
             ],
             
-            // 🔥 기본 즐겨찾기 설정
+            // 🔥 기본 즐겨찾기 설정 (멀티 익스체인지)
             favorites: {
                 intervals: ['1', '5', '15', '30', '1H', '4H', '1D', '1W'],
                 indicators: [
@@ -311,6 +312,25 @@ async function initializeSingleChart() {
                     'LineToolFibRetracement',
                     'LineToolText',
                     'LineToolArrow'
+                ],
+                // 🔥 멀티 익스체인지 인기 심볼
+                symbols: [
+                    'BINANCE:BTCUSDT',
+                    'BINANCE:ETHUSDT',
+                    'BINANCE:BNBUSDT',
+                    'BINANCE:ADAUSDT',
+                    'BINANCE:XRPUSDT',
+                    'BINANCE:SOLUSDT',
+                    'BINANCE:DOTUSDT',
+                    'BINANCE:DOGEUSDT',
+                    'BINANCE:MATICUSDT',
+                    'BINANCE:AVAXUSDT',
+                    'OKX:BTC-USDT',
+                    'OKX:ETH-USDT',
+                    'OKX:BNB-USDT',
+                    'BYBIT:BTCUSDT',
+                    'BYBIT:ETHUSDT',
+                    'BYBIT:BNBUSDT'
                 ]
             },
             
@@ -337,6 +357,11 @@ async function initializeSingleChart() {
 
         // 🔥 TradingView 위젯 생성
         widget = new TradingView.widget(widgetOptions);
+        
+        // 🔥 심볼 검색 다이얼로그 개선 (아이콘 표시)
+        setTimeout(() => {
+            enhanceSymbolSearchDialog();
+        }, 2000);
 
         // 🔥 차트 준비 완료 이벤트 (TradingView 공식)
         widget.onChartReady(() => {
@@ -743,10 +768,361 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 });
 
+// 🔥 심볼 검색 다이얼로그 개선 함수
+function enhanceSymbolSearchDialog() {
+    console.log('🔍 심볼 검색 다이얼로그 개선 시작');
+    
+    // 심볼 검색 버튼 클릭 이벤트 감지
+    const observeSymbolSearch = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+            mutation.addedNodes.forEach((node) => {
+                if (node.nodeType === 1) { // Element node
+                    // 심볼 검색 다이얼로그 감지
+                    if (node.classList && node.classList.contains('tv-dialog')) {
+                        enhanceSymbolSearchResults(node);
+                    } else if (node.querySelector && node.querySelector('.tv-dialog')) {
+                        const dialog = node.querySelector('.tv-dialog');
+                        enhanceSymbolSearchResults(dialog);
+                    }
+                }
+            });
+        });
+    });
+    
+    // DOM 변화 감지 시작
+    observeSymbolSearch.observe(document.body, {
+        childList: true,
+        subtree: true
+    });
+    
+    console.log('✅ 심볼 검색 다이얼로그 감지기 설정 완료');
+}
+
+// 🔥 심볼 검색 결과에 아이콘 추가
+function enhanceSymbolSearchResults(dialogElement) {
+    if (!dialogElement) return;
+    
+    console.log('🎨 심볼 검색 결과 아이콘 추가 중...');
+    
+    // 검색 결과 항목들을 주기적으로 확인
+    const checkInterval = setInterval(() => {
+        const symbolItems = dialogElement.querySelectorAll('[data-name="symbol-search-item"], .tv-symbol-search-dialog__symbol-item');
+        
+        if (symbolItems.length > 0) {
+            symbolItems.forEach((item, index) => {
+                if (!item.hasAttribute('data-icon-enhanced')) {
+                    addIconToSymbolItem(item);
+                    item.setAttribute('data-icon-enhanced', 'true');
+                }
+            });
+        }
+        
+        // 다이얼로그가 사라지면 감지 중단
+        if (!document.body.contains(dialogElement)) {
+            clearInterval(checkInterval);
+            console.log('🔍 심볼 검색 다이얼로그 닫힘 - 감지 중단');
+        }
+    }, 100);
+    
+    // 최대 10초 후 자동 중단
+    setTimeout(() => {
+        clearInterval(checkInterval);
+    }, 10000);
+}
+
+// 🔥 개별 심볼 항목에 아이콘 추가
+function addIconToSymbolItem(item) {
+    try {
+        const symbolText = item.textContent || '';
+        const symbolParts = symbolText.split(':');
+        
+        let exchange = 'BINANCE';
+        let symbol = symbolText;
+        
+        if (symbolParts.length > 1) {
+            exchange = symbolParts[0].trim();
+            symbol = symbolParts[1].trim();
+        }
+        
+        // 데이터 속성 추가
+        item.setAttribute('data-exchange', exchange);
+        item.setAttribute('data-symbol', symbol);
+        
+        // 아이콘 컨테이너 생성
+        if (!item.querySelector('.symbol-icon-container')) {
+            const iconContainer = document.createElement('div');
+            iconContainer.className = 'symbol-icon-container';
+            iconContainer.style.cssText = `
+                position: absolute;
+                left: 8px;
+                top: 50%;
+                transform: translateY(-50%);
+                display: flex;
+                align-items: center;
+                gap: 4px;
+                z-index: 1;
+            `;
+            
+            // 거래소 아이콘
+            const exchangeIcon = document.createElement('img');
+            exchangeIcon.className = 'exchange-icon';
+            exchangeIcon.style.cssText = `
+                width: 16px;
+                height: 16px;
+                border-radius: 50%;
+                object-fit: cover;
+                border: 1px solid rgba(0,0,0,0.1);
+            `;
+            
+            // 코인 아이콘
+            const coinIcon = document.createElement('img');
+            coinIcon.className = 'coin-icon';
+            coinIcon.style.cssText = `
+                width: 20px;
+                height: 20px;
+                border-radius: 50%;
+                object-fit: cover;
+                border: 1px solid rgba(0,0,0,0.1);
+            `;
+            
+            // 아이콘 URL 설정
+            const exchangeLogos = {
+                'BINANCE': '/assets/logoicon/binance.webp',
+                'OKX': '/assets/logoicon/okx.png',
+                'BYBIT': '/assets/logoicon/bybit.png'
+            };
+            
+            const coinSymbol = symbol.replace(/USDT|BUSD|USDC|BTC|ETH$/i, '').toUpperCase();
+            
+            // 대안 아이콘 이름 생성 (특수 케이스들)
+            const getAlternativeIconNames = (symbol) => {
+                const alternatives = [];
+                const lower = symbol.toLowerCase();
+                
+                // 일반적인 변형들 (확장된 버전)
+                const commonAlternatives = {
+                    // ETH 계열
+                    'cmeth': ['meth', 'ethereum', 'eth'],
+                    'beth': ['eth', 'ethereum'], 
+                    'steth': ['eth', 'ethereum'],
+                    'wbeth': ['eth', 'ethereum'],
+                    'reth': ['eth', 'ethereum'],
+                    'cbeth': ['eth', 'ethereum'],
+                    'meth': ['eth', 'ethereum'],
+                    'ethw': ['eth', 'ethereum'],
+                    'ethf': ['eth', 'ethereum'],
+                    
+                    // SOL 계열
+                    'bnsol': ['sol', 'solana'],
+                    'bbsol': ['sol', 'solana'],
+                    'oksol': ['sol', 'solana'],
+                    'jitosol': ['sol', 'solana'],
+                    'msol': ['sol', 'solana'],
+                    'bsol': ['sol', 'solana'],
+                    'wsol': ['sol', 'solana'],
+                    
+                    // 숫자 prefix 코인들
+                    '1000cat': ['cat'],
+                    '1mbabydoge': ['babydoge', 'doge'],
+                    '1000rats': ['rats'],
+                    '1000sats': ['sats'],
+                    '1000pepe': ['pepe'],
+                    '1000shib': ['shib'],
+                    
+                    // 특수 이름들
+                    'egld': ['elrond'],
+                    'render': ['rndr'],
+                    'rndr': ['render'],
+                    'ronin': ['ron'],
+                    'polyx': ['poly', 'polygon'],
+                    'polydoge': ['doge'],
+                    'babydoge': ['doge'],
+                    'dogelon': ['doge'],
+                    'wmatic': ['matic', 'polygon'],
+                    'amatic': ['matic', 'polygon'],
+                    
+                    // 특수 케이스들
+                    'lista': ['list'],
+                    'solv': ['solana', 'sol'],
+                    'sei': ['se'],
+                    'dia': ['diamond'],
+                    'id': ['identity'],
+                    'op': ['optimism'],
+                    'arb': ['arbitrum'],
+                    'mnt': ['mantle'],
+                    'scrt': ['secret'],
+                    'saga': ['sag'],
+                    'ilv': ['illuvium'],
+                    'pendle': ['pendulum'],
+                    'ordi': ['ordinals'],
+                    'people': ['person'],
+                    'cyber': ['cyborg'],
+                    'space': ['spacex'],
+                    'ai': ['artificial'],
+                    'gpt': ['chatgpt'],
+                    'tao': ['taoism'],
+                    'phb': ['phoenix'],
+                    'arkm': ['arkham'],
+                    'ethfi': ['ethereum', 'eth'],
+                    'eigen': ['eigen'],
+                    'ena': ['ethena'],
+                    'omni': ['omnicoin'],
+                    'rez': ['rezonate'],
+                    'wif': ['dogwifhat'],
+                    'bonk': ['bonkcoin'],
+                    'jup': ['jupiter'],
+                    'wen': ['when'],
+                    'pyth': ['python']
+                };
+                
+                if (commonAlternatives[lower]) {
+                    alternatives.push(...commonAlternatives[lower]);
+                }
+                
+                // 숫자가 포함된 경우 숫자 제거
+                if (/\d/.test(lower)) {
+                    alternatives.push(lower.replace(/\d+/g, ''));
+                }
+                
+                // 접두사 제거 시도 (확장된 버전)
+                const prefixes = ['1000', '1m', 'cm', 'bn', 'bb', 'ok', 'w', 'st', 'r', 'cb', 'm', 'b', 'jito', 'a'];
+                prefixes.forEach(prefix => {
+                    if (lower.startsWith(prefix) && lower.length > prefix.length + 1) {
+                        const remaining = lower.substring(prefix.length);
+                        if (remaining.length >= 2) { // 최소 2글자 이상만 추가
+                            alternatives.push(remaining);
+                        }
+                    }
+                });
+                
+                // 접미사 제거 시도
+                const suffixes = ['coin', 'token', 'inu', 'doge', 'cat', 'dog'];
+                suffixes.forEach(suffix => {
+                    if (lower.endsWith(suffix) && lower.length > suffix.length + 1) {
+                        const remaining = lower.substring(0, lower.length - suffix.length);
+                        if (remaining.length >= 2) { // 최소 2글자 이상만 추가
+                            alternatives.push(remaining);
+                        }
+                    }
+                });
+                
+                return [...new Set(alternatives)]; // 중복 제거
+            };
+            
+            // 🔥 고급 다중 소스 아이콘 로딩 시스템 (6단계 폴백)
+            const getIconSources = (symbol) => {
+                const lowerSymbol = symbol.toLowerCase();
+                return [
+                    // 1차: 고품질 CDN들
+                    `https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/${lowerSymbol}.png`,
+                    `https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons@master/32/color/${lowerSymbol}.png`,
+                    
+                    // 2차: CoinGecko (다양한 경로 시도)
+                    `https://assets.coingecko.com/coins/images/1/small/${lowerSymbol}.png`,
+                    `https://coin-images.coingecko.com/coins/images/1/small/${lowerSymbol}.png`,
+                    
+                    // 3차: 다른 API들
+                    `https://cryptoicon-api.vercel.app/api/icon/${lowerSymbol}`,
+                    `https://coinicons-api.vercel.app/${lowerSymbol}.png`,
+                    
+                    // 4차: 로컬 아이콘 (있다면)
+                    `/assets/logoicon/${lowerSymbol}.png`,
+                    `/assets/logoicon/${lowerSymbol}.webp`,
+                    
+                    // 5차: 대안 이름 시도 (일반적인 변형들)
+                    ...getAlternativeIconNames(symbol).map(alt => 
+                        `https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/${alt}.png`
+                    )
+                ];
+            };
+            
+            const iconSources = getIconSources(coinSymbol);
+            let currentSourceIndex = 0;
+            let loadingAttempts = 0;
+            const maxAttempts = 10; // 최대 시도 횟수
+            
+            const createFallbackSVG = (symbol) => {
+                const firstLetter = symbol.charAt(0);
+                const colors = [
+                    '#6366f1', '#8b5cf6', '#06b6d4', '#10b981', 
+                    '#f59e0b', '#ef4444', '#ec4899', '#84cc16'
+                ];
+                const colorIndex = symbol.charCodeAt(0) % colors.length;
+                const bgColor = colors[colorIndex];
+                
+                return `data:image/svg+xml;base64,${btoa(`
+                    <svg width="20" height="20" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="10" cy="10" r="9" fill="${bgColor}" stroke="${bgColor}dd"/>
+                        <text x="10" y="14" text-anchor="middle" fill="white" 
+                              font-family="system-ui, -apple-system, sans-serif" 
+                              font-size="10" font-weight="600">${firstLetter}</text>
+                    </svg>
+                `)}`;
+            };
+            
+            const tryNextSource = () => {
+                loadingAttempts++;
+                
+                if (currentSourceIndex < iconSources.length && loadingAttempts < maxAttempts) {
+                    const currentSource = iconSources[currentSourceIndex];
+                    if (currentSource) {
+                        coinIcon.src = currentSource;
+                        currentSourceIndex++;
+                        return;
+                    }
+                }
+                
+                // 모든 소스 실패 시 SVG 아이콘 생성
+                coinIcon.src = createFallbackSVG(coinSymbol);
+                coinIcon.onerror = null; // 더 이상 에러 핸들링 중지
+            };
+            
+            exchangeIcon.src = exchangeLogos[exchange] || '';
+            
+            // 첫 번째 소스 시도
+            tryNextSource();
+            
+            // 에러 처리 - 조용한 폴백 (콘솔 스팸 방지)
+            coinIcon.onerror = () => {
+                if (loadingAttempts < 3) { // 처음 3번만 로그
+                    console.log(`🔄 아이콘 폴백: ${coinSymbol} (${currentSourceIndex}/${iconSources.length})`);
+                }
+                tryNextSource();
+            };
+            
+            coinIcon.onload = () => {
+                if (currentSourceIndex <= 2) { // 성공적인 로드만 로그
+                    console.log(`✅ ${coinSymbol} 아이콘 로드 성공`);
+                }
+            };
+            
+            exchangeIcon.onerror = () => {
+                exchangeIcon.style.display = 'none';
+            };
+            
+            iconContainer.appendChild(exchangeIcon);
+            iconContainer.appendChild(coinIcon);
+            
+            // 항목의 스타일 조정
+            item.style.position = 'relative';
+            item.style.paddingLeft = '52px';
+            
+            // 아이콘 컨테이너 추가
+            item.insertBefore(iconContainer, item.firstChild);
+            
+            console.log(`✅ 아이콘 추가: ${exchange}:${symbol}`);
+        }
+        
+    } catch (error) {
+        console.error('❌ 심볼 아이콘 추가 실패:', error);
+    }
+}
+
 // 🔥 전역 함수로 내보내기 (HTML에서 호출 가능)
 window.initializeTradingViewChart = initializeTradingViewChart;
 window.updateChartTheme = updateChartTheme;
 window.saveChartStateWithOptions = saveChartStateWithOptions;
+window.enhanceSymbolSearchDialog = enhanceSymbolSearchDialog;
 
 // 🔥 실시간 고래 탐지 시스템 초기화
 function initializeWhaleTrackingSystem() {

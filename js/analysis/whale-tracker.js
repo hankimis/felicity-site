@@ -1335,10 +1335,7 @@ function updateConnectionStatus() {
 setInterval(updateWhaleStats, 1000);
 setInterval(updateConnectionStatus, 2000);
 
-// Export the WhaleTracker class for different environments
-export { WhaleTracker };
-
-// 전역 객체로도 등록 (window.WhaleTracker)
+// 전역 객체로 등록 (window.WhaleTracker)
 if (typeof window !== 'undefined') {
     window.WhaleTracker = WhaleTracker;
 } 

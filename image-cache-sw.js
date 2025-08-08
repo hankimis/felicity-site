@@ -5,7 +5,8 @@ const MAX_CACHE_SIZE = 100; // 최대 100개 이미지 캐시
 // 캐시할 이미지 패턴
 const IMAGE_PATTERNS = [
   /firebasestorage\.googleapis\.com.*\.(jpg|jpeg|png|gif|webp|svg)$/i,
-  /assets\/.*\.(jpg|jpeg|png|gif|webp|svg)$/i
+  /assets\/.*\.(jpg|jpeg|png|gif|webp|svg)$/i,
+  /\/api\/icon\//i
 ];
 
 // 이미지 요청인지 확인
@@ -40,19 +41,16 @@ function addOptimizationHeaders(response) {
 
 // Install 이벤트
 self.addEventListener('install', (event) => {
-  console.log('🚀 Image Cache Service Worker 설치됨');
   self.skipWaiting();
 });
 
 // Activate 이벤트
 self.addEventListener('activate', (event) => {
-  console.log('🚀 Image Cache Service Worker 활성화됨');
   event.waitUntil(
     caches.keys().then(cacheNames => {
       return Promise.all(
         cacheNames.map(cacheName => {
           if (cacheName !== CACHE_NAME) {
-            console.log('🗑️ 오래된 캐시 삭제:', cacheName);
             return caches.delete(cacheName);
           }
         })
@@ -77,13 +75,11 @@ self.addEventListener('fetch', (event) => {
       const cachedResponse = await cache.match(request);
       
       if (cachedResponse) {
-        console.log('📦 캐시에서 이미지 로드:', request.url);
         return cachedResponse;
       }
       
       try {
         // 네트워크에서 가져오기
-        console.log('🌐 네트워크에서 이미지 로드:', request.url);
         const response = await fetch(request);
         
         if (response.ok) {
@@ -100,8 +96,6 @@ self.addEventListener('fetch', (event) => {
         return response;
         
       } catch (error) {
-        console.error('❌ 이미지 로드 실패:', error);
-        
         // 기본 이미지 반환
         return caches.match('/assets/default-event-image.svg');
       }
@@ -114,7 +108,6 @@ self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'CLEAR_IMAGE_CACHE') {
     event.waitUntil(
       caches.delete(CACHE_NAME).then(() => {
-        console.log('🗑️ 이미지 캐시 모두 삭제됨');
         event.ports[0].postMessage({ success: true });
       })
     );
@@ -132,9 +125,7 @@ self.addEventListener('message', (event) => {
 
 // 에러 처리
 self.addEventListener('error', (event) => {
-  console.error('❌ Service Worker 에러:', event.error);
 });
 
 self.addEventListener('unhandledrejection', (event) => {
-  console.error('❌ Service Worker 처리되지 않은 Promise 거부:', event.reason);
 }); 

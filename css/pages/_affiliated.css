@@ -1,0 +1,279 @@
+/* Affiliated Pages Styles */
+
+/* Main container */
+.affiliated-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+/* Header section */
+.affiliated-header {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.affiliated-header h1 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 1rem;
+}
+
+.affiliated-header p {
+  font-size: 1.1rem;
+  color: var(--text-secondary);
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+/* Exchange grid */
+.affiliated-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 2rem;
+  margin-bottom: 4rem;
+}
+
+/* Exchange cards */
+.exchange-card {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-default);
+  border-radius: 16px;
+  padding: 2rem;
+  text-align: center;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px var(--shadow-light);
+}
+
+.exchange-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 25px var(--shadow-medium);
+  border-color: var(--accent-blue);
+}
+
+/* Exchange logo */
+.exchange-logo {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 1.5rem;
+  border-radius: 50%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-secondary);
+}
+
+.exchange-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Exchange info */
+.exchange-card h3 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+}
+
+.exchange-card .exchange-description {
+  color: var(--text-secondary);
+  margin-bottom: 1.5rem;
+  line-height: 1.6;
+}
+
+/* Exchange features */
+.exchange-features {
+  list-style: none;
+  padding: 0;
+  margin: 1.5rem 0;
+}
+
+.exchange-features li {
+  padding: 0.5rem 0;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.exchange-features li::before {
+  content: "✓";
+  color: var(--success-600);
+  font-weight: bold;
+}
+
+/* CTA buttons */
+.exchange-cta {
+  margin-top: 1.5rem;
+}
+
+.exchange-cta .btn {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  font-weight: 600;
+  text-decoration: none;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.exchange-cta .btn-primary {
+  background: var(--accent-blue);
+  color: white;
+  border: 2px solid var(--accent-blue);
+}
+
+.exchange-cta .btn-primary:hover {
+  background: var(--accent-blue-dark);
+  border-color: var(--accent-blue-dark);
+}
+
+/* Guide section */
+.guide-section {
+  background: var(--bg-secondary);
+  border-radius: 16px;
+  padding: 2.5rem;
+  margin: 3rem 0;
+}
+
+.guide-section h2 {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+/* Guide steps */
+.guide-steps {
+  display: grid;
+  gap: 1.5rem;
+  margin-top: 2rem;
+}
+
+.guide-step {
+  background: var(--bg-primary);
+  border-radius: 12px;
+  padding: 1.5rem;
+  border-left: 4px solid var(--accent-blue);
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.step-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: var(--accent-blue);
+  color: white;
+  border-radius: 50%;
+  font-weight: bold;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+
+.step-content h4 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+}
+
+.step-content p {
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* Benefits section */
+.benefits-section {
+  margin: 4rem 0;
+  text-align: center;
+}
+
+.benefits-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 2rem;
+  margin-top: 2rem;
+}
+
+.benefit-item {
+  padding: 1.5rem;
+  border-radius: 12px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-light);
+}
+
+.benefit-icon {
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+  display: block;
+}
+
+.benefit-item h4 {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+}
+
+.benefit-item p {
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .affiliated-container {
+    padding: 1rem;
+  }
+  
+  .affiliated-header h1 {
+    font-size: 2rem;
+  }
+  
+  .affiliated-grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+  
+  .exchange-card {
+    padding: 1.5rem;
+  }
+  
+  .guide-section {
+    padding: 1.5rem;
+  }
+  
+  .guide-step {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .step-number {
+    margin: 0 auto 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .affiliated-header h1 {
+    font-size: 1.8rem;
+  }
+  
+  .exchange-card {
+    padding: 1rem;
+  }
+  
+  .guide-section {
+    padding: 1rem;
+  }
+}

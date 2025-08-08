@@ -1,0 +1,363 @@
+/* ===================================================================
+   5. CRYPTO TABLE SECTION
+   =================================================================== */
+   .crypto-table-section {
+    max-width: 2000px;
+    margin-left: auto;
+    margin-right: auto;
+    margin-top: 20px;
+  }
+  
+  .crypto-table-section .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 20px;
+    background: var(--bg-primary);
+    border-radius: 12px 12px 0 0;
+    border: 1px solid var(--border-default);
+  }
+  
+  .crypto-table-section .section-title {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .crypto-table-section .section-title i {
+    color: var(--accent-blue);
+    font-size: 1.1rem;
+  }
+  
+  .table-controls {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+  }
+  
+  .search-box {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+  
+  .search-box i {
+    position: absolute;
+    left: 12px;
+    color: var(--text-secondary);
+    z-index: 1;
+  }
+  
+  .search-box input {
+    padding: 8px 12px 8px 35px;
+    border: 1px solid var(--border-strong);
+    border-radius: 8px;
+    font-size: 14px;
+    width: 200px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    transition: all 0.2s ease;
+  }
+  
+  .search-box input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+  
+  .search-box input::placeholder {
+    color: var(--text-muted);
+  }
+  
+  .refresh-btn {
+    padding: 8px 12px;
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  
+  .refresh-btn:hover {
+    background: #2563eb;
+    transform: translateY(-1px);
+  }
+  
+  .refresh-btn.loading {
+    animation: spin 1s linear infinite;
+  }
+  
+  .crypto-table-wrapper {
+    background: var(--bg-primary);
+    border-radius: 0 0 12px 12px;
+    box-shadow: 0 4px 20px var(--shadow-light);
+    overflow: hidden;
+    border: 1px solid var(--border-default);
+    border-top: none;
+  }
+  
+  .table-tabs {
+    display: flex;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-default);
+    padding: 0 1rem;
+  }
+  
+  .tab-btn {
+    padding: 12px 20px;
+    background: none;
+    border: none;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s ease;
+  }
+  
+  .tab-btn.active {
+    color: var(--accent-blue);
+    border-bottom-color: var(--accent-blue);
+  }
+  
+  .tab-btn:hover {
+    color: var(--accent-blue);
+  }
+  
+  .crypto-table-container {
+    overflow-x: auto;
+  }
+  
+  .crypto-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+    table-layout: fixed;
+  }
+  
+  /* 컬럼 너비 고정 */
+  .rank-col { width: 5%; }
+  .name-col { width: 11%; }
+  .price-col { width: 8%; }
+  .change-col { width: 7%; }
+  .funding-col { width: 7%; }
+  .volume-col { width: 8%; }
+  .oi-col { width: 7%; }
+  .oi-change-col { width: 6%; }
+  .market-col { width: 8%; }
+  .liquidation-col { width: 7%; }
+  .chart-col { width: 7%; }
+  
+  .crypto-table th {
+    background: var(--bg-secondary);
+    padding: 12px 8px;
+    text-align: center;
+    font-weight: 600;
+    color: var(--text-primary);
+    border-bottom: 1px solid var(--border-default);
+    white-space: nowrap;
+    font-size: 13px;
+  }
+  
+  .crypto-table th.name-col {
+    text-align: left;
+  }
+  
+  .crypto-table th.price-col,
+  .crypto-table th.volume-col,
+  .crypto-table th.oi-col,
+  .crypto-table th.market-col,
+  .crypto-table th.liquidation-col {
+    text-align: right;
+  }
+  
+  .crypto-table th.sortable {
+    cursor: pointer;
+    user-select: none;
+    position: relative;
+  }
+  
+  .crypto-table th.sortable:hover {
+    background: var(--bg-tertiary);
+  }
+  
+  .crypto-table th.sortable::after {
+    content: '⇅';
+    margin-left: 3px;
+    opacity: 0.4;
+    font-size: 12px;
+    font-weight: normal;
+  }
+  
+  .crypto-table th.sort-asc::after {
+    content: '▲';
+    opacity: 0.8;
+    color: var(--accent-blue);
+  }
+  
+  .crypto-table th.sort-desc::after {
+    content: '▼';
+    opacity: 0.8;
+    color: var(--accent-blue);
+  }
+  
+  .crypto-table td {
+    padding: 12px 8px;
+    border-bottom: 1px solid var(--border-light);
+    vertical-align: middle;
+    text-align: center;
+    font-size: 14px;
+    color: var(--text-primary);
+  }
+  
+  .crypto-table td:nth-child(2) {
+    text-align: left;
+  }
+  
+  .crypto-table td:nth-child(3),
+  .crypto-table td:nth-child(7),
+  .crypto-table td:nth-child(8),
+  .crypto-table td:nth-child(11),
+  .crypto-table td:nth-child(12),
+  .crypto-table td:nth-child(13) {
+    text-align: right;
+  }
+  
+  .crypto-table tr:hover {
+    background: var(--bg-secondary);
+  }
+  
+  .coin-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .coin-logo {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  
+  .coin-details {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+  
+  .crypto-table .coin-name {
+    font-weight: 800;
+    color: var(--text-primary);
+    font-size: 14px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  .coin-symbol {
+    font-size: 12px;
+    color: var(--text-secondary);
+    font-weight: 500;
+  }
+  
+  .price {
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+  
+  .change {
+    font-weight: 500;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 14px;
+  }
+  
+  .change.positive {
+    color: var(--positive-text);
+    background: var(--positive-bg);
+  }
+  
+  .change.negative {
+    color: var(--negative-text);
+    background: var(--negative-bg);
+  }
+  
+  .change.neutral {
+    color: var(--text-secondary);
+    background: var(--bg-tertiary);
+  }
+  
+  .volume, .market-cap {
+    font-weight: 500;
+    color: var(--text-primary);
+  }
+  
+  .mini-chart {
+    width: 60px;
+    height: 30px;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+  }
+  
+  .mini-chart:hover {
+    transform: scale(1.05);
+  }
+  
+  .table-pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    background: var(--bg-secondary);
+  }
+  
+  .page-btn {
+    padding: 8px 16px;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-strong);
+    border-radius: 6px;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  
+  .page-btn:hover:not(:disabled) {
+    background: var(--bg-tertiary);
+    border-color: var(--text-muted);
+  }
+  
+  .page-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  
+  .page-info {
+    font-size: 14px;
+    color: var(--text-secondary);
+  }
+  
+  .loading-row {
+    text-align: center;
+    padding: 2rem;
+    color: var(--text-secondary);
+  }
+  
+  /* 비트코인 행 특별 스타일 */
+  .crypto-table tr[data-coin-id="bitcoin"] {
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  
+  .crypto-table tr[data-coin-id="bitcoin"]:hover {
+    background: linear-gradient(135deg, rgba(247, 147, 26, 0.1), rgba(247, 147, 26, 0.05));
+    border-left: 3px solid #f7931a;
+    transform: translateX(3px);
+    box-shadow: 0 2px 8px rgba(247, 147, 26, 0.2);
+  }

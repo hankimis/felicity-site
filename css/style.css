@@ -153,19 +153,9 @@
   border-bottom: 1px solid var(--border-default);
   margin-bottom: 0;
   padding: 0;
-  height: 46px !important;
-  min-height: 46px !important;
-  max-height: 46px !important;
+  height: 47px !important;
   width: 100%;
   overflow: hidden;
-}
-
-#tradingview-ticker-tape iframe,
-#tradingview-ticker-tape > div,
-#tradingview-ticker-tape * {
-  height: 46px !important;
-  min-height: 46px !important;
-  max-height: 46px !important;
 }
 
 /* 다크 모드에서의 Ticker tape 스타일 */

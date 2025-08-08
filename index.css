@@ -1,0 +1,134 @@
+    /*==== 메인 컨텐츠 섹션 스타일 ================================================ */
+    .main-content-section {
+      width: 100%; /* 전체 너비 사용 */
+      background: var(--bg-primary);
+    }
+
+    .content-container {
+      width: 100%;
+      max-width: 1600px; /* 최대 너비를 1600px로 변경 */
+      margin: 0 auto; /* 중앙 정렬 */
+      padding: 20px;
+    }
+
+    /*==== 메인 대시보드 그리드 섹션 스타일 ================================================ */
+    .main-dashboard-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1fr;
+      gap: 20px;
+      height: 400px;
+    }
+
+    /*==== 대시보드 비트코인 섹션 스타일 ================================================ */
+    .dashboard-card {
+        background: var(--bg-primary);
+        border-radius: 16px;
+        padding: 0;
+        box-shadow: 0 4px 20px var(--shadow-color-light);
+        overflow: hidden;
+      }
+
+
+      .card-header {
+        padding: 20px 20px 10px;
+        border-bottom: 1px solid #e5e7eb;
+        flex-shrink: 0; /* 헤더 크기 고정 */
+      }
+      .card-header h3 {
+        margin: 0;
+        color: #1f2937;
+        font-size: 1.0rem;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      /* 고래 탐지 카드 스타일 */
+.whale-content {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* 속보 뉴스 카드 스타일 ================================================ */
+.breaking-news-content {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  #breaking-news-list {
+    flex: 1;
+  }
+  
+  .breaking-news-item {
+    padding: 15px 20px;
+    border-bottom: 1px solid #f3f4f6;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+  }
+  
+  .breaking-news-item:hover {
+    background-color: #f9fafb;
+  }
+  
+  .breaking-news-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+    font-size: 0.8rem;
+    color: #6b7280;
+  }
+  
+  .breaking-news-source {
+    font-weight: 600;
+  }
+  
+  .breaking-news-time {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  
+  .breaking-news-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-color);
+    line-height: 1.4;
+    margin: 0 0 6px 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  
+  .breaking-news-desc {
+    font-size: 0.85rem;
+    color: var(--text-color-secondary);
+    line-height: 1.4;
+    margin: 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  
+  .news-importance {
+    display: inline-flex;
+    gap: 1px;
+  }
+  
+  .star {
+    font-size: 0.8rem;
+    color: #d1d5db;
+  }
+  
+  .star.filled {
+    color: #fbbf24;
+  }
+
+  /*==== 코인 테이블 섹션 스타일 ================================================ */
+    /*==== indextable.css ================================================ */

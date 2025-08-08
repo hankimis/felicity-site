@@ -71,11 +71,11 @@
                 <p id="login-error-message" class="error-message"></p>
                 <div class="input-group">
                     <i class="fas fa-envelope"></i>
-                    <input type="email" name="login-email" placeholder="이메일" required>
+                    <input type="email" name="login-email" placeholder="이메일" required autocomplete="email">
                 </div>
                 <div class="input-group">
                     <i class="fas fa-lock"></i>
-                    <input type="password" name="login-password" placeholder="비밀번호" required>
+                    <input type="password" name="login-password" placeholder="비밀번호" required autocomplete="current-password">
                 </div>
                 <button type="submit" class="submit-btn">로그인</button>
                 <p class="auth-form-switch">계정이 없으신가요? <a href="#" id="show-signup">회원가입</a></p>
@@ -90,19 +90,19 @@
                 <p id="signup-error-message" class="error-message"></p>
                 <div class="input-group">
                     <i class="fas fa-user"></i>
-                    <input type="text" name="signup-name" placeholder="닉네임" required>
+                    <input type="text" name="signup-name" placeholder="닉네임" required autocomplete="name">
                 </div>
                 <div class="input-group">
                     <i class="fas fa-envelope"></i>
-                    <input type="email" name="signup-email" placeholder="이메일" required>
+                    <input type="email" name="signup-email" placeholder="이메일" required autocomplete="email">
                 </div>
                 <div class="input-group">
                     <i class="fas fa-lock"></i>
-                    <input type="password" name="signup-password" placeholder="비밀번호" required>
+                    <input type="password" name="signup-password" placeholder="비밀번호" required autocomplete="new-password">
                 </div>
                 <div class="input-group">
                     <i class="fas fa-check-circle"></i>
-                    <input type="password" name="signup-confirm-password" placeholder="비밀번호 확인" required>
+                    <input type="password" name="signup-confirm-password" placeholder="비밀번호 확인" required autocomplete="new-password">
                 </div>
                 <button type="submit" class="submit-btn">회원가입</button>
                 <p class="auth-form-switch">이미 계정이 있으신가요? <a href="#" id="show-login">로그인</a></p>

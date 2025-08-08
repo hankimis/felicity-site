@@ -1,0 +1,226 @@
+/* 🔥 TradingView Symbol Search Icons Styles */
+
+/* 심볼 검색 결과 아이콘 스타일 */
+.tv-symbol-search-dialog .tv-symbol-search-dialog__container .tv-symbol-search-dialog__symbol-item {
+    position: relative;
+    padding-left: 48px !important;
+}
+
+/* 심볼 아이콘 컨테이너 */
+.tv-symbol-search-dialog__symbol-item::before {
+    content: '';
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 24px;
+    height: 24px;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    border-radius: 50%;
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+}
+
+/* 거래소별 심볼 아이콘 */
+.tv-symbol-search-dialog__symbol-item[data-exchange="BINANCE"]::before {
+    background-image: url('/assets/logoicon/binance.webp');
+}
+
+.tv-symbol-search-dialog__symbol-item[data-exchange="OKX"]::before {
+    background-image: url('/assets/logoicon/okx.png');
+}
+
+.tv-symbol-search-dialog__symbol-item[data-exchange="BYBIT"]::before {
+    background-image: url('/assets/logoicon/bybit.png');
+}
+
+/* 심볼 이름에 코인 아이콘 추가 */
+.tv-symbol-search-dialog__symbol-item .tv-symbol-search-dialog__symbol-title {
+    position: relative;
+    padding-left: 28px;
+}
+
+.tv-symbol-search-dialog__symbol-item .tv-symbol-search-dialog__symbol-title::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 20px;
+    height: 20px;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    border-radius: 50%;
+}
+
+/* 주요 코인들의 아이콘 */
+.tv-symbol-search-dialog__symbol-item[data-symbol*="BTC"] .tv-symbol-search-dialog__symbol-title::before {
+    background-image: url('https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/btc.png');
+}
+
+.tv-symbol-search-dialog__symbol-item[data-symbol*="ETH"] .tv-symbol-search-dialog__symbol-title::before {
+    background-image: url('https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/eth.png');
+}
+
+.tv-symbol-search-dialog__symbol-item[data-symbol*="BNB"] .tv-symbol-search-dialog__symbol-title::before {
+    background-image: url('https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/bnb.png');
+}
+
+.tv-symbol-search-dialog__symbol-item[data-symbol*="ADA"] .tv-symbol-search-dialog__symbol-title::before {
+    background-image: url('https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/ada.png');
+}
+
+.tv-symbol-search-dialog__symbol-item[data-symbol*="XRP"] .tv-symbol-search-dialog__symbol-title::before {
+    background-image: url('https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/xrp.png');
+}
+
+.tv-symbol-search-dialog__symbol-item[data-symbol*="SOL"] .tv-symbol-search-dialog__symbol-title::before {
+    background-image: url('https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/sol.png');
+}
+
+.tv-symbol-search-dialog__symbol-item[data-symbol*="DOT"] .tv-symbol-search-dialog__symbol-title::before {
+    background-image: url('https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/dot.png');
+}
+
+.tv-symbol-search-dialog__symbol-item[data-symbol*="DOGE"] .tv-symbol-search-dialog__symbol-title::before {
+    background-image: url('https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/doge.png');
+}
+
+.tv-symbol-search-dialog__symbol-item[data-symbol*="MATIC"] .tv-symbol-search-dialog__symbol-title::before {
+    background-image: url('https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/matic.png');
+}
+
+.tv-symbol-search-dialog__symbol-item[data-symbol*="AVAX"] .tv-symbol-search-dialog__symbol-title::before {
+    background-image: url('https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/avax.png');
+}
+
+/* 다크 모드 지원 */
+[data-theme="dark"] .tv-symbol-search-dialog__symbol-item::before {
+    background-color: #2a2d34;
+    border-color: #454950;
+}
+
+/* 호버 효과 */
+.tv-symbol-search-dialog__symbol-item:hover::before {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transform: translateY(-50%) scale(1.1);
+    transition: all 0.2s ease;
+}
+
+/* 검색 결과 항목 간격 조정 */
+.tv-symbol-search-dialog__symbol-item {
+    min-height: 48px;
+    display: flex;
+    align-items: center;
+    padding: 8px 12px 8px 48px;
+}
+
+/* 거래소 레이블 스타일 */
+.tv-symbol-search-dialog__symbol-item .tv-symbol-search-dialog__exchange {
+    font-size: 0.75rem;
+    opacity: 0.7;
+    margin-left: auto;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: rgba(99, 102, 241, 0.1);
+    color: #6366f1;
+}
+
+.tv-symbol-search-dialog__symbol-item[data-exchange="BINANCE"] .tv-symbol-search-dialog__exchange {
+    background: rgba(243, 186, 47, 0.1);
+    color: #f3ba2f;
+}
+
+.tv-symbol-search-dialog__symbol-item[data-exchange="OKX"] .tv-symbol-search-dialog__exchange {
+    background: rgba(0, 96, 254, 0.1);
+    color: #0060fe;
+}
+
+.tv-symbol-search-dialog__symbol-item[data-exchange="BYBIT"] .tv-symbol-search-dialog__exchange {
+    background: rgba(255, 182, 0, 0.1);
+    color: #ffb600;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+    .tv-symbol-search-dialog__symbol-item {
+        padding-left: 40px;
+    }
+    
+    .tv-symbol-search-dialog__symbol-item::before {
+        width: 20px;
+        height: 20px;
+        left: 8px;
+    }
+    
+    .tv-symbol-search-dialog__symbol-item .tv-symbol-search-dialog__symbol-title {
+        padding-left: 24px;
+    }
+    
+    .tv-symbol-search-dialog__symbol-item .tv-symbol-search-dialog__symbol-title::before {
+        width: 16px;
+        height: 16px;
+    }
+}
+
+/* 로딩 상태 애니메이션 */
+.tv-symbol-search-dialog__symbol-item.loading::before {
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+    100% {
+        opacity: 1;
+    }
+}
+
+/* 심볼 검색 다이얼로그 전체 스타일 개선 */
+.tv-symbol-search-dialog {
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+}
+
+.tv-symbol-search-dialog__container {
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+/* 검색 입력창 스타일 */
+.tv-symbol-search-dialog__input {
+    padding: 12px 16px;
+    font-size: 16px;
+    border-bottom: 1px solid #e9ecef;
+}
+
+/* 검색 결과 리스트 스타일 */
+.tv-symbol-search-dialog__results {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.tv-symbol-search-dialog__results::-webkit-scrollbar {
+    width: 6px;
+}
+
+.tv-symbol-search-dialog__results::-webkit-scrollbar-track {
+    background: #f1f3f4;
+    border-radius: 3px;
+}
+
+.tv-symbol-search-dialog__results::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+}
+
+.tv-symbol-search-dialog__results::-webkit-scrollbar-thumb:hover {
+    background: #a1a1a1;
+}
