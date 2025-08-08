@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Embed Chart - Onbitlabs</title>
+  <style>
+    html, body { height: 100%; margin: 0; }
+    #tv_chart_container { width: 100%; height: 100vh; }
+  </style>
+  <!-- TradingView Charting Library -->
+  <script type="text/javascript" src="/charting_library-master/charting_library/charting_library.standalone.js"></script>
+  <script type="text/javascript" src="/charting_library-master/datafeeds/udf/dist/bundle.js"></script>
+  <!-- Optional: Multi-Exchange Datafeed (프로젝트에 이미 존재) -->
+  <script src="/js/multi-exchange-datafeed.js"></script>
+</head>
+<body>
+  <div id="tv_chart_container"></div>
+  <script>
+    (function() {
+      function getParam(name, defaultValue) {
+        const url = new URL(window.location.href);
+        return url.searchParams.get(name) || defaultValue;
+      }
+
+      const symbol = getParam('symbol', 'BINANCE:BTCUSDT');
+      const interval = getParam('interval', '15');
+      const theme = getParam('theme', 'Light'); // Light | Dark
+
+      if (!window.TradingView) {
+        console.error('TradingView 라이브러리가 로드되지 않았습니다.');
+        return;
+      }
+
+      const options = {
+        container: 'tv_chart_container',
+        library_path: '/charting_library-master/charting_library/',
+        symbol: symbol,
+        interval: interval,
+        fullscreen: false,
+        autosize: true,
+        locale: 'ko',
+        timezone: 'Asia/Seoul',
+        theme: theme,
+        disabled_features: ['use_localstorage_for_settings'],
+        enabled_features: ['study_templates']
+      };
+
+      // 가능하면 프로젝트의 멀티 거래소 데이터피드를 사용
+      if (typeof MultiExchangeDatafeed === 'function') {
+        options.datafeed = new MultiExchangeDatafeed();
+      }
+
+      window.tvWidget = new TradingView.widget(options);
+    })();
+  </script>
+</body>
+</html>
