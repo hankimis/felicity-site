@@ -21,7 +21,7 @@
 .guide-steps {
     display: flex;
     flex-direction: column;
-    gap: 32px;
+    gap: 56px;
 }
 .guide-step {
     background: var(--card-bg);

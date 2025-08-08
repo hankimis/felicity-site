@@ -104,7 +104,6 @@ main.main-container.affiliated-page {
   /* 카드 색션 css */
   .check-card {
     background: var(--card-bg);
-    border: 1px solid var(--border-color);
     border-radius: 24px;
     padding: 32px;
     display: flex;
@@ -396,6 +395,7 @@ main.main-container.affiliated-page {
 .full-exchange-table-section {
 box-shadow: 0 4px 20px rgba(0,0,0,0.05) !important;
 transition: box-shadow 0.2s, transform 0.2s;
+border: 1px solid var(--border-color);
 }
 .affiliated-card:hover,
 .affiliate-card:hover,
