@@ -30,25 +30,14 @@
       "permanent": false
     },
     {
-      "source": "/:path*",
+      "source": "/(.*)",
       "has": [
         {
           "type": "host",
           "value": "onbitlabs.com"
         }
       ],
-      "destination": "https://www.onbitlabs.com/:path*",
-      "permanent": true
-    },
-    {
-      "source": "/:path*",
-      "has": [
-        {
-          "type": "host",
-          "value": "www.onbitlabs.com"
-        }
-      ],
-      "destination": "https://www.onbitlabs.com/:path*",
+      "destination": "https://www.onbitlabs.com/$1",
       "permanent": true
     }
   ],
@@ -100,5 +89,6 @@
         }
       ]
     }
+    
   ]
 }
