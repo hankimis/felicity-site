@@ -66,7 +66,7 @@ main.main-container.affiliated-page {
 /* 온비트 페이백 배너 숫자/설명 스타일 */
 .payback-stats-row {
     display: flex;
-    gap: 2.5rem;
+    gap: 7.5rem;
     margin-bottom: 1.5rem;
     flex-wrap: wrap;
     }
@@ -80,8 +80,8 @@ main.main-container.affiliated-page {
     }
 /* 메인 베너 수치*/
 .payback-stat-value {
-    font-size: 26px;
-    font-weight: 500;
+    font-size: 28px;
+    font-weight: 600;
     color: var(--text-color);
     } 
 /* 메인 베너 설명*/
@@ -143,7 +143,7 @@ main.main-container.affiliated-page {
     display: flex;
     justify-content: center;
     align-items: stretch;
-    gap: 2.5rem;
+    gap: 1.5rem;
     flex-wrap: wrap;
     }
  /*제휴 카드 카드*/
@@ -155,7 +155,7 @@ main.main-container.affiliated-page {
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 2.5rem 2rem 2rem 2rem;
+    padding: 2rem 1rem 2rem 1rem;
     text-align: center;
     transition: box-shadow 0.2s, transform 0.2s;
     }
@@ -187,8 +187,8 @@ main.main-container.affiliated-page {
     }
 /* 카드 타이틀*/
 .affiliated-card-title {
-    font-size: 1.25rem;
-    font-weight: 700;
+    font-size: 18px;
+    font-weight: 600;
     margin-bottom: 0.7rem;
     color: var(--text-color);
     }
@@ -265,7 +265,7 @@ main.main-container.affiliated-page {
   }
   
   .exchange-table-wrapper.large-table td {
-    padding: 15px 30px;
+    padding: 18px 18px;
     text-align: center;
     vertical-align: middle;
     border-bottom: 1px solid var(--border-default);
@@ -345,10 +345,7 @@ main.main-container.affiliated-page {
   }
   
   .tag-cell {
-    display: flex;
     align-items: center;
-    gap: 6px;
-    flex-wrap: wrap;
     background: var(--bg-secondary-color);
     border-radius: 30px;
     padding: 4px 12px;

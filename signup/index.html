@@ -151,8 +151,15 @@
             </form>
 
             <div class="signup-footer">
-                <div class="footer-links">
-                    <a href="../login/" class="footer-link">로그인</a>
+                <div class="or-divider">
+                    <hr class="divider-line">
+                    <span class="or-text">또는</span>
+                    <hr class="divider-line">
+                </div>
+                <div class="social-login">
+                    <button id="signup-google" class="social-btn google" aria-label="구글 가입"><i class="fab fa-google"></i></button>
+                    <button id="signup-naver" class="social-btn naver" aria-label="네이버 가입">N</button>
+                    <button id="signup-kakao" class="social-btn kakao" aria-label="카카오 가입"><i class="fas fa-comment"></i></button>
                 </div>
             </div>
         </div>
@@ -571,6 +578,63 @@
         } else {
             waitForHeaderAndInitialize();
         }
+
+        // ===== 소셜 회원가입 처리 (로그인과 동일 플로우) =====
+        function signInWithCustomTokenFromPopup(url) {
+            return new Promise((resolve, reject) => {
+                const w = 500, h = 650;
+                const left = (screen.width - w) / 2;
+                const top = (screen.height - h) / 2;
+                const popup = window.open(url, 'onbit-oauth', `width=${w},height=${h},left=${left},top=${top}`);
+
+                function receive(e) {
+                    if (!e.data || e.data.source !== 'onbit-auth') return;
+                    window.removeEventListener('message', receive);
+                    const token = e.data.token;
+                    if (!token) return reject(new Error('토큰 수신 실패'));
+                    window.firebase.auth().signInWithCustomToken(token)
+                      .then(resolve)
+                      .catch(reject);
+                }
+                window.addEventListener('message', receive);
+            });
+        }
+
+        async function handleNaverSignup() {
+            try {
+                await signInWithCustomTokenFromPopup('/__/functions/v2/naverAuth');
+                window.location.href = '../';
+            } catch (err) {
+                console.error('네이버 가입 실패', err);
+                alert('네이버 가입에 실패했습니다.');
+            }
+        }
+
+        async function handleKakaoSignup() {
+            try {
+                await signInWithCustomTokenFromPopup('/__/functions/v2/kakaoAuth');
+                window.location.href = '../';
+            } catch (err) {
+                console.error('카카오 가입 실패', err);
+                alert('카카오 가입에 실패했습니다.');
+            }
+        }
+
+        async function handleGoogleSignup() {
+            try {
+                const provider = new firebase.auth.GoogleAuthProvider();
+                provider.setCustomParameters({ prompt: 'select_account' });
+                await window.auth.signInWithPopup(provider);
+                window.location.href = '../';
+            } catch (err) {
+                console.error('구글 가입 실패', err);
+                alert('구글 가입에 실패했습니다.');
+            }
+        }
+
+        document.getElementById('signup-naver').addEventListener('click', (e) => { e.preventDefault(); handleNaverSignup(); });
+        document.getElementById('signup-kakao').addEventListener('click', (e) => { e.preventDefault(); handleKakaoSignup(); });
+        document.getElementById('signup-google').addEventListener('click', (e) => { e.preventDefault(); handleGoogleSignup(); });
     </script>
 </body>
 </html> 

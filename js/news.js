@@ -137,11 +137,6 @@ function loadMoreNews() {
     const activeTabBtn = document.querySelector('.tab-btn.active');
     const currentTab = activeTabBtn?.getAttribute('data-tab') || 'news';
     
-    // 현재 활성 필터 확인
-    const activeTabContent = document.querySelector('.tab-content:not([style*="display: none"])');
-    const activeFilter = activeTabContent?.querySelector('.filter-btn.active');
-    const source = activeFilter?.getAttribute('data-source') || 'all';
-    
     // 로딩 인디케이터 표시
     showLoadingIndicator();
     
@@ -152,15 +147,10 @@ function loadMoreNews() {
         if (currentTab === 'breaking') {
             filteredNews = window.newsItems.filter(item => {
                 const importance = getNewsImportance(item);
-                const sourceMatch = source === 'all' || item.source === source;
-                return importance >= 4 && sourceMatch;
+                return importance >= 4;
             });
         } else {
-            if (source === 'all') {
-                filteredNews = window.newsItems;
-            } else {
-                filteredNews = window.newsItems.filter(item => item.source === source);
-            }
+            filteredNews = window.newsItems;
         }
         
         const totalNews = filteredNews.length;
@@ -248,30 +238,6 @@ function initializeNewsUI() {
         button.addEventListener('click', () => {
             const tabName = button.getAttribute('data-tab');
             switchTab(tabName);
-        });
-    });
-
-    // 뉴스 필터 버튼 (모든 탭에서 공통 사용)
-    const filterButtons = document.querySelectorAll('.filter-btn');
-    filterButtons.forEach(button => {
-        button.addEventListener('click', () => {
-            // 현재 활성 탭의 필터 버튼만 변경
-            const currentTab = document.querySelector('.tab-content:not([style*="display: none"])');
-            if (currentTab) {
-                const currentTabFilters = currentTab.querySelectorAll('.filter-btn');
-                currentTabFilters.forEach(btn => btn.classList.remove('active'));
-                
-                // 같은 탭 내의 해당 버튼 활성화
-                const targetButton = currentTab.querySelector(`[data-source="${button.getAttribute('data-source')}"]`);
-                if (targetButton) {
-                    targetButton.classList.add('active');
-                }
-            }
-
-            // 뉴스 필터링 (무한스크롤 리셋)
-            const source = button.getAttribute('data-source');
-            resetInfiniteScroll();
-            filterNews(source);
         });
     });
 }
@@ -910,12 +876,8 @@ function switchTab(tabName) {
     if (tabName === 'news' || tabName === 'breaking') {
         // 뉴스 관련 탭
         if (window.newsItems) {
-            // 현재 활성 필터 가져오기
-            const activeFilter = selectedTabContent?.querySelector('.filter-btn.active');
-            const source = activeFilter?.getAttribute('data-source') || 'all';
-            
             resetInfiniteScroll();
-            filterNews(source, tabName);
+            displayNews(window.newsItems, true, tabName);
         }
     } else if (tabName === 'calendar') {
         // 경제 일정 탭
@@ -931,40 +893,7 @@ function switchTab(tabName) {
 
 
 
-// 뉴스 필터링 (탭별 처리)
-function filterNews(source, currentTab = null) {
-    if (!window.newsItems) return;
-    
-    // 현재 탭 확인
-    if (!currentTab) {
-        const activeTabBtn = document.querySelector('.tab-btn.active');
-        currentTab = activeTabBtn?.getAttribute('data-tab') || 'news';
-    }
-    
-    let filteredNews;
-    
-    // 속보 탭인 경우 중요도 4점 이상 필터링 (더 많은 뉴스 표시)
-    if (currentTab === 'breaking') {
-        filteredNews = window.newsItems.filter(item => {
-            const importance = getNewsImportance(item);
-            const sourceMatch = source === 'all' || item.source === source;
-            return importance >= 4 && sourceMatch;
-        });
-    } else {
-        // 일반 뉴스 탭
-        if (source === 'all') {
-            filteredNews = window.newsItems;
-        } else {
-            filteredNews = window.newsItems.filter(item => item.source === source);
-        }
-    }
-    
-    // 무한스크롤 상태 리셋
-    resetInfiniteScroll();
-    
-    // 필터링된 뉴스 표시
-    displayNews(filteredNews, true, currentTab);
-}
+
 
 // 상대적 시간 표시 함수 (개선된 버전)
 function getRelativeTime(dateString) {

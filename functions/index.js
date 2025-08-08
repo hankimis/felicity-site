@@ -6,6 +6,7 @@ const {
 } = require("firebase-functions/v2/firestore");
 const {https} = require("firebase-functions/v2");
 const admin = require("firebase-admin");
+const { defineSecret } = require("firebase-functions/params");
 const sharp = require("sharp");
 const {Storage} = require("@google-cloud/storage");
 const path = require("path");
@@ -15,6 +16,234 @@ const fs = require("fs");
 admin.initializeApp();
 const storage = new Storage();
 const db = admin.firestore();
+
+// =============================
+// OAuth helper utilities
+// =============================
+const OAUTH_COOKIE_NAME = "onbit_oauth_state";
+
+function createState() {
+  return Math.random().toString(36).slice(2) + Date.now().toString(36);
+}
+
+function setStateCookie(res, state, host) {
+  const isSecure = true;
+  const cookie = `${OAUTH_COOKIE_NAME}=${state}; Path=/; Max-Age=600; HttpOnly; SameSite=Lax;${
+    isSecure ? " Secure;" : ""
+  }`;
+  res.setHeader("Set-Cookie", cookie);
+}
+
+function readStateCookie(req) {
+  const cookieHeader = req.get("cookie") || req.headers.cookie || "";
+  const parts = cookieHeader.split(/;\s*/);
+  for (const part of parts) {
+    const [key, value] = part.split("=");
+    if (key === OAUTH_COOKIE_NAME) return value;
+  }
+  return null;
+}
+
+async function upsertFirebaseUser({ uid, email, displayName, photoURL, provider }) {
+  try {
+    await admin.auth().getUser(uid);
+    await admin.auth().updateUser(uid, {
+      email: email || undefined,
+      displayName: displayName || undefined,
+      photoURL: photoURL || undefined,
+    });
+  } catch (e) {
+    await admin.auth().createUser({
+      uid,
+      email: email || undefined,
+      displayName: displayName || undefined,
+      photoURL: photoURL || undefined,
+    });
+  }
+
+  // 기본 클레임 세팅 (필요 시 확장 가능)
+  await admin.auth().setCustomUserClaims(uid, { provider });
+}
+
+function sendAuthResultPage(res, customToken) {
+  const html = `<!doctype html><html><head><meta charset="utf-8"><title>로그인 처리</title></head><body>
+<script>
+  (function(){
+    var token = ${JSON.stringify(customToken)};
+    try {
+      if (window.opener && !window.opener.closed) {
+        window.opener.postMessage({ source: 'onbit-auth', token: token }, '*');
+        window.close();
+      } else {
+        location.href = '/login/?token=' + encodeURIComponent(token);
+      }
+    } catch (e) {
+      location.href = '/login/?token=' + encodeURIComponent(token);
+    }
+  })();
+<\/script>
+로그인 처리 중...
+</body></html>`;
+  res.setHeader("Content-Type", "text/html; charset=utf-8");
+  res.status(200).send(html);
+}
+
+// Define Secrets (set via: firebase functions:secrets:set NAME)
+const NAVER_CLIENT_ID = defineSecret("NAVER_CLIENT_ID");
+const NAVER_CLIENT_SECRET = defineSecret("NAVER_CLIENT_SECRET");
+const KAKAO_REST_KEY = defineSecret("KAKAO_REST_KEY");
+const KAKAO_CLIENT_SECRET = defineSecret("KAKAO_CLIENT_SECRET");
+
+// =============================
+// NAVER OAuth 2.0 → Firebase Custom Token
+// =============================
+exports.naverAuth = https.onRequest({ region: "asia-northeast3", secrets: [NAVER_CLIENT_ID, NAVER_CLIENT_SECRET] }, async (req, res) => {
+  try {
+    const clientId = NAVER_CLIENT_ID.value();
+    const clientSecret = NAVER_CLIENT_SECRET.value();
+    if (!clientId || !clientSecret) {
+      res.status(500).json({ error: "NAVER env not configured" });
+      return;
+    }
+
+    const baseUrl = `https://${req.get("host")}${req.path}`;
+    const redirectUri = baseUrl; // self-callback
+
+    if (!req.query.code) {
+      // Start flow
+      const state = createState();
+      setStateCookie(res, state, req.get("host"));
+      const authUrl = new URL("https://nid.naver.com/oauth2.0/authorize");
+      authUrl.searchParams.set("response_type", "code");
+      authUrl.searchParams.set("client_id", clientId);
+      authUrl.searchParams.set("redirect_uri", redirectUri);
+      authUrl.searchParams.set("state", state);
+      // 요청 범위 (이메일 포함)
+      authUrl.searchParams.set("scope", "profile email");
+      res.redirect(302, authUrl.toString());
+      return;
+    }
+
+    // Callback phase
+    const returnedState = req.query.state;
+    const cookieState = readStateCookie(req);
+    if (!cookieState || cookieState !== returnedState) {
+      res.status(400).send("Invalid state");
+      return;
+    }
+
+    const code = req.query.code;
+    const tokenResp = await fetch("https://nid.naver.com/oauth2.0/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        grant_type: "authorization_code",
+        client_id: clientId,
+        client_secret: clientSecret,
+        code: String(code),
+        state: String(returnedState),
+        redirect_uri: redirectUri,
+      }),
+    });
+    const tokenJson = await tokenResp.json();
+    if (!tokenJson.access_token) {
+      res.status(400).json({ error: "NAVER token exchange failed", details: tokenJson });
+      return;
+    }
+
+    const meResp = await fetch("https://openapi.naver.com/v1/nid/me", {
+      headers: { Authorization: `Bearer ${tokenJson.access_token}` },
+    });
+    const meJson = await meResp.json();
+    const profile = meJson && meJson.response ? meJson.response : {};
+    const uid = `naver:${profile.id}`;
+    const email = profile.email || undefined;
+    const displayName = profile.name || profile.nickname || "네이버 사용자";
+    const photoURL = profile.profile_image || undefined;
+
+    await upsertFirebaseUser({ uid, email, displayName, photoURL, provider: "naver" });
+    const customToken = await admin.auth().createCustomToken(uid, { provider: "naver" });
+    sendAuthResultPage(res, customToken);
+  } catch (e) {
+    console.error("NAVER OAuth error", e);
+    res.status(500).send("NAVER OAuth failed");
+  }
+});
+
+// =============================
+// KAKAO OAuth 2.0 → Firebase Custom Token
+// =============================
+exports.kakaoAuth = https.onRequest({ region: "asia-northeast3", secrets: [KAKAO_REST_KEY, KAKAO_CLIENT_SECRET] }, async (req, res) => {
+  try {
+    const clientId = KAKAO_REST_KEY.value(); // Kakao REST API 키
+    const clientSecret = KAKAO_CLIENT_SECRET.value() || ""; // 선택
+    if (!clientId) {
+      res.status(500).json({ error: "KAKAO env not configured" });
+      return;
+    }
+
+    const baseUrl = `https://${req.get("host")}${req.path}`;
+    const redirectUri = baseUrl; // self-callback
+
+    if (!req.query.code) {
+      // Start flow
+      const state = createState();
+      setStateCookie(res, state, req.get("host"));
+      const authUrl = new URL("https://kauth.kakao.com/oauth/authorize");
+      authUrl.searchParams.set("response_type", "code");
+      authUrl.searchParams.set("client_id", clientId);
+      authUrl.searchParams.set("redirect_uri", redirectUri);
+      authUrl.searchParams.set("state", state);
+      authUrl.searchParams.set("scope", "profile_nickname account_email");
+      res.redirect(302, authUrl.toString());
+      return;
+    }
+
+    // Callback phase
+    const returnedState = req.query.state;
+    const cookieState = readStateCookie(req);
+    if (!cookieState || cookieState !== returnedState) {
+      res.status(400).send("Invalid state");
+      return;
+    }
+
+    const code = req.query.code;
+    const tokenResp = await fetch("https://kauth.kakao.com/oauth/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        grant_type: "authorization_code",
+        client_id: clientId,
+        client_secret: clientSecret,
+        code: String(code),
+        redirect_uri: redirectUri,
+      }),
+    });
+    const tokenJson = await tokenResp.json();
+    if (!tokenJson.access_token) {
+      res.status(400).json({ error: "KAKAO token exchange failed", details: tokenJson });
+      return;
+    }
+
+    const meResp = await fetch("https://kapi.kakao.com/v2/user/me", {
+      headers: { Authorization: `Bearer ${tokenJson.access_token}` },
+    });
+    const meJson = await meResp.json();
+    const kakaoAccount = (meJson && meJson.kakao_account) || {};
+    const profile = kakaoAccount.profile || {};
+    const uid = `kakao:${meJson.id}`;
+    const email = kakaoAccount.email || undefined;
+    const displayName = profile.nickname || "카카오 사용자";
+    const photoURL = profile.profile_image_url || profile.thumbnail_image_url || undefined;
+
+    await upsertFirebaseUser({ uid, email, displayName, photoURL, provider: "kakao" });
+    const customToken = await admin.auth().createCustomToken(uid, { provider: "kakao" });
+    sendAuthResultPage(res, customToken);
+  } catch (e) {
+    console.error("KAKAO OAuth error", e);
+    res.status(500).send("KAKAO OAuth failed");
+  }
+});
 
 // 기존 프로필 썸네일 생성 함수
 exports.generateProfileThumbnail = onObjectFinalized(async (event) => {

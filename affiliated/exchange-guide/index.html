@@ -33,7 +33,7 @@
     <style>
         .guide-container {
             max-width: 800px;
-            margin: 200px auto;
+            margin: 150px auto;
             padding: 0 20px;
         }
         .guide-title {
@@ -46,12 +46,13 @@
             font-size: 1.1em;
             color: var(--text-color-secondary);
             margin-bottom: 40px;
+            text-align: center;
         }
         .exchange-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 20px;
-            margin-bottom: 40px;
+            margin-bottom: 60px;
         }
         .exchange-card {
             display: flex;
@@ -59,7 +60,7 @@
             align-items: center;
             justify-content: center;
             padding: 20px;
-            background: var(--bg-secondary-color);
+            background: var(--card-bg);
             border: 1px solid var(--border-color);
             border-radius: 12px;
             cursor: pointer;
@@ -67,7 +68,7 @@
             text-align: center;
         }
         .exchange-card:hover {
-            background: var(--border-color);
+            box-shadow: 0 4px 20px var(--shadow-color-light);
             transform: translateY(-2px);
         }
         .exchange-logo {

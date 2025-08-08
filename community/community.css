@@ -178,6 +178,10 @@
    🔥 모바일 반응형 스타일
    ======================================== */
 @media (max-width: 768px) {
+    .main-container {
+        height: 100dvh;           /* 주소창/툴바를 뺀 '진짜' 높이 (신규 크롬/사파리) */
+        min-height: 100svh;  
+
     /* 모바일에서 레이아웃을 세로로 변경 */
     .community-layout-inner {
         flex-direction: column;
@@ -305,4 +309,4 @@
         background-color: var(--border-color);
         border-radius: 2px;
     }
-}
+}}

@@ -73,6 +73,7 @@
 
 /* Tab Content */
 .tab-content {
+    display: none;
     animation: fadeIn 0.3s ease-in-out;
 }
 
@@ -89,60 +90,11 @@
 
 
 
-/* News Filters */
-.news-filters {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    margin: 2rem auto 24px auto;
-    padding: 0 1rem;
-    max-width: 1200px;
-    align-items: center;
-    justify-content: center;
-}
-
-.filter-btn {
-    padding: 10px 18px;
-    border: 1px solid var(--border-color);
-    background: var(--bg-color);
-    color: var(--text-color-secondary);
-    border-radius: 25px;
-    font-size: 0.9rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    white-space: nowrap;
-    flex-shrink: 0;
-    min-width: fit-content;
-    text-align: center;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-.filter-btn.active {
-    background: var(--text-color);
-    color: var(--bg-color);
-    border-color: var(--text-color);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-    transform: translateY(-1px);
-}
-
-.filter-btn:hover {
-    background: var(--bg-secondary-color);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-}
-
-.filter-btn:active {
-    transform: translateY(0);
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
 /* News List Layout */
 .news-list {
     display: flex;
     flex-direction: column;
     gap: 20px;
-    padding: 0 20px;
     max-width: 1000px;
     margin: 0 auto;
 }
@@ -385,11 +337,45 @@
     display: flex;
     flex-wrap: wrap;
     gap: 10px;
-    margin: 2rem auto 24px auto;
+    margin: auto auto 24px auto;
     padding: 0 1rem;
-    max-width: 1200px;
+    max-width: 1000px;
     align-items: center;
-    justify-content: center;
+}
+
+.calendar-filters .filter-btn {
+    padding: 8px 16px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-color);
+    color: var(--text-color-secondary);
+    border-radius: 25px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+    flex-shrink: 0;
+    min-width: fit-content;
+    text-align: center;
+}
+
+.calendar-filters .filter-btn.active {
+    background: var(--text-color);
+    color: var(--bg-color);
+    border-color: var(--text-color);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    transform: translateY(-1px);
+}
+
+.calendar-filters .filter-btn:hover {
+    background: var(--bg-secondary-color);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.calendar-filters .filter-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 
@@ -760,71 +746,6 @@
     
 
 
-    .news-filters {
-        gap: 8px;
-        justify-content: flex-start;
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-        scrollbar-width: none;
-        -ms-overflow-style: none;
-        padding: 0 1rem 0.5rem 1rem;
-    }
-    
-    .news-filters::-webkit-scrollbar {
-        display: none;
-    }
-    
-    .filter-btn {
-        padding: 8px 14px;
-        font-size: 0.85rem;
-        min-width: auto;
-    }
-
-    .news-item {
-        gap: 12px;
-        padding: 12px;
-        margin-bottom: 8px;
-    }
-
-    .news-item.has-image {
-        gap: 12px;
-    }
-
-    .news-item.no-image {
-        gap: 0;
-    }
-
-    .news-thumb {
-        width: 75px;
-        height: 75px;
-    }
-
-    .news-title {
-        font-size: 16px;
-    }
-
-    .news-item.no-image .news-title {
-        font-size: 17px;
-    }
-
-    .news-desc {
-        font-size: 14px;
-    }
-
-    .news-meta {
-        font-size: 12px;
-    }
-
-    /* 태블릿에서 별 아이콘 크기 조정 */
-    .news-importance .star {
-        font-size: 13px;
-    }
-
-    .news-importance {
-        padding: 2px 3px;
-        gap: 1px;
-    }
-
     .news-list {
         gap: 15px;
         padding: 0 15px;
@@ -845,6 +766,11 @@
         display: none;
     }
     
+    .calendar-filters .filter-btn {
+        padding: 8px 14px;
+        font-size: 0.85rem;
+        min-width: auto;
+    }
 
     
     .calendar-list {
@@ -881,66 +807,6 @@
     }
     
 
-
-    .news-filters {
-        gap: 6px;
-        padding: 0 0.5rem 0.5rem 0.5rem;
-    }
-    
-    .filter-btn {
-        padding: 6px 12px;
-        font-size: 0.8rem;
-    }
-
-    .news-item {
-        gap: 10px;
-        padding: 10px;
-        margin-bottom: 6px;
-    }
-
-    .news-item.has-image {
-        gap: 10px;
-    }
-
-    .news-item.no-image {
-        gap: 0;
-    }
-
-    .news-thumb {
-        width: 60px;
-        height: 60px;
-    }
-
-    .news-title {
-        font-size: 15px;
-    }
-
-    .news-item.no-image .news-title {
-        font-size: 16px;
-    }
-
-    .news-desc {
-        font-size: 13px;
-    }
-
-    .news-meta {
-        font-size: 11px;
-    }
-
-    /* 모바일에서 별 아이콘 크기 조정 */
-    .news-importance .star {
-        font-size: 12px;
-    }
-
-    .news-importance {
-        padding: 1px 2px;
-        gap: 1px;
-    }
-
-    /* 모바일에서 툴팁 숨기기 */
-    .news-importance::after {
-        display: none;
-    }
 
     .news-list {
         gap: 12px;

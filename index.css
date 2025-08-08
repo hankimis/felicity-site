@@ -6,7 +6,7 @@
 
     .content-container {
       width: 100%;
-      max-width: 1600px; /* 최대 너비를 1600px로 변경 */
+      max-width: 1800px; /* 최대 너비를 1800px로 변경 */
       margin: 0 auto; /* 중앙 정렬 */
       padding: 20px;
     }
@@ -15,7 +15,7 @@
     .main-dashboard-grid {
       display: grid;
       grid-template-columns: 2fr 1fr 1fr 1fr;
-      gap: 20px;
+      gap: 14px;
       height: 400px;
     }
 
@@ -26,18 +26,18 @@
         padding: 0;
         box-shadow: 0 4px 20px var(--shadow-color-light);
         overflow: hidden;
+        border: 1px solid var(--border-default);
       }
 
 
       .card-header {
-        padding: 20px 20px 10px;
-        border-bottom: 1px solid #e5e7eb;
+        padding: 22px 20px 10px;
         flex-shrink: 0; /* 헤더 크기 고정 */
       }
       .card-header h3 {
         margin: 0;
-        color: #1f2937;
-        font-size: 1.0rem;
+        font-size: 20px;
+        font-weight: 600;
         display: flex;
         align-items: center;
         gap: 8px;

@@ -108,6 +108,16 @@
     ],
     "redirects": [
       {
+        "source": "/__/functions/v2/naverAuth",
+        "destination": "https://asia-northeast3-livechattest-35101.cloudfunctions.net/naverAuth",
+        "type": 302
+      },
+      {
+        "source": "/__/functions/v2/kakaoAuth",
+        "destination": "https://asia-northeast3-livechattest-35101.cloudfunctions.net/kakaoAuth",
+        "type": 302
+      },
+      {
         "source": "/home",
         "destination": "/",
         "type": 301

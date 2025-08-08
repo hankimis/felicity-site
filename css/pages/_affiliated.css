@@ -35,22 +35,8 @@
   margin-bottom: 4rem;
 }
 
-/* Exchange cards */
-.exchange-card {
-  background: var(--bg-primary);
-  border: 1px solid var(--border-default);
-  border-radius: 16px;
-  padding: 2rem;
-  text-align: center;
-  transition: all 0.3s ease;
-  box-shadow: 0 2px 8px var(--shadow-light);
-}
 
-.exchange-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 25px var(--shadow-medium);
-  border-color: var(--accent-blue);
-}
+
 
 /* Exchange logo */
 

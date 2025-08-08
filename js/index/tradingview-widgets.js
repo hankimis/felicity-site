@@ -24,7 +24,7 @@ window.TradingViewManager = {
           { proName: "BINANCE:DOTUSDT", title: "폴카닷" }
         ],
         showSymbolLogo: true,
-        isTransparent: false,
+        isTransparent: true,
         displayMode: "adaptive",
         colorTheme: document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light',
         locale: "kr",
@@ -55,14 +55,14 @@ window.TradingViewManager = {
       config: {
         colorTheme: document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light',
         displayMode: "single",
-        isTransparent: false,
+        isTransparent: true,
         locale: "kr",
         interval: "1m",
         disableInterval: false,
-        width: "100%",
+        width: 350,
         height: 500,
         symbol: "BINANCE:BTCUSDT",
-        showIntervalTabs: true
+        showIntervalTabs: true,
       }
     }
   },
