@@ -1,6 +1,11 @@
 {
   "redirects": [
     {
+      "source": "/embed/community",
+      "destination": "/embed/community.html",
+      "permanent": true
+    },
+    {
       "source": "/index.html",
       "destination": "/",
       "permanent": true
