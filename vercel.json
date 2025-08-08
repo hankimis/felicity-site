@@ -1,6 +1,17 @@
 {
   "redirects": [
     {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "onbitlabs.com"
+        }
+      ],
+      "destination": "https://www.onbitlabs.com/:path*",
+      "permanent": true
+    },
+    {
       "source": "/",
       "has": [
         {
@@ -28,17 +39,6 @@
       ],
       "destination": "/community/",
       "permanent": false
-    },
-    {
-      "source": "/(.*)",
-      "has": [
-        {
-          "type": "host",
-          "value": "onbitlabs.com"
-        }
-      ],
-      "destination": "https://www.onbitlabs.com/$1",
-      "permanent": true
     }
   ],
   "headers": [
