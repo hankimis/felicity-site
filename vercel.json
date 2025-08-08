@@ -88,6 +88,13 @@
           "value": "frame-ancestors 'self';"
         }
       ]
+    },
+    {
+      "redirects": [
+        { "source": "http://onbitlabs.com/(.*)",  "destination": "https://www.onbitlabs.com/$1", "permanent": true },
+        { "source": "https://onbitlabs.com/(.*)", "destination": "https://www.onbitlabs.com/$1", "permanent": true },
+        { "source": "http://www.onbitlabs.com/(.*)", "destination": "https://www.onbitlabs.com/$1", "permanent": true }
+      ]
     }
   ]
 }
