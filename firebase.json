@@ -108,6 +108,14 @@
     ],
     "redirects": [
       {
+        "source": "/",
+        "regex": true,
+        "function": {
+          "code": ""
+        },
+        "type": 302
+      },
+      {
         "source": "/home",
         "destination": "/",
         "type": 301

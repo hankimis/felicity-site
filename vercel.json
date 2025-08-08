@@ -1,14 +1,33 @@
 {
   "redirects": [
     {
+      "source": "/",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": "(?i).*(Mobile|Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini).*"
+        }
+      ],
+      "destination": "/community/",
+      "permanent": false
+    },
+    {
       "source": "/embed/community",
       "destination": "/embed/community.html",
       "permanent": true
     },
     {
       "source": "/index.html",
-      "destination": "/",
-      "permanent": true
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": "(?i).*(Mobile|Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini).*"
+        }
+      ],
+      "destination": "/community/",
+      "permanent": false
     },
     {
       "source": "/(.*)",
