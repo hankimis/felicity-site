@@ -202,9 +202,23 @@
 }
 
 .mobile-user-info {
-    display: flex;
+    display: none; /* 기본적으로 숨김 */
     align-items: center;
     gap: 0.5rem;
+}
+
+/* PC 버전에서는 완전히 숨김 */
+@media (min-width: 769px) {
+    .mobile-user-info {
+        display: none !important;
+    }
+}
+
+/* 모바일에서만 표시 */
+@media (max-width: 768px) {
+    .mobile-user-info {
+        display: flex;
+    }
 }
 
 .mobile-user-info img {

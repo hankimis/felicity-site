@@ -314,11 +314,21 @@ body.dark-mode .navbar nav a:hover:after {
     display: none !important;
   }
   
-  /* 로그인 후에만 모바일용 사용자 정보 표시 */
-  .mobile-user-info[style*="display: flex"] {
-    display: flex !important;
-    align-items: center;
-    gap: 8px;
+  /* PC 버전에서는 완전히 숨김 */
+  @media (min-width: 769px) {
+    .mobile-user-info {
+      display: none !important;
+    }
+  }
+
+  /* 모바일에서만 표시 */
+  @media (max-width: 768px) {
+    /* 로그인 후에만 모바일용 사용자 정보 표시 */
+    .mobile-user-info[style*="display: flex"] {
+      display: flex !important;
+      align-items: center;
+      gap: 8px;
+    }
   }
   
   .mobile-user-link {

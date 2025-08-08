@@ -241,7 +241,12 @@ async function updateAuthUI(user) {
                 userProfile.style.display = 'flex';
             }
             if (mobileUserProfile) {
-                mobileUserProfile.style.display = 'flex';
+                // PC에서는 모바일 요소 숨김 (768px 초과 시)
+                if (window.innerWidth <= 768) {
+                    mobileUserProfile.style.display = 'flex';
+                } else {
+                    mobileUserProfile.style.display = 'none';
+                }
             }
             if (authButtons) {
                 authButtons.style.display = 'none';
@@ -279,7 +284,14 @@ async function updateAuthUI(user) {
             window.currentUser = currentUser;
             
             if (userProfile) userProfile.style.display = 'flex';
-            if (mobileUserProfile) mobileUserProfile.style.display = 'flex';
+            if (mobileUserProfile) {
+                // PC에서는 모바일 요소 숨김 (768px 초과 시)
+                if (window.innerWidth <= 768) {
+                    mobileUserProfile.style.display = 'flex';
+                } else {
+                    mobileUserProfile.style.display = 'none';
+                }
+            }
             if (authButtons) authButtons.style.display = 'none';
             if (getElement('user-display-name')) getElement('user-display-name').textContent = currentUser.displayName;
             if (getElement('mobile-user-display-name')) getElement('mobile-user-display-name').textContent = currentUser.displayName;
@@ -638,4 +650,16 @@ function performTurnstileRender(turnstileElement) {
 }
 
 // 전역에서 접근 가능하도록
-window.renderTurnstile = renderTurnstile; 
+window.renderTurnstile = renderTurnstile;
+
+// 화면 크기 변경 시 모바일 요소 표시/숨김 처리
+window.addEventListener('resize', () => {
+    const mobileUserProfile = getElement('mobile-user-profile');
+    if (mobileUserProfile && window.currentUser) {
+        if (window.innerWidth <= 768) {
+            mobileUserProfile.style.display = 'flex';
+        } else {
+            mobileUserProfile.style.display = 'none';
+        }
+    }
+}); 
