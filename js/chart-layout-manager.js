@@ -1,35 +1,12 @@
 // 🔥 차트 레이아웃 관리자 (Chart Layout Manager)
+// Stub: 삭제 보존 파일 (호환성)
 class ChartLayoutManager {
-    constructor() {
-        this.currentLayout = 1; // 기본 1개 차트
-        this.currentLayoutType = 'single'; // 기본 레이아웃 타입
-        this.maxCharts = 4; // 최대 4개 차트
-        this.widgets = []; // 차트 위젯들 저장
-        this.isInitialized = false;
-        
-        // 레이아웃 타입 정의
-        this.layoutTypes = {
-            1: ['single'],
-            2: ['horizontal', 'vertical'],
-            3: ['grid', 'horizontal', 'vertical'],
-            4: ['grid', 'horizontal', 'vertical']
-        };
-        
-        console.log('🔥 차트 레이아웃 관리자 초기화');
-    }
+    constructor() {}
 
     // 🔥 레이아웃 관리자 초기화
     init() {
-        if (this.isInitialized) {
-            return;
-        }
-
-        this.createLayoutHeader();
-        this.setupLayoutButtons();
+        // header/멀티 레이아웃 제거됨. 단일 차트만 사용
         this.initializeManagers();
-        this.isInitialized = true;
-        
-        console.log('✅ 차트 레이아웃 관리자 초기화 완료');
     }
 
     // 🔥 관리자들 초기화
@@ -44,184 +21,6 @@ class ChartLayoutManager {
         console.log('✅ 마켓 데이터 관리자 초기화 완료');
     }
 
-    // 🔥 차트 헤더 생성
-    createLayoutHeader() {
-        const chartContainer = document.getElementById('tradingview_chart');
-        if (!chartContainer) {
-            console.error('❌ 차트 컨테이너를 찾을 수 없습니다');
-            return;
-        }
-
-        // 기존 헤더 제거
-        const existingHeader = document.querySelector('.chart-layout-header');
-        if (existingHeader) {
-            existingHeader.remove();
-        }
-
-        // 헤더 HTML 생성 (드롭다운 형태)
-        const headerHTML = `
-            <div class="chart-layout-header">
-                <div class="layout-buttons-group">
-                    <button class="layout-btn active" data-layout="1" data-type="single" title="차트 레이아웃 선택">
-                        <div class="layout-icon layout-single">
-                            <div class="chart-box"></div>
-                        </div>
-                    </button>
-                    
-                    <!-- 드롭다운 메뉴 -->
-                    <div class="layout-dropdown">
-                        <!-- 1개 차트 -->
-                        <div class="layout-dropdown-item" data-layout="1" data-type="single">
-                            <span class="layout-dropdown-number">1</span>
-                            <div class="layout-dropdown-icons">
-                                <div class="layout-dropdown-icon layout-single">
-                                    <div class="chart-box"></div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- 2개 차트 -->
-                        <div class="layout-dropdown-item" data-layout="2" data-type="horizontal">
-                            <span class="layout-dropdown-number">2</span>
-                            <div class="layout-dropdown-icons">
-                                <div class="layout-dropdown-icon layout-horizontal">
-                            <div class="chart-box"></div>
-                            <div class="chart-box"></div>
-                        </div>
-                                <div class="layout-dropdown-icon layout-vertical">
-                                    <div class="chart-box"></div>
-                                    <div class="chart-box"></div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- 3개 차트 -->
-                        <div class="layout-dropdown-item" data-layout="3" data-type="grid">
-                            <span class="layout-dropdown-number">3</span>
-                            <div class="layout-dropdown-icons">
-                                <div class="layout-dropdown-icon layout-grid-3">
-                            <div class="chart-box"></div>
-                            <div class="chart-box"></div>
-                            <div class="chart-box"></div>
-                        </div>
-                                <div class="layout-dropdown-icon layout-horizontal">
-                            <div class="chart-box"></div>
-                                    <div class="chart-box"></div>
-                                    <div class="chart-box"></div>
-                                </div>
-                                <div class="layout-dropdown-icon layout-vertical">
-                            <div class="chart-box"></div>
-                            <div class="chart-box"></div>
-                            <div class="chart-box"></div>
-                        </div>
-                            </div>
-                        </div>
-                        
-                        <!-- 4개 차트 -->
-                        <div class="layout-dropdown-item" data-layout="4" data-type="grid">
-                            <span class="layout-dropdown-number">4</span>
-                            <div class="layout-dropdown-icons">
-                                <div class="layout-dropdown-icon layout-grid-4">
-                                    <div class="chart-box"></div>
-                                    <div class="chart-box"></div>
-                                    <div class="chart-box"></div>
-                                    <div class="chart-box"></div>
-                                </div>
-                                <div class="layout-dropdown-icon layout-horizontal">
-                                    <div class="chart-box"></div>
-                                    <div class="chart-box"></div>
-                                    <div class="chart-box"></div>
-                                    <div class="chart-box"></div>
-                                </div>
-                                <div class="layout-dropdown-icon layout-vertical">
-                                    <div class="chart-box"></div>
-                                    <div class="chart-box"></div>
-                                    <div class="chart-box"></div>
-                                    <div class="chart-box"></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-
-        // 헤더를 차트 컨테이너 앞에 삽입
-        chartContainer.insertAdjacentHTML('beforebegin', headerHTML);
-    }
-
-    // 🔥 레이아웃 버튼 이벤트 설정 (이벤트 위임 사용)
-    setupLayoutButtons() {
-        // 드롭다운 컨테이너에 이벤트 위임 설정
-        const dropdownContainer = document.querySelector('.layout-dropdown');
-        if (!dropdownContainer) {
-            console.error('❌ 드롭다운 컨테이너를 찾을 수 없습니다');
-            return;
-        }
-        
-        console.log('🔍 드롭다운 컨테이너 찾음:', dropdownContainer);
-        console.log('🔍 드롭다운 내부 아이콘 개수:', dropdownContainer.querySelectorAll('.layout-dropdown-icon').length);
-        
-        // 기존 이벤트 리스너 제거
-        if (this.handleDropdownClick) {
-            dropdownContainer.removeEventListener('click', this.handleDropdownClick);
-        }
-        
-        // 새로운 이벤트 리스너 추가
-        this.handleDropdownClick = (e) => {
-            console.log('🔍 클릭 이벤트 감지:', e.target);
-            console.log('🔍 클릭된 요소 클래스:', e.target.className);
-            
-            const icon = e.target.closest('.layout-dropdown-icon');
-            if (!icon) {
-                console.log('❌ 아이콘을 찾을 수 없습니다');
-                return;
-            }
-            
-            console.log('✅ 아이콘 클릭 감지:', icon);
-            console.log('✅ 아이콘 클래스:', icon.className);
-            e.stopPropagation(); // 부모 이벤트 전파 방지
-            
-            const dropdownItem = icon.closest('.layout-dropdown-item');
-            const layout = parseInt(dropdownItem.dataset.layout);
-            const type = this.getLayoutTypeFromIcon(icon);
-            
-            console.log(`🎯 레이아웃 선택: ${layout}개 차트, ${type} 배치`);
-            this.changeLayout(layout, type);
-            
-            // 드롭다운 닫기 (선택 후)
-            const dropdown = document.querySelector('.layout-dropdown');
-            if (dropdown) {
-                dropdown.style.opacity = '0';
-                dropdown.style.visibility = 'hidden';
-            }
-        };
-        
-        dropdownContainer.addEventListener('click', this.handleDropdownClick);
-        
-        // 메인 버튼 클릭 시 드롭다운 토글
-        const mainButton = document.querySelector('.layout-btn');
-        if (mainButton) {
-            mainButton.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const dropdown = document.querySelector('.layout-dropdown');
-                if (dropdown) {
-                    const isVisible = dropdown.style.opacity === '1' || 
-                                    (dropdown.style.opacity === '' && dropdown.style.visibility === '');
-                    
-                    if (isVisible) {
-                        dropdown.style.opacity = '0';
-                        dropdown.style.visibility = 'hidden';
-                    } else {
-                        dropdown.style.opacity = '1';
-                        dropdown.style.visibility = 'visible';
-                    }
-                }
-            });
-        }
-        
-        console.log(`✅ 레이아웃 버튼 이벤트 위임 설정 완료`);
-    }
 
     // 🔥 아이콘에서 레이아웃 타입 추출
     getLayoutTypeFromIcon(icon) {
@@ -285,50 +84,7 @@ class ChartLayoutManager {
     }
 
     // 🔥 활성 버튼 업데이트
-    updateActiveButton(layout, type) {
-        // 메인 버튼 업데이트
-        const mainButton = document.querySelector('.layout-btn');
-        if (mainButton) {
-            mainButton.dataset.layout = layout;
-            mainButton.dataset.type = type;
-            // 메인 버튼의 아이콘도 업데이트
-            const icon = mainButton.querySelector('.layout-icon');
-            if (icon) {
-                // 레이아웃 타입에 따른 클래스명 설정
-                let iconClass = 'layout-icon';
-                if (type === 'single') {
-                    iconClass += ' layout-single';
-                } else if (type === 'horizontal') {
-                    iconClass += ' layout-horizontal';
-                } else if (type === 'vertical') {
-                    iconClass += ' layout-vertical';
-                } else if (type === 'grid') {
-                    if (layout === 3) {
-                        iconClass += ' layout-grid-3';
-                    } else if (layout === 4) {
-                        iconClass += ' layout-grid-4';
-                    }
-                }
-                
-                icon.className = iconClass;
-                icon.innerHTML = '';
-                for (let i = 0; i < layout; i++) {
-                    icon.innerHTML += '<div class="chart-box"></div>';
-                }
-            }
-        }
-        
-        // 드롭다운 아이템 업데이트 (레이아웃 번호만 확인)
-        const dropdownItems = document.querySelectorAll('.layout-dropdown-item');
-        dropdownItems.forEach(item => {
-            item.classList.remove('active');
-            if (parseInt(item.dataset.layout) === layout) {
-                item.classList.add('active');
-            }
-        });
-        
-        console.log(`✅ 활성 버튼 업데이트: ${layout}개 차트, ${type} 배치`);
-    }
+    updateActiveButton() {}
 
     // 🔥 차트 컨테이너 레이아웃 업데이트
     updateChartContainers(layout, type) {

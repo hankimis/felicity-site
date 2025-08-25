@@ -4,7 +4,8 @@
 let widget = null;
 let chartStorage = null;
 let isChartReady = false;
-let autoSaveEnabled = true;
+let autoSaveEnabled = (function(){ try { return localStorage.getItem('chart_autosave_enabled') !== 'false'; } catch(_) { return true; } })();
+let loadLastChartEnabled = (function(){ try { return localStorage.getItem('chart_load_last_enabled') !== 'false'; } catch(_) { return true; } })();
 
 // Firebase 초기화 대기
 
@@ -27,14 +28,7 @@ function waitForFirebase() {
 async function initializeTradingViewChart() {
     console.log('🔥 TradingView 차트 초기화 시작 (공식 권장사항)');
     
-    // 🔥 차트 레이아웃 관리자 초기화
-    if (!window.chartLayoutManager) {
-        window.chartLayoutManager = new ChartLayoutManager();
-    }
-    
-    // 레이아웃 관리자 초기화
-    window.chartLayoutManager.init();
-    
+    // 차트 레이아웃 매니저 제거됨 → 단일 차트만 초기화
     // 기본 단일 차트 모드로 시작
     await initializeSingleChart();
 }
@@ -108,7 +102,7 @@ async function initializeSingleChart() {
             auto_save_delay: 5, // 5초 (TradingView 권장 설정)
             
             // 🔥 마지막 차트 자동 로드 (TradingView 공식 기능)
-            load_last_chart: true,
+            load_last_chart: loadLastChartEnabled,
             
             // 🔥 지표 및 그림 유지를 위한 기능 활성화
             enabled_features: [
@@ -400,6 +394,43 @@ async function initializeSingleChart() {
                 
                 // 🔥 차트 로드 완료 이벤트 설정
                 setupChartLoadEvents();
+
+                // 🔧 자동 저장/복원 컨트롤 버튼 부착
+                attachAutoSaveControlsToHeader();
+                attachAutoSaveHeaderButtonsViaAPI();
+
+                // ✅ 모의 선물거래 사이드바와 현재 심볼 동기화
+                try {
+                    const chartApi = widget.chart && widget.chart();
+                    if (chartApi) {
+                        // 초기 심볼 반영
+                        const cur = chartApi.symbol && chartApi.symbol();
+                        if (cur) {
+                            const name = typeof cur === 'string' ? cur : (cur.name || '');
+                            const base = String(name).split(':').pop();
+                            if (window.paperTrading && base) {
+                                window.paperTrading.setSymbol(base);
+                            }
+                        }
+
+                        // 심볼 변경 이벤트 연결
+                        if (chartApi.onSymbolChanged) {
+                            chartApi.onSymbolChanged((s) => {
+                                try {
+                                    const name = typeof s === 'string' ? s : (s.name || '');
+                                    const base = String(name).split(':').pop();
+                                    if (window.paperTrading && base) {
+                                        window.paperTrading.setSymbol(base);
+                                    }
+                                } catch (e) {
+                                    console.warn('심볼 변경 동기화 실패:', e);
+                                }
+                            });
+                        }
+                    }
+                } catch (e) {
+                    console.warn('모의거래 심볼 동기화 설정 실패:', e);
+                }
             });
         });
 
@@ -520,6 +551,208 @@ function setupChartLoadEvents() {
         }
     } catch (error) {
         console.error('❌ 차트 로드 이벤트 설정 실패:', error);
+    }
+}
+
+// 🔧 헤더에 자동 저장 토글/초기화 버튼 추가
+function attachAutoSaveControlsToHeader() {
+    try {
+        if (!widget || !widget.headerReady) return;
+        const header = document.querySelector('.tv-header, .layout__area--top, .tv-floating-toolbar');
+        if (!header || header.__autosaveControlsMounted) return;
+
+        const wrap = document.createElement('div');
+        wrap.style.display = 'flex';
+        wrap.style.gap = '8px';
+        wrap.style.alignItems = 'center';
+        wrap.style.marginLeft = '8px';
+
+        const toggle = document.createElement('button');
+        toggle.className = 'tv-button autosave-toggle';
+        toggle.textContent = autoSaveEnabled ? '자동저장 ON' : '자동저장 OFF';
+        toggle.style.padding = '4px 8px';
+        toggle.addEventListener('click', () => {
+            autoSaveEnabled = !autoSaveEnabled;
+            try { localStorage.setItem('chart_autosave_enabled', String(autoSaveEnabled)); } catch(_) {}
+            toggle.textContent = autoSaveEnabled ? '자동저장 ON' : '자동저장 OFF';
+            chartStorage && chartStorage.showNotification(`자동 저장 ${autoSaveEnabled?'활성화':'비활성화'}`, 'info');
+        });
+
+        const restoreToggle = document.createElement('button');
+        restoreToggle.className = 'tv-button loadlast-toggle';
+        restoreToggle.textContent = loadLastChartEnabled ? '자동복원 ON' : '자동복원 OFF';
+        restoreToggle.style.padding = '4px 8px';
+        restoreToggle.addEventListener('click', () => {
+            loadLastChartEnabled = !loadLastChartEnabled;
+            try { localStorage.setItem('chart_load_last_enabled', String(loadLastChartEnabled)); } catch(_) {}
+            restoreToggle.textContent = loadLastChartEnabled ? '자동복원 ON' : '자동복원 OFF';
+            chartStorage && chartStorage.showNotification(`자동 복원 ${loadLastChartEnabled?'활성화':'비활성화'} (다음 로드부터 적용)`, 'info');
+        });
+
+        const resetBtn = document.createElement('button');
+        resetBtn.className = 'tv-button autosave-reset';
+        resetBtn.textContent = '자동저장 초기화';
+        resetBtn.style.padding = '4px 8px';
+        resetBtn.addEventListener('click', async () => {
+            if (!window.currentUser) { chartStorage && chartStorage.showNotification('로그인이 필요합니다.', 'error'); return; }
+            const ok = await chartStorage.clearLastChartState();
+            if (ok) {
+                chartStorage.showNotification('초기화 완료. 새 상태로 계속됩니다.', 'success');
+            }
+        });
+
+        wrap.appendChild(toggle);
+        wrap.appendChild(restoreToggle);
+        wrap.appendChild(resetBtn);
+        header.appendChild(wrap);
+        header.__autosaveControlsMounted = true;
+    } catch (e) {
+        console.warn('자동 저장 컨트롤 부착 실패:', e);
+    }
+}
+
+// 🔧 위젯 API로 헤더 버튼 추가 (iframe 내부)
+function attachAutoSaveHeaderButtonsViaAPI() {
+    try {
+        if (!widget || !widget.headerReady) return;
+        if (attachAutoSaveHeaderButtonsViaAPI.__mounted) return;
+        const api = widget;
+
+        const mainBtn = api.createButton();
+        mainBtn.setAttribute('title', '차트 저장 설정');
+        mainBtn.textContent = '⋮';
+        mainBtn.style.fontSize = '16px';
+        mainBtn.style.fontWeight = '700';
+        mainBtn.style.width = '28px';
+        mainBtn.style.textAlign = 'center';
+        mainBtn.style.cursor = 'pointer';
+        mainBtn.style.position = 'relative';
+
+        const doc = mainBtn.ownerDocument || document;
+        const menu = doc.createElement('div');
+        menu.style.position = 'fixed';
+        menu.style.top = '0';
+        menu.style.left = '0';
+        menu.style.minWidth = '180px';
+        menu.style.borderRadius = '6px';
+        menu.style.padding = '6px 0';
+        menu.style.display = 'none';
+        menu.style.zIndex = '9999';
+
+        const applyTheme = () => {
+            const dark = !!(window.document && window.document.documentElement.classList.contains('dark-mode'));
+            const bg = dark ? '#1f2430' : '#ffffff';
+            const border = dark ? 'rgba(255,255,255,.10)' : 'rgba(0,0,0,.10)';
+            const shadow = dark ? '0 8px 24px rgba(0,0,0,.45)' : '0 8px 24px rgba(0,0,0,.15)';
+            const fg = dark ? '#e5e7eb' : '#111827';
+            const hover = dark ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.05)';
+            const divider = dark ? 'rgba(255,255,255,.12)' : 'rgba(0,0,0,.08)';
+            menu.style.background = bg;
+            menu.style.border = `1px solid ${border}`;
+            menu.style.boxShadow = shadow;
+            if (menu.__items) {
+                for (const it of menu.__items) {
+                    it.style.color = fg;
+                    it.dataset.hover = hover;
+                }
+            }
+            if (menu.__divider) menu.__divider.style.background = divider;
+        };
+
+        const createItem = (labelGetter, onClick) => {
+            const item = doc.createElement('div');
+            item.textContent = labelGetter();
+            item.style.padding = '8px 12px';
+            item.style.cursor = 'pointer';
+            item.style.fontWeight = '500';
+            item.addEventListener('mouseenter', () => { item.style.background = item.dataset.hover || 'rgba(0,0,0,.05)'; });
+            item.addEventListener('mouseleave', () => { item.style.background = 'transparent'; });
+            item.addEventListener('click', async () => {
+                await onClick();
+                item.textContent = labelGetter();
+                menu.style.display = 'none';
+            });
+            return item;
+        };
+
+        const autosaveItem = createItem(
+            () => `자동 저장: ${autoSaveEnabled ? 'ON' : 'OFF'}`,
+            async () => {
+                autoSaveEnabled = !autoSaveEnabled;
+                try { localStorage.setItem('chart_autosave_enabled', String(autoSaveEnabled)); } catch(_) {}
+                chartStorage && chartStorage.showNotification(`자동 저장 ${autoSaveEnabled?'활성화':'비활성화'}`, 'info');
+            }
+        );
+
+        const loadlastItem = createItem(
+            () => `자동 복원: ${loadLastChartEnabled ? 'ON' : 'OFF'}`,
+            async () => {
+                loadLastChartEnabled = !loadLastChartEnabled;
+                try { localStorage.setItem('chart_load_last_enabled', String(loadLastChartEnabled)); } catch(_) {}
+                chartStorage && chartStorage.showNotification(`자동 복원 ${loadLastChartEnabled?'활성화':'비활성화'} (다음 로드부터 적용)`, 'info');
+            }
+        );
+
+        const resetItem = createItem(
+            () => '자동저장 초기화',
+            async () => {
+                if (!window.currentUser) { chartStorage && chartStorage.showNotification('로그인이 필요합니다.', 'error'); return; }
+                const ok = await chartStorage.clearLastChartState();
+                if (ok) chartStorage && chartStorage.showNotification('자동 저장 데이터가 초기화되었습니다.', 'success');
+            }
+        );
+
+        menu.appendChild(autosaveItem);
+        menu.appendChild(loadlastItem);
+        const hr = doc.createElement('div');
+        hr.style.height = '1px';
+        hr.style.margin = '6px 0';
+        menu.appendChild(hr);
+        menu.appendChild(resetItem);
+        menu.__items = [autosaveItem, loadlastItem, resetItem];
+        menu.__divider = hr;
+        applyTheme();
+        attachAutoSaveHeaderButtonsViaAPI.__applyTheme = applyTheme;
+
+        // body에 붙여 오버플로우에 잘리지 않게 처리
+        doc.body.appendChild(menu);
+
+        const placeMenu = () => {
+            try {
+                const r = mainBtn.getBoundingClientRect();
+                const mw = Math.max(180, menu.offsetWidth || 180);
+                const left = Math.max(8, Math.min((r.right - mw), (doc.documentElement.clientWidth - mw - 8)));
+                const top = Math.max(8, r.bottom + 4);
+                menu.style.left = left + 'px';
+                menu.style.top = top + 'px';
+            } catch (_) {}
+        };
+
+        const toggleMenu = (e) => {
+            e && e.stopPropagation();
+            if (menu.style.display === 'none') {
+                placeMenu();
+                menu.style.display = 'block';
+            } else {
+                menu.style.display = 'none';
+            }
+        };
+        mainBtn.addEventListener('click', toggleMenu);
+        doc.addEventListener('click', (ev) => {
+            try { if (!mainBtn.contains(ev.target)) menu.style.display = 'none'; } catch(_) {}
+        });
+        doc.addEventListener('scroll', () => { if (menu.style.display === 'block') placeMenu(); }, true);
+        window.addEventListener('resize', () => { if (menu.style.display === 'block') placeMenu(); });
+
+        // 테마 변경 시 동기화
+        const observer = new MutationObserver(() => {
+            try { attachAutoSaveHeaderButtonsViaAPI.__applyTheme && attachAutoSaveHeaderButtonsViaAPI.__applyTheme(); } catch(_) {}
+        });
+        try { observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] }); } catch(_) {}
+
+        attachAutoSaveHeaderButtonsViaAPI.__mounted = true;
+    } catch (e) {
+        console.warn('헤더 버튼(API) 부착 실패:', e);
     }
 }
 

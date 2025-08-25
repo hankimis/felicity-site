@@ -127,6 +127,22 @@
         "destination": "/",
         "type": 301
       }
+    ],
+    "rewrites": [
+      {
+        "source": "/api/ai-search",
+        "function": {
+          "functionId": "aiSearch",
+          "region": "asia-northeast3"
+        }
+      },
+      {
+        "source": "/api/ai-search-stream",
+        "function": {
+          "functionId": "aiSearchStream",
+          "region": "asia-northeast3"
+        }
+      }
     ]
   },
   "functions": [
@@ -142,7 +158,11 @@
       ],
       "predeploy": [
         "npm --prefix \"$RESOURCE_DIR\" run lint"
-      ]
+      ],
+      "runtimeEnvironmentVariables": {
+        "ENABLE_OAUTH": "0",
+        "ENABLE_AI": "0"
+      }
     }
   ],
   "database": {

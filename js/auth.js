@@ -278,6 +278,19 @@ async function updateAuthUI(user) {
                 window.location.href = '/community/';
             }
             
+            // 홈 로그인 카드 상태 업데이트
+            const homeLoginCard = document.getElementById('home-login-card');
+            if (homeLoginCard) {
+                const loggedIn = homeLoginCard.querySelector('.logged-in-view');
+                const loggedOut = homeLoginCard.querySelector('.logged-out-view');
+                if (loggedIn && loggedOut) {
+                    loggedIn.style.display = 'block';
+                    loggedOut.style.display = 'none';
+                    const nameEl = document.getElementById('home-user-name');
+                    if (nameEl) nameEl.textContent = currentUser.displayName || '사용자';
+                }
+            }
+
         } catch (error) {
             // 에러 발생 시에도 기본 사용자 정보로 설정
             currentUser = { uid: user.uid, displayName: user.displayName || "사용자" };
@@ -300,6 +313,19 @@ async function updateAuthUI(user) {
             if (window.innerWidth <= 768 && !window.location.pathname.includes('/community/')) {
                 window.location.href = '/community/';
             }
+
+            // 홈 로그인 카드 상태 업데이트 (fallback)
+            const homeLoginCard = document.getElementById('home-login-card');
+            if (homeLoginCard) {
+                const loggedIn = homeLoginCard.querySelector('.logged-in-view');
+                const loggedOut = homeLoginCard.querySelector('.logged-out-view');
+                if (loggedIn && loggedOut) {
+                    loggedIn.style.display = 'block';
+                    loggedOut.style.display = 'none';
+                    const nameEl = document.getElementById('home-user-name');
+                    if (nameEl) nameEl.textContent = currentUser.displayName || '사용자';
+                }
+            }
         }
     } else {
         // 로그아웃 상태
@@ -320,6 +346,17 @@ async function updateAuthUI(user) {
         
         // 사용자 데이터 새로고침 중지
         stopUserDataRefresh();
+
+        // 홈 로그인 카드 상태 업데이트
+        const homeLoginCard = document.getElementById('home-login-card');
+        if (homeLoginCard) {
+            const loggedIn = homeLoginCard.querySelector('.logged-in-view');
+            const loggedOut = homeLoginCard.querySelector('.logged-out-view');
+            if (loggedIn && loggedOut) {
+                loggedIn.style.display = 'none';
+                loggedOut.style.display = 'block';
+            }
+        }
     }
     
     // FOUC 해결: 인증 상태 확인 후 헤더 표시

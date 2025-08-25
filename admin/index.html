@@ -5,6 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>관리자 페이지 - ONBit</title>
     
+    <!-- Minimal overrides: keep UI clean, neutralize gradients/buttons, hide unused sections -->
+    <style>
+        .admin-security-info, .security-warning { display: none !important; }
+        .admin-header { background: transparent !important; box-shadow: none !important; color: inherit !important; border-radius: 0 !important; padding: 0 0 12px 0 !important; margin-bottom: 16px !important; }
+        .refresh-btn { background: #e5e7eb !important; color: #111827 !important; box-shadow: none !important; }
+        .admin-btn { background: #e5e7eb !important; color: #111827 !important; box-shadow: none !important; border-radius: 4px !important; }
+        .admin-actions-cell .admin-btn { margin: 0 2px !important; }
+        .stat-card { background: #f9fafb !important; box-shadow: none !important; border: 1px solid #e5e7eb !important; }
+        .block-mute-section { display: none !important; }
+    </style>
+    
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
@@ -262,14 +273,7 @@
             </div>
 
             <div id="admin-dashboard" style="display:none;">
-                <div class="admin-tabs">
-                    <button class="admin-tab-btn active" onclick="switchAdminTab('users')">
-                        <i class="fas fa-users"></i> 사용자 관리
-                    </button>
-                    <button class="admin-tab-btn" onclick="switchAdminTab('blocks')">
-                        <i class="fas fa-ban"></i> 차단/금지 관리
-                    </button>
-                </div>
+                
 
                 <section class="user-management-section">
                     <div class="section-header">
@@ -299,6 +303,24 @@
                                 <p id="new-users-count">0</p>
                             </div>
                         </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-chart-line"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h3>총 방문 수</h3>
+                                <p id="total-visits-count">0</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-calendar-day"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h3>오늘 방문 수</h3>
+                                <p id="today-visits-count">0</p>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="user-table-container">
@@ -308,8 +330,8 @@
                                     <th>UID</th>
                                     <th>닉네임</th>
                                     <th>이메일</th>
-                                    <th>포인트</th>
-                                    <th>레벨</th>
+                                    <th>USDT 잔고</th>
+                                    <th>ONBIT</th>
                                     <th>권한</th>
                                     <th>가입일</th>
                                     <th>관리</th>
@@ -390,29 +412,7 @@
         </div>
     </div>
 
-    <!-- 포인트 조정 모달 -->
-    <div id="points-modal" class="auth-modal">
-        <div class="auth-modal-content">
-            <span class="auth-modal-close" id="close-points-modal">&times;</span>
-            <form id="points-form" class="auth-form">
-                <h2>포인트 조정</h2>
-                <input type="hidden" id="points-uid">
-                <div class="current-points-display">
-                    <span>현재 포인트:</span>
-                    <strong id="current-points">0</strong>
-                </div>
-                <div class="input-group">
-                    <i class="fas fa-coins"></i>
-                    <input type="number" id="points-amount" placeholder="포인트 (음수 가능)" required>
-                </div>
-                <div class="input-group">
-                    <i class="fas fa-comment"></i>
-                    <input type="text" id="points-reason" placeholder="조정 사유" required>
-                </div>
-                <button type="submit" class="submit-btn">포인트 조정</button>
-            </form>
-        </div>
-    </div>
+    
 
     <!-- 권한 변경 모달 -->
     <div id="role-modal" class="auth-modal">
@@ -448,51 +448,7 @@
         </div>
     </div>
 
-    <!-- 차단 모달 -->
-    <div id="block-user-modal" class="modal">
-        <div class="modal-content">
-            <h3>사용자 차단</h3>
-            <form id="block-user-form">
-                <div class="form-group">
-                    <label for="block-user-id">사용자 UID</label>
-                    <input type="text" id="block-user-id" required>
-                </div>
-                <div class="form-group">
-                    <label for="block-reason">차단 사유</label>
-                    <select id="block-reason" required>
-                        <option value="불법사이트 언급">불법사이트 언급 (영구차단)</option>
-                        <option value="저작권/외부링크">저작권/외부링크 (영구차단)</option>
-                        <option value="운영진 비방/욕설">운영진 비방/욕설 (영구차단)</option>
-                        <option value="타 스코어 사이트 언급">타 스코어 사이트 언급 (영구차단)</option>
-                        <option value="거짓/낚시성 중계">거짓/낚시성 중계 (30일)</option>
-                        <option value="가족욕설">가족욕설 (아이디 삭제)</option>
-                        <option value="지역감정/분란">지역감정/분란 (영구차단)</option>
-                        <option value="욕설/싸움/비매너">욕설/싸움/비매너 (15일)</option>
-                        <option value="타회원 비하">타회원 비하 (50일)</option>
-                        <option value="custom">직접 입력</option>
-                    </select>
-                </div>
-                <div class="form-group" id="custom-reason-group" style="display: none;">
-                    <label for="custom-block-reason">직접 입력</label>
-                    <input type="text" id="custom-block-reason">
-                </div>
-                <div class="form-group">
-                    <label for="block-duration">차단 기간</label>
-                    <select id="block-duration" required>
-                        <option value="permanent">영구 차단</option>
-                        <option value="15">15일</option>
-                        <option value="30">30일</option>
-                        <option value="50">50일</option>
-                        <option value="delete">아이디 삭제</option>
-                    </select>
-                </div>
-                <div class="modal-actions">
-                    <button type="submit" class="btn-primary">차단</button>
-                    <button type="button" onclick="closeBlockModal()" class="btn-secondary">취소</button>
-                </div>
-            </form>
-        </div>
-    </div>
+    
 
     <!-- Footer -->
     <div id="footer-placeholder"></div>

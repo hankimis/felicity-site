@@ -49,22 +49,7 @@ window.TradingViewManager = {
         "bottomColor": "rgba(41, 98, 255, 0)"
       }
     },
-    'technical-analysis': {
-      container: 'tradingview-technical-analysis',
-      script: 'embed-widget-technical-analysis.js',
-      config: {
-        colorTheme: document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light',
-        displayMode: "single",
-        isTransparent: true,
-        locale: "kr",
-        interval: "1m",
-        disableInterval: false,
-        width: 350,
-        height: 500,
-        symbol: "BINANCE:BTCUSDT",
-        showIntervalTabs: true,
-      }
-    }
+    // technical-analysis 위젯은 롱/숏 게이지로 대체되었습니다
   },
 
   // 위젯 초기화
@@ -77,7 +62,7 @@ window.TradingViewManager = {
     // 2. 메인 대시보드 위젯들 로드
     await this.createWidget('btc-chart', this.widgetConfigs['btc-chart']);
     await new Promise(resolve => setTimeout(resolve, 200));
-    await this.createWidget('technical-analysis', this.widgetConfigs['technical-analysis']);
+    // 기술적 분석 위젯은 더 이상 사용하지 않습니다
     
     this.isInitialized = true;
   },

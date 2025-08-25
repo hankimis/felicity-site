@@ -3,6 +3,9 @@
  */
 class FeatureCardsManager {
   constructor() {
+    this.breakingPage = 1;
+    this.breakingPageSize = 3;
+    this.sortedBreakingNews = [];
     this.init();
   }
   
@@ -162,63 +165,69 @@ class FeatureCardsManager {
       return;
     }
     
-    // 중요도 5점 뉴스만 필터링 (속보)
-    const breakingNews = window.newsItems.filter(item => {
-      // getNewsImportance 함수가 있으면 사용, 없으면 기본 필터링
-      if (typeof window.getNewsImportance === 'function') {
-        const importance = window.getNewsImportance(item);
-        return importance >= 4; // 4점 이상을 속보로 간주 (더 많은 뉴스 표시)
-      } else {
-        // 기본 키워드 기반 속보 필터링
-        const title = (item.title || '').toLowerCase();
-        const urgentKeywords = ['긴급', '속보', '규제', '승인', '금지', '해킹', '상장', '폐쇄', '급등', '폭락', 'ETF', 'SEC', '비트코인', '이더리움', '폭등', '급락', '대형', '거래', '투자'];
-        return urgentKeywords.some(keyword => title.includes(keyword));
-      }
-    });
-    
-    // 최신 순으로 정렬하고 상위 10개만 표시
-    const topBreakingNews = breakingNews
-      .sort((a, b) => new Date(b.pubDate) - new Date(a.pubDate))
-      .slice(0, 10);
-    
+    // 최신순 전체 정렬 후 보관
+    this.sortedBreakingNews = window.newsItems.slice().sort((a, b) => new Date(b.pubDate) - new Date(a.pubDate));
+    this.breakingPage = 1; // 초기화
+    this.renderBreakingNewsPage();
+  }
+
+  // 페이지 단위 렌더링 (4개씩)
+  renderBreakingNewsPage() {
     const breakingContainer = document.getElementById('breaking-news-list');
     if (!breakingContainer) return;
-    
-    if (topBreakingNews.length === 0) {
+    const parent = breakingContainer.parentElement;
+    const total = this.sortedBreakingNews.length;
+    const totalPages = Math.max(1, Math.ceil(total / this.breakingPageSize));
+    if (this.breakingPage > totalPages) this.breakingPage = totalPages;
+    if (this.breakingPage < 1) this.breakingPage = 1;
+    const start = (this.breakingPage - 1) * this.breakingPageSize;
+    const slice = this.sortedBreakingNews.slice(start, start + this.breakingPageSize);
+
+    if (slice.length === 0) {
       breakingContainer.innerHTML = `
-        <div style="display: flex; align-items: center; justify-content: center; height: 400px; color: #6b7280;">
+        <div style="display: flex; align-items: center; justify-content: center; height: 200px; color: #6b7280;">
           <div style="text-align: center; padding: 20px;">
-            <i class="fas fa-newspaper" style="font-size: 2rem; margin-bottom: 1rem; color: #ef4444;"></i>
-            <div style="margin-bottom: 0.5rem;">현재 속보가 없습니다</div>
-            <div style="font-size: 0.9rem; color: #9ca3af;">중요한 뉴스가 발생하면 여기에 표시됩니다</div>
+            <i class=\"fas fa-newspaper\" style=\"font-size: 2rem; margin-bottom: 1rem; color: #ef4444;\"></i>
+            <div style=\"margin-bottom: 0.5rem;\">표시할 속보가 없습니다</div>
           </div>
-        </div>
-      `;
-      return;
+        </div>`;
+    } else {
+      const newsHTML = slice.map(item => {
+        const relativeTime = window.getRelativeTime ? window.getRelativeTime(item.pubDate) : '방금 전';
+        const sourceName = window.getSourceDisplayName ? window.getSourceDisplayName(item.source) : item.source;
+        const starRating = window.createStarRating ? window.createStarRating(item) : '';
+        return `
+          <div class=\"breaking-news-item\" onclick=\"window.open('${item.link}', '_blank')\">
+            <div class=\"breaking-news-meta\">
+              <span class=\"breaking-news-source\">${sourceName}</span>
+              <span class=\"breaking-news-time\">${relativeTime} ${starRating}</span>
+            </div>
+            <h4 class=\"breaking-news-title\">${item.title}</h4>
+            <p class=\"breaking-news-desc\">${item.contentSnippet || item.title}</p>
+          </div>`;
+      }).join('');
+      breakingContainer.innerHTML = newsHTML;
     }
-    
-    // 속보 뉴스 HTML 생성
-    const newsHTML = topBreakingNews.map(item => {
-      const relativeTime = window.getRelativeTime ? window.getRelativeTime(item.pubDate) : '방금 전';
-      const sourceName = window.getSourceDisplayName ? window.getSourceDisplayName(item.source) : item.source;
-      const starRating = window.createStarRating ? window.createStarRating(item) : '';
-      
-      return `
-        <div class="breaking-news-item" onclick="window.open('${item.link}', '_blank')">
-          <div class="breaking-news-meta">
-            <span class="breaking-news-source">${sourceName}</span>
-            <span class="breaking-news-time">
-              ${relativeTime}
-              ${starRating}
-            </span>
-          </div>
-          <h4 class="breaking-news-title">${item.title}</h4>
-          <p class="breaking-news-desc">${item.contentSnippet || item.title}</p>
-        </div>
-      `;
-    }).join('');
-    
-    breakingContainer.innerHTML = newsHTML;
+
+    // 페이지네이션 렌더링
+    let paginator = document.getElementById('breaking-news-pagination');
+    if (!paginator) {
+      paginator = document.createElement('div');
+      paginator.id = 'breaking-news-pagination';
+      paginator.className = 'breaking-pagination';
+      parent.appendChild(paginator);
+    }
+    paginator.innerHTML = `
+      <button class=\"bp-btn prev\" aria-label=\"이전\"><i class=\"fas fa-chevron-left\"></i></button>
+      <span class=\"bp-text\">속보 더보기 ${this.breakingPage}/${totalPages}</span>
+      <button class=\"bp-btn next\" aria-label=\"다음\"><i class=\"fas fa-chevron-right\"></i></button>
+    `;
+
+    // 이벤트 바인딩
+    const prevBtn = paginator.querySelector('.bp-btn.prev');
+    const nextBtn = paginator.querySelector('.bp-btn.next');
+    prevBtn.onclick = () => { this.breakingPage = this.breakingPage <= 1 ? totalPages : this.breakingPage - 1; this.renderBreakingNewsPage(); };
+    nextBtn.onclick = () => { this.breakingPage = this.breakingPage >= totalPages ? 1 : this.breakingPage + 1; this.renderBreakingNewsPage(); };
   }
 
   // 속보 뉴스 대체 메시지

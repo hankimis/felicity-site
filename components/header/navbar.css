@@ -5,7 +5,7 @@
 /* 🔥 Navbar Base */
 .navbar {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: center;
   padding: 12px 40px;
   border-bottom: 1px solid var(--border-color);
@@ -91,7 +91,7 @@
 }
 
 .navbar nav a {
-  color: var(--text-color);
+  color: var(--text-color-secondary);
   text-decoration: none;
   font-size: 1.05rem;
   font-weight: 600;
@@ -125,6 +125,13 @@
   align-items: center;
   flex-direction: row;
   gap: 8px;
+  margin-left: auto;
+}
+
+/* 활성 페이지 강조 */
+.navbar nav a.active {
+  color: var(--text-color);
+  font-weight: 800;
 }
 
 .auth-buttons {

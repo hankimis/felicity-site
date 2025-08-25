@@ -1,6 +1,7 @@
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore, collection, getDocs, doc, getDoc, deleteDoc, updateDoc, addDoc, serverTimestamp, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { firebaseConfig } from '../firebase-config.js';
+import { getVisitStats } from '../js/visit-tracker.js';
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import adminAuthManager from '../js/admin-auth-manager.js';
 
@@ -14,6 +15,8 @@ const adminDashboard = document.getElementById('admin-dashboard');
 const accessDenied = document.getElementById('admin-access-denied');
 const totalUsersCount = document.getElementById('total-users-count');
 const newUsersCount = document.getElementById('new-users-count');
+const totalVisitsCount = document.getElementById('total-visits-count');
+const todayVisitsCount = document.getElementById('today-visits-count');
 const usersTableBody = document.getElementById('users-table-body');
 const userSearch = document.getElementById('user-search');
 const refreshBtn = document.querySelector('.refresh-btn');
@@ -126,6 +129,7 @@ async function loadDashboardData() {
         });
 
         updateStats();
+        updateVisitStats();
         renderUsersTable(allUsers);
 
     } catch (error) {
@@ -147,23 +151,38 @@ function updateStats() {
     if (newUsersCount) newUsersCount.textContent = newUsers.length;
 }
 
+async function updateVisitStats() {
+    try {
+        const stats = await getVisitStats();
+        if (totalVisitsCount) totalVisitsCount.textContent = (stats.totalVisits || 0).toLocaleString();
+        if (todayVisitsCount) todayVisitsCount.textContent = (stats.todayVisits || 0).toLocaleString();
+    } catch (e) {
+        // 조용히 실패
+    }
+}
+
 function renderUsersTable(users) {
     usersTableBody.innerHTML = '';
     users.forEach(user => {
         const row = document.createElement('tr');
         const registrationDate = user.createdAt?.toDate ? user.createdAt.toDate().toLocaleDateString('ko-KR') : '알 수 없음';
-        const levelInfo = window.levelSystem ? window.levelSystem.calculateLevel(user.points || 0) : { name: "새싹", gradient: "#22c55e" };
+        
         
         row.innerHTML = `
             <td><span class="user-uid">${user.id}</span></td>
             <td><span class="user-nickname">${user.displayName || 'N/A'}</span></td>
             <td><span class="user-email">${user.email || 'N/A'}</span></td>
-            <td><span class="user-points">${(user.points || 0).toLocaleString()}</span></td>
-            <td>
-                <span class="user-level" style="background: ${levelInfo.gradient};">
-                    ${levelInfo.name}
-                </span>
+            <td><span class="user-usdt">${(user.paperTrading?.balanceUSDT ?? 0).toLocaleString()} USDT</span>
+                <button class="admin-btn points set-usdt" data-uid="${user.id}" title="USDT 잔고 설정" style="margin-left:8px;min-width:auto;">
+                    <i class="fas fa-dollar-sign"></i>
+                </button>
             </td>
+            <td><span class="user-onbit">${Number(user.mining?.onbit || 0).toFixed(3)} ONBIT</span>
+                <button class="admin-btn set-onbit" data-uid="${user.id}" title="ONBIT 설정" style="margin-left:8px;min-width:auto;">
+                    <i class="fas fa-gem"></i>
+                </button>
+            </td>
+            
             <td>
                 <span class="user-role ${user.role || 'user'}">
                     ${getRoleDisplayName(user.role || 'user')}
@@ -175,9 +194,7 @@ function renderUsersTable(users) {
                     <button class="admin-btn edit" data-uid="${user.id}" data-name="${user.displayName || ''}" title="닉네임 수정">
                         <i class="fas fa-edit"></i>
                     </button>
-                    <button class="admin-btn points" data-uid="${user.id}" title="포인트 조정">
-                        <i class="fas fa-coins"></i>
-                    </button>
+                    
                     <button class="admin-btn role" data-uid="${user.id}" data-role="${user.role || 'user'}" title="권한 변경">
                         <i class="fas fa-shield-alt"></i>
                     </button>
@@ -202,10 +219,19 @@ function renderUsersTable(users) {
         });
     });
     
-    document.querySelectorAll('.admin-btn.points').forEach(button => {
-        button.addEventListener('click', function(e) {
+    // 포인트 관련 버튼 제거됨
+    // USDT 설정 버튼
+    document.querySelectorAll('.admin-btn.set-usdt').forEach(button => {
+        button.addEventListener('click', async function(e) {
             const uid = e.target.closest('.admin-btn').dataset.uid;
-            openPointsModal(uid);
+            await openUsdtPrompt(uid);
+        });
+    });
+    // ONBIT 설정 버튼
+    document.querySelectorAll('.admin-btn.set-onbit').forEach(button => {
+        button.addEventListener('click', async function(e) {
+            const uid = e.target.closest('.admin-btn').dataset.uid;
+            await openOnbitPrompt(uid);
         });
     });
     
@@ -263,21 +289,7 @@ function renderUsersTable(users) {
             }
         }
         
-        if (e.target.classList.contains('reset-points-btn')) {
-            const uid = e.target.dataset.uid;
-            if (confirm('이 사용자의 포인트를 0으로 초기화하시겠습니까?')) {
-                try {
-                    await updateDoc(doc(db, 'users', uid), {
-                        points: 0
-                    });
-                    alert('포인트가 초기화되었습니다.');
-                    loadDashboardData();
-                } catch (error) {
-                    console.error('포인트 초기화 오류:', error);
-                    alert('초기화 중 오류가 발생했습니다.');
-                }
-            }
-        }
+        // 포인트 초기화 제거됨
         
         if (e.target.classList.contains('delete-user-btn')) {
             const uid = e.target.dataset.uid;
@@ -293,6 +305,75 @@ function renderUsersTable(users) {
             }
         }
     });
+}
+
+// USDT 잔고 설정 프롬프트 + 저장
+async function openUsdtPrompt(uid) {
+    try {
+        const isAdminUser = await adminAuthManager.isAdminUser();
+        if (!isAdminUser) {
+            alert('관리자 권한이 필요합니다.');
+            return;
+        }
+        const userDoc = await getDoc(doc(db, 'users', uid));
+        if (!userDoc.exists()) {
+            alert('사용자를 찾을 수 없습니다.');
+            return;
+        }
+        const current = userDoc.data().paperTrading?.balanceUSDT ?? 0;
+        const input = prompt(`USDT 잔고를 설정하세요 (현재 ${current} USDT)`, String(current));
+        if (input === null) return;
+        const value = Number(input);
+        if (!isFinite(value) || value < 0) {
+            alert('0 이상 숫자를 입력하세요.');
+            return;
+        }
+        await updateDoc(doc(db, 'users', uid), {
+            paperTrading: {
+                balanceUSDT: value,
+                equityUSDT: value
+            }
+        });
+        showToast(`USDT 잔고가 ${value.toLocaleString()}로 설정되었습니다.`);
+        loadDashboardData();
+    } catch (error) {
+        console.error('USDT 설정 오류:', error);
+        alert('USDT 잔고 설정 중 오류가 발생했습니다.');
+    }
+}
+
+// ONBIT 잔고 설정 프롬프트 + 저장
+async function openOnbitPrompt(uid) {
+    try {
+        const isAdminUser = await adminAuthManager.isAdminUser();
+        if (!isAdminUser) {
+            alert('관리자 권한이 필요합니다.');
+            return;
+        }
+        const userDoc = await getDoc(doc(db, 'users', uid));
+        if (!userDoc.exists()) {
+            alert('사용자를 찾을 수 없습니다.');
+            return;
+        }
+        const current = Number(userDoc.data().mining?.onbit || 0);
+        const input = prompt(`ONBIT 잔고를 설정하세요 (현재 ${current.toFixed(3)} ONBIT)`, String(current.toFixed(3)));
+        if (input === null) return;
+        const value = Number(input);
+        if (!isFinite(value) || value < 0) {
+            alert('0 이상 숫자를 입력하세요.');
+            return;
+        }
+        await updateDoc(doc(db, 'users', uid), {
+            mining: {
+                onbit: Number(value.toFixed(3))
+            }
+        });
+        showToast(`ONBIT 잔고가 ${value.toFixed(3)}로 설정되었습니다.`);
+        loadDashboardData();
+    } catch (error) {
+        console.error('ONBIT 설정 오류:', error);
+        alert('ONBIT 잔고 설정 중 오류가 발생했습니다.');
+    }
 }
 
 async function handleUpdateLevel(event) {
@@ -407,27 +488,7 @@ function getRoleDisplayName(role) {
     }
 }
 
-// 포인트 조정 모달 열기
-async function openPointsModal(uid) {
-    const modal = document.getElementById('points-modal');
-    document.getElementById('points-uid').value = uid;
-    document.getElementById('points-amount').value = '';
-    document.getElementById('points-reason').value = '';
-    
-    // 현재 포인트 표시
-    try {
-        const userDoc = await getDoc(doc(db, 'users', uid));
-        if (userDoc.exists()) {
-            const currentPoints = userDoc.data().points || 0;
-            document.getElementById('current-points').textContent = currentPoints.toLocaleString();
-        }
-    } catch (error) {
-        console.error('사용자 포인트 조회 오류:', error);
-    }
-    
-    modal.style.display = 'flex';
-    document.body.style.overflow = 'hidden';
-}
+// 포인트 조정 모달 제거됨
 
 // 권한 변경 모달 열기
 function openRoleModal(uid, currentRole) {
@@ -486,6 +547,10 @@ async function openUserDetailModal(uid) {
                         <span class="detail-value">${(userData.points || 0).toLocaleString()}</span>
                     </div>
                     <div class="detail-item">
+                        <span class="detail-label">USDT 잔고:</span>
+                        <span class="detail-value">${(userData.paperTrading?.balanceUSDT ?? 0).toLocaleString()} USDT</span>
+                    </div>
+                    <div class="detail-item">
                         <span class="detail-label">가입일:</span>
                         <span class="detail-value">${userData.createdAt?.toDate ? userData.createdAt.toDate().toLocaleDateString('ko-KR') : '알 수 없음'}</span>
                     </div>
@@ -540,10 +605,7 @@ async function handleDeleteUser(uid) {
 }
 
 // 모달 닫기 이벤트 리스너들
-document.getElementById('close-points-modal')?.addEventListener('click', () => {
-    document.getElementById('points-modal').style.display = 'none';
-    document.body.style.overflow = '';
-});
+// 포인트 모달 관련 이벤트 제거됨
 
 document.getElementById('close-role-modal')?.addEventListener('click', () => {
     document.getElementById('role-modal').style.display = 'none';
@@ -556,83 +618,7 @@ document.getElementById('close-user-detail-modal')?.addEventListener('click', ()
 });
 
 // 🔒 보안 강화된 포인트 조정 폼 제출
-document.getElementById('points-form')?.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    
-    // 🔒 보안 강화된 권한 확인
-    const isAdminUser = await adminAuthManager.isAdminUser();
-    if (!isAdminUser) {
-        alert('관리자 권한이 필요합니다.');
-        return;
-    }
-    
-    const uid = document.getElementById('points-uid').value;
-    const amount = parseInt(document.getElementById('points-amount').value);
-    const reason = document.getElementById('points-reason').value.trim();
-    
-    if (!uid || isNaN(amount) || !reason) {
-        alert('모든 필드를 올바르게 입력하세요.');
-        return;
-    }
-    
-    try {
-        const userDoc = await getDoc(doc(db, 'users', uid));
-        if (!userDoc.exists()) {
-            alert('사용자를 찾을 수 없습니다.');
-            return;
-        }
-        
-        const currentPoints = userDoc.data().points || 0;
-        const newPoints = Math.max(0, currentPoints + amount);
-        
-        // 보안 이벤트 로그 기록
-        await adminAuthManager.logSecurityEvent('user_points_adjustment', {
-            targetUserId: uid,
-            action: 'adjust_points',
-            pointsChange: amount,
-            reason: reason,
-            previousPoints: currentPoints,
-            newPoints: newPoints,
-            timestamp: new Date().toISOString()
-        });
-        
-        // 포인트 업데이트
-        await updateDoc(doc(db, 'users', uid), {
-            points: newPoints
-        });
-        
-        // 포인트 히스토리 추가
-        await addDoc(collection(db, 'pointHistory'), {
-            userId: uid,
-            action: 'admin_adjustment',
-            points: amount,
-            timestamp: serverTimestamp(),
-            description: `관리자 조정: ${reason}`,
-            adminId: currentUser?.uid,
-            adminEmail: currentUser?.email
-        });
-        
-        showToast(`포인트가 ${amount > 0 ? '+' : ''}${amount} 조정되었습니다. (사유: ${reason})`);
-        loadDashboardData();
-        document.getElementById('points-modal').style.display = 'none';
-        document.body.style.overflow = '';
-        
-        console.log('🔒 포인트 조정 완료:', {
-            targetUserId: uid,
-            pointsChange: amount,
-            reason: reason,
-            adminUser: currentUser.email
-        });
-        
-        // 사용자 데이터 새로고침 (실시간 반영)
-        if (window.refreshUserData) {
-            window.refreshUserData();
-        }
-    } catch (error) {
-        console.error('포인트 조정 오류:', error);
-        alert('포인트 조정 중 오류가 발생했습니다.');
-    }
-});
+// 포인트 조정 폼 제거됨
 
 // 🔒 보안 강화된 권한 변경 폼 제출
 document.getElementById('role-form')?.addEventListener('submit', async (e) => {

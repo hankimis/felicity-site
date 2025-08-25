@@ -4,8 +4,9 @@ class MultiExchangeDatafeed {
         this.exchanges = {
             binance: {
                 name: 'Binance',
-                baseUrl: 'https://api.binance.com/api/v3',
-                wsUrl: 'wss://stream.binance.com:9443/ws'
+                // 선물(USDT-M) 엔드포인트로 전환: 가격/차트 모두 선물 기준 실시간 반영
+                baseUrl: 'https://fapi.binance.com/fapi/v1',
+                wsUrl: 'wss://fstream.binance.com/ws'
             },
             okx: {
                 name: 'OKX',
@@ -25,6 +26,7 @@ class MultiExchangeDatafeed {
         this.iconDataUriCache = new Map();
         this.reconnectAttempts = new Map();
         this.maxReconnectAttempts = 5;
+        this.lastBars = new Map();
         
         // ✅ 심볼 정규화를 위한 기준 데이터
         this.quoteAssets = [
@@ -100,102 +102,6 @@ class MultiExchangeDatafeed {
     getSymbolIconMapping() {
         return {
             'BTC': 'https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/btc.png',
-            'ETH': 'https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/eth.png',
-            'BNB': 'https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/bnb.png',
-            'ADA': 'https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/ada.png',
-            'XRP': 'https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/xrp.png',
-            'SOL': 'https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/sol.png',
-            'DOT': 'https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/dot.png',
-            'DOGE': 'https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/doge.png',
-            'MATIC': 'https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/matic.png',
-            'AVAX': 'https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/avax.png',
-            'LINK': 'https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/link.png',
-            'UNI': 'https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/uni.png',
-            'LTC': 'https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/ltc.png',
-            'BCH': 'https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/bch.png',
-            'ATOM': 'https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/atom.png',
-            'FTM': 'https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/ftm.png',
-            'ALGO': 'https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/algo.png',
-            'ICP': 'https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/icp.png',
-            'NEAR': 'https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/near.png',
-            'FLOW': 'https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/flow.png',
-            '1INCH': 'https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/1inch.png',
-            'AAVE': 'https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/aave.png',
-            'APE': 'https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/ape.png',
-            'APT': 'https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/apt.png',
-            'ARB': 'https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/arb.png',
-            'CAKE': 'https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/cake.png',
-            'COMP': 'https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/comp.png',
-            'CRV': 'https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/crv.png',
-            'ETC': 'https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/etc.png',
-            'FIL': 'https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/fil.png',
-            'GALA': 'https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/gala.png',
-            'GMT': 'https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/gmt.png',
-            'GRT': 'https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/grt.png',
-            'LDO': 'https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/ldo.png',
-            'MANA': 'https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/mana.png',
-            'SAND': 'https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/sand.png',
-            'SHIB': 'https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/shib.png',
-            'STX': 'https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/stx.png',
-            'SUSHI': 'https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/sushi.png',
-            'TRX': 'https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/trx.png',
-            'XLM': 'https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/xlm.png',
-            'XTZ': 'https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/xtz.png',
-            
-            // 추가 인기 코인들 (50개 더)
-            'VET': 'https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/vet.png',
-            'THETA': 'https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/theta.png',
-            'HBAR': 'https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/hbar.png',
-            'EGLD': 'https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/egld.png',
-            'XMR': 'https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/xmr.png',
-            'EOS': 'https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/eos.png',
-            'IOTA': 'https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/miota.png',
-            'NEO': 'https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/neo.png',
-            'DASH': 'https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/dash.png',
-            'ZEC': 'https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/zec.png',
-            'QTUM': 'https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/qtum.png',
-            'OMG': 'https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/omg.png',
-            'BAT': 'https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/bat.png',
-            'ZIL': 'https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/zil.png',
-            'HOT': 'https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/hot.png',
-            'ENJ': 'https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/enj.png',
-            'ICX': 'https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/icx.png',
-            'ONT': 'https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/ont.png',
-            'ZRX': 'https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/zrx.png',
-            'REP': 'https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/rep.png',
-            'KNC': 'https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/knc.png',
-            'STORJ': 'https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/storj.png',
-            'ANKR': 'https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/ankr.png',
-            'BAND': 'https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/band.png',
-            'KAVA': 'https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/kava.png',
-            'CHZ': 'https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/chz.png',
-            'REN': 'https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/ren.png',
-            'OCEAN': 'https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/ocean.png',
-            'SNX': 'https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/snx.png',
-            'YFI': 'https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/yfi.png',
-            'MKR': 'https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/mkr.png',
-            'DAI': 'https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/dai.png',
-            'USDC': 'https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/usdc.png',
-            'USDT': 'https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/usdt.png',
-            'BUSD': 'https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/busd.png',
-            'AXS': 'https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/axs.png',
-            'SLP': 'https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/slp.png',
-            'ALICE': 'https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/alice.png',
-            'TLM': 'https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/tlm.png',
-            'CHR': 'https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/chr.png',
-            'WAVES': 'https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/waves.png',
-            'LSK': 'https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/lsk.png',
-            'ARK': 'https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/ark.png',
-            'DENT': 'https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/dent.png',
-            'WIN': 'https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/win.png',
-            'DUSK': 'https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/dusk.png',
-            'NKN': 'https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/nkn.png',
-            'DIA': 'https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/dia.png',
-            'BEL': 'https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/bel.png',
-            'WRX': 'https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/wrx.png',
-            'ALPHA': 'https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/alpha.png',
-            'TKO': 'https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/tko.png',
-            'BETA': 'https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/beta.png'
         };
     }
 
@@ -365,6 +271,7 @@ class MultiExchangeDatafeed {
 
     // 기본 심볼들 미리 설정
     setDefaultSymbols() {
+        // BTCUSDT만 미리 설정
         const defaultSymbols = {
             binance: this.createDefaultSymbolList('BINANCE'),
             okx: this.createDefaultSymbolList('OKX'), 
@@ -380,165 +287,11 @@ class MultiExchangeDatafeed {
 
     // 기본 심볼 리스트 생성 (200개+ 코인)
     createDefaultSymbolList(exchange) {
-        const popularCoins = [
-            // 메이저 코인들 (Top 20)
-            'BTC', 'ETH', 'BNB', 'ADA', 'XRP', 'SOL', 'DOT', 'DOGE', 'MATIC', 'AVAX',
-            'LINK', 'UNI', 'LTC', 'BCH', 'ATOM', 'FTM', 'ALGO', 'ICP', 'NEAR', 'FLOW',
-            
-            // DeFi 코인들 (30개)
-            '1INCH', 'AAVE', 'APE', 'APT', 'ARB', 'CAKE', 'COMP', 'CRV', 'ETC', 'FIL',
-            'GALA', 'GMT', 'GRT', 'LDO', 'MANA', 'SAND', 'SHIB', 'STX', 'SUSHI', 'TRX',
-            'XLM', 'XTZ', 'VET', 'THETA', 'HBAR', 'EGLD', 'XMR', 'EOS', 'NEO', 'DASH',
-            
-            // Layer 2 & 새로운 체인들 (25개)
-            'OP', 'ARB', 'MATIC', 'MANTA', 'SAGA', 'STRK', 'SEI', 'SUI', 'KAVA', 'OSMO',
-            'INJ', 'TIA', 'DYDX', 'BLUR', 'PENDLE', 'PYTH', 'JTO', 'WEN', 'BONK', 'ONDO',
-            'ORDI', 'SATS', 'RATS', 'PEPE', 'FLOKI',
-            
-            // AI & 게임 코인들 (30개)
-            'FET', 'RNDR', 'AGIX', 'TAO', 'OCEAN', 'IMX', 'GALA', 'SAND', 'AXS', 'MANA',
-            'ILV', 'YGG', 'GHST', 'ALICE', 'TLM', 'ENJ', 'CHR', 'PYR', 'SUPER', 'VOXEL',
-            'HIGH', 'LOKA', 'NAKA', 'UFO', 'STARL', 'TOWER', 'SKILL', 'SPS', 'DEC', 'GODS',
-            
-            // 스테이블코인 & 랩 토큰들 (15개)
-            'USDT', 'USDC', 'BUSD', 'DAI', 'FRAX', 'TUSD', 'USDP', 'LUSD', 'USDD', 'GUSD',
-            'WBTC', 'WETH', 'STETH', 'RETH', 'CBETH',
-            
-            // 중국/아시아 코인들 (20개)
-            'BNB', 'OKB', 'HT', 'CRO', 'FTT', 'LEO', 'NEXO', 'CEL', 'MCO', 'KCS',
-            'GT', 'ZB', 'BIKI', 'MX', 'CITEX', 'LATOKEN', 'BITRUE', 'LTC', 'NEO', 'VET',
-            
-            // 메타버스 & NFT (20개)
-            'SAND', 'MANA', 'ENJ', 'CHR', 'GALA', 'ILV', 'AXS', 'SLP', 'ALICE', 'TLM',
-            'VOXEL', 'HIGH', 'LOKA', 'YGG', 'GHST', 'SUPER', 'NAKA', 'UFO', 'STARL', 'TOWER',
-            
-            // 인프라 & 오라클 (15개)
-            'LINK', 'BAND', 'TRB', 'API3', 'UMA', 'DIA', 'NEST', 'DOS', 'FLUX', 'ERG',
-            'CELR', 'CELER', 'POLY', 'ANKR', 'STORJ',
-            
-            // 프라이버시 코인들 (10개)
-            'XMR', 'ZEC', 'DASH', 'SCRT', 'ROSE', 'DUSK', 'BEAM', 'GRIN', 'FIRO', 'ARRR',
-            
-            // 최신 핫한 코인들 (25개)
-            'SOLV', 'LISTA', 'EIGEN', 'ENA', 'ETHFI', 'REZ', 'OMNI', 'SAGA', 'TAO', 'WIF',
-            'SLERF', 'BOME', 'BOOK', 'MEW', 'MOTHER', 'DADDY', 'POPCAT', 'NEIRO', 'MOG', 'BRETT',
-            'PEIPEI', 'TURBO', 'MUMU', 'BILLY', 'HOPPY',
-            
-            // 밈코인들 (20개)
-            'DOGE', 'SHIB', 'PEPE', 'FLOKI', 'BABYDOGE', 'ELON', 'KISHU', 'AKITA', 'HOGE', 'DOGELON',
-            'SAITAMA', 'MONONOKE', 'JINDO', 'PITBULL', 'HOKKAIDO', 'CORGI', 'CHEEMS', 'BONK', 'WIF', 'MYRO',
-            
-            // 기타 알트코인들 (30개)
-            'QTUM', 'OMG', 'BAT', 'ZIL', 'HOT', 'ICX', 'ONT', 'ZRX', 'REP', 'KNC',
-            'STORJ', 'REN', 'SNX', 'YFI', 'MKR', 'WAVES', 'LSK', 'ARK', 'DENT', 'WIN',
-            'NKN', 'BEL', 'WRX', 'ALPHA', 'TKO', 'BETA', 'RARE', 'LAZIO', 'PORTO', 'SANTOS',
-            
-            // 특수 토큰들 & Derivative (40개)
-            'BETH', 'WBETH', 'STETH', 'RETH', 'CBETH', 'METH', 'CMETH', 'BNSOL', 'BBSOL', 'OKSOL',
-            'JITOSOL', 'MSOL', 'BSOL', 'WSOL', '1000CAT', '1MBABYDOGE', '1000RATS', '1000SATS', '1000PEPE', '1000SHIB',
-            'POLYX', 'POLYDOGE', 'WMATIC', 'AMATIC', 'ID', 'SPACE', 'CYBER', 'ARB', 'STRK', 'EIGEN',
-            'ETHW', 'ETHF', 'ETC', 'BSV', 'BCH', 'BTG', 'BCD', 'BTT', 'BTTC', 'JST',
-            
-            // 새로운 트렌드 코인들 (35개)
-            'SUI', 'APT', 'SEI', 'TIA', 'MANTA', 'ALT', 'JUP', 'WEN', 'PYTH', 'JTO',
-            'TNSR', 'MOBILE', 'HNT', 'IOT', 'HELIUM', 'RENDER', 'RNDR', 'FET', 'AGIX', 'OCEAN',
-            'TAO', 'ARKM', 'PHB', 'AI', 'GPT', 'AIDOGE', 'TURBO', 'SORA', 'LDO', 'RPL',
-            'PENDLE', 'RDNT', 'GMX', 'GNS', 'GAINS', 'KWENTA', 'SNX', 'LYRA', 'THALES', 'ANGLE',
-            
-            // 실제 거래소에서 인기 있는 코인들 (100개)
-            'PEOPLE', 'C98', 'ALICE', 'AUDIO', 'BADGER', 'FARM', 'HARVEST', 'CREAM', 'ALPHA', 'BETA',
-            'GAMMA', 'DELTA', 'EPSILON', 'ZETA', 'ETA', 'THETA', 'IOTA', 'KAPPA', 'LAMBDA', 'MU',
-            'NU', 'XI', 'OMICRON', 'PI', 'RHO', 'SIGMA', 'TAU', 'UPSILON', 'PHI', 'CHI',
-            'PSI', 'OMEGA', 'ALPHA1', 'BETA1', 'GAMMA1', 'DELTA1', 'EPSILON1', 'ZETA1', 'ETA1', 'THETA1',
-            
-            // Layer 1 블록체인들 (50개)
-            'AVAX', 'LUNA', 'TERRA', 'COSMOS', 'ATOM', 'OSMO', 'JUNO', 'EVMOS', 'KAVA', 'BAND',
-            'IRIS', 'REGEN', 'AKASH', 'CRYPTO', 'FETCH', 'SENTINEL', 'PERSISTENCE', 'COMDEX', 'CHIHUAHUA', 'STARGAZE',
-            'OMNIFLIX', 'CERBERUS', 'LUMNETWORK', 'VIDULUM', 'KICHAIN', 'BITCANNA', 'KONSTELLATION', 'MEDIBLOC', 'RIZON', 'SIFCHAIN',
-            'DESMOS', 'LIKECOIN', 'BITSONG', 'EMONEY', 'IRISNET', 'IOV', 'REGEN', 'CYBER', 'BOSTROM', 'SPACEPUSSY',
-            'CHEQD', 'STARGAZE', 'JUNO', 'REBUS', 'CRESCENT', 'KUJIRA', 'STRIDE', 'SOMMELIER', 'UMEE', 'GRAVITY',
-            
-            // 에코시스템 토큰들 (80개)
-            'UNI', 'SUSHI', 'CAKE', 'JOE', 'QUICK', 'SPOOKY', 'BOO', 'SPIRIT', 'LQDR', 'EQUAL',
-            'VELO', 'THENA', 'CHRONOS', 'RAMSES', 'PHARAOH', 'CLEOPATRA', 'PEARL', 'CONE', 'VELOCORE', 'IZISWAP',
-            'PANCAKE', 'BISWAP', 'APESWAP', 'BABYSWAP', 'ELLIPSIS', 'ACRYPTOS', 'AUTOFARM', 'BEEFY', 'ALPACA', 'VENUS',
-            'CREAM', 'COMPOUND', 'AAVE', 'MAKER', 'YEARN', 'CURVE', 'CONVEX', 'FRAX', 'FXS', 'CRV',
-            'CVX', 'SPELL', 'ICE', 'TIME', 'MEMO', 'KLIMA', 'BCT', 'MCO2', 'TOUCAN', 'MOSS',
-            'SYRUP', 'HONEY', 'NECTAR', 'POLLEN', 'BEE', 'HIVE', 'COMB', 'WAX', 'ROYAL', 'CROWN',
-            'KING', 'QUEEN', 'PRINCE', 'DUKE', 'LORD', 'KNIGHT', 'SWORD', 'SHIELD', 'ARMOR', 'HELM',
-            'BOOTS', 'GLOVES', 'RING', 'AMULET', 'GEM', 'CRYSTAL', 'DIAMOND', 'RUBY', 'EMERALD', 'SAPPHIRE',
-            
-            // DeFi 2.0 & 신규 프로토콜 (100개)
-            'GMX', 'GNS', 'GAINS', 'MUX', 'LEVEL', 'HMX', 'KINETIX', 'APEX', 'CAP', 'MYCELIUM',
-            'VELA', 'TIGRIS', 'MUMMY', 'EXACTLY', 'RADIANT', 'LODESTAR', 'TENDER', 'AGAVE', 'GEIST', 'GRANARY',
-            'BENQI', 'BANKER', 'AURIGAMI', 'BASTION', 'SOLEND', 'TULIP', 'FRANCIUM', 'APRICOT', 'LARIX', 'PORT',
-            'OXYGEN', 'JET', 'PARROT', 'MERCURIAL', 'SABER', 'LIFINITY', 'ALDRIN', 'CROPPER', 'SUNNY', 'QUARRY',
-            'TRIBECA', 'CASHIO', 'UXD', 'RATIO', 'FRAKT', 'CARDINAL', 'METAPLEX', 'GRAPE', 'MEAN', 'STREAMFLOW',
-            'SQUADS', 'REALMS', 'SYMMETRY', 'FRIKTION', 'KATANA', 'ZETA', 'MANGO', 'DRIFT', 'PHOENIX', 'BACKPACK',
-            'TENSOR', 'MAGIC', 'HYPERSPACE', 'SOLANART', 'DIGITALEYES', 'SOLSEA', 'ALPHA', 'HOLAPLEX', 'EXCHANGE',
-            'FORMFUNCTION', 'SOLPORT', 'NFTRADE', 'SOLIBLE', 'SOLANALAND', 'METAVERSE', 'SANDBOX', 'DECENTRALAND', 'CRYPTOVOXELS', 'SOMNIUM',
-            'NEOWORLD', 'UPLAND', 'AXIE', 'ILLUVIUM', 'EMBER', 'GUILDFI', 'YIELD', 'MERIT', 'REPUBLIC', 'VULCAN',
-            'SEEDIFY', 'TRUSTSWAP', 'POOLZ', 'PAID', 'POLKASTARTER', 'GAMEFI', 'REDKITE', 'KOMMUNITAS', 'BSCPAD', 'TRONPAD',
-            
-            // 모든 주요 체인의 거버넌스 토큰들 (70개)
-            'BNB', 'CRO', 'FTT', 'OKB', 'HT', 'LEO', 'NEXO', 'CEL', 'MCO', 'KCS',
-            'GT', 'ZB', 'BIKI', 'MX', 'CITEX', 'LATOKEN', 'BITRUE', 'PROBIT', 'HOTBIT', 'GATE',
-            'KUCOIN', 'ASCENDEX', 'BITMART', 'MEXC', 'LTC', 'HUOBI', 'BYBIT', 'DERIBIT', 'BITGET', 'COINSBIT',
-            'EXMARKETS', 'P2PB2B', 'DIGIFINEX', 'COINSBIT', 'VINDAX', 'AZBIT', 'SISTEMKOIN', 'ICRYPEX', 'PARIBU', 'BTCTURK',
-            'THODEX', 'VEBITCOIN', 'KOINEKS', 'COINZO', 'BITEXEN', 'COINTIGER', 'BITBNS', 'WAZIRX', 'COINDCX', 'ZEBPAY',
-            'COINSWITCH', 'UNOCOIN', 'GIOTTUS', 'BITBUY', 'COINSQUARE', 'NEWTON', 'NDAX', 'COINBERRY', 'CATALYX', 'COINFIELD',
-            'COINGATE', 'COINMAMA', 'MOONPAY', 'SIMPLEX', 'BANXA', 'RAMP', 'TRANSAK', 'WYRE', 'MERCURYO', 'GUARDARIAN',
-            
-            // 지역별 특화 코인들 (60개)
-            'JPY', 'KRW', 'CNY', 'EUR', 'GBP', 'AUD', 'CAD', 'CHF', 'SEK', 'NOK',
-            'DKK', 'PLN', 'CZK', 'HUF', 'RON', 'BGN', 'HRK', 'RSD', 'BAM', 'MKD',
-            'ALL', 'MDL', 'GEL', 'AMD', 'AZN', 'BYN', 'KZT', 'KGS', 'TJS', 'TMT',
-            'UZS', 'AFN', 'PKR', 'INR', 'LKR', 'NPR', 'BTN', 'MVR', 'BDT', 'MMK',
-            'LAK', 'KHR', 'VND', 'THB', 'IDR', 'MYR', 'SGD', 'BND', 'PHP', 'TWD',
-            'HKD', 'MOP', 'MNT', 'KPW', 'JPY', 'KRW', 'CNY', 'RUB', 'UAH', 'BYN',
-            
-            // 섹터별 특화 토큰들 (80개)
-            'HEALTH', 'MEDICINE', 'PHARMACY', 'HOSPITAL', 'CLINIC', 'DOCTOR', 'NURSE', 'PATIENT', 'SURGERY', 'THERAPY',
-            'EDUCATION', 'SCHOOL', 'UNIVERSITY', 'COLLEGE', 'STUDENT', 'TEACHER', 'PROFESSOR', 'RESEARCH', 'SCIENCE', 'TECH',
-            'ENERGY', 'SOLAR', 'WIND', 'HYDRO', 'NUCLEAR', 'OIL', 'GAS', 'COAL', 'BATTERY', 'ELECTRIC',
-            'TRANSPORT', 'CAR', 'TRUCK', 'BUS', 'TRAIN', 'PLANE', 'SHIP', 'BIKE', 'SCOOTER', 'TAXI',
-            'FOOD', 'RESTAURANT', 'CAFE', 'BAR', 'HOTEL', 'TRAVEL', 'TOURISM', 'VACATION', 'FLIGHT', 'BOOKING',
-            'SPORTS', 'FOOTBALL', 'BASKETBALL', 'TENNIS', 'GOLF', 'SWIMMING', 'RUNNING', 'CYCLING', 'FITNESS', 'GYM',
-            'MUSIC', 'CONCERT', 'ARTIST', 'SINGER', 'BAND', 'ALBUM', 'SONG', 'STREAMING', 'SPOTIFY', 'APPLE',
-            'MOVIE', 'CINEMA', 'THEATER', 'ACTOR', 'DIRECTOR', 'PRODUCER', 'NETFLIX', 'AMAZON', 'DISNEY', 'HBO',
-            
-            // 혁신적인 컨셉 토큰들 (100개)
-            'QUANTUM', 'LASER', 'PHOTON', 'ELECTRON', 'PROTON', 'NEUTRON', 'ATOM', 'MOLECULE', 'DNA', 'RNA',
-            'PROTEIN', 'ENZYME', 'HORMONE', 'VITAMIN', 'MINERAL', 'CALCIUM', 'IRON', 'ZINC', 'COPPER', 'GOLD',
-            'SILVER', 'PLATINUM', 'PALLADIUM', 'RHODIUM', 'IRIDIUM', 'OSMIUM', 'RUTHENIUM', 'TITANIUM', 'ALUMINUM', 'STEEL',
-            'CARBON', 'SILICON', 'NITROGEN', 'OXYGEN', 'HYDROGEN', 'HELIUM', 'NEON', 'ARGON', 'KRYPTON', 'XENON',
-            'SPACE', 'MARS', 'MOON', 'EARTH', 'SUN', 'STAR', 'GALAXY', 'UNIVERSE', 'COSMOS', 'PLANET',
-            'ASTEROID', 'COMET', 'METEOR', 'SATELLITE', 'ROCKET', 'SPACESHIP', 'ASTRONAUT', 'ALIEN', 'UFO', 'ROBOT',
-            'AI', 'ML', 'NEURAL', 'BRAIN', 'MIND', 'CONSCIOUSNESS', 'MEMORY', 'LEARNING', 'INTELLIGENCE', 'WISDOM',
-            'KNOWLEDGE', 'INFORMATION', 'DATA', 'ALGORITHM', 'CODE', 'PROGRAM', 'SOFTWARE', 'HARDWARE', 'COMPUTER', 'INTERNET',
-            'WEB', 'WEBSITE', 'APP', 'MOBILE', 'PHONE', 'TABLET', 'LAPTOP', 'DESKTOP', 'SERVER', 'CLOUD',
-            'BLOCKCHAIN', 'CRYPTO', 'BITCOIN', 'ETHEREUM', 'DEFI', 'NFT', 'METAVERSE', 'VR', 'AR', 'XR',
-            
-            // 메타 & 실험적 토큰들 (120개)
-            'ALPHA', 'BETA', 'GAMMA', 'DELTA', 'EPSILON', 'ZETA', 'ETA', 'THETA', 'IOTA', 'KAPPA',
-            'LAMBDA', 'MU', 'NU', 'XI', 'OMICRON', 'PI', 'RHO', 'SIGMA', 'TAU', 'UPSILON',
-            'PHI', 'CHI', 'PSI', 'OMEGA', 'ALEPH', 'BETH', 'GIMEL', 'DALET', 'HE', 'VAV',
-            'ZAYIN', 'HET', 'TET', 'YOD', 'KAF', 'LAMED', 'MEM', 'NUN', 'SAMEKH', 'AYIN',
-            'PE', 'TSADI', 'QOF', 'RESH', 'SHIN', 'TAV', 'SHIN', 'SIN', 'DAGESH', 'MAPPIQ',
-            'RAFE', 'SHVA', 'HATAF', 'SEGOL', 'PATAH', 'KAMATZ', 'HOLAM', 'SHUREK', 'KIBUTZ', 'TSERE',
-            'HIRIK', 'METEG', 'MAQAF', 'PASEQ', 'SOF', 'PASUQ', 'UPPER', 'LOWER', 'GERESH', 'GERSHAYIM',
-            'APHA', 'BPHA', 'CPHA', 'DPHA', 'EPHA', 'FPHA', 'GPHA', 'HPHA', 'IPHA', 'JPHA',
-            'KPHA', 'LPHA', 'MPHA', 'NPHA', 'OPHA', 'PPHA', 'QPHA', 'RPHA', 'SPHA', 'TPHA',
-            'UPHA', 'VPHA', 'WPHA', 'XPHA', 'YPHA', 'ZPHA', 'ZERO', 'ONE', 'TWO', 'THREE',
-            'FOUR', 'FIVE', 'SIX', 'SEVEN', 'EIGHT', 'NINE', 'TEN', 'ELEVEN', 'TWELVE', 'THIRTEEN',
-            'FOURTEEN', 'FIFTEEN', 'SIXTEEN', 'SEVENTEEN', 'EIGHTEEN', 'NINETEEN', 'TWENTY', 'HUNDRED', 'THOUSAND', 'MILLION'
-        ];
-        
-        return popularCoins.map(coin => {
+        // BTCUSDT만 반환
+        const coin = 'BTC';
             const symbol = `${coin}USDT`;
             const fullName = exchange === 'OKX' ? `${exchange}:${coin}-USDT` : `${exchange}:${symbol}`;
-            
-            return {
+        return [{
                 symbol,
                 full_name: fullName,
                 description: `${coin}/USDT`,
@@ -549,8 +302,7 @@ class MultiExchangeDatafeed {
                 logo_urls: [this.getHighQualityCoinIcon(coin)],
                 exchange_logo: this.getExchangeIcon(exchange),
                 provider_id: exchange.toLowerCase()
-            };
-        });
+        }];
     }
 
     // 캐시 통계 로그
@@ -713,81 +465,16 @@ class MultiExchangeDatafeed {
 
     // 심볼 검색 (모든 거래소)
     searchSymbols(userInput, exchange, symbolType, onResultReadyCallback) {
-        console.log('🔍 멀티 거래소 심볼 검색:', userInput, exchange);
-        
-        const searchTerm = userInput.toUpperCase();
-        let allSymbols = [];
-        
-        // 모든 거래소에서 심볼 검색 (성능 최적화)
-        this.symbolsCache.forEach((symbols, exchangeKey) => {
-            if (searchTerm === '') {
-                // 빈 검색어: 모든 심볼 반환 (제한 없음)
-                allSymbols = allSymbols.concat(symbols);
-            } else {
-                // 검색어 있음: 필터링된 심볼만 반환
-                const filteredSymbols = symbols.filter(symbol => 
-                    symbol.symbol.includes(searchTerm) ||
-                    symbol.baseAsset.includes(searchTerm) ||
-                    symbol.quoteAsset.includes(searchTerm) ||
-                    symbol.description.includes(searchTerm)
-                );
-                allSymbols = allSymbols.concat(filteredSymbols);
-            }
+        console.log('🔍 멀티 거래소 심볼 검색(비트코인만 노출):', userInput, exchange);
+        let btcOnly = [];
+        this.symbolsCache.forEach((symbols) => {
+            const filtered = (symbols || []).filter(s => s.baseAsset === 'BTC' && s.quoteAsset === 'USDT');
+            btcOnly = btcOnly.concat(filtered);
         });
-        
-        // 중복 제거 (같은 심볼이 여러 거래소에 있을 수 있음)
-        const uniqueSymbols = [];
-        const seenSymbols = new Set();
-        
-        allSymbols.forEach(symbol => {
-            const key = `${symbol.baseAsset}-${symbol.quoteAsset}`;
-            if (!seenSymbols.has(key)) {
-                seenSymbols.add(key);
-                uniqueSymbols.push(symbol);
-            }
-        });
-        
-        allSymbols = uniqueSymbols;
-        
-        // 스마트 정렬: 검색 정확도 + 인기도 + 거래량
-        const popularPairs = ['BTC', 'ETH', 'BNB', 'ADA', 'XRP', 'SOL', 'DOT', 'DOGE', 'MATIC', 'AVAX'];
-        
-        allSymbols.sort((a, b) => {
-            // 1. 정확한 일치 우선 (검색어가 있을 때)
-            if (searchTerm) {
-                const aExact = a.baseAsset === searchTerm;
-                const bExact = b.baseAsset === searchTerm;
-                if (aExact && !bExact) return -1;
-                if (!aExact && bExact) return 1;
-                
-                // 2. 시작 문자 일치 우선
-                const aStarts = a.baseAsset.startsWith(searchTerm);
-                const bStarts = b.baseAsset.startsWith(searchTerm);
-                if (aStarts && !bStarts) return -1;
-                if (!aStarts && bStarts) return 1;
-            }
-            
-            // 3. 인기 코인 우선
-            const aPopular = popularPairs.some(coin => a.symbol.includes(coin));
-            const bPopular = popularPairs.some(coin => b.symbol.includes(coin));
-            if (aPopular && !bPopular) return -1;
-            if (!aPopular && bPopular) return 1;
-            
-            // 4. USDT 쌍 우선
-            const aUSDT = a.symbol.includes('USDT');
-            const bUSDT = b.symbol.includes('USDT');
-            if (aUSDT && !bUSDT) return -1;
-            if (!aUSDT && bUSDT) return 1;
-            
-            // 5. 알파벳 순
-            return a.symbol.localeCompare(b.symbol);
-        });
-        
-        // 결과 제한 해제 - 모든 심볼 표시
-        const limitedResults = allSymbols; // 모든 심볼 표시 (제한 없음)
-        
-        console.log(`✅ 검색 완료: ${limitedResults.length}개 심볼 (총 ${allSymbols.length}개 중)`);
-        onResultReadyCallback(limitedResults);
+        if (btcOnly.length === 0) {
+            btcOnly = ['BINANCE','OKX','BYBIT'].map(ex => this.createDefaultSymbolList(ex)[0]);
+        }
+        onResultReadyCallback(btcOnly);
     }
 
     // 심볼 정보 조회
@@ -1137,17 +824,20 @@ class MultiExchangeDatafeed {
         const symbol = symbolInfo.name.toLowerCase();
         const interval = this.convertBinanceResolution(resolution);
         const channelString = `${symbol}@kline_${interval}`;
+        const bookTickerChannel = `${symbol}@bookTicker`;
         
         this.subscribers.set(subscriberUID, {
             symbolInfo,
             resolution,
             onRealtimeCallback,
             channelString,
+            bookTickerChannel,
             exchange: 'BINANCE'
         });
         
         this.connectBinanceWebSocket();
         this.subscribeToChannel('binance', channelString);
+        this.subscribeToChannel('binance', bookTickerChannel);
     }
 
     // Binance WebSocket 연결
@@ -1162,6 +852,15 @@ class MultiExchangeDatafeed {
         ws.onopen = () => {
             console.log('✅ Binance WebSocket 연결 성공');
             this.reconnectAttempts.set('binance', 0);
+            // 현재 구독 중인 모든 채널 재구독
+            const channels = new Set();
+            this.subscribers.forEach((sub) => {
+                if (sub.exchange === 'BINANCE') {
+                    if (sub.channelString) channels.add(sub.channelString);
+                    if (sub.bookTickerChannel) channels.add(sub.bookTickerChannel);
+                }
+            });
+            channels.forEach((ch) => this.subscribeToChannel('binance', ch));
         };
         
         ws.onmessage = (event) => {
@@ -1181,11 +880,11 @@ class MultiExchangeDatafeed {
 
     // Binance 메시지 처리
     handleBinanceMessage(data) {
+        // kline 업데이트
         if (data.e === 'kline') {
             const kline = data.k;
             const channelString = `${kline.s.toLowerCase()}@kline_${kline.i}`;
-            
-            this.subscribers.forEach(subscriber => {
+            this.subscribers.forEach((subscriber, uid) => {
                 if (subscriber.channelString === channelString && subscriber.exchange === 'BINANCE') {
                     const bar = {
                         time: parseInt(kline.t),
@@ -1195,11 +894,67 @@ class MultiExchangeDatafeed {
                         close: parseFloat(kline.c),
                         volume: parseFloat(kline.v)
                     };
-                    
+                    subscriber.lastBar = bar;
+                    this.lastBars.set(uid, bar);
                     subscriber.onRealtimeCallback(bar);
                 }
             });
+            return;
         }
+
+        // bookTicker 업데이트 (최우선 호가 기반 초저지연 가격)
+        if (data && data.s && data.b && data.a) {
+            const symbol = String(data.s).toUpperCase();
+            const bid = parseFloat(data.b);
+            const ask = parseFloat(data.a);
+            if (!isFinite(bid) || !isFinite(ask)) return;
+            const mid = (bid + ask) / 2;
+            const nowMs = Date.now();
+            this.subscribers.forEach((subscriber, uid) => {
+                if (subscriber.exchange !== 'BINANCE') return;
+                const subSymbol = subscriber.symbolInfo?.name?.toUpperCase();
+                if (subSymbol !== symbol) return;
+                const bucketMs = this.getResolutionMs(subscriber.resolution);
+                const bucketStart = Math.floor(nowMs / bucketMs) * bucketMs;
+                const prev = subscriber.lastBar || this.lastBars.get(uid);
+                let bar;
+                if (prev && prev.time === bucketStart) {
+                    bar = {
+                        time: prev.time,
+                        open: prev.open,
+                        high: Math.max(prev.high, mid),
+                        low: Math.min(prev.low, mid),
+                        close: mid,
+                        volume: prev.volume || 0
+                    };
+                } else {
+                    const open = prev ? prev.close : mid;
+                    bar = {
+                        time: bucketStart,
+                        open,
+                        high: Math.max(open, mid),
+                        low: Math.min(open, mid),
+                        close: mid,
+                        volume: 0
+                    };
+                }
+                subscriber.lastBar = bar;
+                this.lastBars.set(uid, bar);
+                subscriber.onRealtimeCallback(bar);
+            });
+            return;
+        }
+    }
+
+    getResolutionMs(resolution) {
+        const res = String(resolution).toUpperCase();
+        const num = parseInt(res, 10);
+        if (!isNaN(num)) return num * 60 * 1000; // minutes
+        if (res === '1D') return 24 * 60 * 60 * 1000;
+        if (res === '3D') return 3 * 24 * 60 * 60 * 1000;
+        if (res === '1W') return 7 * 24 * 60 * 60 * 1000;
+        if (res === '1M') return 30 * 24 * 60 * 60 * 1000;
+        return 60 * 60 * 1000; // default 1h
     }
 
     // 채널 구독

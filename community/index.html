@@ -5,11 +5,28 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>온비트 - 실시간 채팅 차트</title>
     
+    <!-- 콘솔 로그 폭주 방지: 모든 외부 스크립트 로딩 전에 log/info/debug 무음 처리 -->
+    <script>
+      (function(){
+        try {
+          var isDebug = /[?&]debug=1/.test(location.search) || localStorage.getItem('DEBUG') === '1';
+          window.__IS_DEBUG__ = isDebug;
+          if (!isDebug) {
+            var noop = function(){};
+            console.log = noop;
+            console.info = noop;
+            console.debug = noop;
+          }
+        } catch (_) {}
+      })();
+    </script>
+    
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-functions-compat.js"></script>
     
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -61,11 +78,12 @@
     <script type="text/javascript" src="../charting_library-master/charting_library/charting_library.standalone.js"></script>
     <script type="text/javascript" src="../charting_library-master/datafeeds/udf/dist/bundle.js"></script>
     
+    
     <!-- Chart Scripts -->
     <script src="../js/binance-datafeed.js"></script>
     <script src="../js/multi-exchange-datafeed.js"></script>
     <script src="../js/chart-storage.js"></script>
-    <script src="../js/chart-layout-manager.js"></script>
+    
     <script src="../js/market-data-manager.js"></script>
     <script src="../js/chart-save-manager.js"></script>
     
@@ -104,37 +122,214 @@
         <div class="community-layout">
             <div class="community-layout-inner">
                 <section class="chart-section">
-                    <div id="chart-container-wrapper">
-                        <!-- 차트 헤더와 레이아웃 버튼들이 여기에 동적으로 추가됩니다 -->
-                        <div id="tradingview_chart"></div>
-                        <div class="chart-loading" id="chart-loading">데이터 로딩 중...</div>
+                    <div class="chart-trading-layout">
+                        <div id="chart-container-wrapper">
+                            <!-- 차트 헤더와 레이아웃 버튼들이 여기에 동적으로 추가됩니다 -->
+                            <div id="tradingview_chart"></div>
+                            <div class="chart-loading" id="chart-loading">데이터 로딩 중...</div>
+                            <!-- ✅ 차트 하단 포지션 바 -->
+                            <section id="positions-under-chart" class="positions-under-chart">
+                                <div class="positions-bar-header">
+                                    <div class="pos-tabs" role="tablist">
+                                        <button class="pos-tab active" data-pos-tab="positions">보유 포지션</button>
+                                        <button class="pos-tab" data-pos-tab="orders">오픈 오더</button>
+                                        <button class="pos-tab" data-pos-tab="history">거래 내역</button>
+                                    </div>
+                                    <div class="actions">
+                                        <button id="pt-close-all" class="btn secondary">전량 청산</button>
+                                    </div>
+                                </div>
+                                <div class="positions-table">
+                                    <div class="positions-table-head positions-wide">
+                                        <div>거래쌍</div>
+                                        <div>포지션</div>
+                                        <div>진입가</div>
+                                        <div>현재가</div>
+                                        <div>예상 청산가</div>
+                                        <div>마진</div>
+                                        <div>가용 수량</div>
+                                        <div>미실현 손익</div>
+                                        <div>채굴</div>
+                                        <div>시장가 청산</div>
+                                        <div>청산가</div>
+                                        <div>청산 수량</div>
+                                        <div>청산</div>
+                                    </div>
+                                    <div id="positions-table-body" class="positions-table-body"></div>
+                                </div>
+                                <!-- 오픈 오더 테이블 (초기 숨김) -->
+                                <div class="orders-table" style="display:none;">
+                                    <div class="orders-table-head">
+                                        <div>Pairs</div>
+                                        <div>Time</div>
+                                        <div>Type</div>
+                                        <div>Direction</div>
+                                        <div>Avg. Price</div>
+                                        <div>Filled | Size</div>
+                                        <div>Trigger Price</div>
+                                        <div>Order Price</div>
+                                        <div>Frozen Margin</div>
+                                        <div>Fee</div>
+                                        <div>Action</div>
+                                    </div>
+                                    <div id="orders-table-body" class="orders-table-body"></div>
+                                </div>
+                                <!-- 거래 내역 테이블 (초기 숨김) -->
+                                <div class="history-table" style="display:none;">
+                                    <div class="orders-table-head">
+                                        <div>Pairs</div>
+                                        <div>Time</div>
+                                        <div>Direction</div>
+                                        <div>Avg. Price | Type</div>
+                                        <div>Filled | Size</div>
+                                        <div>PnL | PnL%</div>
+                                        <div>Fee</div>
+                                    </div>
+                                    <div id="history-table-body" class="orders-table-body"></div>
+                                </div>
+                            </section>
+                        </div>
+                        <aside id="paper-trading-sidebar" class="paper-trading-sidebar">
+                            <!-- 주문/오더북 패널 -->
+                            <div class="orderbook-and-trade">
+                                <div class="orderbook-panel">
+                                    <div class="panel-header">
+                                        <div class="tabs" role="tablist">
+                                            <button class="tab active" data-tab="orderbook">오더북</button>
+                                            <button class="tab" data-tab="whale">실시간 고래 탐지</button>
+                                        </div>
+                                        <div class="symbol-price">
+                                            <span class="symbol" id="pt-symbol">BTCUSDT</span>
+                                            <span class="last-price" id="pt-last-price">-</span>
+                                        </div>
+                                    </div>
+                                    <div class="orderbook-body" id="orderbook-body">
+                                        <div class="orderbook-table">
+                                            <div class="ob-header">
+                                                <div>Price</div>
+                                                <div>Quantity (BTC)</div>
+                                                <div>Total (BTC)</div>
+                                            </div>
+                                            <div id="orderbook-rows" class="ob-rows"></div>
+                                            <div class="ob-footer">
+                                                <div class="ratio">
+                                                    <span class="buy-label">B <span id="ob-buy-ratio">--</span>%</span>
+                                                    <div class="ratio-bar">
+                                                        <span id="ob-buy-bar"></span>
+                                                        <span id="ob-sell-bar"></span>
+                                                    </div>
+                                                    <span class="sell-label"><span id="ob-sell-ratio">--</span>% S</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="orderbook-body" id="whale-tab-body" style="display:none;">
+                                        <div class="whale-trades-wrapper">
+                                            <div id="whale-trades-container" class="whale-trades-container">
+                                                <div class="whale-trades-list"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- 주문 패널: 오더북/고래탭 아래로 이동 -->
+                                <section class="trade-panel">
+                        <div class="trade-header">
+                            <div class="header-controls">
+                                <button id="btn-mode-cross" class="seg-btn active">교차</button>
+                                <button id="btn-mode-isolated" class="seg-btn">고립</button>
+                            </div>
+                        </div>
+                        <div class="lev-control">
+                            <span class="label">레버리지</span>
+                            <div class="input-wrap">
+                                <input type="number" id="lev-value" class="lev-display" min="1" max="200" step="1" value="15" />
+                                <span class="unit-suffix">배</span>
+                            </div>
+                            <div class="percent-slider lev-slider">
+                                <input type="range" id="lev-percent" min="0" max="100" step="1" value="0" />
+                                <div class="ticks"><span>1배</span><span>45배</span><span>100배</span><span>150배</span><span>200배</span></div>
+                            </div>
+                        </div>
+
+                        <div class="order-type-tabs" role="tablist">
+                            <button class="order-type active" data-type="limit">Limit</button>
+                            <button class="order-type" data-type="market">Market</button>
+                        </div>
+
+                        <div class="order-form" id="order-form">
+                            <label class="field">
+                                <span class="label">Price (USDT)</span>
+                                <div class="input-wrap">
+                                    <input type="number" step="0.1" id="pt-price" placeholder="시장가" />
+                                </div>
+                            </label>
+                            <label class="field">
+                                <span class="label">Amount (BTC)</span>
+                                <div class="input-wrap">
+                                    <input type="text" id="pt-amount-percent" placeholder="0%" />
+                                    <input type="number" step="0.0001" id="pt-amount" placeholder="> 0.0001 BTC" style="display:none;" />
+                                </div>
+                                <div id="pt-amount-error" class="field-error" style="display:none;">Order amount cannot be empty</div>
+                            </label>
+                            <div class="percent-slider">
+                                <input type="range" id="pt-percent" min="0" max="100" step="1" value="0" />
+                                <div class="ticks"><span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span></div>
+                            </div>
+
+                            <div class="balances">
+                                <div>가용 자산: <span id="pt-balance">-</span> USDT</div>
+                                <div>투입 증거금: <span id="pt-cost">-</span> USDT</div>
+                            </div>
+                            <div class="balances fee-preview">
+                                <div>수수료 기준: <span id="pt-fee-basis">--</span></div>
+                                <div>예상 수수료: <span id="pt-fee-estimate">--</span> USDT</div>
+                            </div>
+
+                            <div class="action-buttons">
+                                <button id="pt-open-long" class="btn long">Open Long</button>
+                                <button id="pt-open-short" class="btn short">Open Short</button>
+                            </div>
+                        </div>
+                    </section>
+                            </div>
+                        </aside>
                     </div>
                 </section>
                 <!-- 고래 탐지와 채팅을 위한 컨테이너 -->
                 <section class="whale-chat-container">
-                    <!-- 실시간 고래 탐지 섹션 -->
-                    <section class="whale-tracking-section">
-                        <div class="whale-section-header">
-                            <h2>실시간 고래 탐지</h2>
-                            <div class="whale-status-info">
-                                <div class="whale-status-indicator"></div>
-                                <span class="whale-status-text">연결 중...</span>
-                            </div>
-                        </div>
-                        <div class="whale-trades-wrapper">
-                            <div id="whale-trades-container" class="whale-trades-container">
-                                <div class="whale-trades-list">
-                                    <!-- 고래 거래 데이터가 여기에 동적으로 추가됩니다 -->
+                    <!-- 오른쪽: 잔고만 표시 (주문 섹션 완전 제거) -->
+                    <section style="padding: 10px 8px;">
+                        <section id="account-panel" class="account-panel">
+                            <div class="balance-header">
+                                <div class="balance-title">마진 잔고</i></div>
+                                <div class="balance-amount">
+                                    <span id="acc-equity-big">0</span>
+                                    <span class="unit">USDT</span>
                                 </div>
                             </div>
-                        </div>
+                            <div class="balance-grid">
+                                <div class="balance-item">
+                                    <div class="label">지갑 잔고</div>
+                                    <div class="value" id="acc-wallet">$0.00</div>
+                                </div>
+                                <div class="balance-item" style="text-align:center">
+                                    <div class="label">ONBIT 채굴</div>
+                                    <div class="value" id="acc-onbit" style="color: var(--primary-color);">0.000 ONBIT</div>
+                                </div>
+                                <div class="balance-item">
+                                    <div class="label">미실현 손익</div>
+                                    <div class="value up" id="acc-upnl-big">+$0.00</div>
+                                </div>
+                            </div>
+                        </section>
                     </section>
+                    
                     
                     <!-- 구분선 -->
                     <div class="section-divider"></div>
                     
-                    <!-- 실시간 채팅 섹션 -->
-                    <section class="chat-section">
+                    <!-- 실시간 채팅 섹션 - 높이 확장 -->
+                    <section class="chat-section" style="flex: 1;">
                         <div class="chat-section-header">
                             <h2>실시간 채팅</h2>
                             <div class="chat-header-controls">
@@ -177,42 +372,22 @@
 
 
 
-    <!-- html2canvas for screenshots -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    
     <!-- Whale Tracker Script -->
     <script src="../js/analysis/whale-tracker.js" type="module"></script>
     
     <!-- Custom Scripts -->
+    <script src="../js/paper-config.js"></script>
+    <script src="../js/paper-market.js"></script>
+    <script src="../js/paper-risk.js"></script>
+    <script src="../js/paper-ui.js"></script>
+    <script src="../js/paper-order.js"></script>
+    <script type="module" src="../js/onbit-miner.js"></script>
+    <script src="../js/paper-trading.js"></script>
+    <script src="../js/trade-notifier.js"></script>
     <script src="../js/community.js"></script>
     <script src="../js/community-chat.js"></script>
     
-    <!-- WhaleTracker 초기화 스크립트 (전역 window.WhaleTracker 사용) -->
-    <script>
-      document.addEventListener('DOMContentLoaded', () => {
-        const WhaleTracker = window.WhaleTracker;
-        if (!WhaleTracker) {
-          console.error('❌ WhaleTracker 클래스를 로드하지 못했습니다.');
-          return;
-        }
-
-        console.log('🔗 Community 페이지 WhaleTracker 클래스 확인 완료');
-
-        setTimeout(() => {
-          try {
-            const whaleContainer = document.getElementById('whale-trades-container');
-            if (whaleContainer) {
-              window.whaleTracker = new WhaleTracker();
-              console.log('✅ Community 페이지 Whale Tracker 즉시 초기화 완료');
-            } else {
-              console.log('ℹ️ 고래 거래 컨테이너 대기 중 (분석 탭 클릭 시 생성됨)');
-            }
-          } catch (error) {
-            console.error('❌ Community 페이지 Whale Tracker 초기화 실패:', error);
-          }
-        }, 500);
-      });
-    </script>
+    
     
     <script>
       document.addEventListener('DOMContentLoaded', () => {

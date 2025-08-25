@@ -1,25 +1,24 @@
 {
   "rules": {
+    ".read": false,
+    ".write": false,
+
     "chat-presence": {
       ".read": true,
-      ".write": true,
       "$uid": {
-        ".validate": "newData.hasChildren(['displayName', 'timestamp', 'type'])",
-        "displayName": { ".validate": "newData.isString()" },
-        "timestamp": { ".validate": "newData.isNumber()" },
-        "type": { ".validate": "newData.isString() && (newData.val() === 'user' || newData.val() === 'guest')" },
-        "lastActive": { ".validate": "newData.isNumber()" }
+        ".write": "auth != null && auth.uid === $uid",
+        ".validate": "newData.hasChildren(['displayName','lastActive'])",
+        "displayName": { ".validate": "newData.isString() && newData.val().length <= 50" },
+        "lastActive": { ".validate": "newData.isNumber()" },
+        "$other": { ".validate": false }
       }
     },
+
     "chat-messages": {
       ".read": true,
-      ".write": "auth != null || newData.child('isGuest').val() === true",
+      ".write": false,
       "$messageId": {
-        ".validate": "newData.hasChildren(['text', 'timestamp'])",
-        "text": { ".validate": "newData.isString()" },
-        "timestamp": { ".validate": "newData.isNumber()" },
-        "displayName": { ".validate": "newData.isString()" },
-        "isGuest": { ".validate": "newData.isBoolean()" }
+        ".validate": false
       }
     }
   }

@@ -41,6 +41,11 @@
       "permanent": false
     }
   ],
+  "rewrites": [
+    { "source": "/search", "destination": "/search/index.html" },
+    { "source": "/search/(.*)", "destination": "/search/$1" },
+    { "source": "/api/ai-search", "destination": "/api/ai-search" }
+  ],
   "headers": [
     {
       "source": "/(.*)",

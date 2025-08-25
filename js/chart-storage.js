@@ -137,6 +137,23 @@ class ChartStorage {
         }
     }
 
+    // 🔥 마지막 자동 저장 상태 초기화 (사용자 요청 시)
+    async clearLastChartState() {
+        try {
+            const currentUser = this._getCurrentUser();
+            if (!currentUser) {
+                return false;
+            }
+            await window.db.collection('chartStates').doc(currentUser.uid).delete();
+            this.showNotification('자동 저장된 차트 상태가 초기화되었습니다.', 'success');
+            return true;
+        } catch (error) {
+            console.error('❌ 자동 저장 상태 초기화 실패:', error);
+            this.showNotification('자동 저장 상태 초기화에 실패했습니다.', 'error');
+            return false;
+        }
+    }
+
     // 🔥 자동 저장 상태 업데이트 (TradingView onAutoSaveNeeded 이벤트용)
     async updateAutoSaveState(chartData) {
         try {

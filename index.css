@@ -6,15 +6,95 @@
 
     .content-container {
       width: 100%;
-      max-width: 1800px; /* 최대 너비를 1800px로 변경 */
+      max-width: 1280px; /* 최대 너비를 1800px로 변경 */
       margin: 0 auto; /* 중앙 정렬 */
       padding: 20px;
+    }
+
+    /*==== 상단 검색바 ================================================ */
+    .site-search-form { margin: 12px 0 34px; display: flex; justify-content: center; }
+    .search-input-wrap { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 10px; border: 2px solid var(--primary-color); border-radius: 36px; padding: 10px 14px; background: var(--bg-primary); width: 640px; box-sizing: border-box; }
+    .search-input-wrap i { color: var(--primary-color); font-size: 20px; }
+    #site-search-input { border: none; outline: none; font-size: 16px; background: transparent; color: var(--text-color); }
+    #site-search-input::placeholder { color: var(--text-color-tertiary); }
+    .search-submit {  color: #fff; border: none; border-radius: 24px; width: 40px; height: 40px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
+
+    /*==== 속보 롤링 바 (카드 내부/외부 공용) ================================================ */
+    .header-breaking-ticker { width: 100%; background: var(--bg-secondary); border-bottom: 1px solid var(--border-default); }
+    /* 카드 내 배치용: 배경색과 라운드 박스 적용 */
+    .header-breaking-ticker.inside-card { 
+      border: 1px solid var(--border-default);
+      border-radius: 12px;
+      background: var(--bg-tertiary);
+      margin: 8px 12px 10px; /* 양옆 여백 */
+      width: auto; /* 여백 고려해 자동 폭 */
+    }
+    .header-breaking-ticker.inside-card .hb-container { max-width: 100%; box-sizing: border-box; }
+    .header-breaking-ticker .hb-container { max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center; padding: 10px 16px; }
+    .header-breaking-ticker .hb-label { font-weight: 700; color: var(--text-color); }
+    .header-breaking-ticker .hb-sep { color: var(--border-color); margin: 0 4px; }
+    .header-breaking-ticker .hb-chip { border: 1px solid #ff8a80; color: #ef4444; background: #fff5f5; padding: 6px 14px; border-radius: 28px; font-weight: 800; }
+    .header-breaking-ticker .hb-right { color: var(--text-color); text-decoration: none; font-weight: 700; }
+    .header-breaking-ticker .hb-track-wrap { overflow: hidden; }
+    /* 가로 롤링 기본값(미사용) */
+    .header-breaking-ticker .hb-track { display: flex; gap: 32px; white-space: nowrap; will-change: transform; }
+    .header-breaking-ticker .hb-item { color: var(--text-color); opacity: 0.95; font-weight: 600; }
+    /* 세로 롤링 모드 */
+    .header-breaking-ticker .hb-track-wrap.vertical { height: 32px; } /* 한 줄 높이 */
+    .header-breaking-ticker .hb-track.vertical { display: flex; flex-direction: column; gap: 0; white-space: normal; }
+    .header-breaking-ticker .hb-item.vertical { display: block; line-height: 32px; cursor: pointer; }
+    .header-breaking-ticker .hb-bullet { color: var(--border-color); margin: 0 6px; }
+
+    /*==== 상단 분할 레이아웃 ================================================ */
+    .main-top-split {
+      display: grid;
+      grid-template-columns: 3fr 1.4fr; /* 왼쪽을 더 넓게 */
+      gap: 14px;
+      margin-bottom: 18px;
+
+    }
+    .main-top-split .split-left,
+    .main-top-split .split-right { display: flex; flex-direction: column; gap: 14px;}
+    .main-top-split .split-right { display: flex; flex-direction: column; gap: 14px; }
+    /* 좌열: 차트 + 속보 뉴스 고정 높이 */
+    .main-top-split .bitcoin-chart-card { height: 360px; }
+    .main-top-split .breaking-news-card { height: auto; overflow: hidden; }
+    /* 우열: 로그인/고래 카드 */
+    .main-top-split .login-card { height: 200px; }
+    .main-top-split .whale-tracker-card { height: 400px }
+    .login-card { padding: 0; display: flex; align-items: stretch; }
+    .login-card .login-card-inner { padding: 24px 22px 26px; width: 100%; display: flex; flex-direction: column; gap: 16px; text-align: center; }
+    .login-card .login-header h3 { margin: 0; font-size: 18px; font-weight: 800; }
+    .login-card .login-sub { margin: 2px 0 2px; font-size: 14px; color: var(--text-color-secondary); }
+    .login-card .login-body { display: flex; flex-direction: column; gap: 16px; }
+    .login-card .login-btn { display: flex; width: 100%; justify-content: center; align-items: center; background: var(--primary-color); color: #fff; height: 58px; border-radius: 12px; font-weight: 800; font-size: 20px; letter-spacing: 0.2px; text-decoration: none; box-shadow: 0 6px 16px var(--shadow-color-light); transition: transform var(--transition-fast), background var(--transition-fast); }
+    .login-card .login-btn:hover { background: var(--primary-hover); transform: translateY(-1px); }
+    .login-card .login-links { display: flex; justify-content: center; align-items: center; gap: 14px; color: var(--text-color-secondary); font-size: 14px; margin-top: 12px; }
+    .login-card .login-links a { color: var(--text-color-secondary); text-decoration: none; }
+    .login-card .login-links .sep { color: var(--border-color); }
+    .login-card .profile-row { display: flex; gap: 12px; align-items: center; }
+    .login-card .avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--bg-tertiary); display: flex; align-items: center; justify-content: center; }
+    .login-card .userinfo .name { font-weight: 700; }
+    .login-card .userinfo .desc { color: var(--text-color-secondary); font-size: 12px; }
+    .login-card .login-actions { display: flex; gap: 10px; }
+    .login-card .login-actions a { flex: 1; text-align: center; padding: 12px 12px; border-radius: 10px; text-decoration: none; font-weight: 700; }
+    .login-card .login-actions a.primary { background: var(--primary-color); color: #fff; }
+    .login-card .login-actions a.secondary { background: var(--bg-secondary, #f3f4f6); color: var(--text-color); }
+
+    /* 반응형 */
+    @media (max-width: 1024px) {
+      .main-top-split { grid-template-columns: 1fr; }
+      .main-top-split .split-right { height: auto; }
+      .main-top-split .bitcoin-chart-card { height: 320px; }
+      .main-top-split .breaking-news-card { height: auto; }
+      .main-top-split .login-card,
+      .main-top-split .whale-tracker-card { height: auto; }
     }
 
     /*==== 메인 대시보드 그리드 섹션 스타일 ================================================ */
     .main-dashboard-grid {
       display: grid;
-      grid-template-columns: 2fr 1fr 1fr 1fr;
+      grid-template-columns: 1fr 1fr; /* 우측 열 요소를 상단으로 이동했으므로 2열 */
       gap: 14px;
       height: 400px;
     }
@@ -23,8 +103,6 @@
     .dashboard-card {
         background: var(--bg-primary);
         border-radius: 16px;
-        padding: 0;
-        box-shadow: 0 4px 20px var(--shadow-color-light);
         overflow: hidden;
         border: 1px solid var(--border-default);
       }
@@ -33,6 +111,9 @@
       .card-header {
         padding: 22px 20px 10px;
         flex-shrink: 0; /* 헤더 크기 고정 */
+        display: flex;
+        align-items: center;
+        gap: 8px;
       }
       .card-header h3 {
         margin: 0;
@@ -42,6 +123,7 @@
         align-items: center;
         gap: 8px;
       }
+      /* 드롭다운 제거됨 */
 
       /* 고래 탐지 카드 스타일 */
 .whale-content {
@@ -62,12 +144,18 @@
   #breaking-news-list {
     flex: 1;
   }
+  /* 속보 뉴스 카드: 페이지네이션 */
+  .breaking-pagination { display: flex; align-items: center; justify-content: center; gap: 16px; padding: 12px 0 6px; }
+  .breaking-pagination .bp-btn { width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--border-default); background: var(--bg-primary); color: var(--text-color); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
+  .breaking-pagination .bp-btn:hover { box-shadow: 0 2px 8px var(--shadow-color-light); }
+  .breaking-pagination .bp-text { color: var(--text-color-secondary); font-weight: 600; }
   
   .breaking-news-item {
     padding: 15px 20px;
     border-bottom: 1px solid #f3f4f6;
     cursor: pointer;
     transition: background-color 0.2s ease;
+    height: 120px;
   }
   
   .breaking-news-item:hover {
@@ -115,6 +203,35 @@
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
+
+  /*==== 롱/숏 게이지 카드 ================================================ */
+  .ls-gauge-card {
+    display: flex;
+    flex-direction: column;
+  }
+  .ls-gauge-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 18px 12px 18px;
+  }
+  .ls-gauge-scale {
+    display: none; /* 라벨은 캔버스에 직접 렌더링 */
+  }
+  .ls-gauge-summary {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    font-weight: 700;
+    color: #2962ff;
+  }
+  .ls-gauge-summary .ls-percent { color: var(--text-color-secondary); font-weight: 600; }
+  .ls-gauge-meta { font-size: 12px; color: var(--text-color-secondary); }
+
+  /* 캔버스 반응형/고해상도 베이스 */
+  #ls-gauge-canvas { width: 100%; height: auto; display: block; }
   
   .news-importance {
     display: inline-flex;

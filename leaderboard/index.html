@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>온비트 - 엘리트 트레이더 리더보드</title>
+  <link rel="stylesheet" href="../css/base/_reset.css" />
+  <link rel="stylesheet" href="../css/base/_variables.css" />
+  <link rel="stylesheet" href="../css/base/_base.css" />
+  <link rel="stylesheet" href="../components/header/navbar.css" />
+  <link rel="stylesheet" href="leaderboard.css" />
+  <link rel="icon" type="image/png" href="/onbit/favicon-96x96.png" sizes="96x96" />
+  <!-- Firebase compat scripts (index.html과 동일 버전) -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+  <!-- 프로젝트 설정 -->
+  <script src="../firebase-config.js"></script>
+  <script src="../js/auth.js" defer></script>
+  <script src="../components/header/header-loader.js" defer></script>
+</head>
+<body>
+  <div id="header-placeholder"></div>
+
+  <main class="lb-container">
+    <section class="lb-hero">
+      <div class="lb-hero-left">
+        <h1 class="lb-title">온비트 트레이더 리더보드</h1>
+      </div>
+      <div class="lb-hero-art" aria-hidden="true"></div>
+    </section>
+
+    <section class="lb-controls">
+      <div class="lb-subtabs">
+        <button class="subtab active" data-key="roi">높은 수익률</button>
+        <button class="subtab" data-key="yield">높은 수익금</button>
+        <button class="subtab" data-key="onbit">ONBIT 채굴</button>
+      </div>
+    </section>
+
+    <section class="lb-top3" id="lb-top3" aria-live="polite"></section>
+
+    <section class="lb-table">
+      <div class="lb-head">
+        <div class="col-rank">#</div>
+        <div class="col-user">닉네임</div>
+        <div class="col-roi">ROI</div>
+        <div class="col-pnl">손익</div>
+      </div>
+      <div class="lb-rows" id="lb-rows" aria-live="polite"></div>
+    </section>
+  </main>
+
+  <script src="leaderboard.js" type="module"></script>
+</body>
+</html>

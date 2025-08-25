@@ -9,7 +9,17 @@ See CL-2137.
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>sameorigin.html</title>
 	<script>
-		window.addEventListener('load', () => {
+		// 콘솔 로그 폭주 방지: 부모창의 디버그 플래그 확인 후 무음 처리
+		(function(){
+			try{
+				var isDebug = false;
+				try { isDebug = parent && parent.__IS_DEBUG__; } catch(e) {}
+				if(!isDebug){
+					var noop=function(){}; console.log=noop; console.info=noop; console.debug=noop;
+				}
+			}catch(_){}}
+		)();
+		window.addEventListener('load', function(){
 			window.dispatchEvent(new Event('sameOriginLoad'));
 		});
 	</script>

@@ -16,10 +16,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // 1단계 하위 디렉토리 (/event/, /community/, /bitcoin/, /login/, /signup/ 등)
     if (currentPath.includes('/event/') || currentPath.includes('/event-board/') || 
         currentPath.includes('/community/') || currentPath.includes('/news/') || 
+        currentPath.includes('/search/') || 
         currentPath.includes('/affiliated/') || currentPath.includes('/notice-board/') || 
         currentPath.includes('/my-account/') || currentPath.includes('/admin/') ||
         currentPath.includes('/bitcoin/') || currentPath.includes('/login/') ||
-        currentPath.includes('/signup/')) {
+        currentPath.includes('/signup/') || currentPath.includes('/leaderboard/')) {
         headerPath = '../components/header/header.html';
     }
     
@@ -61,6 +62,19 @@ document.addEventListener('DOMContentLoaded', () => {
         fontAwesomeLink.rel = 'stylesheet';
         fontAwesomeLink.href = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css';
         document.head.appendChild(fontAwesomeLink);
+    }
+
+    // 방문 집계 스크립트 전역 로드 (절대 경로)
+    try {
+        const existingVisitTracker = document.querySelector('script[src="/js/visit-tracker.js"]');
+        if (!existingVisitTracker) {
+            const visitTracker = document.createElement('script');
+            visitTracker.type = 'module';
+            visitTracker.src = '/js/visit-tracker.js';
+            document.head.appendChild(visitTracker);
+        }
+    } catch (e) {
+        // 로드 실패 시 조용히 무시 (핵심 기능 아님)
     }
     
     fetch(headerPath)
@@ -106,6 +120,18 @@ document.addEventListener('DOMContentLoaded', () => {
             if (mainHeader) {
                 mainHeader.style.opacity = '1';
             }
+            // 현재 경로에 맞춰 활성 메뉴 강조
+            const path = window.location.pathname.replace(/\/index\.html$/, '/');
+            document.querySelectorAll('.desktop-nav a').forEach(a => {
+                const href = a.getAttribute('href');
+                if (!href) return;
+                // 매핑: 섹션 루트 매치
+                if (href === '/' && (path === '/' || path === '/index.html')) {
+                    a.classList.add('active');
+                } else if (href !== '/' && path.startsWith(href)) {
+                    a.classList.add('active');
+                }
+            });
             
             // 1. Start the main authentication and header logic (if startApp exists)
             if (typeof startApp === 'function') {

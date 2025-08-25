@@ -30,83 +30,9 @@
     flex: 1;
 }
 
-/* 🔥 차트 레이아웃 헤더 */
-.chart-layout-header {
-    display: flex;
-    justify-content: flex-end;
-    align-items: center;
-    height: 40px;
-    border-bottom: 3px solid var(--border-color);
-    padding: 0 16px;
-    position: relative;
-    z-index: 100;
-    background: var(--card-bg);
-}
+/* chart-layout-header 제거됨 */
 
-/* 🔥 레이아웃 버튼 그룹 */
-.layout-buttons-group {
-    position: relative;
-    display: inline-block;
-}
-
-/* 🔥 레이아웃 버튼 - 깔끔한 스타일 */
-.layout-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 36px;
-    height: 36px;
-    background: transparent;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    position: relative;
-    padding: 6px;
-}
-
-.layout-btn:hover {
-    background: rgba(var(--primary-color-rgb), 0.1);
-    transform: translateY(-1px);
-}
-
-.layout-btn.active {
-    background: rgba(var(--primary-color-rgb), 0.15);
-    color: var(--primary-color);
-}
-
-/* 다크모드 */
-[data-theme="dark"] .layout-btn:hover {
-    background: rgba(255, 255, 255, 0.1);
-}
-
-[data-theme="dark"] .layout-btn.active {
-    background: rgba(var(--primary-color-rgb), 0.2);
-}
-
-/* 🔥 드롭다운 메뉴 */
-.layout-dropdown {
-    position: absolute;
-    top: 100%;
-    right: 0;
-    background: var(--card-bg);
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    min-width: 200px;
-    z-index: 1000;
-    opacity: 0;
-    visibility: hidden;
-    transform: translateY(-10px);
-    transition: all 0.2s ease;
-    margin-top: 4px;
-}
-
-.layout-buttons-group:hover .layout-dropdown {
-    opacity: 1 !important;
-    visibility: visible !important;
-    transform: translateY(0);
-}
+/* 레이아웃 UI 제거됨 */
 
 /* 🔥 드롭다운 아이템 */
 .layout-dropdown-item {

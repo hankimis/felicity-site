@@ -153,7 +153,7 @@ class MarketDataManager {
      */
     async fetchSymbolData(symbol) {
         try {
-            const response = await fetch(`https://api.binance.com/api/v3/ticker/24hr?symbol=${symbol}`);
+            const response = await fetch(`https://fapi.binance.com/fapi/v1/ticker/24hr?symbol=${symbol}`);
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}`);
             }
@@ -184,7 +184,7 @@ class MarketDataManager {
      */
     async fetchCurrentPrice(symbol) {
         try {
-            const response = await fetch(`https://api.binance.com/api/v3/ticker/price?symbol=${symbol}`);
+            const response = await fetch(`https://fapi.binance.com/fapi/v1/ticker/price?symbol=${symbol}`);
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}`);
             }

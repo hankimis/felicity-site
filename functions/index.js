@@ -5,8 +5,8 @@ const {
   onDocumentDeleted,
 } = require("firebase-functions/v2/firestore");
 const {https} = require("firebase-functions/v2");
+const { onSchedule } = require("firebase-functions/v2/scheduler");
 const admin = require("firebase-admin");
-const { defineSecret } = require("firebase-functions/params");
 const sharp = require("sharp");
 const {Storage} = require("@google-cloud/storage");
 const path = require("path");
@@ -16,6 +16,8 @@ const fs = require("fs");
 admin.initializeApp();
 const storage = new Storage();
 const db = admin.firestore();
+// Together 등 외부 AI 관련 키/로직 제거 (요청에 따라 비활성화)
+const fetch = global.fetch;
 
 // =============================
 // OAuth helper utilities
@@ -88,16 +90,13 @@ function sendAuthResultPage(res, customToken) {
   res.status(200).send(html);
 }
 
-// Define Secrets (set via: firebase functions:secrets:set NAME)
-const NAVER_CLIENT_ID = defineSecret("NAVER_CLIENT_ID");
-const NAVER_CLIENT_SECRET = defineSecret("NAVER_CLIENT_SECRET");
-const KAKAO_REST_KEY = defineSecret("KAKAO_REST_KEY");
-const KAKAO_CLIENT_SECRET = defineSecret("KAKAO_CLIENT_SECRET");
+// OAuth/AI 비활성화: 시크릿 의존 제거
 
 // =============================
 // NAVER OAuth 2.0 → Firebase Custom Token
 // =============================
-exports.naverAuth = https.onRequest({ region: "asia-northeast3", secrets: [NAVER_CLIENT_ID, NAVER_CLIENT_SECRET] }, async (req, res) => {
+if (process.env.ENABLE_OAUTH === '1') {
+/* exports.naverAuth = https.onRequest({ region: "asia-northeast3" }, async (req, res) => {
   try {
     const clientId = NAVER_CLIENT_ID.value();
     const clientSecret = NAVER_CLIENT_SECRET.value();
@@ -168,12 +167,14 @@ exports.naverAuth = https.onRequest({ region: "asia-northeast3", secrets: [NAVER
     console.error("NAVER OAuth error", e);
     res.status(500).send("NAVER OAuth failed");
   }
-});
+}); */
+}
 
 // =============================
 // KAKAO OAuth 2.0 → Firebase Custom Token
 // =============================
-exports.kakaoAuth = https.onRequest({ region: "asia-northeast3", secrets: [KAKAO_REST_KEY, KAKAO_CLIENT_SECRET] }, async (req, res) => {
+if (process.env.ENABLE_OAUTH === '1') {
+/* exports.kakaoAuth = https.onRequest({ region: "asia-northeast3" }, async (req, res) => {
   try {
     const clientId = KAKAO_REST_KEY.value(); // Kakao REST API 키
     const clientSecret = KAKAO_CLIENT_SECRET.value() || ""; // 선택
@@ -243,7 +244,8 @@ exports.kakaoAuth = https.onRequest({ region: "asia-northeast3", secrets: [KAKAO
     console.error("KAKAO OAuth error", e);
     res.status(500).send("KAKAO OAuth failed");
   }
-});
+}); */
+}
 
 // 기존 프로필 썸네일 생성 함수
 exports.generateProfileThumbnail = onObjectFinalized(async (event) => {
@@ -555,4 +557,319 @@ exports.getChartLayoutStats = https.onCall({
         `Error getting chart layout stats for user ${userId}:`, error);
     throw new https.HttpsError("internal", "Failed to get chart layout stats");
   }
+});
+
+// (Removed) AI Search (Together.ai proxy) to avoid secret prompts during deploy.
+/* exports.aiSearch = https.onRequest({ region: "asia-northeast3" }, async (req, res) => {
+  try {
+    if (req.method === 'OPTIONS') {
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
+      res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+      res.status(204).send('');
+      return;
+    }
+    const bodyQ = (req.body && req.body.q) ? req.body.q : '';
+    const q = (req.query.q || bodyQ || '').toString().slice(0, 2000);
+    if (!q) {
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.status(400).json({ error: 'missing q' });
+      return;
+    }
+    const apiKey = process.env.TOGETHER_API_KEY || req.get('x-api-key') || req.query.key;
+    if (!apiKey) {
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.status(500).json({ error: 'TOGETHER_API_KEY not set. Set functions secret or env, or pass x-api-key.' });
+      return;
+    }
+    // Call Together AI
+    const payload = {
+      messages: [{ role: 'user', content: q }],
+      model: 'openai/gpt-oss-20b'
+    };
+    const r = await fetch('https://api.together.xyz/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    });
+    const text = await r.text();
+    let j;
+    try { j = JSON.parse(text); } catch (e) { j = null; }
+    if (!r.ok) {
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.status(r.status).json({ error: 'Together API error', status: r.status, body: text });
+      return;
+    }
+    const answer = (j && j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content) ? j.choices[0].message.content : '';
+    res.setHeader('Cache-Control', 'no-store');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.json({ answer });
+  } catch (e) {
+    console.error('aiSearch error', e);
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.status(500).json({ error: 'aiSearch failed', message: String(e && e.message || e) });
+  }
+}); */
+
+// Streaming SSE endpoint
+/**
+ * Streaming Chat endpoint
+ * Accepts: { q?: string, messages?: [{role, content}] }
+ */
+/* exports.aiSearchStream = https.onRequest({ region: "asia-northeast3" }, async (req, res) => {
+  try {
+    if (req.method === 'OPTIONS') {
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+      res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+      res.status(204).send('');
+      return;
+    }
+    const body = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body || {});
+    const q = (body.q || req.query.q || '').toString ? (body.q || req.query.q || '').toString().slice(0,2000) : '';
+    const messages = Array.isArray(body.messages) && body.messages.length > 0
+      ? body.messages
+      : (q ? [{ role: 'user', content: q }] : []);
+    if (messages.length === 0) {
+      res.status(400).json({ error: 'missing q' });
+      return;
+    }
+    const apiKey = process.env.TOGETHER_API_KEY || req.get('x-api-key') || req.query.key;
+    const payload = {
+      model: 'openai/gpt-oss-20b',
+      messages,
+      stream: true
+    };
+    const r = await fetch('https://api.together.xyz/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    });
+    if (!r.ok) {
+      const t = await r.text();
+      res.writeHead(r.status, {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      });
+      res.end(JSON.stringify({ error: 'Together API error', status: r.status, body: t }));
+      return;
+    }
+    res.writeHead(200, {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache, no-transform',
+      'Connection': 'keep-alive',
+      'Access-Control-Allow-Origin': '*'
+    });
+    const reader = r.body.getReader();
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      res.write(Buffer.from(value));
+    }
+    res.end();
+  } catch (e) {
+    console.error('aiSearchStream error', e);
+    try {
+      res.write(`data: {"error":"stream failed"}\n\n`);
+    } catch (err) {}
+    res.end();
+  }
+}); */
+
+// =============================================
+// Paper Trading 초기 예산 서버 기준 설정
+// =============================================
+const INITIAL_PT_BALANCE = 10000;
+
+// users/{uid} 문서 생성 시 초기 예산 세팅
+exports.initPaperTradingOnUserCreate = onDocumentCreated({
+  document: "users/{uid}",
+  region: "asia-northeast3",
+}, async (event) => {
+  const snap = event.data;
+  if (!snap) return null;
+  const data = snap.data() || {};
+  const hasBalance = data.paperTrading && typeof data.paperTrading.balanceUSDT === 'number';
+  if (hasBalance) return null;
+  await snap.ref.set({
+    paperTrading: {
+      balanceUSDT: INITIAL_PT_BALANCE,
+      equityUSDT: INITIAL_PT_BALANCE,
+    },
+  }, { merge: true });
+  return null;
+});
+
+// users/{uid} 문서 갱신 시에도 누락되어 있으면 백필
+exports.backfillPaperTradingOnUserUpdate = onDocumentUpdated({
+  document: "users/{uid}",
+  region: "asia-northeast3",
+}, async (event) => {
+  const after = event.data.after.data() || {};
+  const hasBalance = after.paperTrading && typeof after.paperTrading.balanceUSDT === 'number';
+  if (hasBalance) return null;
+  await event.data.after.ref.set({
+    paperTrading: {
+      balanceUSDT: INITIAL_PT_BALANCE,
+      equityUSDT: INITIAL_PT_BALANCE,
+    },
+  }, { merge: true });
+  return null;
+});
+
+// =============================================
+// Online Users Cleanup (Server-side)
+// 오래된 온라인 사용자 문서 정리 (3분 이상 비활성)
+// =============================================
+exports.cleanupStaleOnlineUsers = https.onRequest({ region: "asia-northeast3" }, async (req, res) => {
+  try {
+    const cutoff = admin.firestore.Timestamp.fromDate(new Date(Date.now() - 3 * 60 * 1000));
+    const snap = await db.collection('online-users')
+      .where('lastSeen', '<', cutoff)
+      .get();
+
+    let deleted = 0;
+    const batch = db.batch();
+    snap.forEach(doc => {
+      batch.delete(doc.ref);
+      deleted++;
+    });
+    if (deleted > 0) await batch.commit();
+
+    res.json({ ok: true, deleted });
+  } catch (e) {
+    console.error('cleanupStaleOnlineUsers error', e);
+    res.status(500).json({ ok: false, error: String(e && e.message || e) });
+  }
+});
+
+// 스케줄 버전(5분마다)
+exports.cleanupStaleOnlineUsersScheduled = onSchedule({schedule: 'every 5 minutes', region: 'asia-northeast3'}, async (event) => {
+  const cutoff = admin.firestore.Timestamp.fromDate(new Date(Date.now() - 3 * 60 * 1000));
+  const snap = await db.collection('online-users').where('lastSeen', '<', cutoff).get();
+  const batch = db.batch();
+  snap.forEach(doc => batch.delete(doc.ref));
+  if (!snap.empty) await batch.commit();
+});
+
+// =============================================
+// Community Chat: Message Posting with Abuse Prevention
+// - Rate limit per user
+// - Length limit
+// - Duplicate prevention (last text)
+// - Simple bad words filter
+// =============================================
+const REGION = 'asia-northeast3';
+const MESSAGE_MAX_LEN = 500;
+const POST_COOLDOWN_MS = 1500;
+const BAD_WORDS = ['spam']; // 실제 서비스에서는 외부 리스트/설정 사용 권장
+
+function hasBadWord(text) {
+  const lower = text.toLowerCase();
+  return BAD_WORDS.some(w => lower.includes(w));
+}
+
+exports.postCommunityMessage = https.onCall({ region: REGION, enforceAppCheck: false, cors: true }, async (request) => {
+  if (!request.auth) {
+    throw new https.HttpsError('unauthenticated', 'Authentication required');
+  }
+  const uid = request.auth.uid;
+  const text = (request.data && request.data.text || '').toString();
+  const displayName = (request.data && request.data.displayName || '').toString();
+  const photoURL = (request.data && request.data.photoURL || '').toString() || null;
+
+  if (!text.trim()) {
+    throw new https.HttpsError('invalid-argument', 'Empty message');
+  }
+  if (text.length > MESSAGE_MAX_LEN) {
+    throw new https.HttpsError('invalid-argument', 'Message too long');
+  }
+  if (hasBadWord(text)) {
+    throw new https.HttpsError('failed-precondition', 'Message contains prohibited content');
+  }
+
+  const now = Date.now();
+  const userMetaRef = db.collection('users').doc(uid).collection('meta').doc('chat');
+  const userMetaSnap = await userMetaRef.get();
+  const lastPostAt = userMetaSnap.exists ? (userMetaSnap.data().lastPostAt || 0) : 0;
+  const lastText = userMetaSnap.exists ? (userMetaSnap.data().lastText || '') : '';
+
+  if (now - lastPostAt < POST_COOLDOWN_MS) {
+    throw new https.HttpsError('resource-exhausted', 'Too fast. Please slow down.');
+  }
+  if (lastText && lastText === text.trim()) {
+    throw new https.HttpsError('already-exists', 'Duplicate message');
+  }
+
+  const payload = {
+    text: text.trim(),
+    timestamp: admin.firestore.FieldValue.serverTimestamp(),
+    uid,
+    displayName: displayName || '사용자',
+    photoURL: photoURL || null,
+  };
+
+  await db.collection('community-chat').add(payload);
+  await userMetaRef.set({ lastPostAt: now, lastText: text.trim() }, { merge: true });
+
+  return { ok: true };
+});
+
+// =============================================
+// Admin-only System Announcement / Breaking News
+// =============================================
+async function isAdmin(uid) {
+  try {
+    const userDoc = await db.collection('users').doc(uid).get();
+    return !!(userDoc.exists && userDoc.data().isAdmin === true);
+  } catch (_) {
+    return false;
+  }
+}
+
+exports.postSystemAnnouncement = https.onCall({ region: REGION, enforceAppCheck: false }, async (request) => {
+  if (!request.auth) {
+    throw new https.HttpsError('unauthenticated', 'Authentication required');
+  }
+  const uid = request.auth.uid;
+  if (!(await isAdmin(uid))) {
+    throw new https.HttpsError('permission-denied', 'Admin only');
+  }
+
+  const text = (request.data && request.data.text || '').toString();
+  const breaking = !!(request.data && request.data.breaking === true);
+  const newsLink = (request.data && request.data.newsLink || '').toString();
+  if (!text.trim()) throw new https.HttpsError('invalid-argument', 'Empty text');
+  if (text.length > MESSAGE_MAX_LEN) throw new https.HttpsError('invalid-argument', 'Text too long');
+
+  const data = {
+    text: text.trim(),
+    timestamp: admin.firestore.FieldValue.serverTimestamp(),
+    uid: breaking ? 'system-breaking-news' : 'system-alert',
+    displayName: breaking ? '속보' : '시스템 공지',
+    isSystemAlert: true,
+    isBreakingNews: breaking,
+  };
+  if (breaking && newsLink && /^https?:\/\//i.test(newsLink)) {
+    data.newsLink = newsLink;
+  }
+  await db.collection('community-chat').add(data);
+  return { ok: true };
+});
+
+// =============================================
+// TTL Cleanup for community-chat (older than 60 days)
+// =============================================
+exports.cleanupOldCommunityMessages = onSchedule({schedule: 'every 24 hours', region: 'asia-northeast3'}, async () => {
+  const cutoffDate = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000); // 60 days
+  const snap = await db.collection('community-chat').where('timestamp', '<', cutoffDate).get();
+  const batch = db.batch();
+  snap.forEach(doc => batch.delete(doc.ref));
+  if (!snap.empty) await batch.commit();
 });

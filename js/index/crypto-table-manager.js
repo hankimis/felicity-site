@@ -20,6 +20,7 @@ class CryptoTable {
     this.reconnectAttempts = new Map();
     this.maxReconnectAttempts = 5;
     this.reconnectDelay = 1000;
+    this.lastAdditionalLoadTs = 0; // 추가 페이지 로드 쿨다운
     
     this.init();
   }
@@ -38,18 +39,14 @@ class CryptoTable {
       // 데이터 로딩 실패 시에도 스켈레톤은 유지
     });
     
-    // 5분마다 자동 업데이트
-    setInterval(() => {
-      this.loadData();
-    }, 300000);
-    
-    // 성능 최적화: 사용자가 페이지를 보고 있을 때만 업데이트
+    // 성능 최적화: 사용자가 페이지를 보고 있을 때만 업데이트 (단일 스케줄러)
     let updateInterval;
     
     const startUpdates = () => {
+      if (updateInterval) clearInterval(updateInterval);
       updateInterval = setInterval(() => {
         this.loadData();
-      }, 600000); // 10분으로 증가
+      }, 300000); // 5분 주기
     };
     
     const stopUpdates = () => {
@@ -159,6 +156,7 @@ class CryptoTable {
               </div>
             </div>
           </td>
+          <td><div class="skeleton-text"></div></td>
           <td><div class="skeleton-text"></div></td>
           <td><div class="skeleton-text"></div></td>
           <td><div class="skeleton-text"></div></td>
@@ -377,7 +375,8 @@ class CryptoTable {
       'gnosis': 'GNOSDT',
       'golem': 'GLMUSDT',
       'status': 'SNTUSDT',
-      'civic': 'CVICUSDT'
+      'civic': 'CVICUSDT',
+      'arkham': 'ARKMUSDT'
     };
   }
   
@@ -765,48 +764,14 @@ class CryptoTable {
     }
     
     try {
-      // 성능 최적화: 첫 페이지만 먼저 로드
-      const promises = [];
-      
-      // 여러 API 소스를 시도 (안정성 향상)
-      const apiSources = [
-        `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=100&page=1&sparkline=true&price_change_percentage=1h%2C24h%2C7d`,
-        `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=50&page=1&sparkline=false&price_change_percentage=24h`
-      ];
-      
-      // 첫 번째 API로 시도
-      promises.push(
-        fetch(apiSources[0])
-          .then(res => {
-            if (!res.ok) {
-              throw new Error(`API 응답 오류: ${res.status}`);
-            }
-            return res.json();
-          })
-          .catch(error => {
-            // 첫 번째 API 실패 시 두 번째 API로 시도
-            return fetch(apiSources[1])
-              .then(res => {
-                if (!res.ok) {
-                  throw new Error(`백업 API 응답 오류: ${res.status}`);
-                }
-                return res.json();
-              });
-          })
-      );
-        
-      const results = await Promise.allSettled(promises);
-      let allData = [];
-      
-      for (const result of results) {
-        if (result.status === 'fulfilled') {
-          allData.push(...result.value);
-        }
-      }
-        
-      if (allData.length === 0) {
-        throw new Error('모든 API 요청이 실패했습니다');
-      }
+      // 단일 호출로 필요한 항목 모두 가져오기 (429 방지)
+      const url = 'https://api.coingecko.com/api/v3/coins/markets'
+        + '?vs_currency=usd&order=market_cap_desc&per_page=250&page=1'
+        + '&sparkline=true&price_change_percentage=1h,24h,7d,30d';
+
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`API 응답 오류: ${res.status}`);
+      const allData = await res.json();
       
       // 데이터 처리
       const processedData = allData.map((coin, index) => ({
@@ -838,8 +803,6 @@ class CryptoTable {
         ...coin,
         fundingRate: this.calculateFundingRate(coin),
         openInterest: this.calculateOpenInterest(coin),
-        oiChange1h: this.calculateOIChange(coin, '1h'),
-        oiChange4h: this.calculateOIChange(coin, '4h'),
         liquidation1h: this.calculateLiquidation(coin, '1h'),
         liquidation24h: this.calculateLiquidation(coin, '24h')
       }));
@@ -857,8 +820,6 @@ class CryptoTable {
         fundingRate: coin.fundingRate,
         volume: coin.volume,
         openInterest: coin.openInterest,
-        oiChange1h: coin.oiChange1h,
-        oiChange4h: coin.oiChange4h,
         marketCap: coin.marketCap,
         liquidation1h: coin.liquidation1h,
         liquidation24h: coin.liquidation24h,
@@ -883,7 +844,7 @@ class CryptoTable {
       if (tbody) {
         tbody.innerHTML = `
           <tr>
-            <td colspan="14" class="loading-row" style="text-align: center; padding: 2rem;">
+            <td colspan="12" class="loading-row" style="text-align: center; padding: 2rem;">
               <div style="color: var(--text-secondary);">
                 <i class="fas fa-exclamation-triangle" style="margin-bottom: 0.5rem; font-size: 1.5rem;"></i>
                 <div>실시간 데이터를 불러올 수 없습니다</div>
@@ -917,53 +878,69 @@ class CryptoTable {
   // 백그라운드에서 추가 데이터 로드
   async loadAdditionalData() {
     try {
-      
+      // 2~5페이지(총 1000개) 추가 로드 - 중복/빈번 호출 방지 쿨다운(15분)
+      const now = Date.now();
+      if (this.lastAdditionalLoadTs && now - this.lastAdditionalLoadTs < 15 * 60 * 1000) {
+        return; // 최근에 이미 로드함
+      }
+      this.lastAdditionalLoadTs = now;
+      const pages = [2, 3, 4, 5];
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000);
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
       
-      const response = await fetch(`https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=100&page=2&sparkline=true&price_change_percentage=1h%2C24h%2C7d`, {
-        signal: controller.signal
-      });
+      const requests = pages.map(page =>
+        fetch(`https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=250&page=${page}&sparkline=true&price_change_percentage=1h,24h,7d,30d`, {
+          signal: controller.signal
+        }).then(res => {
+          if (!res.ok) throw new Error(`API 응답 오류: ${res.status}`);
+          return res.json();
+        })
+      );
       
+      const results = await Promise.allSettled(requests);
       clearTimeout(timeoutId);
       
-      if (!response.ok) {
-        throw new Error(`API 응답 오류: ${response.status}`);
+      let additionalData = [];
+      for (const r of results) {
+        if (r.status === 'fulfilled' && Array.isArray(r.value)) {
+          additionalData.push(...r.value);
+        }
       }
+      if (additionalData.length === 0) return;
       
-      const additionalData = await response.json();
+      // 기존 데이터와 병합(중복 제거 및 최신값 반영)
+      const idToCoin = new Map(this.coins.map(c => [c.id, c]));
       
-      if (!Array.isArray(additionalData) || additionalData.length === 0) {
-        throw new Error('유효하지 않은 데이터 형식');
-      }
+      additionalData.forEach(coin => {
+        const normalized = {
+          id: coin.id,
+          rank: 0, // 추후 재계산
+          name: coin.name?.replace(/['">\s]+/g, ' ').trim() || '',
+          symbol: coin.symbol?.replace(/['">\s]+/g, ' ').trim().toUpperCase() || '',
+          image: coin.image,
+          price: coin.current_price,
+          change1h: coin.price_change_percentage_1h_in_currency || 0,
+          change24h: coin.price_change_percentage_24h || 0,
+          fundingRate: this.calculateFundingRate(coin),
+          volume: coin.total_volume,
+          openInterest: this.calculateOpenInterest(coin),
+          marketCap: coin.market_cap,
+          liquidation1h: this.calculateLiquidation(coin, '1h'),
+          liquidation24h: this.calculateLiquidation(coin, '24h'),
+          sparkline: coin.sparkline_in_7d ? coin.sparkline_in_7d.price : []
+        };
+        idToCoin.set(normalized.id, normalized);
+      });
       
-      // 기존 데이터에 추가
-      const newCoins = additionalData.map((coin, index) => ({
-        id: coin.id,
-        rank: this.coins.length + index + 1,
-        name: coin.name?.replace(/['">\s]+/g, ' ').trim() || '',
-        symbol: coin.symbol?.replace(/['">\s]+/g, ' ').trim().toUpperCase() || '',
-        image: coin.image,
-        price: coin.current_price,
-        change1h: coin.price_change_percentage_1h_in_currency || 0,
-        change24h: coin.price_change_percentage_24h || 0,
-        fundingRate: this.calculateFundingRate(coin),
-        volume: coin.total_volume,
-        openInterest: this.calculateOpenInterest(coin),
-        oiChange1h: this.calculateOIChange(coin, '1h'),
-        oiChange4h: this.calculateOIChange(coin, '4h'),
-        marketCap: coin.market_cap,
-        liquidation1h: this.calculateLiquidation(coin, '1h'),
-        liquidation24h: this.calculateLiquidation(coin, '24h'),
-        sparkline: coin.sparkline_in_7d ? coin.sparkline_in_7d.price : []
-      }));
+      this.coins = Array.from(idToCoin.values());
+      // 시가총액으로 정렬 후 순위 재계산
+      this.coins.sort((a, b) => (b.marketCap || 0) - (a.marketCap || 0));
+      this.coins.forEach((coin, index) => {
+        coin.rank = index + 1;
+      });
       
-      this.coins.push(...newCoins);
       this.filterAndSort();
-      
-      // 새로운 코인 추가 시 WebSocket 업데이트
       this.updateWebSocketConnections();
-      
     } catch (error) {
     }
   }
@@ -1022,7 +999,7 @@ class CryptoTable {
    if (pageCoins.length === 0) {
      tbody.innerHTML = `
        <tr>
-         <td colspan="14" class="loading-row">
+         <td colspan="12" class="loading-row">
            ${this.coins.length === 0 ? 
              '<div class="loading-spinner"></div> 데이터 로딩 중...' : 
              '검색 결과가 없습니다.'
@@ -1054,8 +1031,6 @@ class CryptoTable {
        <td><span class="change ${this.getChangeClass(coin.fundingRate)}">${this.formatPercent(coin.fundingRate)}</span></td>
        <td class="volume">$${this.formatNumber(coin.volume)}</td>
        <td class="oi">$${this.formatNumber(coin.openInterest)}</td>
-       <td><span class="change ${this.getChangeClass(coin.oiChange1h)}">${this.formatPercent(coin.oiChange1h)}</span></td>
-       <td><span class="change ${this.getChangeClass(coin.oiChange4h)}">${this.formatPercent(coin.oiChange4h)}</span></td>
        <td class="market-cap">$${this.formatNumber(coin.marketCap)}</td>
        <td class="liquidation">$${this.formatNumber(coin.liquidation1h)}</td>
        <td class="liquidation">$${this.formatNumber(coin.liquidation24h)}</td>

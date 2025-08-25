@@ -9,6 +9,9 @@ class CommunityChat {
         this.usersUnsubscribe = null;
         this.isChatFormInitialized = false;
         this.MESSAGES_PER_PAGE = 50; // 커뮤니티에서는 더 많은 메시지 로드
+        this._paginationLastDocDesc = null; // 내림차순 페이징 기준 (가장 오래된 문서 참조)
+        this._isLoadingMore = false;
+        this._infiniteScrollBound = false;
         
         this.init();
     }
@@ -33,6 +36,35 @@ class CommunityChat {
         this.setupUserCount();
     }
 
+    // HTML 이스케이프 유틸
+    escapeHtml(str) {
+        if (str == null) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
+    // URL 자동 링크화 (http/https만 허용)
+    linkify(escapedText) {
+        if (!escapedText) return '';
+        const urlRegex = /(https?:\/\/[^\s<>"']+)/g;
+        return escapedText.replace(urlRegex, (url) => {
+            try {
+                const u = new URL(url);
+                if (u.protocol === 'http:' || u.protocol === 'https:') {
+                    const safeUrl = this.escapeHtml(url);
+                    return `<a href="${safeUrl}" target="_blank" rel="nofollow noopener noreferrer">${safeUrl}</a>`;
+                }
+                return url;
+            } catch (_) {
+                return url;
+            }
+        });
+    }
+
     // 메시지 렌더링 함수
     renderMessage(msg) {
         // 시스템 알람 메시지인지 확인
@@ -43,30 +75,28 @@ class CommunityChat {
             // 시스템 알람 메시지
             const alertClass = isBreakingNews ? 'system-alert breaking-news' : 'system-alert';
             const clickable = isBreakingNews && msg.data.newsLink ? 'clickable' : '';
+            const safeName = this.escapeHtml(msg.data.displayName);
+            const safeText = this.escapeHtml(msg.data.text);
+            const linkedText = this.linkify(safeText);
             
             return `
-                <div class="message-item ${alertClass} ${clickable}" id="${msg.id}" data-uid="${msg.data.uid}" ${isBreakingNews && msg.data.newsLink ? `data-news-link="${msg.data.newsLink}"` : ''}>
+                <div class="message-item ${alertClass} ${clickable}" id="${msg.id}" data-uid="${msg.data.uid}">
                     <div class="message-content">
                         <div class="message-sender">
-                            <strong>${msg.data.displayName}</strong>
+                            <strong>${safeName}</strong>
                         </div>
-                        <div class="message-text">${msg.data.text.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</div>
+                        <div class="message-text">${linkedText}</div>
                     </div>
                 </div>
             `;
         }
         
         const profileImg = msg.data.photoThumbURL || msg.data.photoURL || '/assets/icon/profileicon.png';
+        const safeName = this.escapeHtml(msg.data.displayName);
+        const safeText = this.escapeHtml(msg.data.text);
+        const linkedText = this.linkify(safeText);
         
-        let isMyMessage = false;
-        if (window.currentUser && msg.data.uid === window.currentUser.uid) {
-            isMyMessage = true;
-        } else if (!window.currentUser) {
-            const guestNumber = localStorage.getItem('guestNumber');
-            if (guestNumber && msg.data.uid === 'guest-' + guestNumber) {
-                isMyMessage = true;
-            }
-        }
+        let isMyMessage = !!(window.currentUser && msg.data.uid === window.currentUser.uid);
         const myMessageClass = isMyMessage ? 'my-message' : '';
 
         return `
@@ -76,9 +106,9 @@ class CommunityChat {
                 </div>
                 <div class="message-content">
                     <div class="message-sender">
-                        <strong>${msg.data.displayName}</strong>
+                        <strong>${safeName}</strong>
                     </div>
-                    <div class="message-text">${msg.data.text.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</div>
+                    <div class="message-text">${linkedText}</div>
                 </div>
             </div>
         `;
@@ -123,7 +153,7 @@ class CommunityChat {
             snapshot.forEach((doc) => {
                 messages.push({ id: doc.id, data: doc.data() });
             });
-            messages.reverse(); // 시간순으로 표시하기 위해 배열을 뒤집음
+            messages.reverse(); // 시간순으로 표시
             
             if (this.messagesContainer) {
                 const messagesHTML = messages.map(msg => this.renderMessage(msg)).join('');
@@ -134,13 +164,72 @@ class CommunityChat {
                 }, 100);
             }
             
+            // 초기 로드 기준 마지막 문서(가장 최근)
+            this._lastRealtimeDoc = snapshot.empty ? null : snapshot.docs[snapshot.docs.length - 1];
             this.setupRealtimeListener();
             console.log(`${messages.length} chat messages loaded for community`);
+
+            // 페이지네이션 기준 문서(내림차순 마지막 = 가장 오래된)
+            this._paginationLastDocDesc = snapshot.empty ? null : snapshot.docs[snapshot.docs.length - 1];
+            this.setupInfiniteScroll();
         } catch (error) {
             console.error('채팅 메시지 로드 실패:', error);
             if (this.messagesContainer) {
                 this.messagesContainer.innerHTML = '<div class="chat-notice">메시지를 불러올 수 없습니다.</div>';
             }
+        }
+    }
+
+    // 위로 스크롤 시 이전 메시지 로드
+    setupInfiniteScroll() {
+        if (!this.messagesContainer || this._infiniteScrollBound) return;
+        this._infiniteScrollBound = true;
+        this.messagesContainer.addEventListener('scroll', async () => {
+            try {
+                if (this._isLoadingMore) return;
+                if (!this._paginationLastDocDesc) return;
+                if (this.messagesContainer.scrollTop <= 20) {
+                    this._isLoadingMore = true;
+                    const prevHeight = this.messagesContainer.scrollHeight;
+                    await this.loadOlderMessages();
+                    const newHeight = this.messagesContainer.scrollHeight;
+                    // 기존 위치 유지
+                    this.messagesContainer.scrollTop = newHeight - prevHeight + this.messagesContainer.scrollTop;
+                    this._isLoadingMore = false;
+                }
+            } catch (_) {
+                this._isLoadingMore = false;
+            }
+        });
+    }
+
+    async loadOlderMessages() {
+        if (!window.db || !this._paginationLastDocDesc) return;
+        const queryRef = window.db.collection('community-chat')
+            .orderBy('timestamp', 'desc')
+            .startAfter(this._paginationLastDocDesc)
+            .limit(this.MESSAGES_PER_PAGE);
+        const snapshot = await queryRef.get();
+        if (snapshot.empty) {
+            this._paginationLastDocDesc = null;
+            return;
+        }
+        // 다음 페이지 기준 (desc의 마지막이 가장 오래된 문서)
+        this._paginationLastDocDesc = snapshot.docs[snapshot.docs.length - 1];
+
+        const older = [];
+        snapshot.forEach((doc) => older.push({ id: doc.id, data: doc.data() }));
+        older.reverse();
+
+        // 컨테이너 상단에 prepend
+        if (this.messagesContainer) {
+            const fragment = document.createDocumentFragment();
+            older.forEach((m) => {
+                const div = document.createElement('div');
+                div.innerHTML = this.renderMessage(m);
+                while (div.firstChild) fragment.appendChild(div.firstChild);
+            });
+            this.messagesContainer.insertBefore(fragment, this.messagesContainer.firstChild);
         }
     }
 
@@ -152,31 +241,27 @@ class CommunityChat {
         
         if (!window.db) return;
         
-        const messagesQuery = window.db.collection('community-chat')
-            .where('timestamp', '>', new Date());
-        
-        this.messagesUnsubscribe = messagesQuery.onSnapshot((snapshot) => {
-            if (!this.messagesContainer) return;
+        // 마지막 로드 문서 이후 asc로 수신
+        let queryRef = window.db.collection('community-chat').orderBy('timestamp', 'asc');
+        if (this._lastRealtimeDoc) {
+            queryRef = queryRef.startAfter(this._lastRealtimeDoc);
+        }
 
+        this.messagesUnsubscribe = queryRef.onSnapshot((snapshot) => {
+            if (!this.messagesContainer) return;
             snapshot.docChanges().forEach((change) => {
                 if (change.type === 'added') {
                     const msg = { id: change.doc.id, data: change.doc.data() };
                     if (!document.getElementById(msg.id)) {
                         const messageHTML = this.renderMessage(msg);
                         this.messagesContainer.insertAdjacentHTML('beforeend', messageHTML);
-                        
-                        // 속보 뉴스 메시지 클릭 이벤트 추가
-                        const messageElement = document.getElementById(msg.id);
-                        if (messageElement && msg.data.isBreakingNews && msg.data.newsLink) {
-                            messageElement.addEventListener('click', () => {
-                                window.open(msg.data.newsLink, '_blank', 'noopener,noreferrer');
-                            });
-                        }
                     }
                 }
             });
-            
-            // 새 메시지 수신 시 스크롤 조정
+            // 최신 anchor 업데이트
+            if (!snapshot.empty) {
+                this._lastRealtimeDoc = snapshot.docs[snapshot.docs.length - 1];
+            }
             const isScrolledToBottom = this.messagesContainer.scrollHeight - this.messagesContainer.clientHeight <= this.messagesContainer.scrollTop + 100;
             if (isScrolledToBottom) {
                 this.messagesContainer.scrollTop = this.messagesContainer.scrollHeight;
@@ -191,17 +276,10 @@ class CommunityChat {
         if (!this.messagesContainer) return;
 
         const messages = this.messagesContainer.querySelectorAll('.message-item');
-        const guestNumber = localStorage.getItem('guestNumber');
 
         messages.forEach(msgElement => {
             const msgUid = msgElement.dataset.uid;
-            let isMyMessage = false;
-
-            if (window.currentUser && msgUid === window.currentUser.uid) {
-                isMyMessage = true;
-            } else if (!window.currentUser && guestNumber && msgUid === 'guest-' + guestNumber) {
-                isMyMessage = true;
-            }
+            let isMyMessage = !!(window.currentUser && msgUid === window.currentUser.uid);
 
             if (isMyMessage) {
                 msgElement.classList.add('my-message');
@@ -234,6 +312,11 @@ class CommunityChat {
             this._submitHandler = async (e) => {
                 e.preventDefault();
                 e.stopPropagation();
+                // 비로그인 차단
+                if (!window.currentUser) {
+                    alert('로그인이 필요합니다.');
+                    return;
+                }
                 
                 // 이미 전송 중이면 무시
                 if (this.isSubmitting) {
@@ -252,25 +335,10 @@ class CommunityChat {
                 this.messageInput.disabled = true;
 
                 try {
-                    // 게스트 번호 처리
-                    let guestNumber = localStorage.getItem('guestNumber');
-                    if (!guestNumber) {
-                        guestNumber = Math.floor(Math.random() * 10000).toString();
-                        localStorage.setItem('guestNumber', guestNumber);
-                    }
-
-                    const messageData = {
-                        text: originalText,
-                        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-                        uid: window.currentUser ? window.currentUser.uid : 'guest-' + guestNumber,
-                        displayName: window.currentUser ? (window.currentUser.displayName || window.currentUser.email) : '게스트' + guestNumber,
-                        photoURL: window.currentUser ? window.currentUser.photoURL : null
-                    };
-
-                    if (window.db) {
-                        await window.db.collection('community-chat').add(messageData);
-                        console.log('메시지 전송 성공');
-                    }
+                    const displayName = window.currentUser.displayName || window.currentUser.email || '사용자';
+                    const photoURL = window.currentUser.photoURL || null;
+                    const postFn = firebase.app().functions('asia-northeast3').httpsCallable('postCommunityMessage');
+                    await postFn({ text: originalText, displayName, photoURL });
                 } catch (error) {
                     console.error('메시지 전송 실패:', error);
                     alert('메시지 전송에 실패했습니다. 다시 시도해주세요.');
@@ -331,46 +399,44 @@ class CommunityChat {
             return;
         }
         try {
-            let guestNumber = localStorage.getItem('guestNumber');
-            if (!guestNumber) {
-                guestNumber = Math.floor(Math.random() * 10000).toString();
-                localStorage.setItem('guestNumber', guestNumber);
-            }
-            const userId = window.currentUser ? window.currentUser.uid : 'guest-' + guestNumber;
-            const userDisplayName = window.currentUser ? 
-                (window.currentUser.displayName || window.currentUser.email) : 
-                '게스트' + guestNumber;
-            const userDoc = window.db.collection('online-users').doc(userId);
+            const isAuthed = !!(window.currentUser && window.currentUser.uid);
 
-            // 1. 온라인 등록
-            userDoc.set({
-                displayName: userDisplayName,
-                lastSeen: window.firebase.firestore.FieldValue.serverTimestamp(),
-                online: true,
-                page: 'community'
-            }, { merge: true });
+            // 인증된 사용자만 본인 온라인 상태 등록/갱신
+            if (isAuthed) {
+                const userId = window.currentUser.uid;
+                const userDisplayName = window.currentUser.displayName || window.currentUser.email || '사용자';
+                const userDoc = window.db.collection('online-users').doc(userId);
 
-            // 2. 30초마다 lastSeen 갱신
-            if (this._lastSeenInterval) clearInterval(this._lastSeenInterval);
-            this._lastSeenInterval = setInterval(() => {
-                userDoc.update({
-                    lastSeen: window.firebase.firestore.FieldValue.serverTimestamp()
-                });
-            }, 30000);
+                // 온라인 등록
+                userDoc.set({
+                    displayName: userDisplayName,
+                    lastSeen: window.firebase.firestore.FieldValue.serverTimestamp(),
+                    online: true,
+                    page: 'community'
+                }, { merge: true });
 
-            // 3. 3분 이상 오래된 사용자 정리
-            if (this._cleanupInterval) clearInterval(this._cleanupInterval);
-            this._cleanupInterval = setInterval(() => {
-                const threeMinutesAgo = new Date(Date.now() - 3 * 60 * 1000);
-                window.db.collection('online-users')
-                    .where('lastSeen', '<', threeMinutesAgo)
-                    .get()
-                    .then((snapshot) => {
-                        snapshot.forEach((doc) => doc.ref.delete());
+                // 30초마다 lastSeen 갱신
+                if (this._lastSeenInterval) clearInterval(this._lastSeenInterval);
+                this._lastSeenInterval = setInterval(() => {
+                    userDoc.update({
+                        lastSeen: window.firebase.firestore.FieldValue.serverTimestamp(),
+                        online: true
                     });
-            }, 60000);
+                }, 30000);
 
-            // 4. 실시간 카운팅 (3분 이내 활동자만)
+                // 언로드 시 online=false로 표시 및 인터벌 정리 (삭제 금지)
+                const handleBeforeUnload = () => {
+                    userDoc.set({
+                        lastSeen: window.firebase.firestore.FieldValue.serverTimestamp(),
+                        online: false
+                    }, { merge: true });
+                    if (this._lastSeenInterval) clearInterval(this._lastSeenInterval);
+                };
+                window.addEventListener('beforeunload', handleBeforeUnload);
+                window.addEventListener('pagehide', handleBeforeUnload);
+            }
+
+            // 실시간 카운팅 (3분 이내 활동자만)
             if (this.usersUnsubscribe) this.usersUnsubscribe();
             const threeMinutesAgo = new Date(Date.now() - 3 * 60 * 1000);
             this.usersUnsubscribe = window.db.collection('online-users')
@@ -382,15 +448,6 @@ class CommunityChat {
                         this.usersCountElement.textContent = String(Math.max(1, count));
                     }
                 });
-
-            // 5. 언로드 시 문서 삭제 및 interval 정리
-            const handleBeforeUnload = () => {
-                userDoc.delete();
-                if (this._lastSeenInterval) clearInterval(this._lastSeenInterval);
-                if (this._cleanupInterval) clearInterval(this._cleanupInterval);
-            };
-            window.addEventListener('beforeunload', handleBeforeUnload);
-            window.addEventListener('pagehide', handleBeforeUnload);
 
         } catch (error) {
             if (this.usersCountElement) this.usersCountElement.textContent = '1';
@@ -411,23 +468,7 @@ class CommunityChat {
             this.usersUnsubscribe = null;
         }
         
-        // Firestore 사용자 정보 제거
-        if (window.db) {
-            try {
-                const guestNumber = localStorage.getItem('guestNumber');
-                const userId = window.currentUser ? window.currentUser.uid : 'guest-' + guestNumber;
-                window.db.collection('online-users').doc(userId).delete()
-                    .then(() => {
-                        console.log('Firestore 사용자 정보 제거됨');
-                    })
-                    .catch((error) => {
-                        console.error('Firestore 사용자 정보 제거 실패:', error);
-                    });
-            } catch (error) {
-                console.error('Firestore 사용자 정보 제거 중 오류:', error);
-            }
-        }
-        
+        // 온라인 상태는 삭제하지 않고 offline만 표시 (set in setupUserCountWithFirestore unload handler)
         console.log('CommunityChat 정리 완료');
     }
 }

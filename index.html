@@ -66,11 +66,11 @@
   <link rel="preconnect" href="https://cdnjs.cloudflare.com">
   <link rel="preconnect" href="https://cdn.jsdelivr.net">
   <link rel="preconnect" href="https://api.binance.com">
+  <link rel="preconnect" href="https://fstream.binance.com">
   <link rel="preconnect" href="https://s3.tradingview.com">
   <link rel="dns-prefetch" href="https://s3.tradingview.com">
 
   <!-- Favicon -->
-  <link rel="icon" type="image/png" href="/onbit/favicon-96x96.png" sizes="96x96" />
   <link rel="icon" type="image/svg+xml" href="/onbit/favicon.svg" />
   <link rel="shortcut icon" href="/onbit/favicon.ico" />
   <link rel="apple-touch-icon" sizes="180x180" href="/onbit/apple-touch-icon.png" />
@@ -110,65 +110,129 @@
 
   <h1 style="position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden;">온비트(ONBIT) 공식 홈페이지</h1>
 
+  
+
   <!-- TradingView Ticker Tape Widget -->
   <div id="tradingview-ticker-tape" style="width: 100%;"></div>
   
   <!-- 메인 컨텐츠 섹션 -->
   <section class="main-content-section">
     <div class="content-container">
-      <!-- 메인 대시보드 -->
-      <div class="dashboard-section">
-        <div class="main-dashboard-grid" id="dashboard-grid">
-        <!-- 비트코인 차트 (2fr) -->
-        <div class="dashboard-card bitcoin-chart-card">
-          <div id="tradingview-btc-chart"></div>
-        </div>
-
-        <!-- 기술적 분석 (1fr) -->
-        <div class="dashboard-card technical-analysis-card">
-        <div id="tradingview-technical-analysis"></div>
-      </div>
-
-        <!-- 고래 거래 추적 (1fr) -->
-        <div class="dashboard-card whale-tracker-card">
-        <div class="card-header">
-              <h3><span style="color: #2962ff;">고래</span> 거래 추적</h3>
-        </div>
-        <div class="whale-content">
-          <div id="whale-transactions">
-                <div style="display: flex; align-items: center; justify-content: center; height: 330px; color: #6b7280;">
-              <div style="text-align: center;">
-                <i class="fas fa-spinner fa-spin" style="font-size: 2rem; margin-bottom: 1rem;"></i>
-                <div>고래 거래 연결 중...</div>
-              </div>
-            </div>
+      
+      <!-- 메인 상단 분할 레이아웃: 좌(차트) / 우(로그인) -->
+      <div class="main-top-split">
+        <div class="split-left">
+          <div class="dashboard-card bitcoin-chart-card" style="height: 420px;">
+            <div id="tradingview-btc-chart" style="height: 100%;"></div>
           </div>
-        </div>
-      </div>
-
-        <!-- 속보 뉴스 (1fr) -->
-        <div class="dashboard-card breaking-news-card">
-        <div class="card-header">
+          <!-- 속보 뉴스: 비트코인 차트 하단 -->
+          <div class="dashboard-card breaking-news-card">
+            <div class="card-header">
               <h3><span style="color: #2962ff;">속보</span> 뉴스</h3>
+            </div>
+            <!-- 뉴스 카드 헤더 바로 아래 롤링 바 -->
+            <div class="header-breaking-ticker inside-card" aria-live="polite">
+              <div class="hb-container">
+                <div class="hb-left">
+                  <span class="hb-sep">·</span>
+                  <span class="hb-chip">속보</span>
+                </div>
+                <div class="hb-track-wrap">
+                  <div class="hb-track" id="hb-track"></div>
+                </div>
+                <a class="hb-right" href="/news/">뉴스홈</a>
+              </div>
+            </div>
+            <div class="breaking-news-content">
+              <div id="breaking-news-list">
+                <div style="display: flex; align-items: center; justify-content: center; height: 220px; color: #6b7280;">
+                  <div style="text-align: center;">
+                    <i class="fas fa-spinner fa-spin" style="font-size: 2rem; margin-bottom: 1rem;"></i>
+                    <div>속보 뉴스 로딩 중...</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-        <div class="breaking-news-content">
-          <div id="breaking-news-list">
-            <div style="display: flex; align-items: center; justify-content: center; height: 400px; color: #6b7280;">
-              <div style="text-align: center;">
-                <i class="fas fa-spinner fa-spin" style="font-size: 2rem; margin-bottom: 1rem;"></i>
-                <div>속보 뉴스 로딩 중...</div>
+        <div class="split-right">
+          <div class="dashboard-card login-card" id="home-login-card">
+            <div class="login-card-inner">
+              <div class="login-header">
+                <h3>온비트 로그인</h3>
+                <p class="login-sub">로그인하고 다양한 서비스와 혜택을 이용하세요.</p>
+              </div>
+              <div class="login-body">
+                <!-- 로그아웃 상태 -->
+                <div class="logged-out-view">
+                  <a class="login-btn" href="/login/">로그인</a>
+                  <div class="login-links">
+                    <a href="/login/">아이디 찾기</a>
+                    <span class="sep">|</span>
+                    <a href="/login/">비밀번호 찾기</a>
+                    <span class="sep">|</span>
+                    <a href="/signup/">회원가입</a>
+                  </div>
+                </div>
+                <!-- 로그인 상태 -->
+                <div class="logged-in-view" style="display:none;">
+                  <div class="profile-row">
+                    <div class="avatar" aria-hidden="true">👤</div>
+                    <div class="userinfo">
+                      <div class="name" id="home-user-name">사용자</div>
+                      <div class="desc">환영합니다! 대시보드와 커뮤니티를 이용해보세요.</div>
+                    </div>
+                  </div>
+                  <div class="login-actions">
+                    <a class="primary" href="/my-account/">마이페이지</a>
+                    <a class="secondary" href="/community/">커뮤니티</a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- 고래 거래 추적: 로그인 카드 하단 -->
+          <!-- 실시간 롱/숏 비율: 로그인 카드 아래, 고래 카드 위 -->
+          <div class="dashboard-card ls-gauge-card">
+            <div class="card-header">
+              <h3><span style="color: #2962ff;">실시간</span> 롱/숏 비율</h3>
+            </div>
+            <div class="ls-gauge-content">
+              <canvas id="ls-gauge-canvas" width="350" height="220" aria-label="롱/숏 비율 게이지" role="img"></canvas>
+              <div class="ls-gauge-scale">
+                <span class="scale-strong-sell">스트롱 셀</span>
+                <span class="scale-sell">셀</span>
+                <span class="scale-neutral">뉴트럴</span>
+                <span class="scale-buy">바이</span>
+                <span class="scale-strong-buy">스트롱 바이</span>
+              </div>
+              <div class="ls-gauge-summary">
+                <span id="ls-gauge-label">계산 중...</span>
+                <span id="ls-gauge-percent" class="ls-percent"></span>
+              </div>
+              <div class="ls-gauge-meta" id="ls-gauge-meta">BTCUSDT · 1분 롤링</div>
+            </div>
+          </div>
+          
+          <!-- 고래 거래 추적 카드 -->
+          <div class="dashboard-card whale-tracker-card">
+            <div class="card-header">
+              <h3><span style="color: #2962ff;">고래</span> 거래 추적</h3>
+            </div>
+            <div class="whale-content">
+              <div id="whale-transactions">
+                <div style="display: flex; align-items: center; justify-content: center; height: 330px; color: #6b7280;">
+                  <div style="text-align: center;">
+                    <i class="fas fa-spinner fa-spin" style="font-size: 2rem; margin-bottom: 1rem;"></i>
+                    <div>고래 거래 연결 중...</div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
-        
-        <!-- 모바일 슬라이더 인디케이터 -->
-        <div class="dashboard-indicators" id="dashboard-indicators">
-          <!-- 인디케이터들이 JavaScript로 동적 생성됩니다 -->
-          </div>
-        </div>
-      </div>
+      
 
       <!-- 실시간 코인 시세 테이블 -->
       <div class="crypto-table-section">
@@ -204,8 +268,6 @@
                  <th class="sortable funding-col" data-sort="fundingRate">자금 조달 비율</th>
                  <th class="sortable volume-col" data-sort="volume">24H 볼륨($)</th>
                  <th class="sortable oi-col" data-sort="openInterest">OI($)</th>
-                 <th class="sortable oi-change-col" data-sort="oiChange1h">OI(1H%)</th>
-                 <th class="sortable oi-change-col" data-sort="oiChange4h">OI(4H%)</th>
                  <th class="sortable market-col" data-sort="marketCap">Market Cap($)</th>
                  <th class="sortable liquidation-col" data-sort="liquidation1h">1H 청산($)</th>
                  <th class="sortable liquidation-col" data-sort="liquidation24h">24H 청산($)</th>
@@ -312,6 +374,7 @@
   <script src="js/index/tradingview-widgets.js"></script>
   <script src="js/index/dashboard-manager.js"></script>
   <script src="js/index/crypto-table-manager.js"></script>
+  <script src="js/index/long-short-gauge.js"></script>
   <script src="js/analysis/whale-tracker.js"></script>
   <script src="js/index/mobile-dashboard-slider.js"></script>
   <script src="js/index/firebase-manager.js"></script>

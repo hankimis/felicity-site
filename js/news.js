@@ -5,6 +5,10 @@ document.addEventListener('DOMContentLoaded', function() {
     if (breakingNewsCard) {
         loadNewsForMainPage();
     }
+    // 뉴스 카드 헤더 바로 아래 롤링바 초기화
+    if (document.getElementById('hb-track')) {
+        initHeaderBreakingTicker();
+    }
     
     // 뉴스 페이지인 경우에만 전체 초기화
     const newsGrid = document.getElementById('newsGrid');
@@ -734,16 +738,23 @@ function displayNews(news, isInitialLoad = true, currentTab = 'news') {
         return;
     }
     
+    // 탭별 필터링 데이터 준비
+    let workingNews = Array.isArray(news) ? news.slice() : [];
+    if (currentTab === 'breaking') {
+        // 중요도 4 이상만 속보로 간주
+        workingNews = workingNews.filter(item => getNewsImportance(item) >= 4);
+    }
+
     // 초기 로드 시 전체 초기화
     if (isInitialLoad) {
         newsGrid.innerHTML = '';
         // 속보 탭에서는 더 많은 뉴스를 표시
         if (currentTab === 'breaking') {
-            currentDisplayCount = Math.min(20, news.length); // 속보는 최대 20개 표시
-            hasMoreNews = news.length > currentDisplayCount;
+            currentDisplayCount = Math.min(20, workingNews.length); // 속보는 최대 20개 표시
+            hasMoreNews = workingNews.length > currentDisplayCount;
         } else {
-            currentDisplayCount = Math.min(10, news.length);
-            hasMoreNews = news.length > currentDisplayCount;
+            currentDisplayCount = Math.min(10, workingNews.length);
+            hasMoreNews = workingNews.length > currentDisplayCount;
         }
     }
     
@@ -752,11 +763,11 @@ function displayNews(news, isInitialLoad = true, currentTab = 'news') {
     // 표시할 뉴스 범위 결정
     let itemsToDisplay;
     if (isInitialLoad) {
-        itemsToDisplay = news.slice(0, currentDisplayCount);
+        itemsToDisplay = workingNews.slice(0, currentDisplayCount);
     } else {
         // 추가 로드 시 새로운 항목만 추가
         const startIndex = currentDisplayCount - loadMoreCount;
-        itemsToDisplay = news.slice(startIndex, currentDisplayCount);
+        itemsToDisplay = workingNews.slice(startIndex, currentDisplayCount);
     }
 
     itemsToDisplay.forEach(item => {
@@ -815,7 +826,7 @@ function displayNews(news, isInitialLoad = true, currentTab = 'news') {
         const completeMessage = document.createElement('div');
         completeMessage.className = 'loading';
         const contentType = currentTab === 'breaking' ? '속보' : '뉴스';
-        completeMessage.innerHTML = `총 ${news.length}개의 ${contentType}를 모두 불러왔습니다.`;
+        completeMessage.innerHTML = `총 ${workingNews.length}개의 ${contentType}를 모두 불러왔습니다.`;
         newsGrid.appendChild(completeMessage);
     }
     
@@ -1376,7 +1387,71 @@ function triggerBreakingNewsUpdate() {
         // 커스텀 이벤트 발송
         window.dispatchEvent(new CustomEvent('newsDataUpdated'));
     }
+    // 헤더 롤링바도 업데이트
+    if (typeof window.updateHeaderBreakingTicker === 'function') {
+        window.updateHeaderBreakingTicker();
+    }
 }
+
+// =============================
+// 헤더 하단 속보 롤링바
+// =============================
+function initHeaderBreakingTicker() {
+    buildHeaderBreakingTickerItems();
+    startHeaderTickerRollingVertical();
+}
+
+function buildHeaderBreakingTickerItems() {
+    const track = document.getElementById('hb-track');
+    if (!track) return;
+    const items = (window.newsItems || []).filter(n => getNewsImportance(n) >= 5)
+        .sort((a,b) => new Date(b.pubDate) - new Date(a.pubDate))
+        .slice(0, 20);
+    if (items.length === 0) {
+        track.innerHTML = '<span class="hb-item">현재 표시할 속보가 없습니다</span>';
+        return;
+    }
+    // 세로 롤링: 아이템을 세로 스택으로 구성 (복제 없이 순환 시 DOM 재배치)
+    const html = items.map(n => `<span class=\"hb-item vertical\" onclick=\"window.open('${n.link}','_blank')\">${n.title}</span>`).join('');
+    track.classList.add('vertical');
+    const wrap = document.querySelector('.header-breaking-ticker .hb-track-wrap');
+    if (wrap) wrap.classList.add('vertical');
+    track.innerHTML = html;
+}
+
+function startHeaderTickerRollingVertical() {
+    const wrap = document.querySelector('.header-breaking-ticker .hb-track-wrap.vertical');
+    const track = document.getElementById('hb-track');
+    if (!wrap || !track) return;
+    // 기존 타이머 정리
+    if (window.headerTickerTimer) clearTimeout(window.headerTickerTimer);
+    const rowHeight = 32; // CSS와 동일
+    const intervalMs = 3000; // 정지 대기 시간
+    const animMs = 500; // 전환 시간
+
+    const step = () => {
+        if (!track || track.children.length === 0) return;
+        // 전환 시작
+        track.style.transition = `transform ${animMs}ms ease`;
+        track.style.transform = `translateY(-${rowHeight}px)`;
+        // 전환 완료 후 첫 요소를 끝으로 이동하고 리셋
+        setTimeout(() => {
+            track.style.transition = 'none';
+            if (track.children.length > 0) {
+                track.appendChild(track.children[0]);
+            }
+            track.style.transform = 'translateY(0)';
+            window.headerTickerTimer = setTimeout(step, intervalMs);
+        }, animMs);
+    };
+
+    window.headerTickerTimer = setTimeout(step, 1000);
+}
+
+window.updateHeaderBreakingTicker = function() {
+    buildHeaderBreakingTickerItems();
+    startHeaderTickerRollingVertical();
+};
 
 
 
