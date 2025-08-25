@@ -177,15 +177,21 @@
                 <!-- 로그인 상태 -->
                 <div class="logged-in-view" style="display:none;">
                   <div class="profile-row">
-                    <div class="avatar" aria-hidden="true">👤</div>
                     <div class="userinfo">
                       <div class="name" id="home-user-name">사용자</div>
                       <div class="desc">환영합니다! 대시보드와 커뮤니티를 이용해보세요.</div>
                     </div>
                   </div>
-                  <div class="login-actions">
-                    <a class="primary" href="/my-account/">마이페이지</a>
-                    <a class="secondary" href="/community/">커뮤니티</a>
+                  <!-- 로그인 후 잔액/채굴량 영역 -->
+                  <div class="balance-row" id="home-balance-row" style="display:none;">
+                    <div class="balance-item">
+                      <span class="label">지갑 잔액</span>
+                      <span class="value" id="home-usdt-balance">-</span>
+                    </div>
+                    <div class="balance-item">
+                      <span class="label">ONBIT 채굴량</span>
+                      <span class="value" id="home-onbit-balance">-</span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -383,6 +389,8 @@
   <!-- Card-specific JavaScript files -->
   <script src="js/cards/trading-charts.js"></script>
   <script src="js/cards/feature-cards.js"></script>
+  <!-- ONBIT 채굴 모듈 (잔액 표시 연동) -->
+  <script type="module" src="js/onbit-miner.js"></script>
   
   <!-- External Scripts -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>

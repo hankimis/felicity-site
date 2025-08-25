@@ -341,7 +341,22 @@ class CommunityChat {
                     await postFn({ text: originalText, displayName, photoURL });
                 } catch (error) {
                     console.error('메시지 전송 실패:', error);
-                    alert('메시지 전송에 실패했습니다. 다시 시도해주세요.');
+                    try {
+                        const code = (error && error.code) || (error && error.details && error.details.code) || '';
+                        if (code.includes('already-exists')) {
+                            alert('같은 메시지를 너무 빨리 반복해서 보낼 수 없습니다. 잠시 후 다시 시도해주세요.');
+                        } else if (code.includes('resource-exhausted')) {
+                            alert('메시지를 너무 빠르게 보내고 있습니다. 잠시 후 다시 시도해주세요.');
+                        } else if (code.includes('invalid-argument')) {
+                            alert('메시지 형식이 올바르지 않습니다.');
+                        } else if (code.includes('unauthenticated')) {
+                            alert('로그인이 필요합니다.');
+                        } else {
+                            alert('메시지 전송에 실패했습니다. 다시 시도해주세요.');
+                        }
+                    } catch(_) {
+                        alert('메시지 전송에 실패했습니다. 다시 시도해주세요.');
+                    }
                     // 실패 시 텍스트 복원
                     this.messageInput.value = originalText;
                 } finally {

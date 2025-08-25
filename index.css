@@ -58,25 +58,31 @@
     .main-top-split .split-right { display: flex; flex-direction: column; gap: 14px; }
     /* 좌열: 차트 + 속보 뉴스 고정 높이 */
     .main-top-split .bitcoin-chart-card { height: 360px; }
-    .main-top-split .breaking-news-card { height: auto; overflow: hidden; }
+    .main-top-split .breaking-news-card { height: 560px; overflow: hidden; }
     /* 우열: 로그인/고래 카드 */
-    .main-top-split .login-card { height: 200px; }
+    .main-top-split .login-card { height: auto; }
     .main-top-split .whale-tracker-card { height: 400px }
     .login-card { padding: 0; display: flex; align-items: stretch; }
-    .login-card .login-card-inner { padding: 24px 22px 26px; width: 100%; display: flex; flex-direction: column; gap: 16px; text-align: center; }
+    .login-card .login-card-inner { padding: 24px 22px 26px; width: 100%; display: flex; flex-direction: column; gap: 14px; text-align: center; }
     .login-card .login-header h3 { margin: 0; font-size: 18px; font-weight: 800; }
+    /* 로그인 후 잔액/채굴량 표시 */
+    .login-card .balance-row { display: flex; flex-direction: row; gap: 0px; align-items: stretch; }
+    .login-card .balance-item { background: transparent; border: none; border-radius: 12px; padding: 4px 0; min-width: 0; flex: 1; }
+    .login-card .balance-item .label { display: block; font-size: 13px; color: #94a3b8; }
+    .login-card .balance-item .value { font-size: 21px; font-weight: 600; color: var(--text-color); letter-spacing: .2px; }
+    .login-card #home-onbit-balance { color: var(--primary-color); }
     .login-card .login-sub { margin: 2px 0 2px; font-size: 14px; color: var(--text-color-secondary); }
-    .login-card .login-body { display: flex; flex-direction: column; gap: 16px; }
+    .login-card .login-body { display: flex; flex-direction: column; gap: 14px; }
     .login-card .login-btn { display: flex; width: 100%; justify-content: center; align-items: center; background: var(--primary-color); color: #fff; height: 58px; border-radius: 12px; font-weight: 800; font-size: 20px; letter-spacing: 0.2px; text-decoration: none; box-shadow: 0 6px 16px var(--shadow-color-light); transition: transform var(--transition-fast), background var(--transition-fast); }
     .login-card .login-btn:hover { background: var(--primary-hover); transform: translateY(-1px); }
     .login-card .login-links { display: flex; justify-content: center; align-items: center; gap: 14px; color: var(--text-color-secondary); font-size: 14px; margin-top: 12px; }
     .login-card .login-links a { color: var(--text-color-secondary); text-decoration: none; }
     .login-card .login-links .sep { color: var(--border-color); }
-    .login-card .profile-row { display: flex; gap: 12px; align-items: center; }
-    .login-card .avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--bg-tertiary); display: flex; align-items: center; justify-content: center; }
-    .login-card .userinfo .name { font-weight: 700; }
+    .login-card .profile-row { display: flex; gap: 0; align-items: center; margin-bottom: 16px; justify-content: center; }
+    .login-card .avatar { display: none; }
+    .login-card .userinfo .name { font-weight: 800; font-size: 22px; }
     .login-card .userinfo .desc { color: var(--text-color-secondary); font-size: 12px; }
-    .login-card .login-actions { display: flex; gap: 10px; }
+    .login-card .login-actions { display: flex; gap: 10px; margin-top: 10px; }
     .login-card .login-actions a { flex: 1; text-align: center; padding: 12px 12px; border-radius: 10px; text-decoration: none; font-weight: 700; }
     .login-card .login-actions a.primary { background: var(--primary-color); color: #fff; }
     .login-card .login-actions a.secondary { background: var(--bg-secondary, #f3f4f6); color: var(--text-color); }

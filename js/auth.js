@@ -228,8 +228,18 @@ async function updateAuthUI(user) {
 
     if (user) {
         try {
-            const userDoc = await window.db.collection("users").doc(user.uid).get();
+            const userRef = window.db.collection("users").doc(user.uid);
+            const userDoc = await userRef.get();
             const _exists = typeof userDoc.exists === 'function' ? userDoc.exists() : userDoc.exists;
+            if (!_exists) {
+                try {
+                    await userRef.set({
+                        displayName: user.displayName || "사용자",
+                        email: user.email || null,
+                        createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
+                    }, { merge: true });
+                } catch (_) {}
+            }
             currentUser = _exists 
                 ? { uid: user.uid, ...userDoc.data() } 
                 : { uid: user.uid, displayName: user.displayName || "사용자" };
@@ -288,6 +298,48 @@ async function updateAuthUI(user) {
                     loggedOut.style.display = 'none';
                     const nameEl = document.getElementById('home-user-name');
                     if (nameEl) nameEl.textContent = currentUser.displayName || '사용자';
+                    // 로그인 시 로그인 헤더 숨김, 잔액/채굴량 표시
+                    const loginHeader = homeLoginCard.querySelector('.login-header');
+                    if (loginHeader) loginHeader.style.display = 'none';
+                    const balanceRow = document.getElementById('home-balance-row');
+                    if (balanceRow) balanceRow.style.display = 'flex';
+                    // Onbit Miner에 사용자 설정 및 UI 구독
+                    if (window.onbitMiner) {
+                        try {
+                            window.onbitMiner.setUser({ uid: currentUser.uid });
+                            window.onbitMiner.setExternalControlled(true);
+                            window.addEventListener('onbit:balance', (e) => {
+                                const onb = (e && e.detail && (typeof e.detail.balance === 'number' ? e.detail.balance : e.detail)) || 0;
+                                const onbitEl = document.getElementById('home-onbit-balance');
+                                if (onbitEl) onbitEl.textContent = `${Number(onb || 0).toFixed(3)} ONBIT`;
+                            }, { once: false });
+                            window.onbitMiner.refreshBalance().catch(()=>{});
+                        } catch (_) { }
+                    }
+                    // 지갑 잔액(페이퍼 트레이딩 잔액) 표시: Firestore users.paperTrading.balanceUSDT
+                    try {
+                        if (window.db && currentUser.uid) {
+                            window.db.collection('users').doc(currentUser.uid).get().then((doc)=>{
+                                const data = doc.exists ? doc.data() : {};
+                                const pt = data && data.paperTrading || {};
+                                const bal = Number(pt.balanceUSDT || 0);
+                                const el = document.getElementById('home-usdt-balance');
+                                if (el) el.textContent = `${bal.toLocaleString()} USDT`;
+                                // 서버 초기화 대기 중이면 잠시 후 재확인 (신규 가입 직후)
+                                if (el && (!pt || typeof pt.balanceUSDT !== 'number')) {
+                                    setTimeout(async () => {
+                                        try {
+                                            const later = await window.db.collection('users').doc(currentUser.uid).get();
+                                            const laterData = later.exists ? later.data() : {};
+                                            const laterPt = laterData && laterData.paperTrading || {};
+                                            const laterBal = Number(laterPt.balanceUSDT || 0);
+                                            if (laterBal) el.textContent = `${laterBal.toLocaleString()} USDT`;
+                                        } catch(_) {}
+                                    }, 1500);
+                                }
+                            }).catch(()=>{});
+                        }
+                    } catch(_) {}
                 }
             }
 
@@ -355,6 +407,15 @@ async function updateAuthUI(user) {
             if (loggedIn && loggedOut) {
                 loggedIn.style.display = 'none';
                 loggedOut.style.display = 'block';
+                // 로그아웃 시 헤더/밸런스 영역 초기화
+                const loginHeader = homeLoginCard.querySelector('.login-header');
+                if (loginHeader) loginHeader.style.display = '';
+                const balanceRow = document.getElementById('home-balance-row');
+                if (balanceRow) balanceRow.style.display = 'none';
+                const onbitEl = document.getElementById('home-onbit-balance');
+                if (onbitEl) onbitEl.textContent = '-';
+                const usdtEl = document.getElementById('home-usdt-balance');
+                if (usdtEl) usdtEl.textContent = '-';
             }
         }
     }

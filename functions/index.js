@@ -768,6 +768,8 @@ exports.cleanupStaleOnlineUsersScheduled = onSchedule({schedule: 'every 5 minute
 const REGION = 'asia-northeast3';
 const MESSAGE_MAX_LEN = 500;
 const POST_COOLDOWN_MS = 1500;
+// 동일 메시지 방지 기간 (이 시간 이내에 같은 내용이면 중복으로 간주)
+const DUPLICATE_WINDOW_MS = 5000;
 const BAD_WORDS = ['spam']; // 실제 서비스에서는 외부 리스트/설정 사용 권장
 
 function hasBadWord(text) {
@@ -803,7 +805,7 @@ exports.postCommunityMessage = https.onCall({ region: REGION, enforceAppCheck: f
   if (now - lastPostAt < POST_COOLDOWN_MS) {
     throw new https.HttpsError('resource-exhausted', 'Too fast. Please slow down.');
   }
-  if (lastText && lastText === text.trim()) {
+  if (lastText && lastText === text.trim() && (now - lastPostAt) < DUPLICATE_WINDOW_MS) {
     throw new https.HttpsError('already-exists', 'Duplicate message');
   }
 
