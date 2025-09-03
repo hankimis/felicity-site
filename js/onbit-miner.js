@@ -1,5 +1,5 @@
 // onbit-miner.js
-// ONBIT 코인 채굴 모듈: 실현 수익 누적 기준 1,000 USDT마다 0.1 ONBIT 적립
+// ONBIT 코인 채굴 모듈: 수익 1 USDT당 1 ONBIT / 손실 1 USDT당 0.1 ONBIT 적립
 
 import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, doc, getDoc, setDoc, runTransaction } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
@@ -68,9 +68,9 @@ class OnbitMiner {
     }
 
     /**
-     * 실현 수익(USDT) 기준 채굴 보상
-     * - 수익: 1 USDT 당 0.01 ONBIT 적립
-     * - 손실: 1 USDT 당 0.001 ONBIT 적립
+     * 실현 손익 비례 채굴 보상
+     * - 수익(>0): 1 USDT당 1.0 ONBIT 적립
+     * - 손실(<0): 1 USDT당 0.1 ONBIT 적립
      */
     async awardForProfit(profitUSDT) {
         if (!this.user) return { awarded: 0, progress: 0 };
@@ -82,7 +82,7 @@ class OnbitMiner {
             const data = snap.exists() ? snap.data() : {};
             const mining = data.mining || {};
             const prevOnbit = Number(mining.onbit || 0);
-            const rate = p > 0 ? 0.01 : 0.001; // 수익/손실 차등
+            const rate = p > 0 ? 1.0 : 0.1;
             const award = Number((Math.abs(p) * rate).toFixed(4));
             const next = {
                 mining: {

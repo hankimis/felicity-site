@@ -133,9 +133,9 @@
         }
       } catch(_) {}
 
-      // 채굴 실시간 반영용 누적 버퍼
-      this._miningPosAccUSDT = 0; // 누적 수익 델타
-      this._miningNegAccUSDT = 0; // 누적 손실 델타 (음수로 보관)
+      // 채굴 미리보기는 포지션 PnL을 기준으로 고정 보상(수익 1, 손실 0.1) 합산
+      this._miningPosAccUSDT = 0; // 사용 안함
+      this._miningNegAccUSDT = 0; // 사용 안함
       this._lastMiningAwardTs = 0;
       this._onbitPreview = 0; // 현재 포지션 기준 예상 채굴량(합계)
     }
@@ -299,15 +299,9 @@
         this.el.amountPercent.addEventListener('input', () => this.updatePercentFromText());
       }
       if (this.el.price) {
-        const snap = () => {
-          let val = Number(this.el.price.value);
-          if (!isFinite(val)) return;
-          // 가격 틱 스냅
-          val = Math.round(val / PRICE_TICK) * PRICE_TICK;
-          this.el.price.value = val.toFixed(1);
-        };
-        this.el.price.addEventListener('input', () => { this.priceTouched = true; snap(); this.updateCostPreview(); });
-        this.el.price.addEventListener('change', () => { this.priceTouched = true; snap(); this.updateCostPreview(); });
+        const onPriceInput = () => { this.priceTouched = true; this.updateCostPreview(); };
+        this.el.price.addEventListener('input', onPriceInput);
+        this.el.price.addEventListener('change', onPriceInput);
       }
       // priceType select 제거에 따라 change 리스너 삭제
 
@@ -439,6 +433,39 @@
         });
         rowsEl.addEventListener('mouseleave', () => { tt.style.display = 'none'; });
         rowsEl.__tooltipBound = true;
+      }
+
+      // 오더북 가격 클릭 → 가격 입력 자동 채우기 (위임)
+      if (rowsEl && !rowsEl.__priceClickBound) {
+        rowsEl.addEventListener('click', (e) => {
+          const row = e.target.closest && e.target.closest('.ob-row.ask, .ob-row.bid');
+          if (!row) return;
+          const priceAttr = row.getAttribute('data-price');
+          const priceVal = Number(priceAttr);
+          if (!isFinite(priceVal) || priceVal <= 0) return;
+          if (!this.el || !this.el.price) return;
+
+          // 마켓 모드인 경우 Limit로 전환하여 가격 입력 가능 상태로 변경
+          if (this.el.price.disabled) {
+            try {
+              const sidebarEl = document.getElementById('paper-trading-sidebar');
+              if (sidebarEl) {
+                sidebarEl.querySelectorAll('.order-type').forEach((b) => b.classList.remove('active'));
+                const limitBtn = sidebarEl.querySelector('.order-type[data-type="limit"]');
+                if (limitBtn) limitBtn.classList.add('active');
+              }
+              const form = document.getElementById('order-form');
+              if (form) form.classList.remove('is-market');
+              this.el.price.disabled = false;
+              this.el.price.placeholder = '';
+            } catch(_) {}
+          }
+
+          this.el.price.value = String(priceVal);
+          this.priceTouched = true;
+          this.updateCostPreview();
+        });
+        rowsEl.__priceClickBound = true;
       }
 
       // 전역 클릭 위임: Limit/Market + 모달 버튼들(교차/레버리지)
@@ -1001,7 +1028,7 @@
           let minedPreview = 0;
           for (const pos of this.state.positions) {
             const pnl = this.calcPnL(pos, this.state.lastPrice);
-            const rate = pnl >= 0 ? 0.01 : 0.001;
+            const rate = pnl > 0 ? 1.0 : (pnl < 0 ? 0.1 : 0);
             minedPreview += Math.abs(pnl) * rate;
           }
           this._onbitPreview = minedPreview;
@@ -1624,8 +1651,8 @@
           const pnlCls = pnl >= 0 ? 'positive' : 'negative';
           const estLiq = this.calcLiqPrice(p);
           const notional = (p.entry * p.amount).toFixed(4);
-          const onbitRate = pnl >= 0 ? 0.01 : 0.001;
-          const estMined = Math.abs(pnl) * onbitRate;
+          const rate = pnl > 0 ? 1.0 : (pnl < 0 ? 0.1 : 0);
+          const estMined = Math.abs(pnl) * rate;
           return `
             <div class="row ${p.side}" data-id="${p.id}">
               <div class="cell-pair"><div class="pair">${p.symbol} Perp</div><div class="tags"><span class="chip">${p.mode==='cross'?'Cross':'Isolated'}</span><span class="chip">${p.leverage}x</span></div></div>
@@ -1706,8 +1733,8 @@
         const pnlPct = (pnl / usedMargin) * 100;
         const pnlEl = row.querySelector('.pnl');
         if (pnlEl) {
-          const onbitRate = pnl >= 0 ? 0.01 : 0.001;
-          const estMined = Math.abs(pnl) * onbitRate;
+          const rate = pnl > 0 ? 1.0 : (pnl < 0 ? 0.1 : 0);
+          const estMined = Math.abs(pnl) * rate;
           // 숫자 애니메이션: PnL
           const pnlVal = pnlEl.querySelector('.pnl-val');
           if (pnlVal) {
