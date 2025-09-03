@@ -245,6 +245,47 @@ async function updateAuthUI(user) {
                 : { uid: user.uid, displayName: user.displayName || "사용자" };
             window.currentUser = currentUser;
 
+            // 일일 접속 보너스 지급 (매일 최초 접속 시 1000 USDT)
+            try {
+                if (window.db && user && user.uid) {
+                    const todayYmd = new Date().toISOString().slice(0,10);
+                    const res = await window.db.runTransaction(async (tx) => {
+                        const ref = window.db.collection('users').doc(user.uid);
+                        const snap = await tx.get(ref);
+                        const data = snap.exists ? snap.data() : {};
+                        const pt = data && data.paperTrading || {};
+                        const last = pt.lastDailyBonusYmd;
+                        if (last === todayYmd) {
+                            return { awarded: false, balance: Number(pt.balanceUSDT || 0) };
+                        }
+                        const prevBal = Number(pt.balanceUSDT || 0);
+                        const nextBal = prevBal + 1000;
+                        const next = {
+                            paperTrading: {
+                                balanceUSDT: nextBal,
+                                equityUSDT: Number(pt.equityUSDT || nextBal),
+                                lastDailyBonusYmd: todayYmd
+                            }
+                        };
+                        tx.set(ref, next, { merge: true });
+                        return { awarded: true, balance: nextBal };
+                    });
+                    // 보너스가 지급되었다면 관련 UI/모듈 동기화
+                    if (res && res.awarded) {
+                        try { 
+                            // 홈 카드 잔고 즉시 갱신
+                            const el = document.getElementById('home-usdt-balance');
+                            if (el) el.textContent = `${res.balance.toLocaleString()} USDT`;
+                        } catch(_) {}
+                        try {
+                            if (window.paperTrading && typeof window.paperTrading.loadUserBalanceFromFirestore === 'function') {
+                                window.paperTrading.loadUserBalanceFromFirestore();
+                            }
+                        } catch(_) {}
+                    }
+                }
+            } catch (_) {}
+
             // 로그인 상태 UI 업데이트
             
             if (userProfile) {
