@@ -2,7 +2,24 @@
   const db = window.firebase && window.firebase.firestore ? window.firebase.firestore() : null;
   const auth = window.firebase && window.firebase.auth ? window.firebase.auth() : null;
   const storage = window.firebase && window.firebase.storage ? window.firebase.storage() : null;
-  const postId = (window.__POST_ID_FROM_QS__) || location.pathname.split('/').pop();
+
+  function resolvePostId(){
+    try {
+      if (window.__POST_ID_FROM_QS__) return window.__POST_ID_FROM_QS__;
+      // /feed/post/:id 패턴 지원
+      const m = location.pathname && location.pathname.match(/\/feed\/post\/([^\/#?]+)/);
+      if (m && m[1]) return m[1];
+      // 마지막 세그먼트가 .html 이 아니면 id로 간주
+      const last = (location.pathname || '').split('/').filter(Boolean).pop() || '';
+      if (last && !/\.html?$/.test(last)) return last;
+      // 쿼리스트링 id 지원
+      const qsId = new URLSearchParams(location.search || '').get('id');
+      if (qsId) return qsId;
+      return '';
+    } catch (_) { return ''; }
+  }
+
+  const postId = resolvePostId();
 
   let commentsUnsub = null;
 
@@ -11,7 +28,7 @@
   function html(s){ return s.replace(/</g,'&lt;'); }
 
   async function loadPost(){
-    if (!db || !postId) return;
+    if (!db || !postId) { const c = el('post'); if (c) c.innerHTML = '<div style="padding:24px;">유효하지 않은 게시글 주소입니다.</div>'; return; }
     const doc = await db.collection('posts').doc(postId).get();
     if (!doc.exists) { el('post').innerHTML = '<div style="padding:24px;">게시글을 찾을 수 없습니다.</div>'; return; }
     const p = { id: doc.id, ...doc.data() };
@@ -38,12 +55,13 @@
     if (!db || !postId) return;
     if (commentsUnsub) { try { commentsUnsub(); } catch(_) {} commentsUnsub = null; }
     const q = db.collection('comments').where('postId','==',postId).where('parentId','==',null).orderBy('createdAt','asc');
-    commentsUnsub = q.onSnapshot(async (snap)=>{
+    const renderFromDocs = async (docs) => {
       const cont = el('comments');
+      if (!cont) return;
       cont.innerHTML = '';
       const rows = [];
-      for (const doc of snap.docs){
-        const c = { id: doc.id, ...doc.data() };
+      for (const d of docs){
+        const c = { id: d.id, ...d.data() };
         let u = { displayName: '사용자', photoURL: '' };
         try { const ud = await db.collection('users').doc(c.authorId).get(); if (ud.exists) u = ud.data(); } catch(_) {}
         const canEdit = window.currentUser && window.currentUser.uid === c.authorId;
@@ -51,10 +69,31 @@
       }
       cont.insertAdjacentHTML('beforeend', rows.join(''));
       try { window.lucide && window.lucide.createIcons(); } catch(_) {}
-      const count = snap.size;
+      const count = docs.length;
       const elBtn = document.querySelector('#post .actions .reply span') || document.querySelector('.actions .reply span');
       if (elBtn) elBtn.textContent = String(count);
-    });
+    };
+
+    const fallbackOnce = async () => {
+      try {
+        // parentId 미설정 데이터 호환: 클라이언트 필터로 루트 댓글만
+        let ref = db.collection('comments').where('postId','==',postId).orderBy('createdAt','asc');
+        let snap;
+        try { snap = await ref.get(); }
+        catch (_) { snap = await db.collection('comments').where('postId','==',postId).get(); }
+        const root = snap.docs.filter(d=>{
+          const v = d.data() && d.data().parentId;
+          return v === null || typeof v === 'undefined';
+        });
+        await renderFromDocs(root);
+      } catch (_) {}
+    };
+
+    try {
+      commentsUnsub = q.onSnapshot(async (snap)=>{ await renderFromDocs(snap.docs); }, (err)=>{ fallbackOnce(); });
+    } catch (_) {
+      fallbackOnce();
+    }
   }
 
   function renderComment(c, u, canEdit){
