@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>작성하기 - ONBIT</title>
+  <link rel="stylesheet" href="../css/base/_variables.css" />
+  <link rel="stylesheet" href="../css/base/_reset.css" />
+  <link rel="stylesheet" href="../css/base/_base.css" />
+  <link rel="stylesheet" href="feed.css" />
+  <link rel="stylesheet" href="../components/header/navbar.css" />
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
+  <script src="../auth.js" defer></script>
+  <script src="write.js" defer></script>
+  <script src="../components/header/header-loader.js" defer></script>
+</head>
+<body>
+  <div id="header-placeholder"></div>
+  <main class="feed-container single-column" style="gap:48px;">
+    <section class="feed-main">
+      <h2 style="margin:8px 0 12px 0;">커뮤니티</h2>
+      <form id="write-form" class="composer" autocomplete="off">
+        <div class="composer-toolbar" style="display:flex; gap:8px; color:var(--text-color-secondary);"></div>
+        <textarea id="post-text" maxlength="2000" placeholder="욕설, 비방 등 상대방을 불쾌하게 하는 게시물은 올리지 말아 주세요." style="min-height:320px;"></textarea>
+        <div id="media-previews" class="media" style="margin-top:8px;"></div>
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <label style="font-size:12px; color:var(--text-color-secondary);">
+            <input id="post-media" type="file" accept="image/*,video/*" multiple style="display:none;" />
+            <span style="cursor:pointer;">미디어 추가</span>
+          </label>
+          <div style="display:flex; gap:8px;">
+            <button type="button" id="btn-cancel" class="btn" style="background:var(--card-bg); color:var(--text-color); border:1px solid var(--border-color); border-radius:999px; padding:10px 16px;">취소</button>
+            <button type="submit" id="btn-submit" class="btn primary" style="border-radius:999px; padding:10px 16px;">남기기</button>
+          </div>
+        </div>
+      </form>
+    </section>
+    
+  </main>
+  <script>
+    // local dev fallback: if rewrite not working, ensure links resolve
+    (function(){ if (location.hostname==='localhost' || location.hostname==='127.0.0.1') { /* no-op */ } })();
+  </script>
+</body>
+</html>
+

@@ -83,6 +83,8 @@
       this.amountPrecision = 4;
       this.priceTouched = false;
       this.prev = { lastPrice: null, uPnL: null, marginBalance: null };
+      this._midPrevPrice = null; // 오더북 중앙가 이전값(화살표/색상 판단용)
+      this._midTrendUp = true; // 동일가일 때 이전 추세 유지
       this.prevPnlByPos = new Map();
       this.firstPriceReceived = false;
       this.user = null;
@@ -1468,9 +1470,10 @@
         totalAsk += sz;
         const ratio = Math.min(1, totalAsk / askCumMax);
         const w = Math.round(ratio * 100);
-        rows.push(`<div class=\"ob-row ask\" data-key=\"ask-${price.toFixed(1)}\" data-cum-size=\"${totalAsk}\" data-cum-notional=\"${(totalAsk*price).toFixed(2)}\" data-price=\"${price}\"><div class=\"bar\" style=\"background:#ef4444; width:${w}%; right:0; transition:width 180ms ease;\"></div><div class=\"price\">${this.format(price)}</div><div class=\"qty\" data-prev=\"${sz.toFixed(4)}\">${sz.toFixed(4)}</div><div class=\"total\" data-prev=\"${totalAsk.toFixed(4)}\">${totalAsk.toFixed(4)}</div></div>`);
+        rows.push(`<div class=\"ob-row ask\" data-key=\"ask-${price.toFixed(1)}\" data-cum-size=\"${totalAsk}\" data-cum-notional=\"${(totalAsk*price).toFixed(2)}\" data-price=\"${price}\"><div class=\"bar\" style=\"width:${w}%; left:0;\"></div><div class=\"price\">${this.format(price)}</div><div class=\"qty\" data-prev=\"${sz.toFixed(4)}\">${sz.toFixed(4)}</div><div class=\"total\" data-prev=\"${totalAsk.toFixed(4)}\">${totalAsk.toFixed(4)}</div></div>`);
       }
-      rows.push(`<div class=\"ob-row mid\" data-key=\"mid\" style=\"position:sticky; top:0; background:var(--card-bg); font-weight:700;\"><div class=\"price\">${this.format(this.state.lastPrice)}</div><div></div><div></div></div>`);
+      const arrowSvg = `<svg width=\"20\" height=\"21\" viewBox=\"0 0 20 21\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M5.47499 10.1494L9.53374 6.08938V16.9825C9.53374 17.0154 9.54023 17.0479 9.55283 17.0783C9.56543 17.1087 9.5839 17.1363 9.60718 17.1595C9.63047 17.1827 9.6581 17.2011 9.6885 17.2137C9.7189 17.2262 9.75148 17.2326 9.78436 17.2325H10.5344C10.6007 17.2325 10.6643 17.2062 10.7111 17.1593C10.758 17.1124 10.7844 17.0488 10.7844 16.9825V6.08875L14.8431 10.1494C14.8902 10.1962 14.9539 10.2225 15.0203 10.2225C15.0867 10.2225 15.1504 10.1962 15.1975 10.1494L15.7269 9.61813C15.7501 9.59502 15.7685 9.56755 15.781 9.5373C15.7936 9.50706 15.8001 9.47463 15.8001 9.44188C15.8001 9.40913 15.7936 9.3767 15.781 9.34645C15.7685 9.31621 15.7501 9.28874 15.7269 9.26563L10.3356 3.87375C10.3124 3.85051 10.2848 3.83207 10.2545 3.81949C10.2241 3.80691 10.1916 3.80043 10.1587 3.80043C10.1259 3.80043 10.0934 3.80691 10.063 3.81949C10.0327 3.83207 10.0051 3.85051 9.98186 3.87375L4.59061 9.26563C4.54386 9.31249 4.51761 9.37599 4.51761 9.44219C4.51761 9.50839 4.54386 9.57189 4.59061 9.61875L5.12062 10.1494C5.14383 10.1726 5.1714 10.1911 5.20175 10.2036C5.2321 10.2162 5.26464 10.2227 5.29749 10.2227C5.33034 10.2227 5.36288 10.2162 5.39322 10.2036C5.42357 10.1911 5.45115 10.1726 5.47437 10.1494H5.47499Z\" fill=\"currentColor\"></path></svg>`;
+      rows.push(`<div class=\"ob-row mid\" data-key=\"mid\" style=\"position:sticky; top:0; background:var(--card-bg);\"><div class=\"mid-main\"><div class=\"mid-price\">${this.format(this.state.lastPrice)}</div><div class=\"mid-arrow\">${arrowSvg}</div></div><div></div><div></div></div>`);
       // 하단: BID (가격 낮음→높음) 고정 갯수
       for (let i = 0; i < bidsPrices.length; i++) {
         const price = bidsPrices[i];
@@ -1478,7 +1481,7 @@
         totalBid += sz;
         const ratio = Math.min(1, totalBid / bidCumMax);
         const w = Math.round(ratio * 100);
-        rows.push(`<div class=\"ob-row bid\" data-key=\"bid-${price.toFixed(1)}\" data-cum-size=\"${totalBid}\" data-cum-notional=\"${(totalBid*price).toFixed(2)}\" data-price=\"${price}\"><div class=\"bar\" style=\"background:#10b981; width:${w}%; right:0; transition:width 180ms ease;\"></div><div class=\"price\">${this.format(price)}</div><div class=\"qty\" data-prev=\"${sz.toFixed(4)}\">${sz.toFixed(4)}</div><div class=\"total\" data-prev=\"${totalBid.toFixed(4)}\">${totalBid.toFixed(4)}</div></div>`);
+        rows.push(`<div class=\"ob-row bid\" data-key=\"bid-${price.toFixed(1)}\" data-cum-size=\"${totalBid}\" data-cum-notional=\"${(totalBid*price).toFixed(2)}\" data-price=\"${price}\"><div class=\"bar\" style=\"width:${w}%; right:0;\"></div><div class=\"price\">${this.format(price)}</div><div class=\"qty\" data-prev=\"${sz.toFixed(4)}\">${sz.toFixed(4)}</div><div class=\"total\" data-prev=\"${totalBid.toFixed(4)}\">${totalBid.toFixed(4)}</div></div>`);
       }
       // 초기 마운트 시에만 DOM 생성, 이후에는 해당 키만 갱신
       if (rowsEl.children.length === 0) {
@@ -1499,7 +1502,7 @@
           const priceEl = el.querySelector('.price');
           const qtyEl = el.querySelector('.qty');
           const totalEl = el.querySelector('.total');
-          if (bar) { bar.style.transition = 'width 180ms ease'; bar.style.width = width + '%'; if (color) bar.style.background = color; }
+          if (bar) { bar.style.transition = 'width 180ms linear'; bar.style.width = width + '%'; }
           if (priceEl) priceEl.textContent = this.format(price);
           if (qtyEl) {
             const prev = Number(qtyEl.getAttribute('data-prev') || '0');
@@ -1525,8 +1528,26 @@
         // 중앙
         const mid = this._obRowCache.get('mid');
         if (mid) {
-          const priceEl = mid.querySelector('.price');
-          if (priceEl) this.renderRollingNumber(priceEl, Number(this.state.lastPrice || 0), 1);
+          const cur = Number(this.state.lastPrice || 0);
+          const priceEl = mid.querySelector('.price, .mid-price');
+          if (priceEl) this.renderRollingNumber(priceEl, cur, 1);
+          const prev = (this._midPrevPrice == null) ? cur : this._midPrevPrice;
+          let up;
+          if (cur > prev) up = true; else if (cur < prev) up = false; else up = this._midTrendUp;
+          this._midPrevPrice = cur;
+          this._midTrendUp = up;
+          const arrow = mid.querySelector('.mid-arrow');
+          if (arrow) {
+            // 색상 플리커 방지: 동일가에서는 이전 색 유지
+            const color = up ? '#2ca860' : '#d94a64';
+            if (arrow.style.color !== color) arrow.style.color = color;
+            arrow.classList.toggle('down', !up);
+          }
+          const priceTxt = mid.querySelector('.mid-price');
+          if (priceTxt) {
+            const color = up ? '#2ca860' : '#d94a64';
+            if (priceTxt.style.color !== color) priceTxt.style.color = color;
+          }
         }
         // 하단 BID
         let runningBid = 0;

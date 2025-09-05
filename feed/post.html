@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>게시글 - ONBIT</title>
+  <link rel="stylesheet" href="../css/base/_variables.css" />
+  <link rel="stylesheet" href="../css/base/_reset.css" />
+  <link rel="stylesheet" href="feed.css" />
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <link rel="stylesheet" href="../components/header/navbar.css" />
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
+  <script src="../auth.js" defer></script>
+  <script src="post.js" defer></script>
+  <script>
+    // support local file id via query string when not using rewrites
+    (function(){
+      if (!location.pathname.endsWith('/post.html')) return;
+      const params = new URLSearchParams(location.search);
+      const id = params.get('id');
+      if (id) window.__POST_ID_FROM_QS__ = id;
+    })();
+  </script>
+  <script src="../components/header/header-loader.js" defer></script>
+</head>
+<body>
+  <div id="header-placeholder"></div>
+  <main class="feed-container">
+    <section class="feed-main">
+      <article id="post" class="card"></article>
+      <div class="comment-composer" id="reply-composer" style="display:none">
+        <div class="box" style="width:100%">
+          <textarea id="reply-text" maxlength="280" placeholder="바라바라님의 생각을 공유해보세요." style="width:100%; min-height:60px; border:none; outline:none; background:transparent;"></textarea>
+          <div class="comment-actions">
+            <div class="icons">
+              <button id="reply-attach" style="background:none;border:none;cursor:pointer;padding:0;margin:0"><i data-lucide="image"></i></button>
+              <input id="reply-media" type="file" accept="image/*" multiple style="display:none" />
+            </div>
+            <button id="reply-submit" class="btn" style="opacity:.7">게시</button>
+          </div>
+        </div>
+      </div>
+      <div id="comments" class="feed-list"></div>
+    </section>
+    <aside class="feed-right">
+      <div class="write-widget">
+        <button id="open-composer" class="btn primary" style="width:100%">작성하기</button>
+        <p class="hint">커뮤니티 가이드라인을 확인하세요.</p>
+      </div>
+      <div class="sidebar-block">
+        <h4>트렌딩 포스트</h4>
+        <ul id="trending"></ul>
+      </div>
+      <div class="sidebar-block">
+        <h4>인기 작성자</h4>
+        <ul id="top-authors"></ul>
+      </div>
+    </aside>
+  </main>
+</body>
+</html>
+

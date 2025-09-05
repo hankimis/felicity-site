@@ -13,9 +13,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // 경로별 헤더 파일 경로 결정
     let headerPath = 'components/header/header.html'; // 기본값
     
-    // 1단계 하위 디렉토리 (/event/, /community/, /bitcoin/, /login/, /signup/ 등)
+    // 1단계 하위 디렉토리 (/event/, /community/, /feed/, /bitcoin/, /login/, /signup/ 등)
     if (currentPath.includes('/event/') || currentPath.includes('/event-board/') || 
-        currentPath.includes('/community/') || currentPath.includes('/news/') || 
+        currentPath.includes('/community/') || currentPath.includes('/feed/') || currentPath.includes('/news/') || 
         currentPath.includes('/search/') || 
         currentPath.includes('/affiliated/') || currentPath.includes('/notice-board/') || 
         currentPath.includes('/my-account/') || currentPath.includes('/admin/') ||

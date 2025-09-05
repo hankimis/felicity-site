@@ -24,9 +24,9 @@ if (!firebase.apps.length) {
 const auth = firebase.auth();
 const db = firebase.firestore();
 
-// 2. 전역 상태 변수
-let currentUser = null;
-window.currentUser = null;
+// 2. 전역 상태 변수 (중복 로드 안전)
+var currentUser = (typeof window !== 'undefined' && window.currentUser) ? window.currentUser : null;
+window.currentUser = currentUser;
 
 // 3. 핵심 헬퍼 함수
 const getElement = (id) => document.getElementById(id);
@@ -816,16 +816,8 @@ if (document.readyState === 'loading') {
 // If this lightweight stub is included instead of js/auth.js, dynamically load the full script.
 // =========================
 
-if (typeof window.startApp === 'undefined') {
-  (function loadFullAuthScript() {
-    const existing = document.querySelector('script[src="js/auth.js"]');
-    if (existing) return; // full script already requested
-    const script = document.createElement('script');
-    script.src = 'js/auth.js';
-    script.defer = true;
-    document.head.appendChild(script);
-  })();
-}
+// 외부 경량 로더가 아닌, 본 스크립트를 단독으로 사용합니다.
+// 중복 로드를 방지하기 위해 추가 auth.js 로더는 비활성화합니다.
 
 // 화면 크기 변경 시 모바일 요소 표시/숨김 처리
 window.addEventListener('resize', () => {

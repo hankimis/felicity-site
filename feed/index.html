@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>피드 - ONBIT</title>
+  <link rel="stylesheet" href="../css/base/_variables.css" />
+  <link rel="stylesheet" href="../css/base/_reset.css" />
+  <link rel="stylesheet" href="feed.css" />
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <link rel="stylesheet" href="../components/header/navbar.css" />
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+  <script src="../auth.js" defer></script>
+  <script src="feed.js" defer></script>
+  <script src="../components/header/header-loader.js" defer></script>
+</head>
+<body>
+  <div id="header-placeholder"></div>
+  <main class="feed-container">
+    <section class="feed-main">
+      <div class="composer" id="composer" style="display:none">
+        <textarea id="composer-text" maxlength="280" placeholder="무슨 일이 일어나고 있나요?"></textarea>
+        <div class="composer-actions">
+          <input type="file" id="composer-media" accept="image/*,video/*" multiple />
+          <button id="composer-submit" class="btn">게시</button>
+        </div>
+      </div>
+      
+      <div id="feed-list" class="feed-list"></div>
+      <button id="load-more" class="load-more">더 보기</button>
+    </section>
+    <aside class="feed-right">
+      <div class="write-widget">
+        <button id="open-composer" class="btn primary" style="width:100%">작성하기</button>
+        <p class="hint">커뮤니티 가이드라인을 확인하세요.</p>
+      </div>
+      <div class="sidebar-block">
+        <h4>인기글</h4>
+        <ul id="trending"></ul>
+      </div>
+      <div class="sidebar-block">
+        <h4>인기 작성자</h4>
+        <ul id="top-authors"></ul>
+      </div>
+    </aside>
+  </main>
+</body>
+</html>
+

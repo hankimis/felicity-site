@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>토픽 피드 - ONBIT</title>
+  <link rel="stylesheet" href="../css/base/_variables.css" />
+  <link rel="stylesheet" href="../css/base/_reset.css" />
+  <link rel="stylesheet" href="../css/base/_base.css" />
+  <link rel="stylesheet" href="feed.css" />
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <script src="../auth.js" defer></script>
+  <script src="topic.js" defer></script>
+  <script src="../components/header/header-loader.js" defer></script>
+</head>
+<body>
+  <div id="header-placeholder"></div>
+  <main class="feed-container">
+    <section class="feed-main">
+      <header style="padding:8px 0; border-bottom:1px solid var(--border-color);"><h2 id="topic-title">토픽</h2></header>
+      <div id="feed-list" class="feed-list"></div>
+    </section>
+  </main>
+</body>
+</html>
+

@@ -50,11 +50,11 @@
 /* 커뮤니티 레이아웃 */
 .community-layout {
     display: flex;
-    height: calc(100vh - 65px); /* 새로운 헤더 높이에 맞춤 */
+    height: calc(100dvh - 65px); /* 뷰포트 기준 고정 높이 */
     width: 100%;
-    /* x는 보이게, y만 조정 */
+    /* x는 보이게, y는 스크롤 */
     overflow-x: visible;
-    overflow-y: hidden;
+    overflow-y: auto;
 }
 
 /* 커뮤니티 레이아웃 내부 */
@@ -63,13 +63,14 @@
     flex: 1;
     gap: 0;
     overflow-x: visible;
-    overflow-y: hidden;
+    overflow-y: hidden; /* 스크롤은 바깥 컨테이너에서만 */
 }
 /* 🔥 차트+거래 패널 통합 레이아웃 */
 .chart-trading-layout {
     display: flex;
     width: 100%;
-    height: 100%;
+    height: auto; /* 부모에 고정하지 않음 */
+    min-height: 100%;
     min-width: 0; /* flex 수축 허용 */
 }
 
@@ -242,7 +243,14 @@
     background: var(--bg-color);
     display: flex;
     flex-direction: column;
+    height: 100%;
+    overflow-y: auto; /* 사이드바 자체에 스크롤 생성 */
+    scrollbar-width: none; /* Firefox: 스크롤바 숨김 */
+    -ms-overflow-style: none; /* IE/Edge: 스크롤바 숨김 */
 }
+
+/* WebKit 계열(Chrome/Safari) 스크롤바 숨김 */
+.paper-trading-sidebar::-webkit-scrollbar { width: 0; height: 0; display: none; }
 
 .orderbook-and-trade {
     display: flex;
@@ -287,21 +295,28 @@
 .orderbook-table { display:flex; flex-direction: column; height:100%; --ob-row-h: 24px; }
 .ob-header { display:grid; grid-template-columns: 1fr 1fr 1fr; padding: 8px 10px; gap:10px; font-size:12px; color: var(--text-color-secondary); border-bottom:1px solid var(--border-color); background: var(--bg-color); }
 .ob-rows { flex:1; overflow:hidden; }
-.ob-row { position:relative; display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px; padding: 0 10px; font-size:12px; align-items:center; height: var(--ob-row-h); line-height: var(--ob-row-h); }
-.ob-row .price { text-align:left; }
-.ob-row .qty { text-align:center; color: var(--text-color); }
-.ob-row .total { text-align:right; color: var(--text-color-secondary); }
-.ob-row .bar { position:absolute; inset:0; opacity:0.25; pointer-events:none; right:0; left:auto; transition: width 200ms ease, background-color 200ms ease; will-change: width, transform; transform: translateZ(0); }
+.ob-row { position:relative; display:grid; grid-template-columns: 1.2fr 1fr 1fr; gap:10px; padding: 0 10px; font-size:12px; align-items:center; height: var(--ob-row-h); line-height: var(--ob-row-h); }
+.ob-row .price { text-align:left; font-variant-numeric: tabular-nums; }
+.ob-row .qty { text-align:right; color: var(--text-color); font-variant-numeric: tabular-nums; }
+.ob-row .total { text-align:right; color: var(--text-color-secondary); font-variant-numeric: tabular-nums; }
+.ob-row .bar { position:absolute; inset:0; opacity:0.28; pointer-events:none; transition: width 180ms linear, background-color 180ms ease; will-change: width; }
 /* 중앙 현재가 행을 더 크게, 가운데 정렬로 강조 */
-.ob-row.mid { height: 36px; line-height: 36px; z-index: 2; border-top: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); }
-.ob-row.mid .price { grid-column: 1 / -1; text-align: center; font-size: 16px; font-weight: 800; color: var(--text-color); }
+.ob-row.mid { height: 44px; line-height: 25px; z-index: 2; border-top: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); }
+.ob-row.mid .price { grid-column: auto; }
+.ob-row.mid .mid-main { display:flex; align-items:center; gap: 12px; }
+.ob-row.mid .mid-price { font-size: 18px; font-weight: 600; color:#2ca860; }
+.ob-row.mid .mid-sub { display:none; }
+.ob-row.mid .mid-arrow svg { width: 20px; height: 21px; }
+.ob-row.mid .mid-arrow svg path { fill: #2ca860; }
+.ob-row.mid .mid-arrow.down svg { transform: rotate(180deg); }
+.ob-row.mid .mid-arrow.down svg path { fill: #d94a64; }
 @media (prefers-reduced-motion: reduce) {
   .ob-row .bar { transition: none; }
 }
-.ob-row.bid .bar { right:0; left:auto; }
-.ob-row.ask .bar { right:0; left:auto; }
-.ob-row.ask .price { color:#ef5350; }
-.ob-row.bid .price { color:#10b981; }
+.ob-row.ask .bar { right:0; left:auto; background:#f6d6d6; }
+.ob-row.bid .bar { left:0; right:auto; background:#cdefe0; }
+.ob-row.ask .price { color:#d94a64; }
+.ob-row.bid .price { color:#16a34a; }
 
 /* 오더북 툴팁 */
 .ob-tooltip {
@@ -332,8 +347,8 @@
 .ob-footer { padding: 6px 10px; border-top:1px solid var(--border-color); background: var(--card-bg); flex-shrink: 0; }
 .ratio { display:flex; align-items:center; gap:8px; font-size:12px; color: var(--text-color-secondary); }
 .ratio-bar { position:relative; flex:1; height:8px; background: var(--bg-color); border-radius: 999px; overflow:hidden; }
-.ratio-bar #ob-buy-bar { position:absolute; left:0; top:0; bottom:0; background:#10b981; }
-.ratio-bar #ob-sell-bar { position:absolute; right:0; top:0; bottom:0; background:#ef4444; }
+.ratio-bar #ob-buy-bar { position:absolute; left:0; top:0; bottom:0; background:#cdefe0; }
+.ratio-bar #ob-sell-bar { position:absolute; right:0; top:0; bottom:0; background:#f6d6d6; }
 
 .trade-panel { padding: 0px 10px 12px; }
 .trade-panel > .trade-header { margin-left: -12px; margin-right: -12px; }
@@ -413,7 +428,7 @@
    /* 🔥 고래 탐지와 채팅 컨테이너 */
    .whale-chat-container {
     width: 450px;
-    height: 100%;
+    height: auto;
     display: flex;
     flex-direction: column;
     border-left: 1px solid var(--border-color);
@@ -650,7 +665,8 @@
     
     /* 모바일에서 전체 레이아웃 높이 조정 */
     .community-layout {
-        height: calc(100vh - 65px);
+        height: calc(100dvh - 65px);
+        overflow-y: auto;
     }
     
     /* 모바일에서 스크롤 개선 */
@@ -682,3 +698,4 @@
         border-radius: 2px;
     }
 }
+

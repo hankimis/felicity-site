@@ -44,7 +44,14 @@
   "rewrites": [
     { "source": "/search", "destination": "/search/index.html" },
     { "source": "/search/(.*)", "destination": "/search/$1" },
-    { "source": "/api/ai-search", "destination": "/api/ai-search" }
+    { "source": "/api/ai-search", "destination": "/api/ai-search" },
+    { "source": "/feed", "destination": "/feed/index.html" },
+    { "source": "/feed/", "destination": "/feed/index.html" },
+    { "source": "/feed/write", "destination": "/feed/write.html" },
+    { "source": "/feed/post/:id", "destination": "/feed/post.html" },
+    { "source": "/feed/topic/:slug", "destination": "/feed/topic.html" },
+    { "source": "/feed/me", "destination": "/feed/index.html" },
+    { "source": "/feed/notifications", "destination": "/feed/index.html" }
   ],
   "headers": [
     {

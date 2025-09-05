@@ -63,7 +63,7 @@
     .main-top-split .login-card { height: auto; }
     .main-top-split .whale-tracker-card { height: 400px }
     .login-card { padding: 0; display: flex; align-items: stretch; }
-    .login-card .login-card-inner { padding: 24px 22px 26px; width: 100%; display: flex; flex-direction: column; gap: 14px; text-align: center; }
+    .login-card .login-card-inner { padding: 24px 22px 26px; width: 100%; display: flex; flex-direction: column; gap: 14px; text-align: center; height: 198px; }
     .login-card .login-header h3 { margin: 0; font-size: 18px; font-weight: 800; }
     /* 로그인 후 잔액/채굴량 표시 */
     .login-card .balance-row { display: flex; flex-direction: row; gap: 0px; align-items: stretch; }
@@ -78,7 +78,7 @@
     .login-card .login-links { display: flex; justify-content: center; align-items: center; gap: 14px; color: var(--text-color-secondary); font-size: 14px; margin-top: 12px; }
     .login-card .login-links a { color: var(--text-color-secondary); text-decoration: none; }
     .login-card .login-links .sep { color: var(--border-color); }
-    .login-card .profile-row { display: flex; gap: 0; align-items: center; margin-bottom: 16px; justify-content: center; }
+    .login-card .profile-row { display: flex; gap: 0; align-items: center; margin-bottom: 26px; justify-content: center; }
     .login-card .avatar { display: none; }
     .login-card .userinfo .name { font-weight: 800; font-size: 22px; }
     .login-card .userinfo .desc { color: var(--text-color-secondary); font-size: 12px; }
