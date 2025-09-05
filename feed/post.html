@@ -4,17 +4,17 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>게시글 - ONBIT</title>
-  <link rel="stylesheet" href="../css/base/_variables.css" />
-  <link rel="stylesheet" href="../css/base/_reset.css" />
-  <link rel="stylesheet" href="feed.css" />
+  <link rel="stylesheet" href="/css/base/_variables.css" />
+  <link rel="stylesheet" href="/css/base/_reset.css" />
+  <link rel="stylesheet" href="/feed/feed.css" />
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
-  <link rel="stylesheet" href="../components/header/navbar.css" />
+  <link rel="stylesheet" href="/components/header/navbar.css" />
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
-  <script src="../auth.js" defer></script>
-  <script src="post.js" defer></script>
+  <script src="/auth.js" defer></script>
+  <script src="/feed/post.js" defer></script>
   <script>
     // support local file id via query string when not using rewrites
     (function(){
@@ -24,7 +24,7 @@
       if (id) window.__POST_ID_FROM_QS__ = id;
     })();
   </script>
-  <script src="../components/header/header-loader.js" defer></script>
+  <script src="/components/header/header-loader.js" defer></script>
 </head>
 <body>
   <div id="header-placeholder"></div>
