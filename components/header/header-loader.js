@@ -7,54 +7,8 @@ document.addEventListener('DOMContentLoaded', () => {
         document.body.insertBefore(headerPlaceholder, document.body.firstChild);
     }
 
-    // 현재 경로에 따라 헤더 파일 경로 결정
-    const currentPath = window.location.pathname;
-    
-    // 경로별 헤더 파일 경로 결정
-    let headerPath = 'components/header/header.html'; // 기본값
-    
-    // 1단계 하위 디렉토리 (/event/, /community/, /feed/, /bitcoin/, /login/, /signup/ 등)
-    if (currentPath.includes('/event/') || currentPath.includes('/event-board/') || 
-        currentPath.includes('/community/') || currentPath.includes('/feed/') || currentPath.includes('/news/') || 
-        currentPath.includes('/search/') || 
-        currentPath.includes('/affiliated/') || currentPath.includes('/notice-board/') || 
-        currentPath.includes('/my-account/') || currentPath.includes('/admin/') ||
-        currentPath.includes('/bitcoin/') || currentPath.includes('/login/') ||
-        currentPath.includes('/signup/') || currentPath.includes('/leaderboard/')) {
-        headerPath = '../components/header/header.html';
-    }
-    
-    // asset 디렉토리는 2단계 하위 디렉토리로 처리
-    if (currentPath.includes('/asset/')) {
-        headerPath = '../../components/header/header.html';
-    }
-    
-    // 2단계 하위 디렉토리 (/affiliated/exchange-guide/, /affiliated/payback-calculator/, /currencies/bitcoin/ 등)
-    if (currentPath.includes('/affiliated/exchange-guide/') || 
-        currentPath.includes('/affiliated/payback-calculator/') ||
-        currentPath.includes('/affiliated/bitget/') ||
-        currentPath.includes('/affiliated/bitmex/') ||
-        currentPath.includes('/affiliated/lbank/') ||
-        currentPath.includes('/affiliated/okx/') ||
-        currentPath.includes('/currencies/bitcoin/')) {
-        headerPath = '../../components/header/header.html';
-    }
-    
-    // 3단계 하위 디렉토리 (/affiliated/exchange-guide/bitget-guide/ 등)
-    if (currentPath.includes('/affiliated/exchange-guide/bitget-guide/') ||
-        currentPath.includes('/affiliated/exchange-guide/bitmex-guide/') ||
-        currentPath.includes('/affiliated/exchange-guide/lbank-guide/')) {
-        headerPath = '../../../components/header/header.html';
-    }
-    
-    // 4단계 하위 디렉토리 (/affiliated/exchange-guide/bitget-guide/kyc/ 등)
-    if (currentPath.includes('/affiliated/exchange-guide/bitget-guide/kyc/') ||
-        currentPath.includes('/affiliated/exchange-guide/bitget-guide/regi/') ||
-        currentPath.includes('/affiliated/exchange-guide/bitget-guide/trade/')) {
-        headerPath = '../../../../components/header/header.html';
-    }
-    
-
+    // 헤더 파일 경로: 절대 경로로 고정 (라우팅 영향 제거)
+    const headerPath = '/components/header/header.html';
     
     // Font Awesome 로드 확인
     if (!document.querySelector('link[href*="font-awesome"]')) {
