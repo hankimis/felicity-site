@@ -14,7 +14,8 @@
     }
     calcPnL(p, price){ return this.risk.calcPnL(p, price); }
     placeMarket(side, price, amount){
-      const lev=this.state.leverage;
+      // 레버리지 1~100으로 클램프
+      const lev=Math.max(1, Math.min(100, this.state.leverage));
       const margin=price*amount/lev;
       const fee=price*amount*(window.PT_CONFIG.fees.taker);
       if (margin+fee>this.state.balanceUSDT+1e-8) return false;
@@ -27,16 +28,45 @@
     }
 
     placeLimit(side, price, amount){
-      const order={ id:'ord_'+Date.now(), symbol:this.state.symbol, side, price, amount, leverage:this.state.leverage, mode:this.state.marginMode, status:'Unfilled', createdAt:new Date().toISOString() };
-      this.state.openOrders.push(order); return order;
+      // 레버리지 1~100으로 클램프
+      const lev = Math.max(1, Math.min(100, this.state.leverage));
+      const bestBid = Number(this.state.bestBid || 0);
+      const bestAsk = Number(this.state.bestAsk || Infinity);
+      const eps = 1e-8;
+
+      // 시장성 있는 지정가 여부 판정:
+      // - Long: bestAsk <= limit price → 즉시 체결(테이커)
+      // - Short: bestBid >= limit price → 즉시 체결(테이커)
+      const marketable = side === 'long' ? (bestAsk <= price + eps) : (bestBid >= price - eps);
+      if (marketable && isFinite(bestBid) && isFinite(bestAsk)){
+        // 즉시 체결: 테이커 수수료 적용, 체결가는 현재 최우선 호가와 지정가 중 유리한 가격으로 근사
+        const execPrice = side === 'long' ? Math.min(price, bestAsk) : Math.max(price, bestBid);
+        const margin = execPrice * amount / lev;
+        const fee = execPrice * amount * (window.PT_CONFIG.fees.taker);
+        if (margin + fee > this.state.balanceUSDT + eps) return null;
+        const pos = { id:'pos_'+Date.now(), symbol:this.state.symbol, side, entry:execPrice, amount, leverage:lev, margin, mode:this.state.marginMode };
+        this.state.balanceUSDT -= (margin + fee);
+        this.state.positions.push(pos);
+        this.addHistory({ id:'his_'+Date.now(), ts:Date.now(), symbol:this.state.symbol, mode:this.state.marginMode, leverage:lev, direction: side==='long'?'Open Long':'Open Short', type:'Limit', avgPrice:execPrice, orderPrice:price, filled:amount, fee, pnl:null });
+        this.ui && this.ui.notifyFill({ title:`Open ${side==='long'?'Long':'Short'} ${this.state.symbol} ${this.state.marginMode==='cross'?'Cross':'Isolated'} · ${lev}x`, subtitle:'Limit · Filled', price:execPrice, amount, mode:this.state.marginMode, leverage:lev, type:'success' });
+        return null; // 오더북에 남기지 않음 (즉시 체결)
+      }
+
+      // 대기 지정가: 오더북에 적재 (메이커)
+      const order = { id:'ord_'+Date.now(), symbol:this.state.symbol, side, price, amount, leverage:lev, mode:this.state.marginMode, status:'Unfilled', createdAt:new Date().toISOString() };
+      this.state.openOrders.push(order);
+      return order;
     }
 
     matchOpenOrders(mark){
-      const price = Number(mark||0);
+      // 베스트 호가 기준으로 매칭 (maker fill)
+      const bestBid = Number(this.state.bestBid || 0);
+      const bestAsk = Number(this.state.bestAsk || Infinity);
       if (!Array.isArray(this.state.openOrders)||this.state.openOrders.length===0) return 0;
       const next=[]; let filled=0; const feeMaker=window.PT_CONFIG.fees.maker;
       for (const o of this.state.openOrders){
-        const shouldFill = o.side==='long' ? (price <= o.price + 1e-8) : (price >= o.price - 1e-8);
+        // 메이커 체결 조건: 현재 베스트 호가가 주문가를 관통
+        const shouldFill = o.side==='long' ? (bestAsk <= o.price + 1e-8) : (bestBid >= o.price - 1e-8);
         if (!shouldFill){ next.push(o); continue; }
         const margin = o.price*o.amount/o.leverage; const openNotional=o.price*o.amount; const fee=openNotional*feeMaker;
         if (margin+fee>this.state.balanceUSDT+1e-8){ next.push(o); continue; }

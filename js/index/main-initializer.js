@@ -16,6 +16,36 @@ document.addEventListener('DOMContentLoaded', function() {
   if (typeof initializePage === 'function') {
     initializePage();
   }
+
+  // 홈 로그인 카드 잔액 탭 스위칭
+  try {
+    const tabsRoot = document.getElementById('home-balance-tabs');
+    if (tabsRoot) {
+      const tabs = tabsRoot.querySelectorAll('.tab-list .tab');
+      const panels = tabsRoot.querySelectorAll('.tab-panels .tab-panel');
+      const repositionTooltip = (infoEl) => {
+        try {
+          const rect = infoEl.getBoundingClientRect();
+          const tip = infoEl.getAttribute('data-tip') || '';
+          infoEl.style.setProperty('--tip-left', rect.left + rect.width/2 + 'px');
+        } catch(_) {}
+      };
+      tabs.forEach((btn)=>{
+        btn.addEventListener('click', ()=>{
+          const key = btn.getAttribute('data-tab');
+          tabs.forEach(b=>b.classList.remove('active'));
+          btn.classList.add('active');
+          panels.forEach(p=>{
+            p.classList.toggle('active', p.getAttribute('data-panel') === key);
+          });
+        });
+      });
+      tabsRoot.querySelectorAll('.amount .info').forEach((el)=>{
+        el.addEventListener('mouseenter', ()=>repositionTooltip(el));
+        el.addEventListener('mousemove', ()=>repositionTooltip(el));
+      });
+    }
+  } catch (_) {}
 });
 
 // 페이지 로드 후 초기화

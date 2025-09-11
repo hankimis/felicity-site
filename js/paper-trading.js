@@ -58,10 +58,14 @@
           onPrice: (mid) => { this.state.lastPrice = Number(mid); this.renderPrices(); this.updatePnL(); },
           onDepth: (m) => {
             try {
-              this.orderbookState = {
-                bids: (m.b || []).map(([p,q]) => ({ price: Number(p), size: Number(q) })),
-                asks: (m.a || []).map(([p,q]) => ({ price: Number(p), size: Number(q) })),
-              };
+              const bids = (m.b || []).map(([p,q]) => ({ price: Number(p), size: Number(q) }));
+              const asks = (m.a || []).map(([p,q]) => ({ price: Number(p), size: Number(q) }));
+              this.orderbookState = { bids, asks };
+              // 최우선 호가를 상태에 저장 (지정가 매칭용)
+              const bestBid = bids && bids.length ? Math.max.apply(null, bids.map(r=>r.price)) : 0;
+              const bestAsk = asks && asks.length ? Math.min.apply(null, asks.map(r=>r.price)) : Infinity;
+              if (isFinite(bestBid)) this.state.bestBid = bestBid; else this.state.bestBid = 0;
+              if (isFinite(bestAsk)) this.state.bestAsk = bestAsk; else this.state.bestAsk = Infinity;
               this.renderDepth();
             } catch(_) {}
           }
@@ -336,7 +340,7 @@
           const savedMode = localStorage.getItem('pt_mode');
           if (savedMode === 'cross' || savedMode === 'isolated') this.state.marginMode = savedMode;
           const savedLev = Number(localStorage.getItem('pt_lev'));
-          if (isFinite(savedLev) && savedLev>=1 && savedLev<=200) this.state.leverage = savedLev;
+          if (isFinite(savedLev) && savedLev>=1 && savedLev<=100) this.state.leverage = savedLev;
           const savedPct = Number(localStorage.getItem('pt_percent'));
           if (isFinite(savedPct) && s) s.value = String(Math.max(0, Math.min(100, savedPct)));
         } catch(_) {}
@@ -361,9 +365,9 @@
           i.__bound = true;
         }
         if (s && !s.__bound) {
-          // percent 0~100 -> leverage 1~200 매핑
-          const pctToLev = (p) => Math.round(1 + (199 * (p/100)));
-          const levToPct = (l) => Math.round(((l-1)/199)*100);
+          // percent 0~100 -> leverage 1~100 매핑
+          const pctToLev = (p) => Math.round(1 + (99 * (p/100)));
+          const levToPct = (l) => Math.round(((l-1)/99)*100);
           const initLev = this.state.leverage || 15;
           s.value = String(levToPct(initLev));
           if (v && v.tagName === 'INPUT') v.value = String(initLev);
@@ -394,9 +398,9 @@
         }
         // 입력 박스에서 직접 변경
         if (v && !v.__bound && v.tagName === 'INPUT') {
-          const pctFromLev = (lev) => Math.round(((lev-1)/199)*100);
+          const pctFromLev = (lev) => Math.round(((lev-1)/99)*100);
           v.addEventListener('input', () => {
-            let lv = Math.max(1, Math.min(200, Number(v.value||0)));
+            let lv = Math.max(1, Math.min(100, Number(v.value||0)));
             if (!isFinite(lv)) return;
             this.state.leverage = lv;
             this.saveState();
@@ -692,7 +696,7 @@
       // 자산(지갑 잔고)의 퍼센트를 기반으로 수량 계산
       const percent = Number(this.el.percent.value) / 100;
       const price = this.getActivePrice();
-      const lev = this.state.leverage;
+      const lev = Math.max(1, Math.min(100, this.state.leverage));
       const wallet = Math.max(0, this.state.balanceUSDT);
       const cost = wallet * percent; // 투입 증거금
       const amount = (cost * lev) / Math.max(1e-8, price);
@@ -849,6 +853,13 @@
         this.saveState();
         this.syncUserBalance(); // 즉시 동기화
         this.renderOrders();
+        if (!order) {
+          // 시장성 있는 지정가가 즉시 체결된 경우: 포지션/코스트 즉시 갱신
+          this.renderPositions();
+          this.updateCostPreview();
+          this.syncUserBalanceDebounced();
+          this.showCenterOrderMessage('order successfully placed');
+        }
         this.el.amount.value = '';
         // 알림 창 제거 (요청)
         if (order) this.showCenterOrderMessage('order successfully placed');
@@ -1316,6 +1327,8 @@
         if (isFinite(bid) && isFinite(ask)) {
           const mid = (bid + ask) / 2;
           this.state.lastPrice = mid;
+          this.state.bestBid = bid;
+          this.state.bestAsk = ask;
           this.renderPrices();
           this.updatePnL();
           this.firstPriceReceived = true;

@@ -53,16 +53,26 @@
     const canDelete = (window.currentUser && (window.currentUser.uid === p.authorId)) || isAdmin;
     const mlen = media.length;
     const mediaClass = mlen>=4 ? 'media media-4' : (mlen===3 ? 'media media-3' : (mlen===2 ? 'media media-2' : (mlen===1 ? 'media media-1' : 'media')));
+    const authorName = author.displayName || '사용자';
+    const avatarStyle = author.photoURL ? `style="background-image:url('${author.photoURL}')"` : '';
+    const timeRel = fmtRel(p.createdAt);
+    const likeCount = p.counts?.likes || 0;
+    const replyCount = p.counts?.replies || 0;
     return `<article class="card" data-id="${p.id}">
-      <div class="avatar" style="${author.photoURL?`background-image:url('${author.photoURL}')`:''}"></div>
+      <div class="avatar" ${avatarStyle}></div>
       <div>
-        <div class="meta"><b>${author.displayName||'사용자'}</b><span>·</span><span>${fmtRel(p.createdAt)}</span>${canDelete?`<span style="margin-left:auto;display:flex;gap:6px;"><button class="act edit" data-edit="${p.id}">수정</button><button class="act delete" data-del="${p.id}">삭제</button></span>`:''}</div>
+        <div class="meta" style="display:flex;align-items:center;gap:8px;">
+          <b>${authorName}</b>
+          <span>·</span>
+          <span>${timeRel}</span>
+          ${canDelete?`<span style="margin-left:auto;display:flex;gap:6px;"><button class="act edit" data-edit="${p.id}">수정</button><button class="act delete" data-del="${p.id}">삭제</button></span>`:''}
+        </div>
         <div class="text">${(p.text||'').replace(/</g,'&lt;')}</div>
         ${mlen?`<div class="${mediaClass}">${media.slice(0,4).map(m=>`<img src="${m.url}" loading="lazy"/>`).join('')}</div>`:''}
         <div class="actions">
-          <button class="act like" data-like="${p.id}"><i data-lucide="heart"></i><span>${p.counts?.likes||0}</span></button>
-          <button class="act reply"><i data-lucide="message-circle-more"></i><span>${p.counts?.replies||0}</span></button>
-          <button class="act share"><i data-lucide="share"></i></button>
+          <button class="act like" data-like="${p.id}"><svg xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A4.5 4.5 0 0 0 17.5 4c-1.74 0-3.41.81-4.5 2.09A6 6 0 0 0 6.5 4 4.5 4.5 0 0 0 2 8.5c0 2.29 1.51 4.04 3 5.5l7 7Z"/></svg><span>${likeCount}</span></button>
+          <button class="act reply"><svg xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10h11a4 4 0 0 1 0 8H7l-4 4V6a3 3 0 0 1 3-3h11"/></svg><span>${replyCount}</span></button>
+          <button class="act share"><svg xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"/><path d="M16 6l-4-4-4 4"/><path d="M12 2v14"/></svg></button>
         </div>
       </div>
     </article>`;

@@ -339,11 +339,26 @@ async function updateAuthUI(user) {
                     loggedOut.style.display = 'none';
                     const nameEl = document.getElementById('home-user-name');
                     if (nameEl) nameEl.textContent = currentUser.displayName || '사용자';
+                    const emailEl = document.getElementById('home-user-email');
+                    if (emailEl) emailEl.textContent = currentUser.email || user.email || '-';
+                    // 아바타 적용: Firestore 사용자 문서 photoURL 우선, 없으면 Firebase user.photoURL
+                    try {
+                        const avatarEl = document.getElementById('home-user-avatar');
+                        const url = (currentUser && currentUser.photoURL) || (user && user.photoURL) || '';
+                        if (avatarEl) {
+                            if (url) {
+                                avatarEl.style.backgroundImage = `url('${url}')`;
+                            } else {
+                                avatarEl.style.backgroundImage = '';
+                            }
+                            avatarEl.style.display = 'inline-block';
+                        }
+                    } catch(_) {}
                     // 로그인 시 로그인 헤더 숨김, 잔액/채굴량 표시
                     const loginHeader = homeLoginCard.querySelector('.login-header');
                     if (loginHeader) loginHeader.style.display = 'none';
-                    const balanceRow = document.getElementById('home-balance-row');
-                    if (balanceRow) balanceRow.style.display = 'flex';
+                    const balanceTabs = document.getElementById('home-balance-tabs');
+                    if (balanceTabs) balanceTabs.style.display = '';
                     // Onbit Miner에 사용자 설정 및 UI 구독
                     if (window.onbitMiner) {
                         try {
