@@ -17,6 +17,23 @@ document.addEventListener('DOMContentLoaded', function() {
     initializePage();
   }
 
+  // TradingView 심볼 탭
+  try {
+    const tabs = document.getElementById('tv-coin-tabs');
+    if (tabs) {
+      tabs.addEventListener('click', (e) => {
+        const btn = e.target.closest('.tv-tab');
+        if (!btn) return;
+        tabs.querySelectorAll('.tv-tab').forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active');
+        const sym = btn.getAttribute('data-sym');
+        if (sym && window.TradingViewManager && window.TradingViewManager.setChartSymbol) {
+          window.TradingViewManager.setChartSymbol(sym);
+        }
+      });
+    }
+  } catch(_) {}
+
   // 홈 로그인 카드 잔액 탭 스위칭
   try {
     const tabsRoot = document.getElementById('home-balance-tabs');

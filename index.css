@@ -1,3 +1,15 @@
+  /* TradingView 탭 스타일 (텍스트/슬래시 구분자 형태) */
+  .tv-tabs { user-select: none; display: flex; align-items: center; gap: 0; }
+  .tv-tab { background: transparent; border: none; padding: 0 10px; color: var(--text-color-secondary); font-weight: 600; font-size: 18px; cursor: pointer; }
+  .tv-tab + .tv-tab { position: relative; }
+  .tv-tab + .tv-tab::before { content: "/"; color: #d1d5db; margin-right: 10px; }
+  .tv-tab.active { color: var(--text-color); font-weight: 800; }
+  .tv-tab:hover { color: var(--text-color); }
+
+  /* TradingView 카드 레이아웃: 탭 + 차트(유연 높이) */
+  .bitcoin-chart-card { display: flex; flex-direction: column; }
+  .promo-banner-card img { width: 100%; height: auto; display: block; border: 1px solid var(--border-default); border-radius: 12px; }
+  #tradingview-btc-chart { flex: 1 1 auto; min-height: 300px; }
     /*==== 메인 컨텐츠 섹션 스타일 ================================================ */
     .main-content-section {
       width: 100%; /* 전체 너비 사용 */
@@ -106,6 +118,30 @@
     .login-card .login-actions a.primary { background: var(--primary-color); color: #fff; }
     .login-card .login-actions a.secondary { background: var(--bg-secondary, #f3f4f6); color: var(--text-color); }
 
+    /*==== 시장 지표 카드 ================================================ */
+    .market-indicators-card { padding: 14px 12px; }
+    /* 외곽 카드 보더 제거 → 내부 각 카드만 보더 표시 */
+    .dashboard-card.market-indicators-card { border: none; background: transparent; padding: 0; }
+    .mi-grid { display: grid; grid-template-columns: 1fr; gap: 10px; }
+    @media (min-width: 480px) { .mi-grid { grid-template-columns: 1fr 1fr; } }
+    @media (min-width: 1024px) { .mi-grid { grid-template-columns: 1fr; } }
+    .mi-card { border: 1px solid var(--border-default); border-radius: 12px; padding: 12px; background: var(--bg-primary); position: relative; }
+    .mi-head { font-size: 16px; font-weight: 600; color: var(--text-color-secondary); margin: 0 0 6px 0;}
+    .mi-body { display: flex; align-items: baseline; gap: 10px; }
+    .mi-value { font-size: 20px; font-weight: 700; color: var(--text-color); }
+    .mi-change { font-size: 14px; font-weight: 700; color: #10b981; }
+    .mi-change.down { color: #ef4444; }
+    .mi-spark { width: 100%; height: 80px; display: block; }
+    .mi-card.fng { display: grid; grid-template-rows: auto 1fr; align-items: center; }
+    .mi-fng-layout { display: grid; grid-template-columns: 1fr 2fr; align-items: center; width: 100%; }
+    .mi-fng-left { display: flex; flex-direction: column; gap: 10px; padding-left: 0; }
+    .mi-fng-kor { font-size: 20px; font-weight: 700; line-height: 1; }
+    .mi-fng-delta { font-size: 16px; font-weight: 800; color: #2563eb; }
+    .mi-gauge { position: relative; display: flex; align-items: center; justify-content: center; }
+    .mi-fng-center { position: absolute; bottom: 6px; display: flex; flex-direction: column; align-items: center; }
+    .mi-fng-score { font-size: 22px; font-weight: 900; }
+    .mi-fng-label { font-size: 12px; color: var(--text-color-secondary); font-weight: 700; }
+
     /* 반응형 */
     @media (max-width: 1024px) {
       .main-top-split { grid-template-columns: 1fr; }
@@ -114,6 +150,12 @@
       .main-top-split .breaking-news-card { height: auto; }
       .main-top-split .login-card,
       .main-top-split .whale-tracker-card { height: auto; }
+    }
+
+    /* 데스크톱: 좌우 컬럼 높이 차이 대응 - 좌측 컬럼 상단 고정(sticky) */
+    @media (min-width: 1025px) {
+      .main-top-split { align-items: start; }
+      .main-top-split .split-left { position: sticky; top: 12px; align-self: start; height: fit-content; z-index: 0; }
     }
 
     /*==== 메인 대시보드 그리드 섹션 스타일 ================================================ */
@@ -127,9 +169,9 @@
     /*==== 대시보드 비트코인 섹션 스타일 ================================================ */
     .dashboard-card {
         background: var(--bg-primary);
-        border-radius: 16px;
         overflow: hidden;
         border: 1px solid var(--border-default);
+        border-radius: 12px;
       }
 
 
@@ -231,32 +273,18 @@
 
   /*==== 롱/숏 게이지 카드 ================================================ */
   .ls-gauge-card {
-    display: flex;
-    flex-direction: column;
+    display: block;
   }
-  .ls-gauge-content {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    padding: 18px 12px 18px;
-  }
-  .ls-gauge-scale {
-    display: none; /* 라벨은 캔버스에 직접 렌더링 */
-  }
-  .ls-gauge-summary {
-    display: flex;
-    align-items: baseline;
-    gap: 10px;
-    font-weight: 700;
-    color: #2962ff;
-  }
+  .ls-layout { display: grid; grid-template-columns: 1fr 2fr; align-items: center; padding: 12px; gap: 16px; }
+  .ls-left { padding-left: 0; }
+  .ls-left { display: flex; flex-direction: column; gap: 8px; }
+  .ls-left .mi-head { margin: 0 0 6px 0; }
+  .ls-gauge-wrap { display: flex; align-items: center; justify-content: center; }
+  .ls-gauge-summary { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; font-weight: 700; color: var(--primary-color); }
   .ls-gauge-summary .ls-percent { color: var(--text-color-secondary); font-weight: 600; }
   .ls-gauge-meta { font-size: 12px; color: var(--text-color-secondary); }
-
-  /* 캔버스 반응형/고해상도 베이스 */
-  #ls-gauge-canvas { width: 100%; height: auto; display: block; }
+  #ls-gauge-canvas { width: 180px; height: 120px; display: block; }
+  #mi-fng-gauge { width: 180px; height: 120px; display: block; }
   
   .news-importance {
     display: inline-flex;

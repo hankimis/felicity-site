@@ -74,6 +74,14 @@ window.TradingViewManager = {
       if (!container) return;
       
       container.innerHTML = '';
+      // 차트 영역이 탭 높이에 의해 잘리지 않도록 부모 높이를 계산해 적용
+      try {
+        const card = container.closest('.bitcoin-chart-card');
+        if (card) {
+          // flex 레이아웃으로 높이를 자동 분배하므로 명시 높이는 제거
+          container.style.height = 'auto';
+        }
+      } catch(_) {}
       
       const currentTheme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
       const updatedConfig = {
@@ -95,6 +103,16 @@ window.TradingViewManager = {
       
     } catch (error) {
     }
+  },
+
+  // 심볼 변경 API
+  setChartSymbol(tvSymbol) {
+    const cfg = this.widgetConfigs['btc-chart'];
+    if (!cfg) return;
+    // 심볼 변경 후 위젯 재생성
+    const newCfg = JSON.parse(JSON.stringify(cfg));
+    newCfg.config.symbols = [[`${tvSymbol}|1M`]];
+    this.createWidget('btc-chart', newCfg);
   },
 
   // 테마 변경 시 위젯 업데이트

@@ -1058,7 +1058,7 @@ const whaleTrackerStyles = `
 <style>
 /* Advanced Whale Tracker - New UI */
 :root {
-    --long-color: #16a34a;
+    --long-color: #2962ff;
     --long-bg: rgba(22, 163, 74, 0.15);
     --long-bg-highlight: rgba(22, 163, 74, 0.3);
     --short-color: #dc2626;

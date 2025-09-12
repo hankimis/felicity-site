@@ -765,7 +765,7 @@ class CryptoTable {
     
     try {
       // 단일 호출로 필요한 항목 모두 가져오기 (429 방지)
-      const url = 'https://api.coingecko.com/api/v3/coins/markets'
+      const url = '/api/coingecko/coins/markets'
         + '?vs_currency=usd&order=market_cap_desc&per_page=250&page=1'
         + '&sparkline=true&price_change_percentage=1h,24h,7d,30d';
 
@@ -889,7 +889,7 @@ class CryptoTable {
       const timeoutId = setTimeout(() => controller.abort(), 15000);
       
       const requests = pages.map(page =>
-        fetch(`https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=250&page=${page}&sparkline=true&price_change_percentage=1h,24h,7d,30d`, {
+        fetch(`/api/coingecko/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=250&page=${page}&sparkline=true&price_change_percentage=1h,24h,7d,30d`, {
           signal: controller.signal
         }).then(res => {
           if (!res.ok) throw new Error(`API 응답 오류: ${res.status}`);

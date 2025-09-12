@@ -1,4 +1,11 @@
 {
+  "version": 2,
+  "routes": [
+    { "src": "/api/coingecko/(.*)", "dest": "/api/coingecko.js" },
+    { "src": "/(.*)", "dest": "/$1" }
+  ]
+}
+{
   "redirects": [
     {
       "source": "/:path*",

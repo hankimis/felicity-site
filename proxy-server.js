@@ -86,9 +86,26 @@ app.use('/ws/binance', createProxyMiddleware({
     }
 }));
 
+// CoinGecko API 프록시 (데모 키 포함)
+const CG_DEMO_API_KEY = 'CG-mimMBvFoj6H2ZWgrWMdbNDdB';
+app.use('/api/coingecko', createProxyMiddleware({
+    target: 'https://api.coingecko.com/api/v3',
+    changeOrigin: true,
+    pathRewrite: { '^/api/coingecko': '' },
+    onProxyReq: function (proxyReq, req, res) {
+        try { proxyReq.setHeader('x-cg-demo-api-key', CG_DEMO_API_KEY); } catch(_) {}
+    },
+    onProxyRes: function (proxyRes, req, res) {
+        proxyRes.headers['Access-Control-Allow-Origin'] = 'http://localhost:8000';
+        proxyRes.headers['Access-Control-Allow-Methods'] = 'GET, OPTIONS';
+        proxyRes.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization';
+    }
+}));
+
 const PORT = 3001;
 app.listen(PORT, () => {
     console.log(`프록시 서버가 포트 ${PORT}에서 실행 중입니다.`);
     console.log(`Binance API: http://localhost:${PORT}/api/binance`);
+    console.log(`CoinGecko API: http://localhost:${PORT}/api/coingecko`);
     console.log(`Binance WebSocket: ws://localhost:${PORT}/ws/binance`);
 }); 

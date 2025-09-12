@@ -96,9 +96,10 @@
   // 디바이스 픽셀 비율 대응 + 반응형 리사이즈
   let dpr = Math.max(window.devicePixelRatio || 1, 1);
   function resizeCanvas() {
-    const parent = canvas.parentElement;
-    const width = Math.max(280, Math.round(parent.clientWidth * 0.85)); // 카드 대비 85%로 살짝 축소
-    const height = Math.round(width * 0.62); // 가로:세로 비율 유지
+    // 캔버스의 실제 CSS 크기를 그대로 사용 (고정 크기 180x120 또는 스타일 지정값)
+    const cs = getComputedStyle(canvas);
+    const width = Math.max(1, parseFloat(cs.width) || (canvas.width / dpr) || 180);
+    const height = Math.max(1, parseFloat(cs.height) || (canvas.height / dpr) || 120);
     dpr = Math.max(window.devicePixelRatio || 1, 1);
     canvas.style.width = width + 'px';
     canvas.style.height = height + 'px';
@@ -128,7 +129,7 @@
     const textHighlight = '#2962ff';
 
     // 배경 반원
-    ctx.lineWidth = 14;
+    ctx.lineWidth = 11; // 게이지 바 살짝 얇게
     ctx.lineCap = 'round';
     const start = Math.PI; // 180도
     const end = 2 * Math.PI; // 360도
@@ -150,28 +151,7 @@
     ctx.arc(cx, cy, radius, start, progressEnd);
     ctx.stroke();
 
-    // 섹션 라벨 (한국어)
-    const labels = [
-      { t: '강한 매도', c: 0.10 },
-      { t: '매도',     c: 0.30 },
-      { t: '중립',     c: 0.50 },
-      { t: '매수',     c: 0.70 },
-      { t: '강한 매수', c: 0.90 }
-    ];
-    const activeIndex = Math.min(4, Math.max(0, Math.floor(longRatio * 5)));
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.font = '12px system-ui, -apple-system, Segoe UI, Roboto, Noto Sans KR, sans-serif';
-    labels.forEach((item, idx) => {
-      const a = start + (end - start) * item.c;
-      // 라벨이 게이지 호와 겹치지 않도록 더 안쪽으로 배치
-      // 가장자리(강한 매도/강한 매수)는 조금 더 안쪽
-      const innerOffset = (idx === 0 || idx === 4) ? 34 : 28;
-      const rx = cx + (radius - innerOffset) * Math.cos(a);
-      const ry = cy + (radius - innerOffset) * Math.sin(a);
-      ctx.fillStyle = idx === activeIndex ? textHighlight : textMuted;
-      ctx.fillText(item.t, rx, ry);
-    });
+    // 내부 섹션 라벨은 요구사항에 따라 표시하지 않음
 
     // 포인터
     const pointerLen = radius * 0.78;
@@ -199,9 +179,19 @@
     else if (percent > 20) label = '매도';
     else label = '강한 매도';
 
-    if (labelEl) labelEl.textContent = label;
-    if (percentEl) percentEl.textContent = `${percent}% 롱`;
-    if (metaEl) metaEl.textContent = `BTCUSDT · ${windowLabel} 롤링 · 표본 ${Intl.NumberFormat('en-US', { notation: 'compact' }).format(total)}$`;
+    if (labelEl) {
+      labelEl.textContent = label;
+      labelEl.style.color = '#111827';
+      labelEl.style.fontWeight = '800';
+    }
+    if (percentEl) {
+      percentEl.textContent = `${percent}%`;
+      // 롱 우위는 파랑, 숏 우위는 빨강
+      percentEl.style.color = percent >= 50 ? '#2563eb' : '#ef4444';
+      percentEl.style.fontWeight = '700';
+    }
+    // 메타 정보는 표시하지 않음
+    if (metaEl) metaEl.textContent = '';
   }
 
   // 목표 비율 업데이트(데이터 계산)와 부드러운 애니메이션 분리

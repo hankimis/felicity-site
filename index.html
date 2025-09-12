@@ -122,7 +122,20 @@
       <!-- 메인 상단 분할 레이아웃: 좌(차트) / 우(로그인) -->
       <div class="main-top-split">
         <div class="split-left">
+          <!-- 별도 배너 카드 -->
+          <div class="dashboard-card promo-banner-card">
+            <a href="/community/" aria-label="커뮤니티로 이동">
+              <img src="/assets/image.png" alt="프로모션 배너" />
+            </a>
+          </div>
           <div class="dashboard-card bitcoin-chart-card" style="height: 420px;">
+            <div class="tv-tabs" id="tv-coin-tabs" style="display:flex; gap:8px; padding:15px 10px;">
+              <button class="tv-tab active" data-sym="BINANCE:BTCUSD">비트코인</button>
+              <button class="tv-tab" data-sym="BINANCE:ETHUSD">이더리움</button>
+              <button class="tv-tab" data-sym="BINANCE:XRPUSD">리플</button>
+              <button class="tv-tab" data-sym="BINANCE:SOLUSD">솔라나</button>
+              <button class="tv-tab" data-sym="BINANCE:BNBUSD">BNB</button>
+            </div>
             <div id="tradingview-btc-chart" style="height: 100%;"></div>
           </div>
           <!-- 속보 뉴스: 비트코인 차트 하단 -->
@@ -218,26 +231,64 @@
               </div>
             </div>
           </div>
+          
+          <!-- 시장 지표 카드 (로그인 카드 하단) -->
+          <div class="dashboard-card market-indicators-card" aria-label="시장 지표">
+            <div class="mi-grid">
+              <!-- 전체 시가총액 -->
+              <div class="mi-card" id="mi-marketcap">
+                <div class="mi-head">Market Cap</div>
+                <div class="mi-body">
+                  <div class="mi-value" id="mi-mc-value">--</div>
+                  <div class="mi-change" id="mi-mc-change">--</div>
+                </div>
+                <canvas class="mi-spark" id="mi-mc-spark" width="260" height="60" aria-hidden="true"></canvas>
+              </div>
+              
+              <!-- 상위 20 코인 지수 (시총가중, 실시간 계산) -->
+              <div class="mi-card" id="mi-top20">
+                <div class="mi-head">상위 20 코인 지수</div>
+                <div class="mi-body">
+                  <div class="mi-value" id="mi-top20-value">--</div>
+                  <div class="mi-change" id="mi-top20-change">--</div>
+                </div>
+                <canvas class="mi-spark" id="mi-top20-spark" width="260" height="60" aria-hidden="true"></canvas>
+              </div>
+              
+              <!-- 공포/탐욕 지수 -->
+              <div class="mi-card fng" id="mi-fng">
+                <div class="mi-fng-layout">
+                  <div class="mi-fng-left">
+                    <div class="mi-head">공포/탐욕 지수</div>
+                    <div class="mi-fng-kor" id="mi-fng-kor">--</div>
+                    <div class="mi-fng-delta" id="mi-fng-delta">--</div>
+                  </div>
+                  <div class="mi-gauge">
+                  <canvas id="mi-fng-gauge" width="180" height="120" aria-label="공포/탐욕 게이지" role="img"></canvas>
+                  <div class="mi-fng-center">
+                    <div class="mi-fng-score" id="mi-fng-score">--</div>
+                    <div class="mi-fng-label" id="mi-fng-label">--</div>
+                  </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
           <!-- 고래 거래 추적: 로그인 카드 하단 -->
           <!-- 실시간 롱/숏 비율: 로그인 카드 아래, 고래 카드 위 -->
           <div class="dashboard-card ls-gauge-card">
-            <div class="card-header">
-              <h3><span style="color: #2962ff;">실시간</span> 롱/숏 비율</h3>
-            </div>
-            <div class="ls-gauge-content">
-              <canvas id="ls-gauge-canvas" width="350" height="220" aria-label="롱/숏 비율 게이지" role="img"></canvas>
-              <div class="ls-gauge-scale">
-                <span class="scale-strong-sell">스트롱 셀</span>
-                <span class="scale-sell">셀</span>
-                <span class="scale-neutral">뉴트럴</span>
-                <span class="scale-buy">바이</span>
-                <span class="scale-strong-buy">스트롱 바이</span>
+            <div class="ls-layout">
+              <div class="ls-left">
+                <div class="mi-head">실시간 롱/숏 비율</div>
+                <div class="ls-gauge-summary">
+                  <span id="ls-gauge-label">계산 중...</span>
+                  <span id="ls-gauge-percent" class="ls-percent"></span>
+                </div>
+                <div class="ls-gauge-meta" id="ls-gauge-meta"></div>
               </div>
-              <div class="ls-gauge-summary">
-                <span id="ls-gauge-label">계산 중...</span>
-                <span id="ls-gauge-percent" class="ls-percent"></span>
+              <div class="ls-gauge-wrap">
+                <canvas id="ls-gauge-canvas" width="180" height="120" aria-label="롱/숏 비율 게이지" role="img"></canvas>
               </div>
-              <div class="ls-gauge-meta" id="ls-gauge-meta">BTCUSDT · 1분 롤링</div>
             </div>
           </div>
           
@@ -388,7 +439,7 @@
 
   <!-- JavaScript Files (All scripts separated) -->
   <!-- Firebase Configuration (Must load first) -->
-  <script src="firebase-config.js"></script>
+  <script type="module" src="firebase-config.js"></script>
   
   <!-- Core Scripts -->
   <script src="js/auth.js"></script>
@@ -404,6 +455,7 @@
   <script src="js/index/long-short-gauge.js"></script>
   <script src="js/analysis/whale-tracker.js"></script>
   <script src="js/index/mobile-dashboard-slider.js"></script>
+  <script src="js/index/market-indicators.js"></script>
   <script src="js/index/firebase-manager.js"></script>
   <script src="js/index/main-initializer.js"></script>
   
