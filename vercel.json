@@ -1,11 +1,5 @@
 {
   "version": 2,
-  "routes": [
-    { "src": "/api/coingecko/(.*)", "dest": "/api/coingecko.js" },
-    { "src": "/(.*)", "dest": "/$1" }
-  ]
-}
-{
   "redirects": [
     {
       "source": "/:path*",
@@ -49,6 +43,7 @@
     }
   ],
   "rewrites": [
+    { "source": "/api/coingecko/(.*)", "destination": "/api/coingecko.js" },
     { "source": "/search", "destination": "/search/index.html" },
     { "source": "/search/(.*)", "destination": "/search/$1" },
     { "source": "/api/ai-search", "destination": "/api/ai-search" },
