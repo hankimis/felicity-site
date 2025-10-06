@@ -27,6 +27,8 @@
   ],
 
   "rewrites": [
+    { "source": "/chat", "destination": "/chat/index.html" },
+    { "source": "/chat/", "destination": "/chat/index.html" },
     { "source": "/api/coingecko/(.*)", "destination": "/api/coingecko.js" },
 
     { "source": "/search", "destination": "/search/index.html" },
