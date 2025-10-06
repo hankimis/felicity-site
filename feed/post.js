@@ -5,13 +5,19 @@
 
   function resolvePostId(){
     try {
+      // 1) 명시적으로 주입된 값 우선
       if (window.__POST_ID_FROM_QS__) return window.__POST_ID_FROM_QS__;
-      const m = location.pathname && location.pathname.match(/\/feed\/post\/([^\/#?]+)/);
-      if (m && m[1]) return m[1];
-      const last = (location.pathname || '').split('/').filter(Boolean).pop() || '';
-      if (last && !/\.html?$/.test(last)) return last;
+      // 2) 쿼리스트링 ?id= 우선 사용 (Vercel cleanUrls 리다이렉트 대응)
       const qsId = new URLSearchParams(location.search || '').get('id');
-      return qsId || '';
+      if (qsId) return qsId;
+      // 3) /feed/post/:id 형태 경로 지원
+      const m = location.pathname && location.pathname.match(/\/feed\/post\/([^\/#?]+)/);
+      if (m && m[1] && m[1] !== 'post') return m[1];
+      // 4) 마지막 세그먼트가 실제 ID인 경우(HTML이 아닌 경우)에만 반환
+      const segments = (location.pathname || '').split('/').filter(Boolean);
+      const last = segments.pop() || '';
+      if (last && last !== 'post' && !/\.html?$/.test(last)) return last;
+      return '';
     } catch (_) { return ''; }
   }
 
