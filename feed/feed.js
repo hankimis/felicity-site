@@ -379,8 +379,8 @@
     }, { passive: true });
   }
 
-  const isLocal = (location.hostname === 'localhost' || location.hostname === '127.0.0.1' || location.protocol === 'file:');
-  const nav = (pretty, raw) => { window.location.href = isLocal ? raw : pretty; };
+  // 도메인 환경에서 리라이트 미적용 404 대응: 항상 HTML 쿼리 경로로 이동
+  const nav = (pretty, raw) => { window.location.href = raw; };
 
   document.addEventListener('DOMContentLoaded', ()=>{ bind(); fetchFeed(true); try { window.lucide && window.lucide.createIcons(); } catch(_) {}
     // 모바일: 아래로 스크롤 시 하단 바 숨김, 위로 올리면 표시
@@ -421,7 +421,7 @@
       }
       const ul = el('trending');
       if (ul) ul.innerHTML = enriched.map(p=>{
-        const href = isLocal ? `/feed/post.html?id=${p.id}` : `/feed/post/${p.id}`;
+        const href = `/feed/post.html?id=${p.id}`;
         const text = (p.text || '').replace(/\n/g,' ').slice(0, 90);
         const rel = fmtRel(p.createdAt);
         const avatar = p.author?.photoURL ? `style="background-image:url('${p.author.photoURL}')"` : '';
