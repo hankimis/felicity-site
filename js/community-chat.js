@@ -16,7 +16,12 @@ class CommunityChat {
         this._paginationLastDocDesc = null; // 내림차순 페이징 기준 (가장 오래된 문서 참조)
         this._isLoadingMore = false;
         this._infiniteScrollBound = false;
+        this._renderedFromCache = false;
+        this._cachedMessages = [];
+        this._cacheSaveTimer = null;
 
+        // 캐시 즉시 렌더 후 Firestore 로드
+        this.renderCachedMessages();
         this.init();
         this.bindMessageProfileNavigation();
     }
@@ -60,8 +65,8 @@ class CommunityChat {
         console.log('사용자 수 엘리먼트:', this.usersCountElement);
 
         if (!window.db) {
-            console.warn('Firestore 서비스 대기 중...');
-            setTimeout(() => this.init(), 1000);
+            console.warn('Firestore 서비스 대기 중... (캐시로 먼저 렌더됨)');
+            setTimeout(() => this.init(), 600);
             return;
         }
 
@@ -147,6 +152,50 @@ class CommunityChat {
         `;
     }
 
+    // ===== 캐시 유틸 =====
+    getCacheKey() {
+        const key = this.mode === 'channel' ? `chat.cache.channel.${this.channelId}` : 'chat.cache.community';
+        return key;
+    }
+    readCache() {
+        try {
+            const raw = localStorage.getItem(this.getCacheKey());
+            if (!raw) return [];
+            const arr = JSON.parse(raw);
+            if (!Array.isArray(arr)) return [];
+            return arr;
+        } catch(_) { return []; }
+    }
+    writeCache(messages) {
+        try {
+            const trimmed = (messages || []).slice(-this.MESSAGES_PER_PAGE);
+            localStorage.setItem(this.getCacheKey(), JSON.stringify(trimmed));
+        } catch(_) {}
+    }
+    debounceSaveCache() {
+        clearTimeout(this._cacheSaveTimer);
+        this._cacheSaveTimer = setTimeout(() => {
+            this.writeCache(this._cachedMessages);
+        }, 200);
+    }
+    renderCachedMessages() {
+        try {
+            if (!this.messagesContainer) return;
+            const cached = this.readCache();
+            if (!cached.length) return;
+            // 이미 렌더된 경우 중복 회피
+            if (this.messagesContainer.children && this.messagesContainer.children.length > 0) return;
+            const html = cached.map((m) => this.renderMessage({ id: m.id, data: m.data })).join('');
+            this.messagesContainer.innerHTML = html;
+            this._renderedFromCache = true;
+            this._cachedMessages = cached.slice();
+            // 하단 고정
+            setTimeout(() => {
+                try { this.messagesContainer.scrollTop = this.messagesContainer.scrollHeight; } catch(_) {}
+            }, 0);
+        } catch(_) {}
+    }
+
     // 시간 포맷팅
     formatTime(timestamp) {
         if (!timestamp) return '';
@@ -211,12 +260,17 @@ class CommunityChat {
             
             if (this.messagesContainer) {
                 const messagesHTML = messages.map(msg => this.renderMessage(msg)).join('');
+                // 캐시로 먼저 그려졌더라도 서버 결과로 동기화
                 this.messagesContainer.innerHTML = messagesHTML;
                 
                 setTimeout(() => {
                     this.messagesContainer.scrollTop = this.messagesContainer.scrollHeight;
                 }, 100);
             }
+
+            // 캐시 저장
+            this._cachedMessages = messages.slice();
+            this.writeCache(this._cachedMessages);
             
             // 초기 로드 기준 마지막 문서(가장 최근)
             this._lastRealtimeDoc = snapshot.empty ? null : snapshot.docs[snapshot.docs.length - 1];
@@ -231,6 +285,7 @@ class CommunityChat {
             if (this.messagesContainer) {
                 this.messagesContainer.innerHTML = '<div class="chat-notice">메시지를 불러올 수 없습니다.</div>';
             }
+            // 실패 시에도 캐시가 있으면 유지
         }
     }
 
@@ -311,6 +366,12 @@ class CommunityChat {
                     if (!document.getElementById(msg.id)) {
                         const messageHTML = this.renderMessage(msg);
                         this.messagesContainer.insertAdjacentHTML('beforeend', messageHTML);
+                        // 캐시 최신화
+                        this._cachedMessages.push(msg);
+                        if (this._cachedMessages.length > this.MESSAGES_PER_PAGE) {
+                            this._cachedMessages = this._cachedMessages.slice(-this.MESSAGES_PER_PAGE);
+                        }
+                        this.debounceSaveCache();
                     }
                 }
             });
