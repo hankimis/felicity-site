@@ -91,15 +91,17 @@ function sendAuthResultPage(res, customToken) {
 }
 
 // OAuth/AI 비활성화: 시크릿 의존 제거
+// NAVER OAuth 재연결용 환경 변수 또는 직접 주입된 값 사용
+const NAVER_CLIENT_ID = process.env.NAVER_CLIENT_ID || 'hDLqFREW3QvRtC6aGQ1x';
+const NAVER_CLIENT_SECRET = process.env.NAVER_CLIENT_SECRET || 'X5rZtCGkmu';
 
 // =============================
-// NAVER OAuth 2.0 → Firebase Custom Token
+// NAVER OAuth 2.0 → Firebase Custom Token (활성화)
 // =============================
-if (process.env.ENABLE_OAUTH === '1') {
-/* exports.naverAuth = https.onRequest({ region: "asia-northeast3" }, async (req, res) => {
+exports.naverAuth = https.onRequest({ region: "asia-northeast3" }, async (req, res) => {
   try {
-    const clientId = NAVER_CLIENT_ID.value();
-    const clientSecret = NAVER_CLIENT_SECRET.value();
+    const clientId = NAVER_CLIENT_ID;
+    const clientSecret = NAVER_CLIENT_SECRET;
     if (!clientId || !clientSecret) {
       res.status(500).json({ error: "NAVER env not configured" });
       return;
@@ -167,8 +169,7 @@ if (process.env.ENABLE_OAUTH === '1') {
     console.error("NAVER OAuth error", e);
     res.status(500).send("NAVER OAuth failed");
   }
-}); */
-}
+});
 
 // =============================
 // KAKAO OAuth 2.0 → Firebase Custom Token
@@ -824,6 +825,69 @@ exports.postCommunityMessage = https.onCall({ region: REGION, enforceAppCheck: f
 });
 
 // =============================================
+// Channels: Post message to specific channel
+// - Path: channels/{channelId}/messages
+// - Same abuse prevention as community chat
+// =============================================
+function normalizeChannelId(raw) {
+  if (!raw) return '';
+  const s = String(raw).toLowerCase().trim();
+  // allow a-z, 0-9, dash, underscore; 1..64
+  if (!/^[a-z0-9_-]{1,64}$/.test(s)) return '';
+  return s;
+}
+
+exports.postChannelMessage = https.onCall({ region: REGION, enforceAppCheck: false, cors: true }, async (request) => {
+  if (!request.auth) {
+    throw new https.HttpsError('unauthenticated', 'Authentication required');
+  }
+  const uid = request.auth.uid;
+  const channelId = normalizeChannelId(request.data && request.data.channelId);
+  if (!channelId) {
+    throw new https.HttpsError('invalid-argument', 'Invalid channelId');
+  }
+  const text = (request.data && request.data.text || '').toString();
+  const displayName = (request.data && request.data.displayName || '').toString();
+  const photoURL = (request.data && request.data.photoURL || '').toString() || null;
+
+  if (!text.trim()) {
+    throw new https.HttpsError('invalid-argument', 'Empty message');
+  }
+  if (text.length > MESSAGE_MAX_LEN) {
+    throw new https.HttpsError('invalid-argument', 'Message too long');
+  }
+  if (hasBadWord(text)) {
+    throw new https.HttpsError('failed-precondition', 'Message contains prohibited content');
+  }
+
+  const now = Date.now();
+  const userMetaRef = db.collection('users').doc(uid).collection('meta').doc(`chat_${channelId}`);
+  const userMetaSnap = await userMetaRef.get();
+  const lastPostAt = userMetaSnap.exists ? (userMetaSnap.data().lastPostAt || 0) : 0;
+  const lastText = userMetaSnap.exists ? (userMetaSnap.data().lastText || '') : '';
+
+  if (now - lastPostAt < POST_COOLDOWN_MS) {
+    throw new https.HttpsError('resource-exhausted', 'Too fast. Please slow down.');
+  }
+  if (lastText && lastText === text.trim() && (now - lastPostAt) < DUPLICATE_WINDOW_MS) {
+    throw new https.HttpsError('already-exists', 'Duplicate message');
+  }
+
+  const payload = {
+    text: text.trim(),
+    timestamp: admin.firestore.FieldValue.serverTimestamp(),
+    uid,
+    displayName: displayName || '사용자',
+    photoURL: photoURL || null,
+  };
+
+  await db.collection('channels').doc(channelId).collection('messages').add(payload);
+  await userMetaRef.set({ lastPostAt: now, lastText: text.trim() }, { merge: true });
+
+  return { ok: true };
+});
+
+// =============================================
 // Admin-only System Announcement / Breaking News
 // =============================================
 async function isAdmin(uid) {
@@ -863,6 +927,39 @@ exports.postSystemAnnouncement = https.onCall({ region: REGION, enforceAppCheck:
   }
   await db.collection('community-chat').add(data);
   return { ok: true };
+});
+
+// =============================================
+// Admin: Delete User (Auth + Firestore)
+// =============================================
+exports.adminDeleteUser = https.onCall({ region: REGION, enforceAppCheck: false }, async (request) => {
+  if (!request.auth) {
+    throw new https.HttpsError('unauthenticated', 'Authentication required');
+  }
+  const requester = request.auth.uid;
+  const targetUid = (request.data && request.data.uid) ? String(request.data.uid) : '';
+  if (!targetUid) {
+    throw new https.HttpsError('invalid-argument', 'uid is required');
+  }
+  // Only admins allowed
+  if (!(await isAdmin(requester))) {
+    throw new https.HttpsError('permission-denied', 'Admin only');
+  }
+  if (targetUid === requester) {
+    throw new https.HttpsError('failed-precondition', 'Cannot delete yourself');
+  }
+  try {
+    // Delete Firestore user document
+    await db.collection('users').doc(targetUid).delete().catch(() => {});
+    // Optionally clean related collections
+    await db.collection('online-users').doc(targetUid).delete().catch(() => {});
+    // Delete Auth user
+    await admin.auth().deleteUser(targetUid);
+    return { ok: true };
+  } catch (e) {
+    console.error('adminDeleteUser error', e);
+    throw new https.HttpsError('internal', 'Failed to delete user');
+  }
 });
 
 // =============================================
