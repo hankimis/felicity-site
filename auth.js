@@ -3,22 +3,27 @@
 // import { getFirestore, doc, setDoc, getDoc, serverTimestamp, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 // import { firebaseConfig } from './firebase-config.js';
 
-// Firebase 초기화
-const firebaseConfig = {
-    apiKey: "AIzaSyCbvgcol3P4wTUNh88-d9HPZl-2NC9WbqI",
-    authDomain: "livechattest-35101.firebaseapp.com",
-    projectId: "livechattest-35101",
-    storageBucket: "livechattest-35101.firebasestorage.app",
-    messagingSenderId: "880700591040",
-    appId: "1:880700591040:web:a93e47bf19a9713a245625",
-    measurementId: "G-ER1H2CCZW9",
-    databaseURL: "https://livechattest-35101-default-rtdb.asia-southeast1.firebasedatabase.app/"
-};
-
-// Firebase 초기화 (compat 버전)
-if (!firebase.apps.length) {
-    firebase.initializeApp(firebaseConfig);
-}
+// Firebase 초기화 (compat 버전) - 중복 선언 방지 및 전역 설정 사용
+(function(){
+    try {
+        var cfg = (typeof window !== 'undefined' && window.firebaseConfig) ? window.firebaseConfig : {
+            apiKey: "AIzaSyCbvgcol3P4wTUNh88-d9HPZl-2NC9WbqI",
+            authDomain: "livechattest-35101.firebaseapp.com",
+            projectId: "livechattest-35101",
+            storageBucket: "livechattest-35101.firebasestorage.app",
+            messagingSenderId: "880700591040",
+            appId: "1:880700591040:web:a93e47bf19a9713a245625",
+            measurementId: "G-ER1H2CCZW9",
+            databaseURL: "https://livechattest-35101-default-rtdb.asia-southeast1.firebasedatabase.app/"
+        };
+        if (!firebase.apps.length) {
+            firebase.initializeApp(cfg);
+        }
+        if (typeof window !== 'undefined' && !window.firebaseConfig) {
+            window.firebaseConfig = cfg;
+        }
+    } catch(_) {}
+})();
 
 // Firebase 서비스 가져오기
 const auth = firebase.auth();

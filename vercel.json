@@ -29,6 +29,14 @@
   "rewrites": [
     { "source": "/chat", "destination": "/chat/index.html" },
     { "source": "/chat/", "destination": "/chat/index.html" },
+    { "source": "/login", "destination": "/login/index.html" },
+    { "source": "/login/", "destination": "/login/index.html" },
+    { "source": "/signup", "destination": "/signup/index.html" },
+    { "source": "/signup/", "destination": "/signup/index.html" },
+    { "source": "/wallet", "destination": "/wallet/index.html" },
+    { "source": "/wallet/", "destination": "/wallet/index.html" },
+    { "source": "/my-account", "destination": "/my-account/index.html" },
+    { "source": "/my-account/", "destination": "/my-account/index.html" },
     { "source": "/api/coingecko/(.*)", "destination": "/api/coingecko.js" },
 
     { "source": "/search", "destination": "/search/index.html" },
