@@ -102,9 +102,6 @@
 #search-topbar .search-topbar-title { font-weight:700; }
 
 /* Center main post content only */
-#post { text-align: center; }
-#post .text { text-align: center; }
-#post .media { justify-content: center; }
 .sort-tabs { display:flex; gap:8px; }
 .sort-tabs .tab { background:transparent; border:none; color:var(--text-color-secondary); padding:6px 8px; border-radius:999px; cursor:pointer; }
 .sort-tabs .tab.active { color:var(--text-color); font-weight:600; background: rgba(49,130,246,0.08); }

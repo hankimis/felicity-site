@@ -23,8 +23,8 @@
   function fmtRel(ts){ try{ const d = ts?.toDate ? ts.toDate() : new Date(ts); const diff = Date.now()-d.getTime(); const s=Math.floor(diff/1000), m=Math.floor(s/60), h=Math.floor(m/60), day=Math.floor(h/24); if (day>=1) return `${day}일 전`; if (h>=1) return `${h}시간 전`; if (m>=1) return `${m}분 전`; return '방금 전'; }catch(_){ return ''; } }
   function html(s){ return s.replace(/</g,'&lt;'); }
   function createIconsSafe(){ try { window.lucide && window.lucide.createIcons(); } catch(_) {} }
-  const isLocal = (location.hostname === 'localhost' || location.hostname === '127.0.0.1' || location.protocol === 'file:');
-  const nav = (pretty, raw) => { window.location.href = isLocal ? raw : pretty; };
+  // 리라이트 이슈 우회: 항상 HTML 쿼리 경로로 이동
+  const nav = (pretty, raw) => { window.location.href = raw; };
 
   async function hydrateReplyProfile(){
     const comp = document.getElementById('reply-composer');

@@ -106,7 +106,8 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // 1. Start the main authentication and header logic
             async function ensureAuthScript() {
-                if (typeof startApp === 'function') return true;
+                // 이미 초기화된 경우 재주입 금지 (중복 선언 오류 방지)
+                if ((window.auth && window.db) || typeof startApp === 'function') return true;
                 try {
                     // 이미 어떤 경로로든 auth.js가 포함되어 있는지 탐지 (상대/절대 모두)
                     const anyAuth = document.querySelector('script[src$="/auth.js"], script[src*="/js/auth.js"], script[src$="auth.js"]');
@@ -114,24 +115,13 @@ document.addEventListener('DOMContentLoaded', () => {
                         let tries = 0; const max = 50;
                         await new Promise((res)=>{
                             (function wait(){
-                                if (typeof startApp === 'function' || tries++ > max) return res();
+                                if ((window.auth && window.db) || typeof startApp === 'function' || tries++ > max) return res();
                                 setTimeout(wait, 100);
                             })();
                         });
-                        if (typeof startApp === 'function') return true;
+                        if ((window.auth && window.db) || typeof startApp === 'function') return true;
                     }
-
-                    // 1차: 루트 경로 `/auth.js` 시도
-                    await new Promise((resolve)=>{
-                        const s = document.createElement('script');
-                        s.src = '/auth.js';
-                        s.async = true;
-                        s.onload = resolve; s.onerror = resolve;
-                        document.head.appendChild(s);
-                    });
-                    if (typeof startApp === 'function') return true;
-
-                    // 2차: `/js/auth.js` 시도 (서브 폴더 배치 대응)
+                    // 우선 `/js/auth.js`만 시도 (startApp 제공)
                     await new Promise((resolve)=>{
                         const s = document.createElement('script');
                         s.src = '/js/auth.js';
@@ -139,7 +129,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         s.onload = resolve; s.onerror = resolve;
                         document.head.appendChild(s);
                     });
-                    return typeof startApp === 'function';
+                    return (window.auth && window.db) || (typeof startApp === 'function');
                 } catch (_) { return false; }
             }
 
