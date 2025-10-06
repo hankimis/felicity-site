@@ -18,6 +18,7 @@
     depthRest: (sym, limit=25) => `${CONFIG.binanceApiBase}/fapi/v1/depth?symbol=${sym}&limit=${limit}`,
     tickerRest: (sym) => `${CONFIG.binanceApiBase}/fapi/v1/ticker/bookTicker?symbol=${sym}`,
     leverageBracketRest: (sym) => `${CONFIG.binanceApiBase}/fapi/v1/leverageBracket?symbol=${sym}`,
+    premiumIndexRest: (sym) => `${CONFIG.binanceApiBase}/fapi/v1/premiumIndex?symbol=${sym}`,
     ui: {
       minOrderbookRows: 9,
       rowHeight: 24,
@@ -32,9 +33,12 @@
     balanceUSDT: 10000, // 시작 자본
     equityUSDT: 10000,
     leverage: 15,
+    leverageLong: 15,
+    leverageShort: 15,
     marginMode: 'cross', // cross | isolated
     positions: [], // { id, symbol, side, entry, amount, leverage, margin, mode }
     openOrders: [], // { id, symbol, side, price, amount, leverage, mode, status }
+    closeOrders: [], // { id, positionId, symbol, side('sell'|'buy'), price, amount, reduceOnly:true, tif:'GTC' }
     lastPrice: 0,
     history: [],
     fundingRate: 0.0001,
@@ -52,29 +56,26 @@
   class PaperTradingEngine {
     constructor() {
       this.state = this.loadState();
+      // 심볼별 실시간 가격 캐시 및 소켓
+      this._markCache = this._markCache || Object.create(null);
+      this._bestBidCache = this._bestBidCache || Object.create(null);
+      this._bestAskCache = this._bestAskCache || Object.create(null);
+      this._posPriceSockets = this._posPriceSockets || new Map();
       // 새 MarketSockets로 대체 (기존 MarketDataManager 폴백 유지)
-      if (window.MarketSockets) {
-        this.market = new window.MarketSockets(this.state.symbol, {
-          onPrice: (mid) => { this.state.lastPrice = Number(mid); this.renderPrices(); this.updatePnL(); },
-          onDepth: (m) => {
-            try {
-              const bids = (m.b || []).map(([p,q]) => ({ price: Number(p), size: Number(q) }));
-              const asks = (m.a || []).map(([p,q]) => ({ price: Number(p), size: Number(q) }));
-              this.orderbookState = { bids, asks };
-              // 최우선 호가를 상태에 저장 (지정가 매칭용)
-              const bestBid = bids && bids.length ? Math.max.apply(null, bids.map(r=>r.price)) : 0;
-              const bestAsk = asks && asks.length ? Math.min.apply(null, asks.map(r=>r.price)) : Infinity;
-              if (isFinite(bestBid)) this.state.bestBid = bestBid; else this.state.bestBid = 0;
-              if (isFinite(bestAsk)) this.state.bestAsk = bestAsk; else this.state.bestAsk = Infinity;
-              this.renderDepth();
-            } catch(_) {}
-          }
+      // 새 오더북 엔진 사용
+      try {
+        this.ob = new window.OrderbookEngine(this.state.symbol, (st)=>{
+          this.orderbookState = { bids: st.bids||[], asks: st.asks||[] };
+          // 최우선 호가 저장
+          const bids = this.orderbookState.bids, asks=this.orderbookState.asks;
+          const bestBid = bids && bids.length ? bids[0].price : 0;
+          const bestAsk = asks && asks.length ? asks[0].price : Infinity;
+          this.state.bestBid = isFinite(bestBid)? bestBid : 0;
+          this.state.bestAsk = isFinite(bestAsk)? bestAsk : Infinity;
+          this.renderDepth();
         });
-        this.market.startPrice();
-        this.market.startOrderbook();
-      } else {
-        this.market = new (window.MarketDataManager || function(){})();
-      }
+        this.ob.start();
+      } catch(_) {}
       this.priceTimer = null;
       this.orderbookState = { asks: [], bids: [] };
       this.orderbookLevels = 16;
@@ -115,11 +116,31 @@
       this.start();
       this.render();
       this.renderPositionsSkeleton();
+      // 보유 포지션 심볼들의 Mark를 선제 로드하여 초기 PnL 0 표시를 최소화
+      try { this.prefetchMarksForOpenPositions && this.prefetchMarksForOpenPositions(); } catch(_) {}
       // 저장/동기화 디바운스 래퍼
       this._saveTimer = null;
       this._lastSavedJson = '';
       this.initOrderbookWorker();
       this.initVisibilityAndOnlineHandlers();
+      // Mark Price 주기 갱신 (1.5s)
+      try { clearInterval(this._markIv); } catch(_) {}
+      this._markIv = setInterval(() => { this.fetchMarkPrice().catch(()=>{}); this._updateLastOnButtons && this._updateLastOnButtons(); }, 1500);
+      // 보유 포지션 심볼들의 Mark도 주기 갱신 (2.5s)
+      try { clearInterval(this._posMarkIv); } catch(_) {}
+      this._posMarkIv = setInterval(async () => {
+        try {
+          const arr = Array.isArray(this.state?.positions) ? this.state.positions : [];
+          const cur = String(this.state.symbol||'').toUpperCase();
+          const uniq = Array.from(new Set(arr.map(p=> (p && p.symbol ? String(p.symbol).toUpperCase() : null)).filter(s=> s && s!==cur)));
+          if (uniq.length) {
+            await Promise.all(uniq.map(s=> this.fetchMarkForSymbol(s)));
+            this.updatePnL();
+            this.renderPositionsValuesOnly();
+            this.renderAccountPanel();
+          }
+        } catch(_) {}
+      }, 2500);
 
       // ONBIT Miner UI 구독 (balance-grid 중앙)
       try {
@@ -144,6 +165,193 @@
       this._miningNegAccUSDT = 0; // 사용 안함
       this._lastMiningAwardTs = 0;
       this._onbitPreview = 0; // 현재 포지션 기준 예상 채굴량(합계)
+      // 심볼별 Mark 캐시
+      this._markCache = Object.create(null);
+      this._markFetchQueued = new Set();
+
+      // 헤더 심볼 변경 이벤트 구독 (차트/헤더에서 변경 시 엔진 동기화)
+      try {
+        if (!window.__pt_sym_sync_bound){
+          window.addEventListener('mh:symbolChanged', (e)=>{
+            try {
+              const sym = (e && e.detail && e.detail.symbol) || '';
+              if (sym) this.setSymbol(sym);
+            } catch(_) {}
+          });
+          window.__pt_sym_sync_bound = true;
+        }
+      } catch(_) {}
+
+      // 전역 심볼 변경 이벤트(차트 복원 포함) 구독
+      try {
+        if (!window.__pt_symbol_change_bound){
+          window.addEventListener('symbol:change', (e)=>{
+            try {
+              const base = (e && e.detail && (e.detail.base || (String(e.detail.tvSymbol||'').split(':').pop()))) || '';
+              if (base) this.setSymbol(base);
+            } catch(_) {}
+          });
+          window.__pt_symbol_change_bound = true;
+        }
+      } catch(_) {}
+
+      // 데이터 일시정지/재개 이벤트 구독(복원 레이스 방지)
+      try {
+        if (!window.__pt_data_pause_bound){
+          window.addEventListener('data:pause', ()=>{
+            try { this.ob && this.ob.stop && this.ob.stop(); } catch(_) {}
+          });
+          window.__pt_data_pause_bound = true;
+        }
+        if (!window.__pt_data_resume_bound){
+          window.addEventListener('data:resume', ()=>{
+            try { this.setSymbol && this.setSymbol(this.state.symbol); } catch(_) {}
+          });
+          window.__pt_data_resume_bound = true;
+        }
+      } catch(_) {}
+    }
+
+    getApiUrl(path){
+      try {
+        const custom = (typeof window !== 'undefined') && window.API_BASE;
+        if (custom) return String(custom).replace(/\/$/, '') + path;
+        const isLocal = /^(localhost|127\.0\.0\.1)$/i.test(location.hostname);
+        if (isLocal) return 'http://localhost:3001' + path; // API 서버 기본 포트
+        return path; // 동일 오리진 프록시 환경
+      } catch(_) { return path; }
+    }
+
+    // 심볼별 최우선 호가/라스트(마크) 조회
+    getTopForSymbol(sym){
+      try {
+        const up = String(sym||this.state.symbol||'BTCUSDT').toUpperCase();
+        const bid = Number((this._bestBidCache && this._bestBidCache[up]) || (up===String(this.state.symbol||'').toUpperCase() ? this.state.bestBid : 0) || 0);
+        const ask = Number((this._bestAskCache && this._bestAskCache[up]) || (up===String(this.state.symbol||'').toUpperCase() ? this.state.bestAsk : 0) || 0);
+        const last = Number(this.getMarkForSymbol(up) || (up===String(this.state.symbol||'').toUpperCase() ? this.state.lastPrice : 0) || 0);
+        return { bestBid: bid, bestAsk: ask, last };
+      } catch(_) { return { bestBid: Number(this.state.bestBid||0), bestAsk: Number(this.state.bestAsk||0), last: Number(this.state.lastPrice||0) }; }
+    }
+
+    // 같은 심볼/방향/모드 포지션 병합
+    mergePosition(newPos) {
+      try {
+        const idx = this.state.positions.findIndex(p => p.symbol===newPos.symbol && p.side===newPos.side && p.mode===newPos.mode);
+        if (idx === -1) { this.state.positions.push(newPos); return newPos; }
+        const cur = this.state.positions[idx];
+        const totalAmt = Number(cur.amount) + Number(newPos.amount);
+        const curNotional = Number(cur.entry) * Number(cur.amount);
+        const addNotional = Number(newPos.entry) * Number(newPos.amount);
+        const nextEntry = totalAmt>0 ? ((curNotional + addNotional) / totalAmt) : newPos.entry;
+        cur.amount = totalAmt;
+        cur.entry = nextEntry;
+        cur.margin = Math.max(0, Number(cur.margin) + Number(newPos.margin));
+        const impliedLev = (cur.entry * cur.amount) / Math.max(1e-8, cur.margin);
+        cur.leverage = Math.max(1, Number.isFinite(impliedLev) ? impliedLev : cur.leverage);
+        return cur;
+      } catch(_) { this.state.positions.push(newPos); return newPos; }
+    }
+
+    // Mark Price 우선 사용
+    getMark() {
+      const m = Number(this.state.markPrice);
+      if (isFinite(m) && m > 0) return m;
+      return Number(this.state.midPrice || this.state.lastPrice || 0) || 0;
+    }
+
+  getBaseAsset(sym){
+    try { return String(sym||this.state.symbol||'BTCUSDT').replace(/[:\-]/g,'').replace(/USDT$/,''); } catch(_) { return 'BTC'; }
+  }
+
+  getMarkForSymbol(sym){
+    const s = (sym||'').toUpperCase();
+    if (!s || s === String(this.state.symbol||'').toUpperCase()) return this.getMark();
+    const v = Number(this._markCache && this._markCache[s]);
+    return (isFinite(v) && v>0) ? v : null;
+  }
+
+  async fetchMarkForSymbol(sym){
+    try {
+      const up = (sym||'').toUpperCase(); if (!up) return;
+      const res = await fetch(CONFIG.premiumIndexRest(up));
+      if (!res.ok) return;
+      const d = await res.json();
+      const m = Number(d && (d.markPrice ?? d.lastPrice));
+      if (!this._markCache) this._markCache = Object.create(null);
+      if (isFinite(m) && m>0) this._markCache[up] = m;
+    } catch(_) {}
+  }
+
+    hasMarkForSymbol(sym){
+      try { const up=(sym||'').toUpperCase(); const v=this._markCache && this._markCache[up]; return Number.isFinite(v) && v>0; } catch(_) { return false; }
+    }
+
+    requestMarkIfMissing(sym){
+      try {
+        const up=(sym||'').toUpperCase(); if (!up) return;
+        if (this.hasMarkForSymbol(up)) return;
+        if (!this._markFetchQueued) this._markFetchQueued = new Set();
+        if (this._markFetchQueued.has(up)) return;
+        this._markFetchQueued.add(up);
+        setTimeout(async ()=>{ try { await this.fetchMarkForSymbol(up); } finally { this._markFetchQueued.delete(up); } }, 0);
+      } catch(_) {}
+    }
+
+    prefetchMarksForOpenPositions(){
+      try {
+        const arr = Array.isArray(this.state?.positions) ? this.state.positions : [];
+        const uniq = Array.from(new Set(arr.map(p=> (p && p.symbol ? String(p.symbol).toUpperCase() : null)).filter(Boolean)));
+        uniq.forEach(s=> {
+          this.requestMarkIfMissing(s);
+          this.ensureSymbolBookTicker(s);
+        });
+      } catch(_) {}
+    }
+
+    ensureSymbolBookTicker(sym){
+      try {
+        const up = (sym||'').toUpperCase();
+        if (!up) return;
+        if (this._posPriceSockets.has(up)) return;
+        const url = CONFIG.bookTickerStream(up.toLowerCase());
+        const ws = new WebSocket(url);
+        this._posPriceSockets.set(up, ws);
+        ws.onmessage = (ev)=>{
+          try{
+            const m = JSON.parse(ev.data);
+            const bid = Number(m.b), ask = Number(m.a);
+            if (isFinite(bid) && isFinite(ask)){
+              this._bestBidCache[up] = bid;
+              this._bestAskCache[up] = ask;
+              const last = (bid+ask)/2;
+              this._markCache[up] = last; // per-symbol mid as last
+            }
+          } catch(_){}
+        };
+        ws.onclose = ()=>{ this._posPriceSockets.delete(up); };
+        ws.onerror = ()=>{ try{ ws.close(); }catch(_){} };
+      } catch(_) {}
+    }
+
+    // 포지션 심볼별 안전한 Mark 가격 해석자
+    // - 캐시된 해당 심볼 Mark 우선
+    // - 현재 엔진 심볼이 동일하면 엔진 Mark 사용
+    // - 그 외에는 진입가를 보수적 fallback으로 사용 (잘못된 청산 방지)
+    safeMarkFor(p) {
+      try {
+        const sym = (p && p.symbol) ? String(p.symbol).toUpperCase() : '';
+        const cached = this.getMarkForSymbol(sym);
+        if (Number.isFinite(cached) && cached > 0) return cached;
+        const cur = String(this.state.symbol||'').toUpperCase();
+        if (sym && sym === cur) {
+          const gm = this.getMark();
+          if (Number.isFinite(gm) && gm > 0) return gm;
+        }
+        const entry = Number(p && p.entry);
+        return (Number.isFinite(entry) && entry > 0) ? entry : 0;
+      } catch(_) {
+        return Number(p && p.entry) || 0;
+      }
     }
 
     initOrderbookWorker() {
@@ -656,6 +864,25 @@
         alert('로그인이 필요합니다. 회원만 거래할 수 있습니다.');
         return;
       }
+      const mode = this.actionMode || 'open';
+      if (mode === 'close') {
+        // 가장 최근 동일 방향 포지션을 우선 청산 (간단 규칙)
+        const idx = this.state.positions.slice().reverse().findIndex(p => p.side === side);
+        if (idx === -1) return alert('청산할 해당 방향 포지션이 없습니다.');
+        const realIdx = this.state.positions.length - 1 - idx;
+        const p = this.state.positions[realIdx];
+        const price = this.getActivePrice();
+        const pnl = this.calcPnL(p, price);
+        const closeFee = Math.max(0, price * p.amount * FEE_TAKER);
+        this.state.balanceUSDT += Math.max(0, p.margin + pnl - closeFee);
+        this.state.positions.splice(realIdx, 1);
+        this.saveState();
+        this.renderPositions();
+        this.updateCostPreview();
+        this.syncUserBalanceDebounced && this.syncUserBalanceDebounced();
+        try { window.TradeNotifier && window.TradeNotifier.notify({ title:`Close ${p.side==='long'?'Long':'Short'} ${this.state.symbol} ${p.mode==='cross'?'Cross':'Isolated'} · ${p.leverage}x`, subtitle:'Market · Filled', price, amount:p.amount, mode:p.mode, leverage:p.leverage, type: pnl>=0?'success':'warn' }); } catch(_) {}
+        return;
+      }
       this.placeOrder(side);
     }
 
@@ -673,23 +900,55 @@
     setSymbol(sym) {
       if (!sym) return;
       const compact = sym.replace(/[-:]/g, '').replace(/USDTUSDT/, 'USDT');
-      this.state.symbol = compact.endsWith('USDT') ? compact : compact + 'USDT';
-      this.el.symbol.textContent = this.state.symbol;
+      const nextSymbol = compact.endsWith('USDT') ? compact : compact + 'USDT';
+      if (String(this.state.symbol||'').toUpperCase() === String(nextSymbol).toUpperCase()) {
+        return;
+      }
+      this.state.symbol = nextSymbol;
+      if (this.el && this.el.symbol) this.el.symbol.textContent = this.state.symbol;
       this.market?.addSymbol?.(this.state.symbol);
       this.saveState();
-      this.market.setSymbol(this.state.symbol);
+      try { this.market && this.market.setSymbol && this.market.setSymbol(this.state.symbol); } catch(_) {}
+      // 차트도 함께 변경 (가능할 때)
+      try {
+        const tvSymbol = `BINANCE:${this.state.symbol}`;
+        const chart = (window.widget && (window.widget.activeChart ? window.widget.activeChart() : (window.widget.chart && window.widget.chart())));
+        if (chart && chart.setSymbol){
+          let curRes; try { curRes = chart.resolution && chart.resolution(); } catch(_) {}
+          chart.setSymbol(tvSymbol, curRes || undefined);
+        } else if (window.widget && window.widget.setSymbol) {
+          window.widget.setSymbol(tvSymbol, undefined, ()=>{});
+        }
+      } catch(_) {}
+      // 오더북/호가 초기화 및 소켓 재시작
+      try { this.stopOrderbookSocket && this.stopOrderbookSocket(); } catch(_) {}
+      this.orderbookState = { asks: [], bids: [] };
+      try { this._obRowCache && this._obRowCache.clear && this._obRowCache.clear(); } catch(_) {}
       this.renderDepth();
-      // 가격 소켓은 MarketSockets가 관리
+      this.startOrderbook && this.startOrderbook();
+      // 첫 프레임 강제 REST 보충으로 즉시 표시
+      (async ()=>{ try { const depth = await this.fetchDepth(); if (depth) { const norm=(arr)=> (arr||[]).filter(x=>Array.isArray(x)&&x.length>=2).map(([p,q])=>({price:Number(p), size:Number(q)})).filter(x=>isFinite(x.price)&&isFinite(x.size)&&x.size>0); this.orderbookState={ asks:norm(depth.asks), bids:norm(depth.bids) }; this.renderDepth(); } } catch(_) {} })();
+      // 소켓 즉시 재구독을 위해 MarketSockets에도 심볼 반영
+      // 새 오더북 엔진으로 즉시 전환
+      try { if (this.ob) { this.ob.stop && this.ob.stop(); this.ob.setSymbol && this.ob.setSymbol(this.state.symbol); this.ob.start && this.ob.start(); } } catch(_) {}
+      // 라더 재설정: 중앙가격 초기화하여 화면 즉시 갱신
+      this.ladderCenter = null;
+      // 가격/Mark 즉시 갱신
       this.priceTouched = false;
+      this.state.bestBid = 0; this.state.bestAsk = Infinity;
       this.fetchInitialPrice();
+      this.fetchMarkPrice && this.fetchMarkPrice();
+      // 트레이드 패널 가격 입력도 즉시 업데이트
+      try { if (this.el && this.el.price) this.el.price.value = (this.getMark()||0).toFixed(1); } catch(_) {}
       // 심볼 변경 시 유지증거금 브래킷 갱신
       this.fetchLeverageBrackets();
     }
 
     getActivePrice() {
-      if (this.el.price.disabled) return this.state.lastPrice;
+      const mark = this.getMark();
+      if (this.el.price.disabled) return mark;
       const p = Number(this.el.price.value);
-      return p > 0 ? p : this.state.lastPrice;
+      return p > 0 ? p : mark;
     }
 
     updateAmountFromPercent() {
@@ -793,7 +1052,9 @@
       const isMarket = this.el.price.disabled;
       const price = this.getActivePrice();
       if (!isFinite(price) || price <= 0) { alert('올바른 가격을 입력하세요.'); return; }
-      const lev = this.state.leverage;
+      const lev = (side === 'long')
+        ? (this.state.leverageLong || this.state.leverage || 15)
+        : (this.state.leverageShort || this.state.leverage || 15);
       if (isMarket) {
         // OrderEngine 경로로 우선 시도
         if (window.RiskFunding && window.OrderEngine && window.UIRenderer) {
@@ -827,7 +1088,7 @@
           mode: this.state.marginMode,
         };
         this.state.balanceUSDT -= (margin + openFee);
-        this.state.positions.push(pos);
+        this.mergePosition(pos);
         this.saveState();
         this.syncUserBalance(); // 체결 즉시 1회 동기화
         // history는 OrderEngine에 위임됨
@@ -877,7 +1138,9 @@
       this.state.positions.splice(idx, 1);
       this.saveState();
       // history record - Market Close
-      this.state.history.unshift({ id:'his_'+Date.now(), ts:Date.now(), symbol:p.symbol, mode:p.mode, leverage:p.leverage, direction: p.side==='long'?'Close Long':'Close Short', type:'Market', avgPrice:price, orderPrice:price, filled:p.amount, fee: closeFee, pnl });
+      const __orderId = 'ord_'+Date.now()+Math.floor(Math.random()*1e6);
+      this.state.history.unshift({ id:'his_'+Date.now(), orderId: __orderId, ts:Date.now(), symbol:p.symbol, mode:p.mode, leverage:p.leverage, direction: p.side==='long'?'Close Long':'Close Short', type:'Market', avgPrice:price, orderPrice:price, filled:p.amount, fee: closeFee, pnl });
+      try { fetch(this.getApiUrl('/api/orders'), { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ userId: (this.user&&this.user.uid)||'guest', symbol:p.symbol, side: (p.side==='long'?'sell':'buy'), type:'MarketClose', price, amount:p.amount, fee: closeFee, pnl }) }).catch(()=>{}); } catch(_) {}
       if (this.state.history.length>500) this.state.history.length=500;
       // ONBIT 채굴: 수익/손실 모두 규칙에 따라 적립 (실시간 잔고 갱신 이벤트 발생)
       try { if (window.onbitMiner && this.user && pnl !== 0) {
@@ -906,7 +1169,9 @@
         const closeFee = Math.max(0, price * p.amount * FEE_TAKER);
         total += Math.max(0, p.margin + pnl - closeFee);
         // history per position
-        this.state.history.unshift({ id:'his_'+Date.now()+Math.random(), ts:Date.now(), symbol:p.symbol, mode:p.mode, leverage:p.leverage, direction: p.side==='long'?'Close Long':'Close Short', type:'Market', avgPrice:price, orderPrice:price, filled:p.amount, fee: closeFee, pnl });
+        const __orderId = 'ord_'+Date.now()+Math.floor(Math.random()*1e6);
+        this.state.history.unshift({ id:'his_'+Date.now()+Math.random(), orderId: __orderId, ts:Date.now(), symbol:p.symbol, mode:p.mode, leverage:p.leverage, direction: p.side==='long'?'Close Long':'Close Short', type:'Market', avgPrice:price, orderPrice:price, filled:p.amount, fee: closeFee, pnl });
+        try { fetch(this.getApiUrl('/api/orders'), { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ userId: (this.user&&this.user.uid)||'guest', symbol:p.symbol, side: (p.side==='long'?'sell':'buy'), type:'MarketClose', price, amount:p.amount, fee: closeFee, pnl }) }).catch(()=>{}); } catch(_) {}
         if (this.state.history.length>500) this.state.history.length=500;
         // notify per position
         try { window.TradeNotifier && window.TradeNotifier.notify({
@@ -994,7 +1259,8 @@
       // 1) 실데이터 브래킷 우선 사용 (명목가 상한 cap 기준)
       try {
         if (this._mmrBrackets && this._mmrBrackets.length) {
-          const notional = Math.max(0, (this.state.lastPrice || p.entry) * p.amount);
+          const mark = this.getMarkForSymbol(p.symbol) || p.entry;
+          const notional = Math.max(0, mark * p.amount);
           let mmr = this._mmrBrackets[0].mmr;
           for (const b of this._mmrBrackets) {
             if (!isFinite(b.cap) || b.cap <= 0) { mmr = b.mmr; break; }
@@ -1013,12 +1279,59 @@
 
     updatePnL() {
       const now = performance.now();
-      this.state.equityUSDT = this.state.balanceUSDT + this.state.positions.reduce((acc, p) => acc + this.calcPnL(p, this.state.lastPrice), 0);
+      this.state.equityUSDT = this.state.balanceUSDT + this.state.positions.reduce((acc, p) => acc + this.calcPnL(p, this.safeMarkFor(p)), 0);
+    // 캐시 없는 심볼의 Mark를 즉시 요청하여 초기 uPnL 0 표시 시간을 단축
+    try {
+      for (const p of this.state.positions) {
+        if (!this.hasMarkForSymbol(p.symbol)) this.requestMarkIfMissing(p.symbol);
+      }
+    } catch(_) {}
       // Limit 체결 매칭을 OrderEngine로 위임
       if (!this._risk) this._risk = new (window.RiskFunding||function(){})({ getState: ()=>this.state, getBrackets: ()=>this._mmrBrackets });
       if (!this._ui) { this._ui = new (window.UIRenderer||function(){})(); this._ui.setFormat && this._ui.setFormat((n)=>this.format(n)); }
       if (!this._orders) this._orders = new (window.OrderEngine||function(){ })(this.state, this._risk, this._ui);
       const filled = this._orders.matchOpenOrders(this.state.lastPrice);
+      // Close 대기주문 매칭 (Last Price Reduce-Only)
+      const bestBid = Number(this.state.bestBid || 0);
+      const bestAsk = Number(this.state.bestAsk || Infinity);
+      const last = Number(this.state.lastPrice || 0);
+      if (Array.isArray(this.state.closeOrders) && this.state.closeOrders.length>0 && isFinite(bestBid) && isFinite(bestAsk) && isFinite(last)){
+        const remained=[];
+        let changed=false;
+        for (const o of this.state.closeOrders){
+          const posIdx = this.state.positions.findIndex(p=>p.id===o.positionId);
+          if (posIdx===-1) { changed=true; continue; }
+          const p=this.state.positions[posIdx];
+          // Reduce-Only 보장: 반대 방향만
+          const shouldSell = (p.side==='long');
+          if ((shouldSell && o.side!=='sell') || (!shouldSell && o.side!=='buy')) { remained.push(o); continue; }
+          // 가격 도달 조건
+        // 심볼별 최우선 호가 사용
+        const top = this.getTopForSymbol(p.symbol);
+        const executable = (o.side==='sell') ? (top.last <= top.bestBid + 1e-8 && top.last <= o.price + 1e-8) : (top.last >= top.bestAsk - 1e-8 && top.last >= o.price - 1e-8);
+          if (!executable) { remained.push(o); continue; }
+          // 체결 처리
+          const exec = o.price;
+          const size = Math.max(0, Math.min(Math.abs(p.amount), Number(o.amount||0)));
+          if (size<=0) { changed=true; continue; }
+          const pnl = this.calcPnL({ ...p, amount: size }, exec);
+          const fee = Math.max(0, exec * size * FEE_TAKER);
+          this.state.balanceUSDT += Math.max(0, (p.margin * (size/Math.abs(p.amount))) + pnl - fee);
+          if (size < Math.abs(p.amount)) {
+            const remain = Math.abs(p.amount) - size;
+            p.amount = p.side==='long' ? remain : -remain;
+            p.margin = Math.max(0, p.margin * (remain / (remain + size)));
+          } else {
+            this.state.positions.splice(posIdx, 1);
+          }
+          const __orderId = 'ord_'+Date.now()+Math.floor(Math.random()*1e6);
+          this.state.history.unshift({ id:'his_'+Date.now(), orderId: __orderId, ts:Date.now(), symbol:p.symbol, mode:p.mode, leverage:p.leverage, direction: p.side==='long'?'Close Long':'Close Short', type:'Limit', avgPrice:exec, orderPrice:o.price, filled:size, fee, pnl });
+          try { fetch(this.getApiUrl('/api/orders'), { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ userId: (this.user&&this.user.uid)||'guest', symbol:p.symbol, side:(p.side==='long'?'sell':'buy'), type:'LimitClose', price:o.price, amount:size, fee, pnl }) }).catch(()=>{}); } catch(_) {}
+          if (this.state.history.length>500) this.state.history.length=500;
+          changed=true;
+        }
+        if (changed){ this.state.closeOrders = remained; this.saveState(); this.renderPositions(); this.syncUserBalanceDebounced && this.syncUserBalanceDebounced(); }
+      }
       if (filled > 0) {
         // 신규 체결 즉시 보유 포지션 테이블 재생성
         this.renderPositions();
@@ -1040,7 +1353,8 @@
         try {
           let minedPreview = 0;
           for (const pos of this.state.positions) {
-            const pnl = this.calcPnL(pos, this.state.lastPrice);
+            const ref = this.safeMarkFor(pos);
+            const pnl = this.calcPnL(pos, ref);
             const rate = pnl > 0 ? 1.0 : (pnl < 0 ? 0.1 : 0);
             minedPreview += Math.abs(pnl) * rate;
           }
@@ -1050,6 +1364,8 @@
           this.updateOnbitDisplay(total);
         } catch(_) {}
         this.renderPositionsValuesOnly();
+        // Last Price 선택된 행의 버튼 텍스트를 실시간으로 갱신
+        try { this._updateLastOnButtons && this._updateLastOnButtons(); } catch(_) {}
         this.renderAccountPanel();
       }
     }
@@ -1114,9 +1430,9 @@
         this.state.lastFundingTs = now;
         return;
       }
-      const mark = this.state.lastPrice || 0;
       let changed = false;
       for (const p of this.state.positions) {
+        const mark = this.safeMarkFor(p);
         const notional = Math.max(0, mark * p.amount);
         if (notional <= 0) continue;
         const base = notional * Math.abs(rate);
@@ -1141,10 +1457,10 @@
 
     checkLiquidations() {
       let liqCount = 0;
-      const mark = this.state.lastPrice || 0;
-      const totalUPnL = this.state.positions.reduce((s, x) => s + this.calcPnL(x, mark), 0);
+      const totalUPnL = this.state.positions.reduce((s, x) => s + this.calcPnL(x, this.safeMarkFor(x)), 0);
       const remain = [];
       for (const p of this.state.positions) {
+        const mark = this.safeMarkFor(p);
         const notional = Math.max(0, mark * p.amount);
         const maintRate = this.getMaintenanceRate(p);
         const maintMargin = notional * maintRate;
@@ -1178,7 +1494,7 @@
 
     matchOpenOrders() {
       if (!Array.isArray(this.state.openOrders) || this.state.openOrders.length === 0) return 0;
-      const price = this.state.lastPrice || 0;
+      const price = this.getMark() || 0;
       const next = [];
       let filledCount = 0;
       for (const o of this.state.openOrders) {
@@ -1206,7 +1522,9 @@
           this.state.positions.push(pos);
           filledCount++;
           // history record - Limit Fill
-          this.state.history.unshift({ id:'his_'+Date.now(), ts:Date.now(), symbol:o.symbol, mode:o.mode, leverage:o.leverage, direction: o.side==='long'?'Open Long':'Open Short', type:'Limit', avgPrice:o.price, orderPrice:o.price, filled:o.amount, fee: openFee, pnl:null });
+          const __orderId = 'ord_'+Date.now()+Math.floor(Math.random()*1e6);
+          this.state.history.unshift({ id:'his_'+Date.now(), orderId: __orderId, ts:Date.now(), symbol:o.symbol, mode:o.mode, leverage:o.leverage, direction: o.side==='long'?'Open Long':'Open Short', type:'Limit', avgPrice:o.price, orderPrice:o.price, filled:o.amount, fee: openFee, pnl:null });
+          try { fetch(this.getApiUrl('/api/orders'), { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ userId: (this.user&&this.user.uid)||'guest', symbol:o.symbol, side: o.side, type:'LimitOpen', price:o.price, amount:o.amount, fee: openFee, pnl:null }) }).catch(()=>{}); } catch(_) {}
           if (this.state.history.length>500) this.state.history.length=500;
           try { window.TradeNotifier && window.TradeNotifier.notify({
             title: `Open ${o.side==='long'?'Long':'Short'} ${o.symbol} ${o.mode==='cross'?'Cross':'Isolated'} · ${o.leverage}x`,
@@ -1270,6 +1588,11 @@
 
     async fetchLeverageBrackets() {
       try {
+        // 로컬 개발 환경에서는 인증이 필요한 API 호출을 생략하여 콘솔 401 스팸 방지
+        try {
+          const host = (location && location.hostname) || '';
+          if (host === 'localhost' || host === '127.0.0.1') { this._mmrBrackets = null; return; }
+        } catch(_) {}
         const sym = (this.state.symbol || 'BTCUSDT').toUpperCase();
         // 캐시 확인
         try {
@@ -1280,7 +1603,7 @@
           }
         } catch(_) {}
         const res = await fetch(CONFIG.leverageBracketRest(sym));
-        if (!res.ok) return;
+        if (!res.ok) { this._mmrBrackets = null; return; }
         const data = await res.json();
         // 응답 형태: [{ symbol, brackets:[{ notionalCap, maintMarginRatio, ... }] }]
         const item = Array.isArray(data) ? data[0] : data;
@@ -1298,16 +1621,16 @@
     renderPrices() {
       if (this.el.lastPrice) {
         const prev = this.prev.lastPrice;
-        // 자연스러운 롤링 애니메이션 적용 (1자리 고정)
-        this.renderRollingNumber(this.el.lastPrice, Number(this.state.lastPrice || 0), 1);
-        this.prev.lastPrice = this.state.lastPrice;
+        // 자연스러운 롤링 애니메이션 적용 (1자리 고정) — Mark 기준
+        this.renderRollingNumber(this.el.lastPrice, Number(this.getMark() || 0), 1);
+        this.prev.lastPrice = this.getMark();
       }
       if (this.el.mid) {
         // 오더북 중앙가도 부드럽게
-        this.renderRollingNumber(this.el.mid, Number(this.state.lastPrice || 0), 1);
+        this.renderRollingNumber(this.el.mid, Number(this.state.midPrice || this.getMark() || 0), 1);
       }
       if (this.el.price && !this.el.price.disabled && !this.priceTouched) {
-        if (!this.el.price.value) this.el.price.value = (this.state.lastPrice || 0).toFixed(1);
+        if (!this.el.price.value) this.el.price.value = (this.getMark() || 0).toFixed(1);
       }
     }
 
@@ -1319,28 +1642,51 @@
         const sym = (this.state.symbol || 'BTCUSDT').toUpperCase();
         if (this._priceAbort) { try { this._priceAbort.abort(); } catch(_) {} }
         this._priceAbort = new AbortController();
-        const res = await fetch(CONFIG.tickerRest(sym), { signal: this._priceAbort.signal });
+        const [res, resPi] = await Promise.all([
+          fetch(CONFIG.tickerRest(sym), { signal: this._priceAbort.signal }),
+          fetch(CONFIG.premiumIndexRest(sym), { signal: this._priceAbort.signal })
+        ]);
         if (!res.ok) return;
         const m = await res.json();
+        const pi = resPi && resPi.ok ? await resPi.json() : null;
         const bid = parseFloat(m.bidPrice || m.b);
         const ask = parseFloat(m.askPrice || m.a);
         if (isFinite(bid) && isFinite(ask)) {
           const mid = (bid + ask) / 2;
+          this.state.midPrice = mid;
           this.state.lastPrice = mid;
+          const mark = Number(pi && (pi.markPrice ?? pi.lastPrice));
+          if (isFinite(mark) && mark > 0) this.state.markPrice = mark; else this.state.markPrice = mid;
           this.state.bestBid = bid;
           this.state.bestAsk = ask;
           this.renderPrices();
           this.updatePnL();
+          // 가격 입력/수수료 프리뷰 즉시 갱신
+          try {
+            if (this.el && this.el.price && !this.el.price.disabled) this.el.price.value = (this.getMark()||0).toFixed(1);
+            this.updateCostPreview && this.updateCostPreview();
+          } catch(_) {}
           this.firstPriceReceived = true;
         }
       } catch {}
+    }
+
+    async fetchMarkPrice(){
+      try {
+        const sym = (this.state.symbol || 'BTCUSDT').toUpperCase();
+        const res = await fetch(CONFIG.premiumIndexRest(sym));
+        if (!res.ok) return;
+        const pi = await res.json();
+        const mark = Number(pi && (pi.markPrice ?? pi.lastPrice));
+        if (isFinite(mark) && mark>0) { this.state.markPrice = mark; }
+      } catch(_) {}
     }
 
     async fetchDepth() {
       try {
         if (this._depthAbort) { try { this._depthAbort.abort(); } catch(_) {} }
         this._depthAbort = new AbortController();
-        const res = await fetch(CONFIG.depthRest(this.state.symbol, 25), { signal: this._depthAbort.signal });
+        const res = await fetch(CONFIG.depthRest(this.state.symbol, 50), { signal: this._depthAbort.signal });
         if (!res.ok) throw new Error('depth ' + res.status);
         const data = await res.json();
         return data;
@@ -1351,14 +1697,22 @@
 
     async renderDepth() {
       const rowsEl = document.getElementById('orderbook-rows');
+      // 심볼 기반 단위 라벨 업데이트
+      try {
+        const unit = (this.state.symbol||'BTCUSDT').replace(/USDT$/,'');
+        const q = document.getElementById('ob-qty-unit');
+        const t = document.getElementById('ob-total-unit');
+        if (q) q.textContent = `Quantity (${unit})`;
+        if (t) t.textContent = `Total (${unit})`;
+      } catch(_) {}
       const buyBar = document.getElementById('ob-buy-bar');
       const sellBar = document.getElementById('ob-sell-bar');
       const buyRatioEl = document.getElementById('ob-buy-ratio');
       const sellRatioEl = document.getElementById('ob-sell-ratio');
       if (!rowsEl) return;
       let { asks, bids } = this.orderbookState;
-      // 최초 로드 시 REST로 보충
-      if (!asks.length || !bids.length) {
+      // 최초 로드 시 REST로 보충 (빈 배열 방지)
+      if ((!asks || asks.length===0) || (!bids || bids.length===0)) {
         const depth = await this.fetchDepth();
         if (!depth) return;
         const norm = (arr) => (arr || [])
@@ -1367,6 +1721,7 @@
           .filter(x => Number.isFinite(x.price) && Number.isFinite(x.size) && x.size > 0);
         asks = norm(depth.asks);
         bids = norm(depth.bids);
+        this.orderbookState = { asks, bids };
       }
 
       // 고정 라더 중앙 가격 설정/유지
@@ -1601,17 +1956,30 @@
     }
 
     stopOrderbookSocket() {
+      try { if (this._obReconnectTimer) { clearTimeout(this._obReconnectTimer); this._obReconnectTimer = null; } } catch(_) {}
       try { this.orderbookSocket && this.orderbookSocket.close(); } catch(_) {}
       this.orderbookSocket = null;
+      this._orderbookUrl = null;
     }
 
     startOrderbookSocket() {
       const sym = (this.state.symbol || 'BTCUSDT').toLowerCase();
       const url = CONFIG.orderbookDepthStream(sym);
+      // 동일 URL로 이미 연결(또는 연결 중)이라면 재연결 방지
+      try {
+        if (this._orderbookUrl === url && this.orderbookSocket) {
+          const rs = this.orderbookSocket.readyState;
+          if (rs === WebSocket.OPEN || rs === WebSocket.CONNECTING) return;
+        }
+      } catch(_) {}
+      // 이전 재연결 타이머 제거
+      try { if (this._obReconnectTimer) { clearTimeout(this._obReconnectTimer); this._obReconnectTimer = null; } } catch(_) {}
+      // 기존 소켓 종료
       try { this.orderbookSocket && this.orderbookSocket.close(); } catch(_) {}
       let ws;
       try { ws = new WebSocket(url); } catch (e) { console.warn('OB socket create failed', e); return; }
       this.orderbookSocket = ws;
+      this._orderbookUrl = url;
       let rafId = 0;
       const schedule = () => {
         // 디바운스 제거, rAF로만 묶어서 즉시 다음 프레임에 렌더
@@ -1619,17 +1987,17 @@
         this._rafQueued = true;
         rafId = requestAnimationFrame(() => { this._rafQueued = false; this.renderDepth(); });
       };
-      let lastFrame = 0;
+      let lastFrame = 0; let firstFrame = true;
       ws.onmessage = (ev) => {
         const now = performance.now();
         const MIN_INTERVAL = 33; // ~30fps
-        if (now - lastFrame < MIN_INTERVAL) return;
+        if (!firstFrame && now - lastFrame < MIN_INTERVAL) return;
         lastFrame = now;
         try {
           const text = ev.data;
           // 간단 해시로 동일 메시지 중복 처리 방지
           const hash = (typeof text === 'string') ? (text.length + ':' + text.charCodeAt(0) + ':' + text.charCodeAt(text.length-1)) : '';
-          if (hash && hash === this._obLastMsgHash) { return; }
+          if (!firstFrame && hash && hash === this._obLastMsgHash) { return; }
           this._obLastMsgHash = hash;
 
           const m = typeof text === 'string' ? JSON.parse(text) : text;
@@ -1656,6 +2024,7 @@
           };
           schedule();
           this._obRetry = 0; // 정상 수신 시 리셋
+          firstFrame = false;
         } catch (e) { /* ignore parse errors */ }
       };
       ws.onclose = () => {
@@ -1665,7 +2034,9 @@
         const base = Math.min(10000, 800 * Math.pow(2, this._obRetry));
         const jitter = base * (0.9 + Math.random()*0.2); // ±10%
         const delay = Math.round(jitter);
-        setTimeout(()=> this.startOrderbookSocket(), delay);
+        try { if (this._obReconnectTimer) { clearTimeout(this._obReconnectTimer); } } catch(_) {}
+        this._obReconnectTimer = setTimeout(()=> { this._obReconnectTimer = null; this.startOrderbookSocket(); }, delay);
+        this.orderbookSocket = null;
       };
       ws.onerror = () => { try { ws.close(); } catch(_) {} };
     }
@@ -1677,40 +2048,75 @@
         this.el.positionsTableBody.innerHTML = `<div style=\"padding:16px; color: var(--text-color-secondary);\">보유 포지션이 없습니다.</div>`;
         return;
       }
+      // 포지션 심볼별 가격 소켓을 먼저 보장(초기 표기 흔들림 방지)
+      try {
+        const uniq = Array.from(new Set(this.state.positions.map(p=>String(p.symbol).toUpperCase())));
+        uniq.forEach(s=> { this.ensureSymbolBookTicker && this.ensureSymbolBookTicker(s); });
+      } catch(_) {}
       this.el.positionsTableBody.innerHTML = this.state.positions
         .map((p) => {
-          const mark = this.state.lastPrice;
+          // 각 포지션 심볼의 실시간 가격 소켓/마크 프리페치 보장
+          try { this.ensureSymbolBookTicker && this.ensureSymbolBookTicker(p.symbol); } catch(_) {}
+          try { this.requestMarkIfMissing && this.requestMarkIfMissing(p.symbol); } catch(_) {}
+          const mark = this.safeMarkFor(p);
           const pnl = this.calcPnL(p, mark);
           const pnlPct = ((pnl / Math.max(1e-8, p.entry * p.amount / p.leverage)) * 100); // 마진 대비 수익률 근사
           const pnlCls = pnl >= 0 ? 'positive' : 'negative';
           const estLiq = this.calcLiqPrice(p);
-          const notional = (p.entry * p.amount).toFixed(4);
+          const effLev = p.mode==='cross' ? this.calcEffectiveLeverage(p) : p.leverage;
           const rate = pnl > 0 ? 1.0 : (pnl < 0 ? 0.1 : 0);
           const estMined = Math.abs(pnl) * rate;
           return `
-            <div class="row ${p.side}" data-id="${p.id}">
-              <div class="cell-pair"><div class="pair">${p.symbol} Perp</div><div class="tags"><span class="chip">${p.mode==='cross'?'Cross':'Isolated'}</span><span class="chip">${p.leverage}x</span></div></div>
-              <div class="dir ${p.side}">${p.amount.toFixed(4)} BTC</div>
+            <div class="row ${p.side}" data-id="${p.id}" data-close-type="last">
+              <div class="cell-pair"><div class="pair">${p.symbol} Perp</div><div class="tags"><span class="chip">${p.mode==='cross'?'Cross':'Isolated'}</span><span class="chip">${Math.round(Number(p.leverage||0))}x</span></div></div>
+              <div class="dir ${p.side}">${p.amount.toFixed(4)} ${this.getBaseAsset(p.symbol)}<div class="lev-line">${p.mode==='isolated'?`<span class=\"eff-lev\" title=\"Effective leverage = Notional / Margin\">Eff ${(Math.abs(p.amount)*Number(mark)/Math.max(1e-9, Number(p.margin||0))).toFixed(1)}x</span>`:''}</div></div>
               <div>${this.format(p.entry)}</div>
               <div>${this.format(mark)}</div>
               <div>${this.format(estLiq)}</div>
               <div>${(p.margin).toFixed(4)}</div>
-              <div class="notional-usdt">${this.format(mark * p.amount)} USDT</div>
+              <div class="available-qty">${p.amount.toFixed(4)} ${this.getBaseAsset(p.symbol)}</div>
               <div class="pnl ${pnlCls}"><span class="pnl-val" data-prev="${pnl}">${pnl >= 0 ? '+' : ''}${this.formatFixed(pnl,3)}</span> USDT<br/><span class="pnl-percent">(${pnlPct>=0?'+':''}${pnlPct.toFixed(2)}%)</span></div>
               <div class="mined-cell" style="color:var(--primary-color);"><span class="mined-val" data-prev="${estMined}">${Number(estMined).toFixed(3)}</span> ONBIT</div>
               <div><button class="btn-mini" data-act="mkt-close">MKT Close</button></div>
-              <div><input class="size-input" type="number" step="0.1" value="${mark.toFixed(1)}" /></div>
+              <div class="close-type">
+                <button class="btn-select" data-close-type="last">${(isFinite(Number(mark)) && Number(mark)>0) ? this.format(mark) : 'Last Price'}</button>
+                <div class="menu" hidden>
+                  <button data-value="market">Market</button>
+                  <button data-value="last">Last Price</button>
+                </div>
+              </div>
               <div><input class="size-input" data-role="qty" type="number" step="0.0001" min="0" max="${p.amount.toFixed(4)}" value="${p.amount.toFixed(4)}" /></div>
-              <div class="actions"><button class="btn-mini close">Close</button></div>
+              <div class="actions"><button class="btn-mini close-action">Close</button></div>
             </div>
           `;
         })
         .join('');
+      // 헤더를 바디 스크롤에 맞춰 동기화 (가로)
+      try {
+        const container = this.el.positionsTableBody && this.el.positionsTableBody.parentElement;
+        const head = container && container.querySelector('.positions-table-head');
+        const body = this.el.positionsTableBody;
+        if (container && head && body) {
+          const syncHead = () => { head.scrollLeft = body.scrollLeft; };
+          body.removeEventListener && body.removeEventListener('scroll', body.__syncHead);
+          body.__syncHead = syncHead;
+          body.addEventListener('scroll', syncHead);
+          // 초기 1회 동기화
+          syncHead();
+        }
+      } catch(_) {}
 
-      this.el.positionsTableBody.querySelectorAll('.row .close').forEach((btn) => {
+      // 커스텀 스크롤바 제거됨: 기본 브라우저 가로 스크롤 사용
+
+      // Close 액션 (선택된 타입/수량 기반)
+      this.el.positionsTableBody.querySelectorAll('.row .close-action').forEach((btn) => {
         btn.addEventListener('click', (e) => {
-          const id = e.target.closest('.row').getAttribute('data-id');
-          this.closePosition(id);
+          const row = e.target.closest('.row');
+          const id = row.getAttribute('data-id');
+          const type = row.getAttribute('data-close-type') || 'last';
+          const qtyInp = row.querySelector('[data-role="qty"]');
+          const qty = Number(qtyInp && qtyInp.value || 0) || null;
+          this.closePositionByChoice(id, type, qty);
         });
       });
       // 수량 입력 상한: 포지션 보유 수량을 초과하지 않도록 제한
@@ -1749,9 +2155,63 @@
       this.el.positionsTableBody.querySelectorAll('.row [data-act="mkt-close"]').forEach((btn) => {
         btn.addEventListener('click', (e) => {
           const id = e.target.closest('.row')?.getAttribute('data-id');
-          if (id) this.closePosition(id);
+          if (id) this.closePositionByChoice(id, 'last', null);
         });
       });
+      // Close Type 드롭다운
+      this.el.positionsTableBody.querySelectorAll('.row .close-type .btn-select').forEach((selBtn) => {
+        selBtn.addEventListener('click', (e) => {
+          const wrap = e.target.closest('.close-type');
+          const menu = wrap && wrap.querySelector('.menu');
+          if (menu) { menu.hidden = !menu.hidden; }
+        });
+      });
+      // Last Price 선택 상태일 때 버튼에 실시간 last를 표시
+      const updateLastOnButtons = () => {
+        this.el.positionsTableBody.querySelectorAll('.row').forEach((row)=>{
+          const type = row.getAttribute('data-close-type');
+          if (type === 'last'){
+            const btn = row.querySelector('.close-type .btn-select');
+            if (btn){
+              const id = row.getAttribute('data-id');
+              const p = this.state.positions.find(x=>x.id===id);
+              const lp = p ? (this.getMarkForSymbol(p.symbol)||this.getMark()) : Number(this.state.lastPrice||0);
+              btn.textContent = (isFinite(lp) && lp>0) ? this.format(lp) : 'Last Price';
+            }
+          }
+        });
+      };
+      this._updateLastOnButtons = updateLastOnButtons;
+      this.el.positionsTableBody.querySelectorAll('.row .close-type .menu button').forEach((opt) => {
+        opt.addEventListener('click', (e) => {
+          const val = e.target.getAttribute('data-value');
+          const wrap = e.target.closest('.close-type');
+          const row = e.target.closest('.row');
+          const btn = wrap && wrap.querySelector('.btn-select');
+          if (row && val) row.setAttribute('data-close-type', val);
+          if (btn) {
+            if (val === 'last') {
+              const id = row.getAttribute('data-id');
+              const p = this.state.positions.find(x=>x.id===id);
+              const lp = p ? this.safeMarkFor(p) : Number(this.state.lastPrice||0);
+              btn.textContent = (isFinite(lp) && lp>0) ? this.format(lp) : 'Last Price';
+            } else {
+              btn.textContent = 'Market';
+            }
+          }
+          const menu = wrap && wrap.querySelector('.menu');
+          if (menu) menu.hidden = true;
+          // 선택 즉시 최신값 반영
+          this._updateLastOnButtons && this._updateLastOnButtons();
+        });
+      });
+      // 외부 클릭 시 드롭다운 닫기
+      document.addEventListener('click', (ev) => {
+        const inside = ev.target.closest && ev.target.closest('.close-type');
+        if (!inside) {
+          this.el.positionsTableBody.querySelectorAll('.row .close-type .menu').forEach((m)=>{ m.hidden = true; });
+        }
+      }, { once: true });
       // add-margin 버튼 제거됨
     }
 
@@ -1761,7 +2221,9 @@
         const id = row.getAttribute('data-id');
         const p = this.state.positions.find((x) => x.id === id);
         if (!p) return;
-        const pnl = this.calcPnL(p, this.state.lastPrice);
+        // 심볼별 최신 마크 반영
+        const refMark = this.safeMarkFor(p);
+        const pnl = this.calcPnL(p, refMark);
         // 표기는 사용 마진 대비로 고정
         const usedMargin = Math.max(1e-8, p.margin || 0);
         const pnlPct = (pnl / usedMargin) * 100;
@@ -1793,14 +2255,15 @@
         }
         // 실시간 금액(명목가) 업데이트
         const notionEl = row.querySelector('.notional-usdt');
-        if (notionEl) notionEl.textContent = `${this.format(this.state.lastPrice * p.amount)} USDT`;
+        if (notionEl) notionEl.textContent = `${this.format(this.safeMarkFor(p) * p.amount)} USDT`;
         // 실시간 현재가/청산가 갱신
         if (row.children && row.children.length > 5) {
           // 현재가 컬럼 (index 3)
           const markCol = row.children[3];
           if (markCol) {
-            // 보유 포지션 현재가 자연스러운 롤링 적용 (1자리 고정)
-            this.renderRollingNumber(markCol, Number(this.state.lastPrice || 0), 1);
+            // 보유 포지션 현재가 자연스러운 롤링 적용 (1자리 고정), per-symbol 마크 사용
+            const m = this.safeMarkFor(p);
+            this.renderRollingNumber(markCol, Number(m || 0), 1);
           }
           // 예상 청산가 컬럼 (index 4) + 툴팁 정보 (교차 커버리지 안내)
           const liqCol = row.children[4];
@@ -1819,6 +2282,103 @@
           }
         }
       });
+    }
+
+    // 청산: Market / Last Price (Reduce-Only)
+    closePositionByChoice(id, type = 'market', qty = null) {
+      try {
+        const idx = this.state.positions.findIndex((p) => p.id === id);
+        if (idx === -1) return;
+        const p = this.state.positions[idx];
+        const { bestBid, bestAsk, last } = this.getTopForSymbol(p.symbol);
+        if (!isFinite(bestBid) || !isFinite(bestAsk) || bestBid<=0 || bestAsk<=0 || !isFinite(last) || last<=0) {
+          try { this.showCenterOrderMessage && this.showCenterOrderMessage('오더북 동기화 중'); } catch(_) {}
+          return;
+        }
+        let size = Number(qty || 0);
+        if (!isFinite(size) || size <= 0) size = Math.abs(p.amount);
+        size = Math.max(0, Math.min(Math.abs(p.amount), size));
+        if (size <= 0) return;
+        const dir = (p.side === 'long') ? 'sell' : 'buy';
+
+        if (type === 'market') {
+          const exec = (dir==='sell') ? Math.max(bestBid, last) : Math.min(bestAsk, last);
+          const pnl = this.calcPnL({ ...p, amount: size }, exec);
+          const fee = Math.max(0, exec * size * FEE_TAKER);
+          this.state.balanceUSDT += Math.max(0, (p.margin * (size/Math.abs(p.amount))) + pnl - fee);
+          if (size < Math.abs(p.amount)) {
+            const remain = Math.abs(p.amount) - size;
+            p.amount = p.side==='long' ? remain : -remain;
+            p.margin = Math.max(0, p.margin * (remain / (remain + size)));
+          } else {
+            this.state.positions.splice(idx, 1);
+          }
+          const __orderId = 'ord_'+Date.now()+Math.floor(Math.random()*1e6);
+          this.state.history.unshift({ id:'his_'+Date.now(), orderId: __orderId, ts:Date.now(), symbol:p.symbol, mode:p.mode, leverage:p.leverage, direction: p.side==='long'?'Close Long':'Close Short', type:'Market', avgPrice:exec, orderPrice:exec, filled:size, fee, pnl });
+          if (this.state.history.length>500) this.state.history.length=500;
+          try { fetch(this.getApiUrl('/api/orders'), { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ userId:(this.user&&this.user.uid)||'guest', symbol:p.symbol, side: dir, type:'MarketClose', price:exec, amount:size, fee, pnl }) }).catch(()=>{}); } catch(_) {}
+          this.saveState();
+          this.renderPositions();
+          this.updateCostPreview && this.updateCostPreview();
+          this.syncUserBalanceDebounced && this.syncUserBalanceDebounced();
+          return;
+        }
+
+        // Last Price
+        const price = last;
+        // 심볼별 최우선 호가 기준으로 즉시 체결 여부 판정
+        const immediate = (dir === 'sell') ? (last <= bestBid + 1e-8) : (last >= bestAsk - 1e-8);
+        if (immediate) {
+          const exec = price;
+          const pnl = this.calcPnL({ ...p, amount: size }, exec);
+          const fee = Math.max(0, exec * size * FEE_TAKER);
+          this.state.balanceUSDT += Math.max(0, (p.margin * (size/Math.abs(p.amount))) + pnl - fee);
+          if (size < Math.abs(p.amount)) {
+            const remain = Math.abs(p.amount) - size;
+            p.amount = p.side==='long' ? remain : -remain;
+            p.margin = Math.max(0, p.margin * (remain / (remain + size)));
+          } else {
+            this.state.positions.splice(idx, 1);
+          }
+          const __orderId2 = 'ord_'+Date.now()+Math.floor(Math.random()*1e6);
+          this.state.history.unshift({ id:'his_'+Date.now(), orderId: __orderId2, ts:Date.now(), symbol:p.symbol, mode:p.mode, leverage:p.leverage, direction: p.side==='long'?'Close Long':'Close Short', type:'Limit', avgPrice:exec, orderPrice:price, filled:size, fee, pnl });
+          if (this.state.history.length>500) this.state.history.length=500;
+          try { fetch(this.getApiUrl('/api/orders'), { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ userId:(this.user&&this.user.uid)||'guest', symbol:p.symbol, side: dir, type:'LimitClose', price, amount:size, fee, pnl }) }).catch(()=>{}); } catch(_) {}
+          this.saveState();
+          this.renderPositions();
+          this.updateCostPreview && this.updateCostPreview();
+          this.syncUserBalanceDebounced && this.syncUserBalanceDebounced();
+          return;
+        }
+
+    // 실제 거래소 UX: Last Price도 즉시 IOC 성격으로 처리하여 체결 시도
+    const exec = (dir==='sell') ? Math.min(price, bestBid) : Math.max(price, bestAsk);
+    const pnl = this.calcPnL({ ...p, amount: size }, exec);
+    const fee = Math.max(0, exec * size * FEE_TAKER);
+    this.state.balanceUSDT += Math.max(0, (p.margin * (size/Math.abs(p.amount))) + pnl - fee);
+    if (size < Math.abs(p.amount)) {
+      const remain = Math.abs(p.amount) - size;
+      p.amount = p.side==='long' ? remain : -remain;
+      p.margin = Math.max(0, p.margin * (remain / (remain + size)));
+    } else {
+      this.state.positions.splice(idx, 1);
+    }
+    const __orderId3 = 'ord_'+Date.now()+Math.floor(Math.random()*1e6);
+    this.state.history.unshift({ id:'his_'+Date.now(), orderId: __orderId3, ts:Date.now(), symbol:p.symbol, mode:p.mode, leverage:p.leverage, direction: p.side==='long'?'Close Long':'Close Short', type:'Limit', avgPrice:exec, orderPrice:price, filled:size, fee, pnl });
+    if (this.state.history.length>500) this.state.history.length=500;
+    try { fetch(this.getApiUrl('/api/orders'), { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ userId:(this.user&&this.user.uid)||'guest', symbol:p.symbol, side: dir, type:'LimitClose', price, amount:size, fee, pnl }) }).catch(()=>{}); } catch(_) {}
+    this.saveState();
+    this.renderPositions();
+      } catch(_) {}
+    }
+
+    cancelPendingClose(positionId){
+      try {
+        if (!Array.isArray(this.state.closeOrders) || this.state.closeOrders.length===0) return;
+        this.state.closeOrders = this.state.closeOrders.filter(o=>o.positionId!==positionId);
+        this.saveState();
+        this.renderPositions();
+      } catch(_) {}
     }
 
     // ===== Close Quantity Slider (Percent-based) =====
@@ -2021,7 +2581,7 @@
       const elOnbit = document.getElementById('acc-onbit');
 
       const usedMargin = this.state.positions.reduce((sum, p) => sum + (p.margin), 0);
-      const uPnL = this.state.positions.reduce((sum, p) => sum + this.calcPnL(p, this.state.lastPrice), 0);
+      const uPnL = this.state.positions.reduce((sum, p) => sum + this.calcPnL(p, (this.getMarkForSymbol(p.symbol)||this.getMark())), 0);
       const available = this.state.balanceUSDT;
       const equity = this.state.equityUSDT;
       const marginBalance = available + usedMargin + uPnL; // 지갑 + 포지션(사용 마진) + 미실현손익
@@ -2061,6 +2621,16 @@
       // 이전 값 저장 (다음 변화 대비)
       this.prev.uPnL = uPnL;
       this.prev.marginBalance = marginBalance;
+
+      // 상단 요약: 계정 단위 Effective Leverage (총 명목/계정 순자산)
+      try {
+        const mark = this.getMark();
+        const totalNotional = this.state.positions.reduce((s,p)=> s + Math.abs(Number(p.amount||0))*mark, 0);
+        const accountEquity = marginBalance; // 선물 계정 순자산 근사
+        const acctEff = totalNotional / Math.max(1e-9, accountEquity);
+        const el = document.getElementById('pt-acct-eff');
+        if (el) el.textContent = (totalNotional>0) ? `Acct Eff ${acctEff.toFixed(2)}x` : '';
+      } catch(_) {}
     }
 
     loadState() {
@@ -2196,24 +2766,42 @@
         const minedForRow = (isClose && h.pnl != null)
           ? (Math.abs(Number(h.pnl)) * (Number(h.pnl) >= 0 ? 0.01 : 0.001))
           : null;
+          const orderCell = (()=>{
+          const num = h.orderId ? String(h.orderId) : null;
+          if (!num) return '<div>--</div>';
+          const short = num.length>7 ? `${num.slice(0,3)}…${num.slice(-3)}` : num;
+            return `<div class=\"ord-cell\"><span class=\"ord-status\">Filled</span><span class=\"ord-num\" title=\"#${num}\">${short}</span><button class=\"ord-copy\" data-oid=\"${num}\" title=\"Copy\">⧉</button></div>`;
+        })();
+        const pctCls = (pnlPct==null) ? '' : (pnlPct>=0 ? 'up' : 'down');
+        const dirCls = /Short/i.test(String(h.direction||'')) ? 'short' : (/Long/i.test(String(h.direction||'')) ? 'long' : '');
         return `
           <div class="row" data-id="${h.id}">
             <div class="cell-pair"><div class="pair">${h.symbol} Perp</div><div class="tags"><span class="chip">${h.mode==='cross'?'Cross':'Isolated'}</span><span class="chip">${h.leverage}x</span></div></div>
             <div>${new Date(h.ts).toLocaleString()}</div>
-            <div class="dir ${/Open/.test(h.direction)?'long':/Close Short|Forced Short/.test(h.direction)?'short':''}">${h.direction}</div>
+            <div class="dir ${dirCls}">${h.direction}</div>
             <div>${this.format(h.avgPrice)}<br/>${h.type}</div>
             <div>${(h.filled||0).toFixed(4)} ${asset}</div>
-            <div class="pnl ${pnlCls}">${h.pnl==null?'--':(h.pnl>=0?'+':'')+this.format(h.pnl)}${pnlPct==null?'':`<br/><span class="pnl-percent">${pnlPct>=0?'+':''}${pnlPct.toFixed(2)}%</span>`}${minedForRow!=null ? `<br/><span class="mined" style="color:var(--primary-color);">${Number(minedForRow).toFixed(3)} ONBIT</span>` : ''}</div>
+            <div class="pnl ${pnlCls}">${h.pnl==null?'--':(h.pnl>=0?'+':'')+this.format(h.pnl)}${pnlPct==null?'':`<br/><span class=\"pnl-percent ${pctCls}\">${pnlPct>=0?'+':''}${pnlPct.toFixed(2)}%</span>`}${minedForRow!=null ? `<br/><span class=\"mined\" style=\"color:var(--primary-color);\">${Number(minedForRow).toFixed(3)} ONBIT</span>` : ''}</div>
             <div>${(h.fee||0).toFixed(4)}</div>
+            ${orderCell}
           </div>
         `;
       }).join('');
       body.innerHTML = rows || '<div style="padding:12px; color:var(--text-color-secondary)">거래 내역 없음</div>';
+      try {
+        body.querySelectorAll('.ord-copy').forEach(btn=>{
+          btn.addEventListener('click', (e)=>{
+            const id = e.currentTarget.getAttribute('data-oid');
+            try { navigator.clipboard && navigator.clipboard.writeText(id); } catch(_) {}
+          });
+        });
+      } catch(_) {}
     }
   }
 
   // 전역 노출
   window.paperTrading = new PaperTradingEngine();
 })();
+
 
 

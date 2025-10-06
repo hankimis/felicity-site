@@ -699,13 +699,20 @@ class MultiExchangeDatafeed {
             
             if (Array.isArray(data)) {
                 const bars = data.map(kline => ({
-                    time: parseInt(kline[0]),
+                    time: parseInt(kline[0]), // ms (UTC)
                     open: parseFloat(kline[1]),
                     high: parseFloat(kline[2]),
                     low: parseFloat(kline[3]),
                     close: parseFloat(kline[4]),
                     volume: parseFloat(kline[5])
-                })).sort((a, b) => a.time - b.time);
+                }))
+                .filter(b=> isFinite(b.time))
+                .sort((a, b) => a.time - b.time)
+                .reduce((acc, b)=>{ // 중복/역주행 제거
+                    const last = acc[acc.length-1];
+                    if (!last || b.time > last.time) acc.push(b);
+                    return acc;
+                }, []);
                 
                 onHistoryCallback(bars, { noData: bars.length === 0 });
             } else {
@@ -886,14 +893,34 @@ class MultiExchangeDatafeed {
             const channelString = `${kline.s.toLowerCase()}@kline_${kline.i}`;
             this.subscribers.forEach((subscriber, uid) => {
                 if (subscriber.channelString === channelString && subscriber.exchange === 'BINANCE') {
-                    const bar = {
-                        time: parseInt(kline.t),
-                        open: parseFloat(kline.o),
-                        high: parseFloat(kline.h),
-                        low: parseFloat(kline.l),
-                        close: parseFloat(kline.c),
-                        volume: parseFloat(kline.v)
-                    };
+                    // Binance kline.t: open time in ms (UTC)
+                    const newTime = parseInt(kline.t);
+                    const prev = subscriber.lastBar || this.lastBars.get(uid);
+                    let bar;
+                    if (prev && newTime < prev.time) {
+                        // 시간 역행 데이터는 무시
+                        return;
+                    }
+                    if (prev && newTime === prev.time) {
+                        // 동일 버킷 업데이트: 고/저/종가 갱신
+                        bar = {
+                            time: prev.time,
+                            open: prev.open,
+                            high: Math.max(prev.high, parseFloat(kline.h)),
+                            low: Math.min(prev.low, parseFloat(kline.l)),
+                            close: parseFloat(kline.c),
+                            volume: parseFloat(kline.v)
+                        };
+                    } else {
+                        bar = {
+                            time: newTime,
+                            open: parseFloat(kline.o),
+                            high: parseFloat(kline.h),
+                            low: parseFloat(kline.l),
+                            close: parseFloat(kline.c),
+                            volume: parseFloat(kline.v)
+                        };
+                    }
                     subscriber.lastBar = bar;
                     this.lastBars.set(uid, bar);
                     subscriber.onRealtimeCallback(bar);
@@ -909,13 +936,14 @@ class MultiExchangeDatafeed {
             const ask = parseFloat(data.a);
             if (!isFinite(bid) || !isFinite(ask)) return;
             const mid = (bid + ask) / 2;
-            const nowMs = Date.now();
+            // 서버 이벤트 시간을 우선 사용하여 시간 역행 방지
+            const eventMs = (typeof data.E === 'number' && data.E>0) ? data.E : Date.now();
             this.subscribers.forEach((subscriber, uid) => {
                 if (subscriber.exchange !== 'BINANCE') return;
                 const subSymbol = subscriber.symbolInfo?.name?.toUpperCase();
                 if (subSymbol !== symbol) return;
                 const bucketMs = this.getResolutionMs(subscriber.resolution);
-                const bucketStart = Math.floor(nowMs / bucketMs) * bucketMs;
+                const bucketStart = Math.floor(eventMs / bucketMs) * bucketMs;
                 const prev = subscriber.lastBar || this.lastBars.get(uid);
                 let bar;
                 if (prev && prev.time === bucketStart) {
@@ -928,6 +956,10 @@ class MultiExchangeDatafeed {
                         volume: prev.volume || 0
                     };
                 } else {
+                    // 시간 역행 가드: 신규 버킷이 이전 바보다 과거면 무시
+                    if (prev && bucketStart < prev.time) {
+                        return;
+                    }
                     const open = prev ? prev.close : mid;
                     bar = {
                         time: bucketStart,

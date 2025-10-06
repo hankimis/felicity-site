@@ -1,6 +1,10 @@
 // 커뮤니티 페이지용 실시간 채팅 기능
 class CommunityChat {
-    constructor() {
+    constructor(options = {}) {
+        // 채널 모드 지원
+        this.channelId = CommunityChat.resolveChannelId(options.channelId);
+        this.mode = this.channelId ? 'channel' : 'community';
+
         this.messagesContainer = document.getElementById('chat-messages');
         this.messageForm = document.getElementById('chat-form');
         this.messageInput = document.getElementById('message-input');
@@ -12,8 +16,39 @@ class CommunityChat {
         this._paginationLastDocDesc = null; // 내림차순 페이징 기준 (가장 오래된 문서 참조)
         this._isLoadingMore = false;
         this._infiniteScrollBound = false;
-        
+
         this.init();
+        this.bindMessageProfileNavigation();
+    }
+
+    static resolveChannelId(initial) {
+        try {
+            // 우선순위: 인자 → data-* → URL → localStorage
+            let cid = (initial || '').toString();
+            if (!cid) {
+                const el = document.querySelector('[data-chat-channel]');
+                if (el && el.getAttribute('data-chat-channel')) cid = el.getAttribute('data-chat-channel');
+            }
+            if (!cid) {
+                const url = new URL(location.href);
+                cid = url.searchParams.get('channel') || '';
+            }
+            if (!cid) {
+                try { cid = localStorage.getItem('chat.selectedChannel') || ''; } catch(_) {}
+            }
+            cid = (cid || '').toLowerCase().trim();
+            if (cid && /^[a-z0-9_-]{1,64}$/.test(cid)) return cid;
+            return '';
+        } catch(_) {
+            return '';
+        }
+    }
+
+    get collectionRef() {
+        if (!window.db) return null;
+        return this.mode === 'channel'
+            ? window.db.collection('channels').doc(this.channelId).collection('messages')
+            : window.db.collection('community-chat');
     }
 
     async init() {
@@ -30,7 +65,7 @@ class CommunityChat {
             return;
         }
 
-        console.log('CommunityChat 설정 시작');
+        console.log('CommunityChat 설정 시작', { mode: this.mode, channelId: this.channelId });
         this.setupChatForm();
         this.loadMessages();
         this.setupUserCount();
@@ -105,9 +140,7 @@ class CommunityChat {
                     <img class="chat-profile-pic" src="${profileImg}" alt="프로필" loading="lazy" onerror="this.src='/assets/icon/profileicon.png'" />
                 </div>
                 <div class="message-content">
-                    <div class="message-sender">
-                        <strong>${safeName}</strong>
-                    </div>
+                    <div class="message-sender"><strong>${safeName}</strong></div>
                     <div class="message-text">${linkedText}</div>
                 </div>
             </div>
@@ -138,13 +171,34 @@ class CommunityChat {
         }
     }
 
+    // 본문 메시지에서 아바타/닉네임 클릭 시 프로필 이동
+    bindMessageProfileNavigation() {
+        if (!this.messagesContainer || this._profileNavBound) return;
+        this._profileNavBound = true;
+        this.messagesContainer.addEventListener('click', (e) => {
+            try {
+                const target = e.target;
+                if (!target) return;
+                const clickable = target.closest && target.closest('.chat-profile-pic, .message-sender, .message-sender strong');
+                if (!clickable) return;
+                const item = target.closest('.message-item');
+                if (!item) return;
+                const uid = item.getAttribute('data-uid') || '';
+                if (!uid || uid === 'system-alert' || uid === 'system-breaking-news') return;
+                window.location.href = `/feed/profile.html?uid=${encodeURIComponent(uid)}`;
+            } catch(_) {}
+        });
+    }
+
     // 메시지 로드
     async loadMessages() {
         try {
             console.log('Loading chat messages for community...');
             if (!window.db) throw new Error('Firestore (window.db) not initialized');
+            const col = this.collectionRef;
+            if (!col) throw new Error('collectionRef not available');
             
-            const messagesQuery = window.db.collection('community-chat')
+            const messagesQuery = col
                 .orderBy('timestamp', 'desc')
                 .limit(this.MESSAGES_PER_PAGE);
             
@@ -205,7 +259,8 @@ class CommunityChat {
 
     async loadOlderMessages() {
         if (!window.db || !this._paginationLastDocDesc) return;
-        const queryRef = window.db.collection('community-chat')
+        const col = this.collectionRef; if (!col) return;
+        const queryRef = col
             .orderBy('timestamp', 'desc')
             .startAfter(this._paginationLastDocDesc)
             .limit(this.MESSAGES_PER_PAGE);
@@ -240,9 +295,10 @@ class CommunityChat {
         }
         
         if (!window.db) return;
+        const col = this.collectionRef; if (!col) return;
         
         // 마지막 로드 문서 이후 asc로 수신
-        let queryRef = window.db.collection('community-chat').orderBy('timestamp', 'asc');
+        let queryRef = col.orderBy('timestamp', 'asc');
         if (this._lastRealtimeDoc) {
             queryRef = queryRef.startAfter(this._lastRealtimeDoc);
         }
@@ -337,8 +393,21 @@ class CommunityChat {
                 try {
                     const displayName = window.currentUser.displayName || window.currentUser.email || '사용자';
                     const photoURL = window.currentUser.photoURL || null;
-                    const postFn = firebase.app().functions('asia-northeast3').httpsCallable('postCommunityMessage');
-                    await postFn({ text: originalText, displayName, photoURL });
+                    const fnName = (this.mode === 'channel') ? 'postChannelMessage' : 'postCommunityMessage';
+                    const postFn = firebase.app().functions('asia-northeast3').httpsCallable(fnName);
+                    const payload = { text: originalText, displayName, photoURL };
+                    if (this.mode === 'channel') payload.channelId = this.channelId;
+                    try {
+                        await postFn(payload);
+                    } catch (err) {
+                        // 배포 전이거나 CORS 실패 시 커뮤니티로 폴백
+                        if (this.mode === 'channel') {
+                            const fallback = firebase.app().functions('asia-northeast3').httpsCallable('postCommunityMessage');
+                            await fallback({ text: `[onbit] ${originalText}`, displayName, photoURL });
+                        } else {
+                            throw err;
+                        }
+                    }
                 } catch (error) {
                     console.error('메시지 전송 실패:', error);
                     try {
@@ -415,6 +484,7 @@ class CommunityChat {
         }
         try {
             const isAuthed = !!(window.currentUser && window.currentUser.uid);
+            const pageTag = this.mode === 'channel' ? `channel:${this.channelId}` : 'community';
 
             // 인증된 사용자만 본인 온라인 상태 등록/갱신
             if (isAuthed) {
@@ -427,7 +497,7 @@ class CommunityChat {
                     displayName: userDisplayName,
                     lastSeen: window.firebase.firestore.FieldValue.serverTimestamp(),
                     online: true,
-                    page: 'community'
+                    page: pageTag
                 }, { merge: true });
 
                 // 30초마다 lastSeen 갱신
@@ -455,7 +525,7 @@ class CommunityChat {
             if (this.usersUnsubscribe) this.usersUnsubscribe();
             const threeMinutesAgo = new Date(Date.now() - 3 * 60 * 1000);
             this.usersUnsubscribe = window.db.collection('online-users')
-                .where('page', '==', 'community')
+                .where('page', '==', pageTag)
                 .where('lastSeen', '>=', threeMinutesAgo)
                 .onSnapshot((snapshot) => {
                     const count = snapshot.size || 0;
@@ -513,8 +583,13 @@ function setupSimpleUserCount() {
 
 // 페이지 로드 시 단 한 번만 인스턴스 생성
 document.addEventListener('DOMContentLoaded', () => {
+    // 채팅 전용 페이지에서 수동 제어 시 자동 초기화 방지
+    if (window.CHAT_PAGE_CONTROLLED) return;
     if (!window.communityChat) {
-        window.communityChat = new CommunityChat();
+        // URL ?channel=abc 또는 data-chat-channel 속성을 읽어 채널 모드 자동 적용
+        const url = new URL(location.href);
+        const channelId = url.searchParams.get('channel') || '';
+        window.communityChat = new CommunityChat({ channelId });
     }
 });
 

@@ -250,20 +250,74 @@
     <!-- 헤더 포함 -->
     <div id="header-placeholder"></div>
     
-    <main class="admin-page-main">
-        <div class="container">
-            <div class="admin-header">
-                <div class="admin-title">
-                    <h1>관리자 대시보드</h1>
-                    <p>ONBit Admin</p>
-                </div>
-                <div class="admin-actions">
-                    <button class="refresh-btn security-enhanced">
-                        <i class="fas fa-sync-alt"></i>
-                        보안 새로고침
-                    </button>
+    <div class="admin-layout">
+        <aside class="admin-sidebar" data-state="expanded">
+            <div class="sidebar-header">
+                <div class="sidebar-logo">
+                    <i class="fas fa-shield-alt"></i>
+                    <span class="sidebar-title">Admin</span>
                 </div>
             </div>
+            <nav class="sidebar-content">
+                <div class="sidebar-group">
+                    <div class="sidebar-group-label">메인</div>
+                    <ul class="sidebar-menu">
+                        <li class="sidebar-menu-item">
+                            <button class="sidebar-menu-button" data-scroll="#dashboard-users">
+                                <i class="fas fa-gauge-high"></i>
+                                <span>대시보드</span>
+                            </button>
+                        </li>
+                        <li class="sidebar-menu-item">
+                            <button class="sidebar-menu-button" data-scroll="#user-management">
+                                <i class="fas fa-users"></i>
+                                <span>사용자 관리</span>
+                            </button>
+                        </li>
+                        <li class="sidebar-menu-item">
+                            <button class="sidebar-menu-button" data-scroll=".block-mute-section">
+                                <i class="fas fa-user-lock"></i>
+                                <span>차단/금지</span>
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+                <div class="sidebar-group">
+                    <div class="sidebar-group-label">시스템</div>
+                    <ul class="sidebar-menu">
+                        <li class="sidebar-menu-item">
+                            <a class="sidebar-menu-button" href="../feed/index.html">
+                                <i class="fas fa-comments"></i>
+                                <span>커뮤니티</span>
+                            </a>
+                        </li>
+                        <li class="sidebar-menu-item">
+                            <a class="sidebar-menu-button" href="../index.html">
+                                <i class="fas fa-home"></i>
+                                <span>홈</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="sidebar-user" id="sidebar-user-email">-</div>
+            </div>
+        </aside>
+        <main class="admin-page-main" style="--sidebar-width: 260px; --header-height: 64px;">
+        <div class="container">
+            <header class="site-header">
+                <div class="site-header-inner">
+                    
+                    <div class="site-title">Documents</div>
+                    <div style="margin-left:auto;display:flex;gap:8px;">
+                        <button class="refresh-btn security-enhanced">
+                            <i class="fas fa-sync-alt"></i>
+                            새로고침
+                        </button>
+                    </div>
+                </div>
+            </header>
             
             <div id="admin-access-denied" style="display:none;">
                 <i class="fas fa-lock"></i>
@@ -275,15 +329,7 @@
             <div id="admin-dashboard" style="display:none;">
                 
 
-                <section class="user-management-section">
-                    <div class="section-header">
-                        <h2>사용자 관리</h2>
-                        <div class="search-bar">
-                            <i class="fas fa-search"></i>
-                            <input type="text" id="user-search" placeholder="사용자 검색...">
-                        </div>
-                    </div>
-
+                <section id="dashboard-users" class="user-management-section">
                     <div class="admin-stats">
                         <div class="stat-card">
                             <div class="stat-icon">
@@ -323,24 +369,162 @@
                         </div>
                     </div>
 
+                    <div class="filter-header">
+                        <div class="filter-grid">
+                            <div class="filter-field">
+                                <label class="filter-label">UID</label>
+                                <div class="filter-input-combo">
+                                    <select id="filter-type" class="filter-select-min ui-input" aria-label="ID type">
+                                        <option value="uid" selected>UID</option>
+                                        <option value="nickname">닉네임</option>
+                                        <option value="email">이메일</option>
+                                    </select>
+                                    <input id="filter-uid-input" type="text" placeholder="입력" class="filter-input ui-input" />
+                                </div>
+                            </div>
+                            <div class="filter-field">
+                                <label class="filter-label">User Scope</label>
+                                <select id="filter-scope" class="filter-input ui-input">
+                                    <option value="all">User + Referrals of All Levels</option>
+                                    <option value="userOnly">User Only</option>
+                                </select>
+                            </div>
+                            <div class="filter-field">
+                                <label class="filter-label">Registration time</label>
+                                <div class="filter-range">
+                                    <input id="filter-start" type="date" class="filter-input ui-input" placeholder="StartTime" />
+                                    <span class="range-sep">→</span>
+                                    <input id="filter-end" type="date" class="filter-input ui-input" placeholder="End Time" />
+                                </div>
+                            </div>
+                        </div>
+                        <div class="filter-actions">
+                            <button id="filter-reset" class="btn btn-outline">Reset</button>
+                            <button id="filter-search" class="btn btn-default">Search</button>
+                        </div>
+                    </div>
+
                     <div class="user-table-container">
                         <table id="users-table">
                             <thead>
                                 <tr>
-                                    <th>UID</th>
-                                    <th>닉네임</th>
-                                    <th>이메일</th>
-                                    <th>USDT 잔고</th>
-                                    <th>ONBIT</th>
-                                    <th>권한</th>
-                                    <th>가입일</th>
-                                    <th>관리</th>
+                                    <th style="width:44px">
+                                        <input type="checkbox" id="select-all-rows" aria-label="Select all">
+                                    </th>
+                                    <th data-col="uid">UID</th>
+                                    <th data-col="nickname">닉네임</th>
+                                    <th data-col="email">이메일</th>
+                                    <th data-col="usdt">USDT 잔고</th>
+                                    <th data-col="onbit">ONBIT</th>
+                                    <th data-col="role">권한</th>
+                                    <th data-col="createdAt">가입일</th>
+                                    <th data-col="actions">관리</th>
                                 </tr>
                             </thead>
                             <tbody id="users-table-body">
                                 <!-- 사용자 목록이 여기에 동적으로 추가됩니다. -->
                             </tbody>
                         </table>
+                    </div>
+                    <div class="table-toolbar">
+                        <div class="selection-info" id="selection-info">0 / 0 선택됨</div>
+                        <div class="pagination-controls">
+                            <button class="admin-btn view" id="prev-page" disabled>
+                                <i class="fas fa-chevron-left"></i>
+                                이전
+                            </button>
+                            <span id="page-info">1 / 1</span>
+                            <button class="admin-btn view" id="next-page" disabled>
+                                다음
+                                <i class="fas fa-chevron-right"></i>
+                            </button>
+                            <select id="page-size" class="page-size-select" aria-label="페이지 크기">
+                                <option value="10" selected>10</option>
+                                <option value="25">25</option>
+                                <option value="50">50</option>
+                                <option value="100">100</option>
+                            </select>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="user-management" class="user-management-section" style="margin-top:24px; display:none;">
+                    <div class="filter-header">
+                        <div class="filter-grid">
+                            <div class="filter-field">
+                                <label class="filter-label">UID</label>
+                                <div class="filter-input-combo">
+                                    <select id="filter-type-um" class="filter-select-min ui-input" aria-label="ID type">
+                                        <option value="uid" selected>UID</option>
+                                        <option value="nickname">닉네임</option>
+                                        <option value="email">이메일</option>
+                                    </select>
+                                    <input id="filter-uid-input-um" type="text" placeholder="입력" class="filter-input ui-input" />
+                                </div>
+                            </div>
+                            <div class="filter-field">
+                                <label class="filter-label">User Scope</label>
+                                <select id="filter-scope-um" class="filter-input ui-input">
+                                    <option value="all">User + Referrals of All Levels</option>
+                                    <option value="userOnly">User Only</option>
+                                </select>
+                            </div>
+                            <div class="filter-field">
+                                <label class="filter-label">Registration time</label>
+                                <div class="filter-range">
+                                    <input id="filter-start-um" type="date" class="filter-input ui-input" placeholder="StartTime" />
+                                    <span class="range-sep">→</span>
+                                    <input id="filter-end-um" type="date" class="filter-input ui-input" placeholder="End Time" />
+                                </div>
+                            </div>
+                        </div>
+                        <div class="filter-actions">
+                            <button id="filter-reset-um" class="btn btn-outline">Reset</button>
+                            <button id="filter-search-um" class="btn btn-default">Search</button>
+                        </div>
+                    </div>
+
+                    <div class="user-table-container">
+                        <table id="users-table-um">
+                            <thead>
+                                <tr>
+                                    <th style="width:44px">
+                                        <input type="checkbox" id="select-all-rows-um" aria-label="Select all">
+                                    </th>
+                                    <th data-col="uid">UID</th>
+                                    <th data-col="nickname">닉네임</th>
+                                    <th data-col="email">이메일</th>
+                                    <th data-col="postCount">글 수</th>
+                                    <th data-col="likeCount">좋아요 수</th>
+                                    <th data-col="followerCount">팔로워 수</th>
+                                    <th data-col="commentCount">댓글 수</th>
+                                    <th data-col="role">권한</th>
+                                    <th data-col="createdAt">가입일</th>
+                                    <th data-col="actions">관리</th>
+                                </tr>
+                            </thead>
+                            <tbody id="users-table-body-um"></tbody>
+                        </table>
+                    </div>
+                    <div class="table-toolbar">
+                        <div class="selection-info" id="selection-info-um">0 / 0 선택됨</div>
+                        <div class="pagination-controls">
+                            <button class="admin-btn view" id="prev-page-um" disabled>
+                                <i class="fas fa-chevron-left"></i>
+                                이전
+                            </button>
+                            <span id="page-info-um">1 / 1</span>
+                            <button class="admin-btn view" id="next-page-um" disabled>
+                                다음
+                                <i class="fas fa-chevron-right"></i>
+                            </button>
+                            <select id="page-size-um" class="page-size-select" aria-label="페이지 크기">
+                                <option value="10" selected>10</option>
+                                <option value="25">25</option>
+                                <option value="50">50</option>
+                                <option value="100">100</option>
+                            </select>
+                        </div>
                     </div>
                 </section>
 
@@ -369,7 +553,7 @@
                                         <th>기간</th>
                                         <th>시작일</th>
                                         <th>상태</th>
-                                        <th>관리</th>
+                                    <th data-col="actions">관리</th>
                                     </tr>
                                 </thead>
                                 <tbody id="banned-users-list"></tbody>
@@ -394,11 +578,12 @@
                 </section>
             </div>
         </div>
-    </main>
+        </main>
+    </div>
 
     <!-- 닉네임 변경 모달 -->
     <div id="nickname-modal" class="auth-modal">
-        <div class="auth-modal-content">
+        <div class="auth-modal-content-admin">
             <span class="auth-modal-close" id="close-nickname-modal">&times;</span>
             <form id="nickname-form" class="auth-form">
                 <h2>닉네임 변경</h2>
@@ -448,14 +633,49 @@
         </div>
     </div>
 
-    
+    <!-- 사용자 편집 모달 -->
+    <div id="user-edit-modal" class="auth-modal">
+        <div class="auth-modal-content-admin">
+            <span class="auth-modal-close" id="close-user-edit-modal">&times;</span>
+            <form id="user-edit-form" class="auth-form">
+                <h2 style="margin-bottom:12px;">사용자 편집</h2>
+                <input type="hidden" id="edit-uid">
+                <div class="grid gap-6 mb-6 md:grid-cols-2">
+                    <div class="input-with-label">
+                        <label for="edit-display-name">닉네임</label>
+                        <input type="text" id="edit-display-name" placeholder="닉네임" required />
+                    </div>
+                    <div class="input-with-label">
+                        <label for="edit-role">권한</label>
+                        <select id="edit-role" required>
+                            <option value="user">일반 사용자</option>
+                            <option value="moderator">모더레이터</option>
+                            <option value="admin">관리자</option>
+                        </select>
+                    </div>
+                    <div class="input-with-label">
+                        <label for="edit-usdt">USDT 잔고</label>
+                        <input type="number" id="edit-usdt" min="0" step="1" placeholder="0" required />
+                    </div>
+                    <div class="input-with-label">
+                        <label for="edit-onbit">ONBIT</label>
+                        <input type="number" id="edit-onbit" min="0" step="0.001" placeholder="0.000" required />
+                    </div>
+                </div>
+                <div style="display:flex;gap:8px;justify-content:flex-end; margin-top:28px;">
+                    <button type="button" id="cancel-edit-btn" class="btn btn-outline">취소</button>
+                    <button type="button" id="delete-user-btn" class="btn btn-destructive">회원 탈퇴</button>
+                    <button type="submit" class="btn btn-default">적용</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
-    <!-- Footer -->
-    <div id="footer-placeholder"></div>
+    
 
     <script type="module" src="../js/auth.js"></script>
     <script type="module" src="../js/admin-auth-manager.js"></script>
     <script type="module" src="admin.js"></script>
-    <script src="../js/footer-loader.js" defer></script>
+    
 </body>
 </html> 

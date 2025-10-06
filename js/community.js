@@ -71,13 +71,15 @@ async function initializeSingleChart() {
         console.log('📊 저장된 차트 상태:', savedChartState ? '있음' : '없음');
         
         // 🔥 TradingView 공식 위젯 설정 (지표/그림 유지 최적화)
+    // URL 심볼 파라미터 반영 (wallet에서 넘어올 때)
+    let urlSymbol = (function(){ try{ const p=new URLSearchParams(location.search); const s=p.get('symbol'); return s?`BINANCE:${s.toUpperCase()}`:''; }catch(_){ return ''; } })();
     const widgetOptions = {
             // 🔥 필수 기본 설정
         container: chartContainer,
         library_path: '/charting_library-master/charting_library/',
             
             // 🔥 기본 차트 설정
-            symbol: 'BINANCE:BTCUSDT',
+            symbol: urlSymbol || 'BINANCE:BTCUSDT',
             interval: '15',
         fullscreen: false,
         autosize: true,
@@ -351,6 +353,8 @@ async function initializeSingleChart() {
 
         // 🔥 TradingView 위젯 생성
         widget = new TradingView.widget(widgetOptions);
+        // 전역 노출(헤더/다른 모듈에서 접근 가능하도록)
+        try { window.widget = widget; } catch(_) {}
         
         // 🔥 심볼 검색 다이얼로그 개선 (아이콘 표시)
         setTimeout(() => {
@@ -422,6 +426,9 @@ async function initializeSingleChart() {
                                     if (window.paperTrading && base) {
                                         window.paperTrading.setSymbol(base);
                                     }
+                                try { window.symbolStore && window.symbolStore.set && window.symbolStore.set(base); } catch(_) {}
+                                    // 헤더에도 반영되도록 브로드캐스트
+                                    try { window.dispatchEvent(new CustomEvent('mh:symbolChanged', { detail: { symbol: base } })); } catch(_) {}
                                 } catch (e) {
                                     console.warn('심볼 변경 동기화 실패:', e);
                                 }

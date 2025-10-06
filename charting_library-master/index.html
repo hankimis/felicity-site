@@ -26,10 +26,11 @@
 					datafeedUrl = customDataUrl.startsWith('https://') ? customDataUrl : `https://${customDataUrl}`;
 				}
 
-				var widget = window.tvWidget = new TradingView.widget({
+                var symbol = getParameterByName('symbol') || 'AAPL';
+                var widget = window.tvWidget = new TradingView.widget({
 					// debug: true, // uncomment this line to see Library errors and warnings in the console
 					fullscreen: true,
-					symbol: 'AAPL',
+                    symbol: symbol,
 					interval: '1D',
 					container: "tv_chart_container",
 

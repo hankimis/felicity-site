@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const NodeCache = require('node-cache');
+const crypto = require('crypto');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -18,12 +19,151 @@ app.use(cors({
 
 app.use(express.json());
 
+// 간단한 ID 생성기
+function genId(prefix='ord'){ return `${prefix}_${Date.now().toString(36)}${Math.floor(Math.random()*1e6).toString(36)}`; }
+
+// ================
+// Orders API (Demo)
+// ================
+// 생성
+app.post('/api/orders', (req, res) => {
+  try {
+    const { userId='guest', symbol, side, type, price=null, amount, fee=0, pnl=null, meta={} } = req.body || {};
+    if (!symbol || !side || !type || !Number.isFinite(Number(amount))){
+      return res.status(400).json({ success:false, error:'invalid params' });
+    }
+    const orderId = genId('ord');
+    const now = new Date().toISOString();
+    const rec = { orderId, userId, ts: now, symbol, side, type, price: price==null?null:Number(price), amount:Number(amount), fee:Number(fee)||0, pnl: (pnl==null?null:Number(pnl)), meta };
+    orders.set(orderId, rec);
+    const arr = userOrders.get(userId) || [];
+    arr.unshift(orderId); userOrders.set(userId, arr);
+    return res.json({ success:true, order: rec });
+  } catch(err){ return res.status(500).json({ success:false, error:String(err&&err.message||err) }); }
+});
+
+// 단건 조회
+app.get('/api/orders/:id', (req, res)=>{
+  const o = orders.get(req.params.id);
+  if (!o) return res.status(404).json({ success:false, error:'not found' });
+  res.json({ success:true, order:o });
+});
+
+// 사용자별 목록 (최근 N)
+app.get('/api/orders', (req, res)=>{
+  const userId = String(req.query.userId||'guest');
+  const limit = Math.min(200, Math.max(1, Number(req.query.limit||50)));
+  const ids = (userOrders.get(userId)||[]).slice(0, limit);
+  res.json({ success:true, orders: ids.map(id=> orders.get(id)).filter(Boolean) });
+});
+
 // 캐시 설정 (5분 캐시)
 const cache = new NodeCache({ stdTTL: 300 });
+// 메모리 내 주문 저장소 (데모용)
+const orders = new Map(); // orderId -> order object
+const userOrders = new Map(); // userId -> [orderId]
 
 // 레이트 리미팅을 위한 변수
 let lastApiCall = 0;
 const API_RATE_LIMIT = 30000; // 30초 간격
+
+// =====================
+// Binance (Futures) 설정
+// =====================
+const BINANCE_FAPI = 'https://fapi.binance.com';
+const BINANCE_API_KEY = process.env.BINANCE_API_KEY || '';
+const BINANCE_SECRET = process.env.BINANCE_SECRET || '';
+
+// 공용 요청(서명 불필요)
+async function binancePublic(path) {
+  const url = `${BINANCE_FAPI}${path}`;
+  const res = await fetch(url, { headers: BINANCE_API_KEY ? { 'X-MBX-APIKEY': BINANCE_API_KEY } : {} });
+  if (!res.ok) {
+    const text = await res.text().catch(()=> '');
+    throw new Error(`Binance API 오류 ${res.status}: ${text}`);
+  }
+  return res.json();
+}
+
+// 참고: 서명 필요한 엔드포인트가 필요해지면 사용 (현재는 미사용)
+async function binanceSigned(pathWithQuery) {
+  if (!BINANCE_API_KEY || !BINANCE_SECRET) throw new Error('BINANCE API KEY/SECRET 미설정');
+  const timestamp = Date.now();
+  const qs = pathWithQuery.includes('?') ? `${pathWithQuery}&timestamp=${timestamp}` : `${pathWithQuery}?timestamp=${timestamp}`;
+  const sig = crypto.createHmac('sha256', BINANCE_SECRET).update(qs.split('?')[1]).digest('hex');
+  const url = `${BINANCE_FAPI}${qs}&signature=${sig}`;
+  const res = await fetch(url, { headers: { 'X-MBX-APIKEY': BINANCE_API_KEY } });
+  if (!res.ok) {
+    const text = await res.text().catch(()=> '');
+    throw new Error(`Binance Signed API 오류 ${res.status}: ${text}`);
+  }
+  return res.json();
+}
+
+// Binance USDT-Perp 마켓 스냅샷 수집
+// - exchangeInfo로 심볼 목록
+// - 24h ticker 전체
+// - premiumIndex(마크/인덱스/펀딩)
+// 결과를 유사 코인리스트 형태로 가공
+const BINANCE_TTL = 15; // 15초 캐시
+async function fetchBinancePerpMarkets() {
+  const cacheKey = 'binance-perp-markets';
+  const cached = cache.get(cacheKey);
+  if (cached) return cached;
+
+  const [info, tickers, premiums] = await Promise.all([
+    binancePublic('/fapi/v1/exchangeInfo'),
+    binancePublic('/fapi/v1/ticker/24hr'),
+    binancePublic('/fapi/v1/premiumIndex')
+  ]);
+
+  const usdtPerp = new Set(
+    (info.symbols || [])
+      .filter(s => s.contractType === 'PERPETUAL' && s.quoteAsset === 'USDT' && s.status === 'TRADING')
+      .map(s => s.symbol)
+  );
+
+  const premBy = new Map();
+  for (const p of premiums || []) {
+    if (usdtPerp.has(p.symbol)) premBy.set(p.symbol, p);
+  }
+
+  const rows = [];
+  for (const t of tickers || []) {
+    if (!usdtPerp.has(t.symbol)) continue;
+    const prem = premBy.get(t.symbol) || {};
+    const last = Number(t.lastPrice || 0);
+    const priceChangePercent = Number(t.priceChangePercent || 0);
+    const volQuote = Number(t.quoteVolume || 0);
+    rows.push({
+      id: t.symbol,
+      rank: 0, // 정렬 후 설정
+      name: t.symbol.replace('USDT', '') + ' Perp',
+      symbol: t.symbol,
+      image: null,
+      price: last,
+      change1h: 0,
+      change24h: priceChangePercent,
+      change7d: 0,
+      volume: Number(t.volume || 0),
+      marketCap: null,
+      sparkline: [],
+      lastUpdated: new Date().toISOString(),
+      markPrice: Number(prem.markPrice || last || 0),
+      indexPrice: Number(prem.indexPrice || 0),
+      fundingRate: Number(prem.lastFundingRate || 0),
+      nextFundingTime: prem.nextFundingTime ? new Date(Number(prem.nextFundingTime)).toISOString() : null,
+      quoteVolume: volQuote
+    });
+  }
+
+  // 거래대금(quoteVolume) 기준 정렬 후 rank 부여
+  rows.sort((a,b)=> (b.quoteVolume||0) - (a.quoteVolume||0));
+  rows.forEach((r,i)=> r.rank = i+1);
+
+  cache.set(cacheKey, rows, BINANCE_TTL);
+  return rows;
+}
 
 // CoinGecko API 호출 함수
 async function fetchCoinGeckoData() {
@@ -161,9 +301,15 @@ function calculateLiquidation(coin, period) {
 }
 
 // API 엔드포인트
+// 기본 데이터는 Binance Perp로 제공, coingecko=1 쿼리 시 이전 소스 사용
 app.get('/api/crypto-data', async (req, res) => {
   try {
-    let data = await fetchCoinGeckoData();
+    let data;
+    if (String(req.query.coingecko||'') === '1') {
+      data = await fetchCoinGeckoData();
+    } else {
+      data = await fetchBinancePerpMarkets();
+    }
     
     // 추가 데이터 계산
     data = data.map(coin => ({
@@ -180,7 +326,7 @@ app.get('/api/crypto-data', async (req, res) => {
       success: true,
       data: data,
       timestamp: new Date().toISOString(),
-      cached: cache.has('crypto-data')
+      cached: !!cache.get('binance-perp-markets')
     });
     
   } catch (error) {

@@ -2,7 +2,7 @@
 window.PT_CONFIG = window.PT_CONFIG || {
   binanceWsBase: 'wss://fstream.binance.com/ws',
   binanceApiBase: 'https://fapi.binance.com',
-  orderbookDepthStream: (sym) => `${window.PT_CONFIG.binanceWsBase}/${sym}@depth20`,
+  orderbookDepthStream: (sym) => `${window.PT_CONFIG.binanceWsBase}/${sym}@depth20@100ms`,
   bookTickerStream: (sym) => `${window.PT_CONFIG.binanceWsBase}/${sym}@bookTicker`,
   depthRest: (sym, limit=25) => `${window.PT_CONFIG.binanceApiBase}/fapi/v1/depth?symbol=${sym}&limit=${limit}`,
   tickerRest: (sym) => `${window.PT_CONFIG.binanceApiBase}/fapi/v1/ticker/bookTicker?symbol=${sym}`,

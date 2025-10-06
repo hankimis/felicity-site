@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>실시간 채팅</title>
+    <link rel="stylesheet" href="../css/base/_variables.css" />
+    <link rel="stylesheet" href="../css/base/_reset.css" />
+    <link rel="stylesheet" href="../css/base/_base.css" />
+    <link rel="stylesheet" href="../css/layout/_header.css" />
+    <link rel="stylesheet" href="../css/layout/_main.css" />
+    <link rel="stylesheet" href="../components/header/navbar.css" />
+    <link rel="stylesheet" href="chat.css" />
+    <link rel="stylesheet" href="../css/components/chat.css" />
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-functions-compat.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../components/header/header-loader.js" defer></script>
+</head>
+<body>
+    <div id="header-placeholder"></div>
+    <main class="chat-page">
+        <aside class="channels-sidebar" id="channels-sidebar">
+            <div class="channels-header">
+                <h2>채널</h2>
+            </div>
+            <ul id="channels-list" class="channels-list" aria-label="채널 목록"></ul>
+        </aside>
+        <section class="chat-pane">
+            <div class="chat-pane-header">
+                <h3 id="active-channel-title">전체 채팅</h3>
+                <div class="chat-users-count"><i class="fas fa-user"></i> <span id="chat-users-count">0</span></div>
+            </div>
+            <div class="chat-wrapper" data-chat-channel="" id="chat-wrapper">
+                <div id="chat-messages"></div>
+                <form id="chat-form" class="chat-input-form" style="--chat-form-height:56px;">
+                    <input type="text" id="message-input" placeholder="메시지를 입력하세요..." autocomplete="off">
+                    <button type="submit">전송</button>
+                </form>
+            </div>
+        </section>
+    </main>
+    <script src="../js/community-chat.js"></script>
+    <script src="chat-page.js" type="module"></script>
+</body>
+</html>
+
+

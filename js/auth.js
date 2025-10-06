@@ -102,7 +102,219 @@ window.updateAuthUI = updateAuthUI;
 // 헤더 관련 이벤트 리스너 초기화 함수 (인증 관련만)
 function initializeHeaderEventListeners() {
     document.body.addEventListener('click', handleGlobalClick);
+    // 프로필 드롭다운 토글
+    const myPageLink = document.getElementById('my-page-link');
+    const profileDropdown = document.getElementById('profile-dropdown');
+    const walletToggle = document.getElementById('wallet-toggle');
+    const walletPopover = document.getElementById('header-wallet-popover');
+    let profileHoverCloseTimer = null;
+    let walletHoverCloseTimer = null;
+    if (myPageLink && profileDropdown) {
+        myPageLink.addEventListener('click', (e) => {
+            // 로그인 상태에서만 드롭다운 토글
+            if (window.auth && window.auth.currentUser) {
+                e.preventDefault();
+                // 전파 차단: 전역 data-action 핸들러에서 my-page 네비게이션되는 문제 방지
+                if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
+                if (typeof e.stopPropagation === 'function') e.stopPropagation();
+                const isHidden = profileDropdown.style.display === 'none' || !profileDropdown.style.display;
+                profileDropdown.style.display = isHidden ? 'block' : 'none';
+                profileDropdown.setAttribute('aria-hidden', isHidden ? 'false' : 'true');
+                // 지갑 팝오버는 동시 열림 방지
+                if (walletPopover) { walletPopover.style.display = 'none'; walletPopover.setAttribute('aria-hidden','true'); }
+            }
+        });
+
+        // 호버로 열기/닫기 (프로필)
+        const openProfile = () => {
+            if (!(window.auth && window.auth.currentUser)) return;
+            clearTimeout(profileHoverCloseTimer);
+            profileDropdown.style.display = 'block';
+            profileDropdown.setAttribute('aria-hidden','false');
+            if (walletPopover) { walletPopover.style.display = 'none'; walletPopover.setAttribute('aria-hidden','true'); }
+        };
+        const scheduleCloseProfile = () => {
+            clearTimeout(profileHoverCloseTimer);
+            profileHoverCloseTimer = setTimeout(()=>{
+                profileDropdown.style.display = 'none';
+                profileDropdown.setAttribute('aria-hidden','true');
+            }, 150);
+        };
+        myPageLink.addEventListener('mouseenter', openProfile);
+        myPageLink.addEventListener('mouseleave', scheduleCloseProfile);
+        profileDropdown.addEventListener('mouseenter', ()=>{ clearTimeout(profileHoverCloseTimer); });
+        profileDropdown.addEventListener('mouseleave', scheduleCloseProfile);
+
+        // 외부 클릭으로 닫기
+        document.addEventListener('click', (e) => {
+            if (!profileDropdown || profileDropdown.style.display === 'none') return;
+            const within = e.target.closest('#profile-dropdown') || e.target.closest('#my-page-link');
+            if (!within) {
+                profileDropdown.style.display = 'none';
+                profileDropdown.setAttribute('aria-hidden', 'true');
+            }
+        });
+    }
+
+    // 알림 토글 버튼 동작: Firestore 알림 미리보기
+    const notifToggle = document.getElementById('notif-toggle');
+    const notifPopover = document.getElementById('header-notif-popover');
+    if (notifToggle && notifPopover && !notifToggle.__notifBound) {
+        let notifHoverCloseTimer = null;
+        const renderItems = (items=[])=>{
+            const list = document.getElementById('notif-list');
+            if (!list) return;
+            if (!items.length) { list.innerHTML = '<div style="padding:14px; color: var(--text-color-secondary);">새 알림이 없습니다</div>'; return; }
+            list.innerHTML = items.map((n)=>{
+                const actorName = n.actor?.displayName || '사용자';
+                const actorPhoto = n.actor?.photoURL || '';
+                let typeText = '활동이 있습니다';
+                if (n.type==='like') typeText = '게시글을 좋아합니다';
+                if (n.type==='comment') typeText = '댓글을 남겼습니다';
+                if (n.type==='comment_like') typeText = '댓글을 좋아합니다';
+                if (n.type==='follow') typeText = '회원님을 팔로우했습니다';
+                const created = (function(){ try { const d=n.createdAt?.toDate?n.createdAt.toDate(): new Date(n.createdAt); const diff=Date.now()-d.getTime(); const m=Math.floor(diff/60000), h=Math.floor(m/60), day=Math.floor(h/24); if(day>=1) return day+'일 전'; if(h>=1) return h+'시간 전'; if(m>=1) return m+'분 전'; return '방금 전'; } catch(_) { return ''; } })();
+                return `<div class="notif-item" data-post="${n.postId||''}" data-actor="${n.actorId||''}">\
+                  <div class="avatar" ${actorPhoto?`style="background-image:url('${actorPhoto}')"`:''}></div>\
+                  <div>\
+                    <div class="meta"><b>${actorName}</b><span>·</span><span>${created}</span></div>\
+                    <div class="text">${n.message || (actorName + '님이 ' + typeText)}</div>\
+                  </div>\
+                </div>`;
+            }).join('');
+        };
+        const fetchItems = async()=>{
+            try {
+                if (!(window.db && window.auth && window.auth.currentUser)) { renderItems([]); return; }
+                const uid = window.auth.currentUser.uid;
+                const q = window.db.collection('notifications').where('userId','==',uid).orderBy('createdAt','desc').limit(10);
+                const snap = await q.get();
+                const arr = [];
+                for (const d of snap.docs){
+                    const n = { id:d.id, ...d.data() };
+                    let actor = {};
+                    try { if (n.actorId) { const u = await window.db.collection('users').doc(n.actorId).get(); if (u.exists) actor = u.data(); } } catch(_) {}
+                    arr.push({ ...n, actor });
+                }
+                renderItems(arr);
+            } catch(_) { renderItems([]); }
+        };
+        const openNotif = ()=>{ clearTimeout(notifHoverCloseTimer); fetchItems(); notifPopover.style.display='block'; notifPopover.setAttribute('aria-hidden','false'); if (walletPopover) { walletPopover.style.display='none'; walletPopover.setAttribute('aria-hidden','true'); } if (profileDropdown) { profileDropdown.style.display='none'; profileDropdown.setAttribute('aria-hidden','true'); } };
+        const scheduleCloseNotif = ()=>{ clearTimeout(notifHoverCloseTimer); notifHoverCloseTimer = setTimeout(()=>{ notifPopover.style.display='none'; notifPopover.setAttribute('aria-hidden','true'); }, 150); };
+        notifToggle.addEventListener('click', (e)=>{ e.preventDefault(); if (typeof e.stopImmediatePropagation==='function') e.stopImmediatePropagation(); if (typeof e.stopPropagation==='function') e.stopPropagation(); const hidden = notifPopover.style.display==='none' || !notifPopover.style.display; if (hidden) openNotif(); else scheduleCloseNotif(); });
+        notifToggle.addEventListener('mouseenter', openNotif);
+        notifToggle.addEventListener('mouseleave', scheduleCloseNotif);
+        notifPopover.addEventListener('mouseenter', ()=>{ clearTimeout(notifHoverCloseTimer); });
+        notifPopover.addEventListener('mouseleave', scheduleCloseNotif);
+        if (!document.__notifOutsideBound) {
+            document.addEventListener('click', (e)=>{ if (!notifPopover || notifPopover.style.display==='none') return; const within = e.target.closest && (e.target.closest('#header-notif-popover') || e.target.closest('#notif-toggle')); if (!within) { notifPopover.style.display='none'; notifPopover.setAttribute('aria-hidden','true'); } });
+            document.__notifOutsideBound = true;
+        }
+        // 내부 항목 클릭 네비게이션
+        notifPopover.addEventListener('click', (e)=>{
+            const item = e.target.closest && e.target.closest('.notif-item');
+            if (!item) return;
+            const pid = item.getAttribute('data-post');
+            const uid = item.getAttribute('data-actor');
+            if (pid) {
+                const isLocal = (location.hostname==='localhost'||location.hostname==='127.0.0.1');
+                window.location.href = isLocal ? `/feed/post.html?id=${pid}` : `/feed/post/${pid}`;
+                return;
+            }
+            if (uid) {
+                const isLocal = (location.hostname==='localhost'||location.hostname==='127.0.0.1');
+                window.location.href = isLocal ? `/feed/profile.html?uid=${uid}` : `/feed/profile?uid=${uid}`;
+            }
+        });
+        notifToggle.__notifBound = true;
+    }
+
+    // 지갑 토글 버튼 동작: 월렛 페이지 총잔액(tb-amount) 또는 캐시값을 표시
+    if (walletToggle && walletPopover) {
+        walletToggle.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
+            if (typeof e.stopPropagation === 'function') e.stopPropagation();
+            const hidden = walletPopover.style.display === 'none' || !walletPopover.style.display;
+            // 최신 총액 가져오기: 우선 window.__lastTotalUSDT → 로컬스토리지 폴백
+            let total = typeof window.__lastTotalUSDT === 'number' ? window.__lastTotalUSDT : 0;
+            try {
+                if (!total) {
+                    const raw = localStorage.getItem('paperTradingState_v1');
+                    if (raw) {
+                        const ls = JSON.parse(raw);
+                        const bal = Number(ls?.balanceUSDT ?? ls?.state?.balanceUSDT ?? 0);
+                        const positions = Array.isArray(ls?.positions) ? ls.positions : (Array.isArray(ls?.state?.positions) ? ls.state.positions : []);
+                        const marginSum = positions.reduce((s,p)=> s + Number(p?.margin||0), 0);
+                        total = bal + marginSum;
+                    }
+                }
+            } catch(_) {}
+            const hw = document.getElementById('hw-amount');
+            if (hw) hw.textContent = (Number(total)||0).toLocaleString('en-US', { maximumFractionDigits: 4 });
+            walletPopover.style.display = hidden ? 'block' : 'none';
+            walletPopover.setAttribute('aria-hidden', hidden ? 'false' : 'true');
+            // 프로필 드롭다운은 동시 열림 방지
+            if (profileDropdown) { profileDropdown.style.display = 'none'; profileDropdown.setAttribute('aria-hidden','true'); }
+        });
+
+        // hw-inner 클릭 시 월렛 페이지로 이동
+        document.addEventListener('click', (e)=>{
+            const inner = document.getElementById('hw-inner');
+            if (inner && inner.contains(e.target)) {
+                window.location.href = '/wallet/';
+            }
+        });
+
+        // 호버로 열기/닫기 (월렛)
+        const openWallet = () => {
+            clearTimeout(walletHoverCloseTimer);
+            // 최신 총액 갱신 (간략 호출)
+            try {
+                const hw = document.getElementById('hw-amount');
+                let total = typeof window.__lastTotalUSDT === 'number' ? window.__lastTotalUSDT : 0;
+                if (!total) {
+                    const raw = localStorage.getItem('paperTradingState_v1');
+                    if (raw) {
+                        const ls = JSON.parse(raw);
+                        const bal = Number(ls?.balanceUSDT ?? ls?.state?.balanceUSDT ?? 0);
+                        const positions = Array.isArray(ls?.positions) ? ls.positions : (Array.isArray(ls?.state?.positions) ? ls.state.positions : []);
+                        const marginSum = positions.reduce((s,p)=> s + Number(p?.margin||0), 0);
+                        total = bal + marginSum;
+                    }
+                }
+                if (hw) hw.textContent = (Number(total)||0).toLocaleString('en-US', { maximumFractionDigits: 4 });
+            } catch(_) {}
+            walletPopover.style.display = 'block';
+            walletPopover.setAttribute('aria-hidden','false');
+            if (profileDropdown) { profileDropdown.style.display = 'none'; profileDropdown.setAttribute('aria-hidden','true'); }
+        };
+        const scheduleCloseWallet = () => {
+            clearTimeout(walletHoverCloseTimer);
+            walletHoverCloseTimer = setTimeout(()=>{
+                walletPopover.style.display = 'none';
+                walletPopover.setAttribute('aria-hidden','true');
+            }, 150);
+        };
+        walletToggle.addEventListener('mouseenter', openWallet);
+        walletToggle.addEventListener('mouseleave', scheduleCloseWallet);
+        walletPopover.addEventListener('mouseenter', ()=>{ clearTimeout(walletHoverCloseTimer); });
+        walletPopover.addEventListener('mouseleave', scheduleCloseWallet);
+
+        // 외부 클릭 닫기
+        document.addEventListener('click', (e) => {
+            if (!walletPopover || walletPopover.style.display === 'none') return;
+            const within = e.target.closest('#header-wallet-popover') || e.target.closest('#wallet-toggle');
+            if (!within) {
+                walletPopover.style.display = 'none';
+                walletPopover.setAttribute('aria-hidden','true');
+            }
+        });
+    }
 }
+
+// 전역 노출: 헤더 로더가 주입 직후 안전하게 재초기화할 수 있도록
+try { window.initializeHeaderEventListeners = initializeHeaderEventListeners; } catch(_) {}
 
 // 2. 전역 상태 변수
 let currentUser = null;
@@ -225,6 +437,26 @@ async function updateAuthUI(user) {
     const adminPageLink = getElement('admin-page-link');
     const mainHeader = getElement('main-header');
     const authLoading = getElement('auth-loading');
+    const myPageLink = document.getElementById('my-page-link');
+    const myPageAvatar = document.getElementById('my-page-avatar');
+    const myPageIcon = document.getElementById('my-page-icon');
+    const profileDropdown = document.getElementById('profile-dropdown');
+    const profileAvatar = document.getElementById('profile-dropdown-avatar');
+    const profileName = document.getElementById('profile-dropdown-name');
+    const profileEmail = document.getElementById('profile-dropdown-email');
+    const pipeSep = document.querySelector('.pipe-sep');
+    const notifBtn = document.getElementById('notif-toggle');
+    const walletBtn = document.getElementById('wallet-toggle');
+    const headerDivider = document.querySelector('.header-divider');
+
+    // normalize signup style to match login
+    try {
+      const signupBtn = document.querySelector('.auth-buttons .signup');
+      const loginBtn = document.querySelector('.auth-buttons .login');
+      if (signupBtn && loginBtn) {
+        signupBtn.classList.add('login');
+      }
+    } catch(_) {}
 
     if (user) {
         try {
@@ -302,11 +534,56 @@ async function updateAuthUI(user) {
             if (authButtons) {
                 authButtons.style.display = 'none';
             }
+            if (pipeSep) pipeSep.style.display = 'none';
+            if (notifBtn) notifBtn.style.display = '';
+            if (walletBtn) walletBtn.style.display = '';
+            if (headerDivider) headerDivider.style.display = '';
+            const myLink = document.getElementById('my-page-link');
+            if (myLink) myLink.style.display='';
             if (getElement('user-display-name')) {
                 getElement('user-display-name').textContent = currentUser.displayName;
             }
             if (getElement('mobile-user-display-name')) {
                 getElement('mobile-user-display-name').textContent = currentUser.displayName;
+            }
+
+            // 아바타 적용 (Firestore photoURL > Firebase user.photoURL)
+            if (myPageLink && myPageAvatar) {
+                const avatarUrl = (currentUser && currentUser.photoURL) || (user && user.photoURL) || '';
+                if (avatarUrl) {
+                    myPageAvatar.src = avatarUrl;
+                    myPageAvatar.alt = `${currentUser.displayName || '사용자'}의 프로필 이미지`;
+                    myPageAvatar.style.display = 'block';
+                    if (myPageLink && !myPageLink.classList.contains('has-avatar')) {
+                        myPageLink.classList.add('has-avatar');
+                    }
+                    if (myPageIcon) {
+                        myPageIcon.style.display = 'none';
+                    }
+                } else {
+                    myPageAvatar.removeAttribute('src');
+                    myPageAvatar.style.display = 'none';
+                    if (myPageLink) {
+                        myPageLink.classList.remove('has-avatar');
+                    }
+                    if (myPageIcon) {
+                        myPageIcon.style.display = '';
+                    }
+                }
+            }
+
+            // 드롭다운 사용자 정보 바인딩
+            if (profileDropdown) {
+                const avatarUrl = (currentUser && currentUser.photoURL) || (user && user.photoURL) || '';
+                if (profileAvatar) {
+                    if (avatarUrl) {
+                        profileAvatar.src = avatarUrl;
+                    } else {
+                        profileAvatar.removeAttribute('src');
+                    }
+                }
+                if (profileName) profileName.textContent = currentUser.displayName || '사용자';
+                if (profileEmail) profileEmail.textContent = currentUser.email || user.email || '';
             }
             
             // 레벨 정보 업데이트
@@ -324,10 +601,7 @@ async function updateAuthUI(user) {
             // 사용자 데이터 새로고침 시작
             startUserDataRefresh();
             
-            // 모바일에서 로그인 시 커뮤니티 페이지로 이동
-            if (window.innerWidth <= 768 && !window.location.pathname.includes('/community/')) {
-                window.location.href = '/community/';
-            }
+            // 모바일 리다이렉트 제거
             
             // 홈 로그인 카드 상태 업데이트
             const homeLoginCard = document.getElementById('home-login-card');
@@ -414,13 +688,14 @@ async function updateAuthUI(user) {
                 }
             }
             if (authButtons) authButtons.style.display = 'none';
+            if (pipeSep) pipeSep.style.display = 'inline';
+            if (notifBtn) notifBtn.style.display = 'none';
+            if (walletBtn) walletBtn.style.display = 'none';
+            if (headerDivider) headerDivider.style.display = 'none';
             if (getElement('user-display-name')) getElement('user-display-name').textContent = currentUser.displayName;
             if (getElement('mobile-user-display-name')) getElement('mobile-user-display-name').textContent = currentUser.displayName;
             
-            // 모바일에서 로그인 시 커뮤니티 페이지로 이동
-            if (window.innerWidth <= 768 && !window.location.pathname.includes('/community/')) {
-                window.location.href = '/community/';
-            }
+            // 모바일 리다이렉트 제거
 
             // 홈 로그인 카드 상태 업데이트 (fallback)
             const homeLoginCard = document.getElementById('home-login-card');
@@ -451,6 +726,31 @@ async function updateAuthUI(user) {
         }
         if (adminPageLink) adminPageLink.style.display = 'none';
         if (getElement('mobile-admin-link')) getElement('mobile-admin-link').style.display = 'none';
+        const myLink = document.getElementById('my-page-link');
+        if (myLink) myLink.style.display='none';
+        if (profileDropdown) { profileDropdown.style.display='none'; profileDropdown.setAttribute('aria-hidden','true'); }
+        if (pipeSep) pipeSep.style.display = 'inline';
+        if (notifBtn) notifBtn.style.display = 'none';
+        if (walletBtn) walletBtn.style.display = 'none';
+        if (headerDivider) headerDivider.style.display = 'none';
+
+        // 아바타 초기화 (아이콘 노출)
+        if (myPageLink) {
+            myPageLink.classList.remove('has-avatar');
+        }
+        if (myPageAvatar) {
+            myPageAvatar.removeAttribute('src');
+            myPageAvatar.style.display = 'none';
+        }
+        if (myPageIcon) {
+            myPageIcon.style.display = '';
+        }
+
+        // 드롭다운 닫기/초기화
+        if (profileDropdown) {
+            profileDropdown.style.display = 'none';
+            profileDropdown.setAttribute('aria-hidden', 'true');
+        }
         
         // 사용자 데이터 새로고침 중지
         stopUserDataRefresh();
@@ -577,8 +877,20 @@ function handleGlobalClick(e) {
             window.auth.signOut().catch(() => {});
         },
         'my-page': () => {
-            if (window.auth.currentUser) window.location.href = target.href;
-            else alert('로그인이 필요합니다.');
+            if (!window.auth.currentUser) {
+                alert('로그인이 필요합니다.');
+                return;
+            }
+            // 드롭다운이 있으면 네비게이션 대신 토글
+            const dropdown = document.getElementById('profile-dropdown');
+            if (dropdown) {
+                const isHidden = dropdown.style.display === 'none' || !dropdown.style.display;
+                dropdown.style.display = isHidden ? 'block' : 'none';
+                dropdown.setAttribute('aria-hidden', isHidden ? 'false' : 'true');
+                return;
+            }
+            // 드롭다운이 없을 때만 이동
+            window.location.href = target.href;
         },
     };
 

@@ -2,7 +2,13 @@
 ;(function(){
   const db = window.firebase && window.firebase.firestore ? window.firebase.firestore() : null;
   const auth = window.firebase && window.firebase.auth ? window.firebase.auth() : null;
-  let cursor = null; let tab = 'for-you'; const pageLimit = 10; let isLoading = false; let hasMore = true;
+  let cursor = null; const pageLimit = 10; let isLoading = false; let hasMore = true;
+  const requestIdle = window.requestIdleCallback || function(cb){ return setTimeout(cb, 1); };
+
+  let mediaObserver = null;
+  let bgObserver = null;
+  let commentsObserver = null;
+  const authorCache = (window.__authorCache = window.__authorCache || new Map());
 
   function el(id){ return document.getElementById(id); }
   function qs(sel,root=document){ return root.querySelector(sel); }
@@ -33,7 +39,7 @@
     try {
       if (!db || !auth || !auth.currentUser) return;
       const uid = auth.currentUser.uid;
-      const cards = qsa('.feed-list .card');
+      const cards = qsa('.feed-list .card').slice(0, 12);
       await Promise.all(cards.map(async (card)=>{
         const pid = card.getAttribute('data-id');
         if (!pid) return;
@@ -54,24 +60,30 @@
     const mlen = media.length;
     const mediaClass = mlen>=4 ? 'media media-4' : (mlen===3 ? 'media media-3' : (mlen===2 ? 'media media-2' : (mlen===1 ? 'media media-1' : 'media')));
     const authorName = author.displayName || '사용자';
-    const avatarStyle = author.photoURL ? `style="background-image:url('${author.photoURL}')"` : '';
+    const avatarData = author.photoURL ? `data-bg="${author.photoURL}"` : '';
     const timeRel = fmtRel(p.createdAt);
     const likeCount = p.counts?.likes || 0;
     const replyCount = p.counts?.replies || 0;
     return `<article class="card" data-id="${p.id}">
-      <div class="avatar" ${avatarStyle}></div>
+      <div class="avatar lazy-bg" ${avatarData} data-profile="${p.authorId}" style="cursor:pointer"></div>
       <div>
         <div class="meta" style="display:flex;align-items:center;gap:8px;">
-          <b>${authorName}</b>
+          <b data-profile="${p.authorId}" style="cursor:pointer">${authorName}</b>
           <span>·</span>
           <span>${timeRel}</span>
-          ${canDelete?`<span style="margin-left:auto;display:flex;gap:6px;"><button class="act edit" data-edit="${p.id}">수정</button><button class="act delete" data-del="${p.id}">삭제</button></span>`:''}
+          ${canDelete?`<div class="dropdown" style="margin-left:auto;">
+            <button class="act" data-dd-trigger="${p.id}"><i data-lucide="more-horizontal"></i></button>
+            <div class="dropdown-menu" id="dd-${p.id}">
+              <button class="menu-item" data-edit="${p.id}"><i data-lucide="pencil"></i>수정</button>
+              <button class="menu-item" data-del="${p.id}"><i data-lucide="trash"></i>삭제</button>
+            </div>
+          </div>`:''}
         </div>
         <div class="text">${(p.text||'').replace(/</g,'&lt;')}</div>
-        ${mlen?`<div class="${mediaClass}">${media.slice(0,4).map(m=>`<img src="${m.url}" loading="lazy"/>`).join('')}</div>`:''}
+        ${mlen?`<div class="${mediaClass}">${media.slice(0,4).map(m=>`<img class=\"lazy-media\" data-src=\"${m.url}\" alt=\"\" loading=\"lazy\" decoding=\"async\" fetchpriority=\"low\"/>`).join('')}</div>`:''}
         <div class="actions">
           <button class="act like" data-like="${p.id}"><svg xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A4.5 4.5 0 0 0 17.5 4c-1.74 0-3.41.81-4.5 2.09A6 6 0 0 0 6.5 4 4.5 4.5 0 0 0 2 8.5c0 2.29 1.51 4.04 3 5.5l7 7Z"/></svg><span>${likeCount}</span></button>
-          <button class="act reply"><svg xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10h11a4 4 0 0 1 0 8H7l-4 4V6a3 3 0 0 1 3-3h11"/></svg><span>${replyCount}</span></button>
+          <button class="act reply"><i data-lucide="message-circle-more"></i><span>${replyCount}</span></button>
           <button class="act share"><svg xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"/><path d="M16 6l-4-4-4 4"/><path d="M12 2v14"/></svg></button>
         </div>
       </div>
@@ -82,29 +94,52 @@
     if (!db || isLoading || (!initial && !hasMore)) return;
     isLoading = true;
     let q = db.collection('posts').where('visibility','==','public').orderBy('createdAt','desc').limit(pageLimit);
+
+    // Apply Following filter if selected
+    try {
+      if (window.__feedFilter__ === 'following' && auth && auth.currentUser){
+        const ids = [];
+        const fs = await db.collection('users').doc(auth.currentUser.uid).collection('following').get();
+        fs.forEach(d=> ids.push(d.id));
+        if (ids.length){
+          const data = await q.get();
+          const list = el('feed-list');
+          const baseItems = data.docs.map(d=>({ id:d.id, ...d.data() })).filter(p=> ids.includes(p.authorId));
+          const authorIds = Array.from(new Set(baseItems.map(p=>p.authorId).filter(Boolean)));
+          const missing = authorIds.filter(uid => !authorCache.has(uid));
+          try { await Promise.all(missing.map(async (uid)=>{ try { const u = await db.collection('users').doc(uid).get(); authorCache.set(uid, u.exists ? u.data() : {}); } catch(_) { authorCache.set(uid, {}); } })); } catch(_) {}
+          const items = baseItems.map(p=> ({ ...p, author: authorCache.get(p.authorId) || {} }));
+          if (items.length) cursor = data.docs[data.docs.length-1];
+          list.insertAdjacentHTML('beforeend', items.map(cardHtml).join(''));
+          try { window.lucide && window.lucide.createIcons(); } catch(_) {}
+          hydrateNewContent(list);
+          observeCardsForComments(list);
+          if (data.empty || data.docs.length < pageLimit) hasMore = false;
+          isLoading = false;
+          return;
+        }
+      }
+    } catch(_) {}
+
     if (!initial && cursor) q = q.startAfter(cursor);
     const snap = await q.get();
     const list = el('feed-list');
-    const items = [];
-    for (const d of snap.docs){
-      const data = d.data();
-      let author = null;
-      try { const u = await db.collection('users').doc(data.authorId).get(); author = u.exists ? u.data() : null; } catch(_) {}
-      items.push({ id: d.id, ...data, author });
-    }
-    if (items.length) cursor = snap.docs[snap.docs.length-1];
+    const baseItems = snap.docs.map(d=>({ id: d.id, ...d.data() }));
+    const authorIds = Array.from(new Set(baseItems.map(p=>p.authorId).filter(Boolean)));
+    const missing = authorIds.filter(uid => !authorCache.has(uid));
     try {
-      await Promise.all(items.map(async (p)=>{
-        try {
-          const csnap = await db.collection('comments').where('postId','==',p.id).get();
-          p.counts = Object.assign({}, p.counts || {}, { replies: csnap.size });
-        } catch(_) { p.counts = Object.assign({}, p.counts || {}, { replies: 0 }); }
+      await Promise.all(missing.map(async (uid)=>{
+        try { const u = await db.collection('users').doc(uid).get(); authorCache.set(uid, u.exists ? u.data() : {}); } catch(_) { authorCache.set(uid, {}); }
       }));
     } catch(_) {}
+    const items = baseItems.map(p=> ({ ...p, author: authorCache.get(p.authorId) || {} }));
+    if (items.length) cursor = snap.docs[snap.docs.length-1];
+    // Defer comment count updates to viewport observer to reduce initial reads
     list.insertAdjacentHTML('beforeend', items.map(cardHtml).join(''));
     try { window.lucide && window.lucide.createIcons(); } catch(_) {}
-    markInitialLikes();
-    items.forEach(p=> listenCommentsCount(p.id));
+    hydrateNewContent(list);
+    requestIdle(()=> markInitialLikes());
+    observeCardsForComments(list);
     if (snap.empty || snap.docs.length < pageLimit) hasMore = false;
     isLoading = false;
   }
@@ -118,6 +153,70 @@
       if (span) span.textContent = String(snap.size);
     });
     commentUnsubs.set(postId, unsub);
+  }
+
+  function createObservers(){
+    if (!mediaObserver) {
+      mediaObserver = new IntersectionObserver((entries)=>{
+        entries.forEach((entry)=>{
+          if (!entry.isIntersecting) return;
+          const img = entry.target;
+          const src = img.getAttribute('data-src');
+          if (src) {
+            const vpThreshold = (window.innerHeight || 800) * 1.2;
+            if (entry.boundingClientRect.top < vpThreshold) img.setAttribute('fetchpriority','high');
+            img.decoding = 'async';
+            img.loading = 'lazy';
+            img.src = src;
+            img.addEventListener('load', ()=>{ img.classList.add('is-loaded'); }, { once:true });
+            img.removeAttribute('data-src');
+          }
+          mediaObserver.unobserve(img);
+        });
+      }, { rootMargin: '400px 0px' });
+    }
+    if (!bgObserver) {
+      bgObserver = new IntersectionObserver((entries)=>{
+        entries.forEach((entry)=>{
+          if (!entry.isIntersecting) return;
+          const el = entry.target;
+          const url = el.getAttribute('data-bg');
+          if (url) {
+            const im = new Image();
+            im.decoding = 'async';
+            im.onload = ()=>{ el.style.backgroundImage = `url('${url}')`; el.classList.add('is-loaded'); };
+            im.src = url;
+            el.removeAttribute('data-bg');
+          }
+          bgObserver.unobserve(el);
+        });
+      }, { rootMargin: '400px 0px' });
+    }
+    if (!commentsObserver) {
+      commentsObserver = new IntersectionObserver((entries)=>{
+        entries.forEach((entry)=>{
+          if (!entry.isIntersecting) return;
+          const card = entry.target;
+          const postId = card.getAttribute('data-id');
+          if (postId) listenCommentsCount(postId);
+          commentsObserver.unobserve(card);
+        });
+      }, { rootMargin: '600px 0px' });
+    }
+  }
+
+  function hydrateNewContent(root){
+    createObservers();
+    const imgs = root.querySelectorAll('img.lazy-media:not([data-observed])');
+    imgs.forEach((img)=>{ img.setAttribute('data-observed','1'); mediaObserver.observe(img); });
+    const bgs = root.querySelectorAll('.lazy-bg[data-bg]:not([data-observed])');
+    bgs.forEach((el)=>{ el.setAttribute('data-observed','1'); bgObserver.observe(el); });
+  }
+
+  function observeCardsForComments(root){
+    createObservers();
+    const cards = root.querySelectorAll('.card:not([data-comments-observed])');
+    cards.forEach((c)=>{ c.setAttribute('data-comments-observed','1'); commentsObserver.observe(c); });
   }
 
   async function createPost(){
@@ -137,6 +236,9 @@
     const postRef = db.collection('posts').doc(postId);
     const likeRef = postRef.collection('likes').doc(uid);
     try {
+      // Read post to get author for notifications
+      let postAuthorId = null;
+      try { const pd = await postRef.get(); postAuthorId = (pd.exists && pd.data() && pd.data().authorId) ? pd.data().authorId : null; } catch(_) {}
       const snap = await likeRef.get();
       if (!snap.exists) {
         await db.runTransaction(async (tx)=>{
@@ -145,6 +247,18 @@
         });
         const span = btn.querySelector('span'); if (span) span.textContent = String((parseInt(span.textContent||'0')||0) + 1);
         btn.classList.add('liked');
+        // Add notification for post author on like
+        try {
+          if (postAuthorId && postAuthorId !== uid) {
+            await db.collection('notifications').add({
+              userId: postAuthorId,
+              actorId: uid,
+              postId: postId,
+              type: 'like',
+              createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
+            });
+          }
+        } catch(_) {}
       } else {
         await db.runTransaction(async (tx)=>{
           tx.delete(likeRef);
@@ -152,6 +266,17 @@
         });
         const span = btn.querySelector('span'); if (span) span.textContent = String(Math.max(0,(parseInt(span.textContent||'0')||0) - 1));
         btn.classList.remove('liked');
+        // Remove like notification if exists
+        try {
+          if (postAuthorId && postAuthorId !== uid) {
+            const qs = await db.collection('notifications')
+              .where('userId','==',postAuthorId)
+              .where('postId','==',postId)
+              .where('actorId','==',uid)
+              .where('type','==','like').get();
+            qs.forEach(doc=>{ try { doc.ref.delete(); } catch(_) {} });
+          }
+        } catch(_) {}
       }
     } catch(_) {}
   }
@@ -159,6 +284,46 @@
   function bind(){
     ensureAuthUI();
     document.addEventListener('click', (e)=>{
+      const ddBtn = e.target.closest && e.target.closest('[data-dd-trigger]');
+      if (ddBtn){
+        const id = ddBtn.getAttribute('data-dd-trigger');
+        const menu = document.getElementById(`dd-${id}`);
+        if (menu) menu.style.display = (menu.style.display==='block'?'none':'block');
+        return;
+      }
+      const outside = !e.target.closest('.dropdown');
+      if (outside){ document.querySelectorAll('.dropdown-menu').forEach(el=> el.style.display='none'); }
+
+      // navigate to profile when clicking avatar or author name
+      const prof = e.target.closest && e.target.closest('[data-profile]');
+      if (prof){
+        const uid = prof.getAttribute('data-profile');
+        const isLocal = (location.hostname === 'localhost' || location.hostname === '127.0.0.1' || location.protocol === 'file:');
+        if (!window.currentUser) { window.location.href = isLocal ? '/login/index.html' : '/login'; return; }
+        window.location.href = isLocal ? `/feed/profile.html?uid=${uid}` : `/feed/profile?uid=${uid}`;
+        return;
+      }
+
+      // filter dropdown toggle
+      const toggle = e.target.closest && e.target.closest('#filter-toggle');
+      if (toggle){
+        const m = document.getElementById('filter-menu');
+        if (m) m.style.display = (m.style.display==='block'?'none':'block');
+        return;
+      }
+      const item = e.target.closest && e.target.closest('.filter-item');
+      if (item){
+        const v = item.getAttribute('data-filter');
+        const label = document.getElementById('filter-label');
+        if (label) label.textContent = (v==='following'?'팔로잉':'추천');
+        document.querySelectorAll('.filter-item .check').forEach(el=> el.style.display='none');
+        const mark = document.querySelector(`.filter-item[data-filter="${v}"] .check`); if (mark) mark.style.display='';
+        const menu = document.getElementById('filter-menu'); if (menu) menu.style.display='none';
+        window.__feedFilter__ = v;
+        el('feed-list').innerHTML=''; cursor=null; hasMore=true; fetchFeed(true);
+        return;
+      }
+
       // handle delete first to avoid card navigation
       const delFirst = e.target.closest && e.target.closest('[data-del]');
       if (delFirst) {
@@ -175,7 +340,7 @@
       }
 
       if (e.target.id === 'open-composer') {
-        if (!window.currentUser) { const btn = document.querySelector('[data-action="open-login-modal"]'); if (btn) btn.click(); return; }
+        if (!window.currentUser) { nav('/login', '/login/index.html'); return; }
         nav('/feed/write', '/feed/write.html');
         return;
       }
@@ -217,7 +382,24 @@
   const isLocal = (location.hostname === 'localhost' || location.hostname === '127.0.0.1' || location.protocol === 'file:');
   const nav = (pretty, raw) => { window.location.href = isLocal ? raw : pretty; };
 
-  document.addEventListener('DOMContentLoaded', ()=>{ bind(); fetchFeed(true); try { window.lucide && window.lucide.createIcons(); } catch(_) {} });
+  document.addEventListener('DOMContentLoaded', ()=>{ bind(); fetchFeed(true); try { window.lucide && window.lucide.createIcons(); } catch(_) {}
+    // 모바일: 아래로 스크롤 시 하단 바 숨김, 위로 올리면 표시
+    try {
+      if (window.matchMedia && window.matchMedia('(max-width: 768px)').matches) {
+        var bar = document.querySelector('.feed-right');
+        if (bar) {
+          var lastY = window.scrollY || 0;
+          window.addEventListener('scroll', function(){
+            var y = window.scrollY || 0;
+            var dy = y - lastY;
+            if (dy > 6) { bar.classList.add('is-hidden'); }
+            else if (dy < -6) { bar.classList.remove('is-hidden'); }
+            lastY = y;
+          }, { passive: true });
+        }
+      }
+    } catch(_) {}
+  });
   if (window.firebase && window.firebase.auth) window.firebase.auth().onAuthStateChanged(()=> { ensureAuthUI(); markInitialLikes(); });
   document.addEventListener('DOMContentLoaded', ()=>{ try { window.lucide && window.lucide.createIcons(); } catch(_) {} });
 

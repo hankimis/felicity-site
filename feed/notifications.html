@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>알림 - ONBIT</title>
+  <link rel="stylesheet" href="../css/base/_variables.css" />
+  <link rel="stylesheet" href="../css/base/_reset.css" />
+  <link rel="stylesheet" href="feed.css" />
+  <link rel="stylesheet" href="../components/header/navbar.css" />
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+  <script src="../auth.js" defer></script>
+  <script src="notifications.js" defer></script>
+  <script src="sidebar.js" defer></script>
+  <script src="../components/header/header-loader.js" defer></script>
+</head>
+<body>
+  <div id="header-placeholder"></div>
+  <div id="feed-sidebar"></div>
+  <main class="feed-container">
+    <section class="feed-main-countainer">
+      <div class="feed-topbar">
+        <h2 class="search-topbar">알림</h2>
+      </div>
+      <div class="feed-main">
+      <div id="notification-list" class="feed-list"></div>
+    </div>
+    </section>
+    <aside class="feed-right">
+      <div class="write-widget">
+        <button id="open-composer" class="btn primary" style="width:100%">작성하기</button>
+      </div>
+      <div class="sidebar-block">
+        <h4>인기글</h4>
+        <ul id="trending"></ul>
+      </div>
+      <div class="sidebar-block">
+        <h4>인기 작성자</h4>
+        <ul id="top-authors"></ul>
+      </div>
+    </aside>
+  </main>
+  <script>
+    (function(){
+      var isLocal=(location.hostname==='localhost'||location.hostname==='127.0.0.1'||location.protocol==='file:');
+      document.addEventListener('DOMContentLoaded', function(){
+        try{
+          if (!(window.firebase && window.firebase.auth)) return;
+          window.firebase.auth().onAuthStateChanged(function(u){ if(!u){ window.location.href = isLocal? '/login/index.html' : '/login'; }});
+        }catch(_){}
+      });
+    })();
+  </script>
+</body>
+</html>
+
+

@@ -1,0 +1,85 @@
+.tb-currency-btn { border:none; background: transparent; color: var(--text-color); font-weight: 700; cursor:pointer; display:flex; align-items:center; gap:6px; }
+.tb-currency-menu { position:absolute; border:1px solid var(--border-color); background: var(--card-bg); border-radius: 10px; padding: 6px; display:flex; flex-direction: column; gap:4px; z-index: 1000; min-width: 140px; box-shadow: 0 6px 18px rgba(0,0,0,.15); }
+.tb-currency-menu[hidden] { display:none; }
+.tb-currency-menu button { text-align:left; border:none; background: transparent; color: var(--text-color); padding:8px 12px; border-radius: 8px; cursor:pointer; }
+.tb-currency-menu button.active, .tb-currency-menu button:hover { background: var(--bg-color); }
+.wallet-main { padding: 16px; }
+.wallet-container { max-width: 1200px; margin: 0 auto; display:flex; flex-direction: column; gap: 16px; margin-top: 24px;}
+.lb-subtabs { display:flex; gap:0; margin:0 auto 8px auto; padding: 0 1rem; border-bottom: 2px solid var(--border-color); max-width: 1200px; }
+.subtab { padding: 10px 18px; background: transparent; border:none; border-bottom:3px solid transparent; color: var(--text-color-secondary); font-size: 14px; font-weight:600; cursor:pointer; transition: all .25s ease; margin-bottom:-2px; }
+.subtab:hover { color: var(--text-color); background: var(--bg-secondary-color); }
+.subtab.active { color: var(--text-color); border-bottom: 4px solid var(--text-color); background: var(--bg-color); }
+.subtab.active::after { content:''; position:absolute; }
+.wallet-grid { display:grid; grid-template-columns: 2fr 1fr; gap: 16px; align-items: start; }
+.wallet-left { display:flex; flex-direction: column; gap: 16px; }
+@media (max-width: 768px) {
+  /* 모바일: 메인 검색바 숨김 */
+  .search-input-wrap { display: none !important; }
+  /* 모바일: 왼쪽 영역을 가로폭 100%로 */
+  .wallet-grid { grid-template-columns: 1fr; }
+  .wallet-left { width: 100% !important; max-width: 100% !important; }
+  /* 모바일: 우측 요약 패널 숨김 */
+  .account-summary { display: none !important; }
+}
+.total-balance-card { border:1px solid var(--border-color); border-radius: 12px; background: var(--card-bg); padding: 18px; position: relative; overflow: visible; }
+.tb-head { display:flex; align-items:center; justify-content: space-between; margin-bottom: 8px; }
+.tb-title { font-weight: 800; font-size: 18px; color: var(--text-color); display:flex; align-items:center; gap:8px; }
+.tb-eye { font-size: 14px; opacity: .7; cursor: pointer; }
+.tb-body { display:flex; flex-direction: column; gap: 10px; }
+.tb-amount-row { display:flex; align-items: baseline; gap: 10px; position: relative; }
+.tb-amount {
+    font-size: 36px;
+    font-weight: 900;
+    color: var(--text-color);
+    letter-spacing: 0px;
+    font-variant-numeric: tabular-nums;
+    -webkit-font-feature-settings: "tnum";
+    font-feature-settings: "tnum";
+    font-family: 'HarmonyOS Sans', sans-serif;
+}
+.tb-amount.odometer { line-height: 1; display: inline-block; }
+.tb-currency { font-size: 14px; color: var(--text-color-secondary); font-weight: 600; }
+.tb-caret { color: var(--text-color-secondary); font-size: 12px; }
+.tb-today-row { display:flex; align-items:center; gap: 10px; color: var(--text-color-secondary); font-weight: 600; }
+.tb-today-label { opacity: .9; }
+.tb-pnl { font-size: 14px; }
+.account-summary { border:1px solid var(--border-color); border-radius: 12px; background: var(--card-bg); padding: 24px; }
+.as-title { font-weight:700; color: var(--text-color); margin-bottom: 24px; }
+.as-bar { height: 12px; background: var(--bg-color); border-radius: 999px; overflow: hidden; border:1px solid var(--border-color); display:flex; }
+.as-bar-fill { height:100%; background: #22c55e; width:0%; }
+.as-bar-seg { height:100%; display:block; }
+.as-list { list-style:none; padding:0; margin: 24px 0 0; display:grid; gap:16px; }
+.as-list li { display:flex; align-items:center; justify-content: space-between; color: var(--text-color); font-size: 16px; }
+.as-list li .label { display:flex; align-items:center; gap:8px; }
+.as-list li .dot { width: 8px; height: 8px; border-radius: 999px; display:inline-block; }
+.as-list li .val { color: var(--text-color-secondary); display:flex; flex-direction: column; text-align: right; }
+.as-list li .val .pct { color: var(--text-color-secondary); opacity:.9; font-size: 12px; }
+.wallet-bottom { }
+.pair-card { border:1px solid var(--border-color); border-radius: 12px; background: var(--card-bg); }
+.pair-head { display:flex; align-items:center; justify-content: space-between; padding: 10px 12px; border-bottom: 1px solid var(--border-color); }
+.pair-title { font-weight:700; color: var(--text-color); }
+.pair-search input { border:1px solid var(--border-color); background: var(--bg-color); color: var(--text-color); border-radius: 6px; padding:2px 10px; }
+.pair-table-head, .pair-table-body .row { display:grid; grid-template-columns: 1.4fr 1fr 1fr 0.8fr; padding:10px 20px; align-items:center; }
+.pair-table-head { border-bottom:1px solid var(--border-color); color: var(--text-color-secondary); font-size: 12px; }
+.pair-table-body .row { border-bottom:1px solid var(--border-color); color: var(--text-color); font-size: 13px; }
+.pair-table-body .row .act-btn {color: var(--primary-color); cursor:pointer; }
+/* Amount / Price / Action 우측 정렬 */
+.pair-table-head > :nth-child(2),
+.pair-table-body .row > :nth-child(2),
+.pair-table-head > :nth-child(3),
+.pair-table-body .row > :nth-child(3),
+.pair-table-head > :nth-child(4),
+.pair-table-body .row > :nth-child(4) { text-align: right; }
+
+/* Asset cell with icon and names */
+.asset-cell { display:flex; align-items:center; gap: 12px; }
+.asset-icon { width: 36px; height: 36px; border-radius: 999px; display:inline-grid; place-items:center; font-weight:700; color:#fff; background:#111; overflow:hidden; border:1px solid var(--border-color); }
+.asset-icon img { width:100%; height:100%; object-fit: contain; display:block; }
+.asset-info { display:flex; flex-direction: column; line-height: 1.15; }
+.asset-code { font-weight:700; color: var(--text-color); }
+.asset-name { color: var(--text-color-secondary); font-size: 12px; }
+
+/* Amount with sub USD value */
+.val { font-weight: 600; color: var(--text-color); }
+.subval { color: var(--text-color-secondary); font-size: 12px; margin-top: 4px; }
+

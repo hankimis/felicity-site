@@ -15,6 +15,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
   <script src="/auth.js" defer></script>
   <script src="/feed/post.js" defer></script>
+  <script src="/feed/sidebar.js" defer></script>
   <script>
     // support local file id via query string when not using rewrites
     (function(){
@@ -28,23 +29,45 @@
 </head>
 <body>
   <div id="header-placeholder"></div>
+  <div id="feed-sidebar"></div>
   <main class="feed-container">
-    <section class="feed-main">
+
+    <section class="post-main">
+      <div id="search-topbar">
+        <button id="post-back" class="back-btn" aria-label="뒤로가기"><i data-lucide="chevron-left"></i></button>
+        <div class="search-topbar-title">게시글</div>
+      </div>
+
+      <div class="feed-main">
       <article id="post" class="card"></article>
-      <div class="comment-composer" id="reply-composer" style="display:none">
-        <div class="box" style="width:100%">
-          <textarea id="reply-text" maxlength="280" placeholder="바라바라님의 생각을 공유해보세요." style="width:100%; min-height:60px; border:none; outline:none; background:transparent;"></textarea>
-          <div class="comment-actions">
-            <div class="icons">
-              <button id="reply-attach" style="background:none;border:none;cursor:pointer;padding:0;margin:0"><i data-lucide="image"></i></button>
-              <input id="reply-media" type="file" accept="image/*" multiple style="display:none" />
-            </div>
-            <button id="reply-submit" class="btn" style="opacity:.7">게시</button>
-          </div>
+
+      <div class="comments-container">
+      <div class="comments-header">
+        <div><b id="comments-count">댓글 0개</b></div>
+        <div class="sort-tabs">
+          <button id="comment-sort-likes" class="tab">공감순</button>
+          <button id="comment-sort-latest" class="tab active">최신순</button>
         </div>
       </div>
-      <div id="comments" class="feed-list"></div>
+
+      <div class="comment-composer" id="reply-composer" style="display:none">
+        <span class="avatar" id="reply-avatar" style="width:28px;height:28px;border-radius:999px;background:#e5e7eb;border:1px solid var(--border-color);"></span>
+        <input id="reply-text" maxlength="280" placeholder="누구님의 생각을 공유해보세요." />
+        <div class="icons">
+          <button id="reply-attach" title="이미지 추가" style="background:none;border:none;cursor:pointer;padding:6px;border-radius:8px"><i data-lucide="image"></i></button>
+          <input id="reply-media" type="file" accept="image/*" multiple style="display:none" />
+        </div>
+        <button id="reply-submit" class="btn primary">작성하기</button>
+      </div>
+      </div>
+      
+      <div class="comments-list">
+        <div id="comments" class="feed-list"></div>
+      </div>
+      </div>
     </section>
+
+
     <aside class="feed-right">
       <div class="write-widget">
         <button id="open-composer" class="btn primary" style="width:100%">작성하기</button>

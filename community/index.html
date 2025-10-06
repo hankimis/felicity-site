@@ -28,10 +28,10 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-functions-compat.js"></script>
     
-    <!-- Font Awesome -->
+    <!-- Font Awesome 폰트 스타일시트   -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     
-    <!-- Fonts -->
+    <!-- Pretendard 폰트 스타일시트 -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" />
     
     <!-- Base CSS -->
@@ -46,19 +46,16 @@
     <!-- Component CSS -->
     <link rel="stylesheet" href="../components/header/navbar.css" />
     <link rel="stylesheet" href="../css/components/_modal.css" />
-        <link rel="stylesheet" href="../community/community.css" />
+    <link rel="stylesheet" href="../community/community.css" />
     <link rel="stylesheet" href="../css/components/chat.css" />
     <link rel="stylesheet" href="../css/components/chart.css" />
+    <link rel="stylesheet" href="/components/bottom-nav/bottom-nav.css" />
     
     <!-- 🔥 고래 추적기 CSS 추가 -->
     <link rel="stylesheet" href="../css/whale-tracker.css" />
     
     <!-- 🔥 TradingView 심볼 아이콘 CSS -->
     <link rel="stylesheet" href="../css/tradingview-symbol-icons.css" />
-    
-    <!-- Page CSS -->
-    <!-- 존재하지 않는 파일 경로 제거: ../css/pages/_community.css -->
-
     
     <!-- Auth CSS -->
     <link rel="stylesheet" href="../auth.css" />
@@ -114,20 +111,117 @@
         });
     </script>
 </head>
-<body>
+<body class="community-page">
     <!-- Header placeholder -->
     <div id="header-placeholder"></div>
 
     <main class="main-container">
+        <div class="community-header" id="community-header">
+            <div class="mh-left" id="mh-left">
+            <div class="mh-symbol">
+                    <img id="mh-coin-icon" alt="coin" />
+                    <button id="mh-symbol-btn" class="mh-symbol-btn" aria-haspopup="listbox" aria-expanded="false">
+                        <span id="mh-symbol-text">BTCUSDT Perp</span>
+                        <i class="fa-solid fa-chevron-down"></i>
+                    </button>
+                    <!-- 심볼 선택 드롭다운 -->
+                <div id="mh-dropdown" class="mh-dropdown" role="dialog" aria-modal="true" aria-labelledby="mh-dd-title" style="display:none;">
+                        <div class="mh-dd-header">
+                            <div class="mh-dd-search">
+                                <i class="fa-solid fa-magnifying-glass"></i>
+                                <input id="mh-dd-search" type="text" placeholder="Search symbol..." autocomplete="off" />
+                            </div>
+                            <div class="mh-dd-tabs" role="tablist">
+                                <button class="mh-dd-tab" data-tab="favorites">Favorites</button>
+                                <button class="mh-dd-tab active" data-tab="futures">Futures</button>
+                            </div>
+                        </div>
+                        <div class="mh-dd-list" id="mh-dd-list" role="listbox"></div>
+                        <div class="mh-dd-footer">심볼을 선택하면 차트와 헤더가 동기화됩니다.</div>
+                    </div>
+                <!-- 모바일 드롭다운용 백드롭 -->
+                <div id="mh-dd-backdrop" style="display:none;"></div>
+                </div>
+            </div>
+            <div class="mh-core" id="mh-core">
+                <div class="mh-last">
+                    <span id="mh-last-price">--</span>
+                    <span id="mh-change" class="chg">--</span>
+                </div>
+                <div class="mh-metrics">
+                    <div class="kv"><span>Mark Price</span><b id="mh-mark">--</b></div>
+                    <div class="kv"><span>Index Price</span><b id="mh-index">--</b></div>
+                    <div class="kv funding"><span>Funding/Countdown</span><b id="mh-funding">--</b><small id="mh-funding-eta">--:--:--</small></div>
+                </div>
+            </div>
+            <div class="mh-right" id="mh-right">
+                <div class="mh-stats">
+                    <div class="kv"><span>24h High</span><b id="mh-high">--</b></div>
+                    <div class="kv"><span>24h Low</span><b id="mh-low">--</b></div>
+                    <div class="kv"><span>24h Volume</span><b id="mh-vol-usdt">--</b><small id="mh-vol-btc">-- (BTC)</small></div>
+                </div>
+            </div>
+        </div>
         <div class="community-layout">
             <div class="community-layout-inner">
                 <section class="chart-section">
                     <div class="chart-trading-layout">
+                        <div class="chart-and-sidebar">
                         <div id="chart-container-wrapper">
                             <!-- 차트 헤더와 레이아웃 버튼들이 여기에 동적으로 추가됩니다 -->
                             <div id="tradingview_chart"></div>
                             <div class="chart-loading" id="chart-loading">데이터 로딩 중...</div>
-                            <!-- ✅ 차트 하단 포지션 바 -->
+                            </div>
+                            <aside id="paper-trading-sidebar" class="paper-trading-sidebar">
+                                <!-- 주문/오더북 패널 -->
+                                <div class="orderbook-and-trade">
+                                    <!-- 모바일에서 주문패널을 여기로 이동시킬 슬롯 -->
+                                    <div id="mobile-trade-slot" aria-live="polite"></div>
+                                    <div class="orderbook-panel">
+                                        <div class="panel-header">
+                                            <div class="tabs" role="tablist">
+                                                <button class="tab active" data-tab="orderbook">오더북</button>
+                                                <button class="tab" data-tab="whale">실시간 고래 탐지</button>
+                                            </div>
+                                        </div>
+                                        <div class="orderbook-body" id="orderbook-body">
+                                            <div class="orderbook-table">
+                                                <div class="ob-header">
+                                                    <div>Price</div>
+                                                    <div>Quantity (BTC)</div>
+                                                    <div>Total (BTC)</div>
+                                                </div>
+                                                <div id="orderbook-rows" class="ob-rows"></div>
+                                                <div class="ob-footer">
+                                                    <div class="ratio">
+                                                        <span class="buy-label">B <span id="ob-buy-ratio">--</span>%</span>
+                                                        <div class="ratio-bar">
+                                                            <span id="ob-buy-bar"></span>
+                                                            <span id="ob-sell-bar"></span>
+                                                        </div>
+                                                        <span class="sell-label"><span id="ob-sell-ratio">--</span>% S</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="orderbook-body" id="whale-tab-body" style="display:none;">
+                                            <div class="whale-trades-wrapper">
+                                                <div id="whale-trades-container" class="whale-trades-container">
+                                                    <div class="whale-trades-list"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <!-- 모바일에서 채팅을 사이드바로 합치기 위한 슬롯 (현재 미사용) -->
+                                    <div id="mobile-chat-slot" aria-live="polite"></div>
+                                    <!-- 모바일에서 보유 포지션을 주문패널 아래로 이동시키는 슬롯 -->
+                                    <div id="mobile-positions-slot" aria-live="polite"></div>
+                                </div>
+                            </aside>
+                        </div>
+                        <!-- ✅ 차트·오더북 아래 포지션 바 -->
+                            <!-- 원위치 복귀용 앵커 (positions) -->
+                            <div id="positions-home"></div>
                             <section id="positions-under-chart" class="positions-under-chart">
                                 <div class="positions-bar-header">
                                     <div class="pos-tabs" role="tablist">
@@ -136,6 +230,7 @@
                                         <button class="pos-tab" data-pos-tab="history">거래 내역</button>
                                     </div>
                                     <div class="actions">
+                                        <span id="pt-acct-eff" class="acct-eff"></span>
                                         <button id="pt-close-all" class="btn secondary">전량 청산</button>
                                     </div>
                                 </div>
@@ -144,14 +239,14 @@
                                         <div>거래쌍</div>
                                         <div>포지션</div>
                                         <div>진입가</div>
-                                        <div>현재가</div>
+                                        <div>현재가 (Mark)</div>
                                         <div>예상 청산가</div>
                                         <div>마진</div>
-                                        <div>가용 수량</div>
+                                        <div>가용 수량 (BTC)</div>
                                         <div>미실현 손익</div>
-                                        <div>채굴</div>
+                                        <div>채굴 (Preview)</div>
                                         <div>시장가 청산</div>
-                                        <div>청산가</div>
+                                        <div>Close</div>
                                         <div>청산 수량</div>
                                         <div>청산</div>
                                     </div>
@@ -183,67 +278,42 @@
                                         <div>Avg. Price | Type</div>
                                         <div>Filled | Size</div>
                                         <div>PnL | PnL%</div>
-                                        <div>Fee</div>
+                                            <div>Fee</div>
+                                            <div>Order Status | Order Number</div>
                                     </div>
                                     <div id="history-table-body" class="orders-table-body"></div>
                                 </div>
                             </section>
+                        
                         </div>
-                        <aside id="paper-trading-sidebar" class="paper-trading-sidebar">
-                            <!-- 주문/오더북 패널 -->
-                            <div class="orderbook-and-trade">
-                                <div class="orderbook-panel">
+                </section>
+                <!-- 원위치 복귀용 앵커 -->
+                <div id="chat-home"></div>
+                <!-- 고래 탐지와 채팅을 위한 컨테이너 -->
+                <section class="whale-chat-container">
+                    <!-- 주문 패널 이동: 상단 배치 -->
                                     <div class="panel-header">
                                         <div class="tabs" role="tablist">
-                                            <button class="tab active" data-tab="orderbook">오더북</button>
-                                            <button class="tab" data-tab="whale">실시간 고래 탐지</button>
+                            <button class="tab active" disabled>Trade</button>
                                         </div>
                                     </div>
-                                    <div class="orderbook-body" id="orderbook-body">
-                                        <div class="orderbook-table">
-                                            <div class="ob-header">
-                                                <div>Price</div>
-                                                <div>Quantity (BTC)</div>
-                                                <div>Total (BTC)</div>
-                                            </div>
-                                            <div id="orderbook-rows" class="ob-rows"></div>
-                                            <div class="ob-footer">
-                                                <div class="ratio">
-                                                    <span class="buy-label">B <span id="ob-buy-ratio">--</span>%</span>
-                                                    <div class="ratio-bar">
-                                                        <span id="ob-buy-bar"></span>
-                                                        <span id="ob-sell-bar"></span>
-                                                    </div>
-                                                    <span class="sell-label"><span id="ob-sell-ratio">--</span>% S</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="orderbook-body" id="whale-tab-body" style="display:none;">
-                                        <div class="whale-trades-wrapper">
-                                            <div id="whale-trades-container" class="whale-trades-container">
-                                                <div class="whale-trades-list"></div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <!-- 주문 패널: 오더북/고래탭 아래로 이동 -->
-                                <section class="trade-panel">
+                    <!-- 기본 위치(데스크톱) - 모바일에서는 상단의 mobile-trade-slot으로 이동 -->
+                    <div id="trade-panel-home">
+                    <section class="trade-panel" style="padding:10px 14px;">
                         <div class="trade-header">
                             <div class="header-controls">
-                                <button id="btn-mode-cross" class="seg-btn active">교차</button>
-                                <button id="btn-mode-isolated" class="seg-btn">고립</button>
+                                <button class="pt-compact-mode-btn" id="pt-open-margin-modal" aria-haspopup="dialog">
+                                    <span id="pt-margin-mode-text">Cross</span>
+                                </button>
+                                <span class="pt-vdiv" aria-hidden="true"></span>
+                                <button class="pt-compact-lev-btn" id="pt-open-lev-modal" aria-haspopup="dialog">
+                                    <span class="pt-lev-long" id="pt-lev-long-label">20x</span>
+                                    <span class="pt-lev-short" id="pt-lev-short-label">20x</span>
+                                </button>
                             </div>
-                        </div>
-                        <div class="lev-control">
-                            <span class="label">레버리지</span>
-                            <div class="input-wrap">
-                                <input type="number" id="lev-value" class="lev-display" min="1" max="100" step="1" value="15" />
-                                <span class="unit-suffix">배</span>
-                            </div>
-                            <div class="percent-slider lev-slider">
-                                <input type="range" id="lev-percent" min="0" max="100" step="1" value="0" />
-                                <div class="ticks"><span>1배</span><span>25배</span><span>50배</span><span>75배</span><span>100배</span></div>
+                            <div class="pt-openclose-toggle" id="pt-openclose-toggle" role="tablist">
+                                <button type="button" class="sc active" data-mode="open">Open</button>
+                                <button type="button" class="sc" data-mode="close">Close</button>
                             </div>
                         </div>
 
@@ -287,38 +357,8 @@
                             </div>
                         </div>
                     </section>
-                            </div>
-                        </aside>
                     </div>
-                </section>
-                <!-- 고래 탐지와 채팅을 위한 컨테이너 -->
-                <section class="whale-chat-container">
-                    <!-- 오른쪽: 잔고만 표시 (주문 섹션 완전 제거) -->
-                    <section style="padding: 10px 8px;">
-                        <section id="account-panel" class="account-panel">
-                            <div class="balance-header">
-                                <div class="balance-title">마진 잔고</i></div>
-                                <div class="balance-amount">
-                                    <span id="acc-equity-big">0</span>
-                                    <span class="unit">USDT</span>
-                                </div>
-                            </div>
-                            <div class="balance-grid">
-                                <div class="balance-item">
-                                    <div class="label">지갑 잔고</div>
-                                    <div class="value" id="acc-wallet">$0.00</div>
-                                </div>
-                                <div class="balance-item" style="text-align:center">
-                                    <div class="label">ONBIT 채굴</div>
-                                    <div class="value" id="acc-onbit" style="color: var(--primary-color);">0.000 ONBIT</div>
-                                </div>
-                                <div class="balance-item">
-                                    <div class="label">미실현 손익</div>
-                                    <div class="value up" id="acc-upnl-big">+$0.00</div>
-                                </div>
-                            </div>
-                        </section>
-                    </section>
+                    <!-- account-panel 제거 -->
                     
                     
                     <!-- 구분선 -->
@@ -366,24 +406,394 @@
         </div>
     </div>
 
+    <!-- Margin Mode Modal (pt- 접두사로 충돌 방지) -->
+    <div id="pt-margin-modal" class="pt-modal" role="dialog" aria-modal="true" aria-labelledby="pt-margin-modal-title" hidden>
+        <div class="pt-modal-content" role="document">
+            <div class="pt-modal-header">
+                <h2 id="pt-margin-modal-title">Margin Mode</h2>
+                <button type="button" class="pt-close" id="pt-close-margin-modal" aria-label="Close">&times;</button>
+            </div>
+            <div class="pt-modal-body">
+                <label class="pt-radio">
+                    <input type="radio" name="pt-margin-mode" value="cross" checked>
+                    <b>Cross Mode</b>
+                    <div class="pt-desc">All positions share the futures account margin. In liquidation, wallet margin may be consumed.</div>
+                </label>
+                <label class="pt-radio">
+                    <input type="radio" name="pt-margin-mode" value="isolated">
+                    <b>Isolated Mode</b>
+                    <div class="pt-desc">Margin is assigned per position. If margin falls below maintenance, only that position is liquidated.</div>
+                </label>
+            </div>
+            <div class="pt-modal-footer">
+                <button type="button" class="pt-btn pt-btn-ghost" id="pt-margin-cancel">Cancel</button>
+                <button type="button" class="pt-btn pt-btn-primary" id="pt-margin-confirm">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leverage Modal -->
+    <div id="pt-lev-modal" class="pt-modal" role="dialog" aria-modal="true" aria-labelledby="pt-lev-modal-title" hidden>
+        <div class="pt-modal-content" role="document">
+            <div class="pt-modal-header">
+                <h2 id="pt-lev-modal-title">Adjust Leverage</h2>
+                <button type="button" class="pt-close" id="pt-close-lev-modal" aria-label="Close">&times;</button>
+            </div>
+            <div class="pt-modal-body">
+                <div class="pt-lev-sync">
+                    <label>
+                        <input type="checkbox" id="pt-lev-sync" checked>
+                        Long/Short Sync
+                    </label>
+                </div>
+                <div class="pt-lev-group">
+                    <div class="pt-lev-row">
+                        <div class="pt-lev-title">Long</div>
+                        <input type="number" class="pt-lev-value-input pt-lev-long" id="pt-lev-long-value" min="1" max="100" step="1" value="20" />
+                    </div>
+                    <input type="range" class="pt-lev-range" id="pt-lev-long-range" min="1" max="100" step="1" value="20" />
+                    <div class="pt-lev-ticks"><span>1x</span><span>25x</span><span>50x</span><span>75x</span><span>100x</span></div>
+                </div>
+                <div class="pt-lev-group">
+                    <div class="pt-lev-row">
+                        <div class="pt-lev-title">Short</div>
+                        <input type="number" class="pt-lev-value-input pt-lev-short" id="pt-lev-short-value" min="1" max="100" step="1" value="20" />
+                    </div>
+                    <input type="range" class="pt-lev-range" id="pt-lev-short-range" min="1" max="100" step="1" value="20" />
+                    <div class="pt-lev-ticks"><span>1x</span><span>25x</span><span>50x</span><span>75x</span><span>100x</span></div>
+                </div>
+            </div>
+            <div class="pt-modal-footer">
+                <button type="button" class="pt-btn pt-btn-ghost" id="pt-lev-cancel">Cancel</button>
+                <button type="button" class="pt-btn pt-btn-primary" id="pt-lev-confirm">Confirm</button>
+            </div>
+        </div>
+    </div>
 
 
-    <!-- Whale Tracker Script -->
+
+    <!-- 고래 추적기 스크립트 -->
     <script src="../js/analysis/whale-tracker.js" type="module"></script>
     
-    <!-- Custom Scripts -->
+    <!-- 모의투자 설정 -->
     <script src="../js/paper-config.js"></script>
+    <script src="../js/symbol-store.js"></script>
+    <script src="../js/orderbook-engine.js"></script>
+    <!-- 시세 데이터 처리 -->
     <script src="../js/paper-market.js"></script>
+    <!-- 리스크 관리 엔진 -->
     <script src="../js/paper-risk.js"></script>
+    <!-- 거래 UI 처리 -->
     <script src="../js/paper-ui.js"></script>
+    <!-- 주문 처리 엔진 -->
     <script src="../js/paper-order.js"></script>
+    <!-- 온빗 채굴 로직 -->
     <script type="module" src="../js/onbit-miner.js"></script>
+    <!-- 메인 모의투자 엔진 -->
     <script src="../js/paper-trading.js"></script>
+    <!-- 거래 알림 기능 -->
     <script src="../js/trade-notifier.js"></script>
+    <!-- 커뮤니티 페이지 -->
     <script src="../js/community.js"></script>
+    <!-- 마켓 헤더 -->
+    <script src="../js/market-header.js"></script>
+    <!-- 커뮤니티 채팅 -->
     <script src="../js/community-chat.js"></script>
     
     
+    
+    <!-- Margin Mode Modal 스크립트: 안전 바인딩 + 엔진 동기화 -->
+    <script>
+      (function(){
+        function qs(id){ return document.getElementById(id); }
+        function safe(fn){ try{ fn(); }catch(_){} }
+
+        function getEngine(){
+          return window.paperTrading || null;
+        }
+        function getModeFromEngine(){
+          const eng = getEngine();
+          let m = eng?.state?.marginMode;
+          if (!m) {
+            try { m = localStorage.getItem('pt_mode'); } catch(_) {}
+          }
+          return (m === 'isolated' ? 'isolated' : 'cross');
+        }
+        function setModeToEngine(mode){
+          const normalized = (mode === 'isolated' ? 'isolated' : 'cross');
+          const eng = getEngine();
+          if (eng) {
+            eng.state.marginMode = normalized;
+            safe(()=> eng.saveState && eng.saveState());
+          }
+          try { localStorage.setItem('pt_mode', normalized); } catch(_) {}
+        }
+
+        function openModal(){
+          const modal = qs('pt-margin-modal'); if (!modal) return;
+          modal.hidden = false;
+          // 애니메이션 클래스로 진입
+          requestAnimationFrame(()=> modal.classList.add('is-open'));
+          setTimeout(()=> qs('pt-close-margin-modal')?.focus(), 0);
+        }
+        function closeModal(){
+          const modal = qs('pt-margin-modal'); if (!modal) return;
+          // 부드럽게 닫힘
+          modal.classList.remove('is-open');
+          modal.classList.add('is-closing');
+          setTimeout(()=>{ modal.hidden = true; modal.classList.remove('is-closing'); }, 280);
+        }
+
+        function syncUI(){
+          const label = qs('pt-margin-mode-text');
+          const mode = getModeFromEngine();
+          if (label) label.textContent = (mode === 'isolated' ? 'Isolated' : 'Cross');
+          const radios = document.querySelectorAll('input[name="pt-margin-mode"]');
+          radios.forEach(r => { r.checked = (r.value === mode); });
+          // 카드 선택 강조 스타일
+          document.querySelectorAll('.pt-radio').forEach(card => {
+            const input = card.querySelector('input[name="pt-margin-mode"]');
+            if (input) card.classList.toggle('selected', input.checked);
+          });
+        }
+
+        function bind(){
+          const openBtnWrap = qs('pt-open-margin-modal');
+          if (openBtnWrap && !openBtnWrap.__bound){
+            openBtnWrap.addEventListener('click', openModal);
+            openBtnWrap.__bound = true;
+          }
+          const closeBtn = qs('pt-close-margin-modal');
+          if (closeBtn && !closeBtn.__bound){
+            closeBtn.addEventListener('click', closeModal);
+            closeBtn.__bound = true;
+          }
+          const cancelBtn = qs('pt-margin-cancel');
+          if (cancelBtn && !cancelBtn.__bound){
+            cancelBtn.addEventListener('click', closeModal);
+            cancelBtn.__bound = true;
+          }
+          const confirmBtn = qs('pt-margin-confirm');
+          if (confirmBtn && !confirmBtn.__bound){
+            confirmBtn.addEventListener('click', function(){
+              const selected = document.querySelector('input[name="pt-margin-mode"]:checked')?.value || 'cross';
+              setModeToEngine(selected);
+              const label = qs('pt-margin-mode-text');
+              if (label) label.textContent = (selected === 'isolated' ? 'Isolated' : 'Cross');
+              closeModal();
+            });
+            confirmBtn.__bound = true;
+          }
+          // 라디오 카드 클릭 시 선택 강조만 업데이트 (엔진 상태는 Confirm 시 반영)
+          document.querySelectorAll('.pt-radio input[name="pt-margin-mode"]').forEach(input => {
+            if (!input.__bound) {
+              input.addEventListener('change', () => {
+                const current = document.querySelector('input[name="pt-margin-mode"]:checked');
+                document.querySelectorAll('.pt-radio').forEach(card => {
+                  const i = card.querySelector('input[name="pt-margin-mode"]');
+                  if (i) card.classList.toggle('selected', i === current);
+                });
+              });
+              input.__bound = true;
+            }
+          });
+          const modal = qs('pt-margin-modal');
+          if (modal && !modal.__bound){
+            modal.addEventListener('click', (e)=>{ if (e.target === modal) closeModal(); });
+            document.addEventListener('keydown', (e)=>{ if (!modal.hidden && (e.key === 'Escape' || e.key === 'Esc')) closeModal(); });
+            modal.__bound = true;
+          }
+        }
+
+        if (document.readyState === 'loading'){
+          document.addEventListener('DOMContentLoaded', () => { syncUI(); bind(); });
+        } else {
+          syncUI(); bind();
+        }
+
+        let tries = 0;
+        const iv = setInterval(()=>{
+          tries++;
+          syncUI();
+          if (getEngine() || tries > 30) clearInterval(iv);
+        }, 100);
+
+        // ================== Leverage Modal ==================
+        function getLevDefaults(){
+          let longLev = 20, shortLev = 20, sync = true;
+          try {
+            const sl = Number(localStorage.getItem('pt_lev_long'));
+            const ss = Number(localStorage.getItem('pt_lev_short'));
+            const sy = localStorage.getItem('pt_lev_sync');
+            if (isFinite(sl) && sl>=1 && sl<=200) longLev = sl;
+            if (isFinite(ss) && ss>=1 && ss<=200) shortLev = ss;
+            if (sy === '0') sync = false; else if (sy === '1') sync = true;
+          } catch(_) {}
+          // 엔진 값이 존재하면 우선 적용
+          const eng = getEngine();
+          if (eng && isFinite(eng.state?.leverage)) {
+            longLev = shortLev = Math.max(1, Math.min(200, Number(eng.state.leverage)));
+          }
+          return { longLev, shortLev, sync };
+        }
+
+        function setLevToEngineAndStore(longLev, shortLev, sync){
+          longLev = Math.max(1, Math.min(100, Number(longLev)||20));
+          shortLev = Math.max(1, Math.min(100, Number(shortLev)||20));
+          try {
+            localStorage.setItem('pt_lev_long', String(longLev));
+            localStorage.setItem('pt_lev_short', String(shortLev));
+            localStorage.setItem('pt_lev_sync', sync ? '1' : '0');
+            // 기존 단일 레버리지 키와 기존 사이드바 입력도 업데이트
+            localStorage.setItem('pt_lev', String(sync ? longLev : longLev));
+          } catch(_) {}
+          const eng = getEngine();
+          if (eng) {
+            eng.state.leverage = sync ? longLev : longLev; // 대표값
+            eng.state.leverageLong = longLev;
+            eng.state.leverageShort = shortLev;
+            safe(()=> eng.saveState && eng.saveState());
+            // 기존 입력/슬라이더 동기화
+            const s = document.getElementById('lev-percent');
+            const v = document.getElementById('lev-value');
+            const pctFromLev = (lv) => Math.round(((lv-1)/99)*100);
+            if (s) s.value = String(pctFromLev(eng.state.leverage));
+            if (v && v.tagName === 'INPUT') v.value = String(eng.state.leverage);
+            // 프리뷰 즉시 갱신
+            try { eng.updateAmountFromPercent && eng.updateAmountFromPercent(); } catch(_) {}
+            try { eng.updateCostPreview && eng.updateCostPreview(); } catch(_) {}
+          }
+        }
+
+        function syncLevUI(){
+          const { longLev, shortLev, sync } = getLevDefaults();
+          const longLabel = qs('pt-lev-long-label');
+          const shortLabel = qs('pt-lev-short-label');
+          if (longLabel) longLabel.textContent = `${longLev}x`;
+          if (shortLabel) shortLabel.textContent = `${shortLev}x`;
+          const longVal = qs('pt-lev-long-value');
+          const shortVal = qs('pt-lev-short-value');
+          const longRange = qs('pt-lev-long-range');
+          const shortRange = qs('pt-lev-short-range');
+          const syncChk = qs('pt-lev-sync');
+          if (longVal) longVal.value = String(longLev);
+          if (shortVal) shortVal.value = String(shortLev);
+          if (longRange) longRange.value = String(longLev);
+          if (shortRange) shortRange.value = String(shortLev);
+          if (syncChk) syncChk.checked = !!sync;
+          if (shortRange) shortRange.disabled = !!sync;
+        }
+
+        function openLevModal(){ const m = qs('pt-lev-modal'); if (!m) return; syncLevUI(); m.hidden = false; requestAnimationFrame(()=> m.classList.add('is-open')); setTimeout(()=> qs('pt-close-lev-modal')?.focus(),0); }
+        function closeLevModal(){ const m = qs('pt-lev-modal'); if (!m) return; m.classList.remove('is-open'); m.classList.add('is-closing'); setTimeout(()=>{ m.hidden = true; m.classList.remove('is-closing'); }, 280); }
+
+        // 바인딩
+        const levBtn = qs('pt-open-lev-modal');
+        if (levBtn && !levBtn.__bound){ levBtn.addEventListener('click', openLevModal); levBtn.__bound = true; }
+        const levClose = qs('pt-close-lev-modal');
+        if (levClose && !levClose.__bound){ levClose.addEventListener('click', closeLevModal); levClose.__bound = true; }
+        const levCancel = qs('pt-lev-cancel');
+        if (levCancel && !levCancel.__bound){ levCancel.addEventListener('click', closeLevModal); levCancel.__bound = true; }
+        const levConfirm = qs('pt-lev-confirm');
+        if (levConfirm && !levConfirm.__bound){
+          levConfirm.addEventListener('click', () => {
+            const syncChk = qs('pt-lev-sync');
+            const sync = !!(syncChk && syncChk.checked);
+            const longRange = qs('pt-lev-long-range');
+            const shortRange = qs('pt-lev-short-range');
+            const longLev = Number(longRange?.value||20);
+            const shortLev = Number(shortRange?.value||longLev);
+            setLevToEngineAndStore(longLev, shortLev, sync);
+            syncLevUI();
+            closeLevModal();
+          });
+          levConfirm.__bound = true;
+        }
+        const lr = qs('pt-lev-long-range');
+        const sr = qs('pt-lev-short-range');
+        const syncChk = qs('pt-lev-sync');
+        if (syncChk && !syncChk.__bound){
+          syncChk.addEventListener('change', ()=>{
+            if (sr) sr.disabled = !!syncChk.checked;
+          });
+          syncChk.__bound = true;
+        }
+        function previewRecalc(usingValue){ try { const eng = getEngine(); if (!eng) return; if (isFinite(usingValue)) eng.state.leverage = Number(usingValue); eng.updateAmountFromPercent && eng.updateAmountFromPercent(); eng.updateCostPreview && eng.updateCostPreview(); } catch(_) {} }
+        if (lr && !lr.__bound){ lr.addEventListener('input', ()=>{ const v = Math.max(1, Math.min(100, Number(lr.value||20))); lr.value = String(v); const lv = qs('pt-lev-long-value'); if (lv) lv.value = String(v); if (syncChk?.checked && sr){ sr.value = String(v); const sv = qs('pt-lev-short-value'); if (sv) sv.value = String(v); } previewRecalc(v); }); lr.__bound = true; }
+        if (sr && !sr.__bound){ sr.addEventListener('input', ()=>{ const v = Math.max(1, Math.min(100, Number(sr.value||20))); sr.value = String(v); const sv = qs('pt-lev-short-value'); if (sv) sv.value = String(v); previewRecalc(v); }); sr.__bound = true; }
+        // 입력 박스 직접 입력 연동
+        const lvIn = qs('pt-lev-long-value');
+        const svIn = qs('pt-lev-short-value');
+        if (lvIn && !lvIn.__bound){ lvIn.addEventListener('input', ()=>{ let v = Math.max(1, Math.min(100, Number(lvIn.value||20))); lvIn.value = String(v); if (lr) lr.value = String(v); if (syncChk?.checked && svIn && sr){ svIn.value = String(v); sr.value = String(v); } previewRecalc(v); }); lvIn.__bound = true; }
+        if (svIn && !svIn.__bound){ svIn.addEventListener('input', ()=>{ let v = Math.max(1, Math.min(100, Number(svIn.value||20))); svIn.value = String(v); if (sr) sr.value = String(v); previewRecalc(v); }); svIn.__bound = true; }
+
+        // Open/Close segmented toggle
+        const oc = document.getElementById('pt-openclose-toggle');
+        if (oc && !oc.__bound){
+          oc.addEventListener('click', (e)=>{
+            const btn = e.target && e.target.closest('button.sc'); if (!btn) return;
+            oc.querySelectorAll('button.sc').forEach(b=>b.classList.remove('active'));
+            btn.classList.add('active');
+            const mode = btn.getAttribute('data-mode') || 'open';
+            try { const eng = getEngine(); if (eng) eng.actionMode = mode; } catch(_) {}
+          });
+          oc.__bound = true;
+        }
+
+        // 초기 UI 동기화
+        syncLevUI();
+      })();
+    </script>
+    <script src="/components/bottom-nav/bottom-nav.js" defer></script>
+    <!-- 레이아웃 재배치: 모바일에서 주문패널을 오더북 옆으로 이동 -->
+    <script>
+      (function(){
+        function relocateTradePanel(){
+          try{
+            var trade = document.querySelector('.trade-panel');
+            var slot = document.getElementById('mobile-trade-slot');
+            var home = document.getElementById('trade-panel-home');
+            var chat = document.querySelector('.whale-chat-container');
+            var chatSlot = document.getElementById('mobile-chat-slot');
+            var chatHome = document.getElementById('chat-home');
+            var posSection = document.getElementById('positions-under-chart');
+            var posSlot = document.getElementById('mobile-positions-slot');
+            var posHome = document.getElementById('positions-home');
+            if(!trade || !slot || !home) return;
+            var isMobile = window.matchMedia('(max-width: 768px)').matches;
+            if (isMobile){
+              if (!slot.contains(trade)) slot.insertAdjacentElement('afterbegin', trade);
+              try { trade.style.display = 'block'; } catch(_){ }
+              // 채팅은 사이드바로 이동시키지 않음 (원위치 유지)
+              if (chat && chatHome && chatHome.nextElementSibling !== chat) {
+                chatHome.insertAdjacentElement('afterend', chat);
+              }
+              // 보유 포지션을 주문패널 바로 아래로 이동
+              if (posSection && posSlot && !posSlot.contains(posSection)) {
+                posSlot.appendChild(posSection);
+              }
+            } else {
+              if (!home.contains(trade)) home.appendChild(trade);
+              try { trade.style.display = ''; } catch(_){ }
+              // 채팅 원위치 유지
+              if (chat && chatHome && chatHome.nextElementSibling !== chat) {
+                chatHome.insertAdjacentElement('afterend', chat);
+              }
+              // 포지션을 원위치 복귀
+              if (posSection && posHome && posHome.nextElementSibling !== posSection) {
+                posHome.insertAdjacentElement('afterend', posSection);
+              }
+            }
+          }catch(_){ }
+        }
+        window.addEventListener('resize', relocateTradePanel);
+        document.addEventListener('DOMContentLoaded', relocateTradePanel);
+        // 첫 렌더 타이밍 이슈 대응: 약간의 지연 후 여러 번 보정
+        window.addEventListener('load', function(){
+          var tries = 0; var iv = setInterval(function(){ relocateTradePanel(); if (++tries > 15) clearInterval(iv); }, 150);
+        });
+      })();
+    </script>
     
     <script>
       document.addEventListener('DOMContentLoaded', () => {

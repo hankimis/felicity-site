@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>검색 - ONBIT</title>
+  <link rel="stylesheet" href="../css/base/_variables.css" />
+  <link rel="stylesheet" href="../css/base/_reset.css" />
+  <link rel="stylesheet" href="feed.css" />
+  <link rel="stylesheet" href="../components/header/navbar.css" />
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+  <script src="../auth.js" defer></script>
+  <script src="search.js" defer></script>
+  <script src="sidebar.js" defer></script>
+  <script src="../components/header/header-loader.js" defer></script>
+</head>
+<body class="search-page">
+  <div id="header-placeholder"></div>
+  <div id="feed-sidebar"></div>
+  <main class="feed-container">
+    <section class="search-main">
+      <div class="search-topbar">
+        <div class="topbar-title">검색</div>
+      </div>
+      <div class="search-container">
+      <div class="search-bar">
+        <div class="input-group">
+          <span class="addon inline-start"><i data-lucide="search"></i></span>
+          <input id="search-input" placeholder="Search..." />
+          <span class="addon inline-end"><span id="search-result-count"></span></span>
+        </div>
+      </div>
+      <div id="keyword-suggestions" class="search-suggestions"></div>
+      <div class="section-title">팔로우 추천</div>
+      <div id="user-recommend" class="user-list"></div>
+      <div id="keyword-results" class="keyword-results" style="display:none">
+        <div class="search-tabs">
+          <button class="tab active" data-sort="popular">인기</button>
+          <button class="tab" data-sort="latest">최신</button>
+        </div>
+        <div id="search-results" class="feed-list"></div>
+      </div>
+    </div>
+    </section>
+    <aside class="feed-right">
+      <div class="write-widget">
+        <button id="open-composer" class="btn primary" style="width:100%">작성하기</button>
+      </div>
+      <div class="sidebar-block">
+        <h4>인기글</h4>
+        <ul id="trending"></ul>
+      </div>
+      <div class="sidebar-block">
+        <h4>인기 작성자</h4>
+        <ul id="top-authors"></ul>
+      </div>
+    </aside>
+  </main>
+</body>
+<!-- simple page -->
+</html>
+
+

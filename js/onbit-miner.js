@@ -2,7 +2,7 @@
 // ONBIT 코인 채굴 모듈: 수익 1 USDT당 1 ONBIT / 손실 1 USDT당 0.1 ONBIT 적립
 
 import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, doc, getDoc, setDoc, runTransaction } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, doc, getDoc, setDoc, runTransaction, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { firebaseConfig } from '../firebase-config.js';
 
 function getOrInitApp() {
@@ -17,16 +17,36 @@ class OnbitMiner {
         this.uiEl = null; // DOM element to show ONBIT balance
         this.current = 0;
         this.externalControlled = false; // 외부(UI) 제어 여부
+        this._unsubscribe = null; // 실시간 구독 해제 핸들러
     }
 
     setUser(user) {
         this.user = user || null;
+        // 기존 구독 해제
+        try { if (this._unsubscribe) { this._unsubscribe(); this._unsubscribe = null; } } catch(_) {}
+
         if (!this.user) {
             this.updateUI(0);
             return;
         }
-        // 초기 로드
+        // 초기 로드 + 실시간 구독
         this.refreshBalance().catch(() => {});
+        try {
+            const uid = this.user.uid || this.user?.user?.uid || this.user?.id;
+            if (uid) {
+                const ref = doc(this.db, 'users', uid);
+                this._unsubscribe = onSnapshot(ref, (snap)=>{
+                    try {
+                        const data = snap.exists() ? snap.data() : {};
+                        const mining = data.mining || {};
+                        const onbit = Number((mining.onbit ?? data.onbit ?? 0));
+                        this.current = onbit;
+                        this.updateUI(onbit);
+                        try { window.dispatchEvent(new CustomEvent('onbit:balance', { detail: { balance: onbit } })); } catch(_) {}
+                    } catch(_) {}
+                });
+            }
+        } catch(_) {}
     }
 
     async refreshBalance() {
@@ -35,7 +55,7 @@ class OnbitMiner {
         const snap = await getDoc(ref);
         const data = snap.exists() ? snap.data() : {};
         const mining = data.mining || {};
-        const onbit = Number(mining.onbit || 0);
+        const onbit = Number((mining.onbit ?? data.onbit ?? 0));
         this.current = onbit;
         this.updateUI(onbit);
         try { window.dispatchEvent(new CustomEvent('onbit:balance', { detail: { balance: onbit } })); } catch(_) {}

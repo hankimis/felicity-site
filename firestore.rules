@@ -2,6 +2,10 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+    function isAdmin() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+             || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+    }
     // 커뮤니티 채팅: 모두 읽기 가능, 쓰기는 인증 사용자만 허용
     // 시스템 전용 필드/UID는 클라이언트에서 금지
     match /community-chat/{messageId} {
@@ -42,9 +46,28 @@ service cloud.firestore {
       allow read, write: if request.auth != null && docId.matches('^' + request.auth.uid + '_.+');
     }
 
-    // 사용자 프로필: 본인만 접근
+    // 사용자 프로필: 본인 또는 관리자 접근
     match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read: if request.auth != null && (request.auth.uid == userId || isAdmin());
+      allow write: if request.auth != null && (request.auth.uid == userId || isAdmin());
     }
   }
+
+    // 채널 기반 채팅: channels/{channelId}/messages
+    match /channels/{channelId} {
+      allow read: if true;
+      allow write: if false; // 루트 채널 문서는 서버에서만
+      match /messages/{messageId} {
+        allow read: if true;
+        allow create: if request.auth != null
+                      && request.resource.data.uid == request.auth.uid
+                      && (request.resource.data.text is string)
+                      && ('timestamp' in request.resource.data)
+                      && ('displayName' in request.resource.data)
+                      && ('uid' in request.resource.data)
+                      && (request.resource.data.keys().hasOnly(['text','timestamp','uid','displayName','photoURL']))
+                      ;
+        allow update, delete: if false;
+      }
+    }
 }

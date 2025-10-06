@@ -85,7 +85,7 @@
   <link rel="stylesheet" href="css/cards/feature-cards.css">
   <link rel="stylesheet" href="auth.css">
   <link rel="stylesheet" href="index.css">
-  <link rel="stylesheet" href="indextable.css">
+  
   <link rel="stylesheet" href="css/base/_variables.css">
   
   <!-- Fonts -->
@@ -94,6 +94,21 @@
   
   <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
   <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"></noscript>
+  <link rel="stylesheet" href="/components/bottom-nav/bottom-nav.css" />
+
+  <!-- Mobile-only visibility rules -->
+  <style>
+    @media (max-width: 768px) {
+      /* 숨김 대상: 티커, 프로모 배너, 커뮤니티, 공지, 공포지수, 롱/숏, 고래 카드 */
+      #tradingview-ticker-tape,
+      .promo-banner-card,
+      .community-card,
+      .notice-card,
+      .market-indicators-card,
+      .ls-gauge-card,
+      .whale-tracker-card { display: none !important; }
+    }
+  </style>
 
   <!-- TradingView Core Script -->
   <script src="https://s3.tradingview.com/tv.js"></script>
@@ -118,6 +133,22 @@
   <!-- 메인 컨텐츠 섹션 -->
   <section class="main-content-section">
     <div class="content-container">
+      <!-- 사이트 검색바 -->
+      <div class="search-hero">
+        <form class="site-search-form" action="/search/" method="get" role="search" aria-label="사이트 검색">
+          <div class="search-input-wrap">
+            <img src="/assets/indexicon/onbitsearch.png" alt="검색" class="search-brand"/>
+            <input type="text" id="site-search-input" name="q" placeholder="검색어를 입력해 주세요." autocomplete="off"/>
+            <button class="search-submit" type="submit" aria-label="검색">
+              <i class="fas fa-search" aria-hidden="true"></i>
+            </button>
+          </div>
+        </form>
+        <div id="search-layer" class="search-layer" style="display:none;">
+          <div class="layer-title">연관 검색어</div>
+          <div id="suggest-list" class="suggest-list"></div>
+        </div>
+      </div>
       
       <!-- 메인 상단 분할 레이아웃: 좌(차트) / 우(로그인) -->
       <div class="main-top-split">
@@ -129,19 +160,29 @@
             </a>
           </div>
           <div class="dashboard-card bitcoin-chart-card" style="height: 420px;">
-            <div class="tv-tabs" id="tv-coin-tabs" style="display:flex; gap:8px; padding:15px 10px;">
-              <button class="tv-tab active" data-sym="BINANCE:BTCUSD">비트코인</button>
-              <button class="tv-tab" data-sym="BINANCE:ETHUSD">이더리움</button>
-              <button class="tv-tab" data-sym="BINANCE:XRPUSD">리플</button>
-              <button class="tv-tab" data-sym="BINANCE:SOLUSD">솔라나</button>
-              <button class="tv-tab" data-sym="BINANCE:BNBUSD">BNB</button>
+            <div class="tv-grid">
+              <div class="tv-cell">
+                <div class="tv-head"><span class="tv-name">비트코인</span><span class="tv-live-price" id="btc-live-price" aria-live="polite"></span></div>
+                <div id="tradingview-btc-chart" class="tv-chart"></div>
+              </div>
+              <div class="tv-cell">
+                <div class="tv-head"><span class="tv-name">이더리움</span><span class="tv-live-price" id="eth-live-price" aria-live="polite"></span></div>
+                <div id="tradingview-eth-chart" class="tv-chart"></div>
+              </div>
             </div>
-            <div id="tradingview-btc-chart" style="height: 100%;"></div>
           </div>
           <!-- 속보 뉴스: 비트코인 차트 하단 -->
           <div class="dashboard-card breaking-news-card">
             <div class="card-header">
               <h3><span style="color: #2962ff;">속보</span> 뉴스</h3>
+              <div class="news-tabs" id="news-tabs">
+                <button class="ntab active" data-kw="all">전체</button>
+                <button class="ntab" data-kw="비트코인|BTC">비트코인</button>
+                <button class="ntab" data-kw="이더리움|ETH">이더리움</button>
+                <button class="ntab" data-kw="XRP|리플">리플</button>
+                <button class="ntab" data-kw="SOL|솔라나">솔라나</button>
+                <button class="ntab" data-kw="ETF|상장">ETF/상장</button>
+              </div>
             </div>
             <!-- 뉴스 카드 헤더 바로 아래 롤링 바 -->
             <div class="header-breaking-ticker inside-card" aria-live="polite">
@@ -158,17 +199,33 @@
             </div>
             <div class="breaking-news-content">
               <div id="breaking-news-list">
-                <div style="display: flex; align-items: center; justify-content: center; height: 220px; color: #6b7280;">
-                  <div style="text-align: center;">
-                    <i class="fas fa-spinner fa-spin" style="font-size: 2rem; margin-bottom: 1rem;"></i>
-                    <div>속보 뉴스 로딩 중...</div>
+                <div class="bn-layout">
+                  <div class="bn-grid" id="bn-grid">
+                    <div style="display: flex; align-items: center; justify-content: center; height: 200px; color: #6b7280;">로딩 중...</div>
+                  </div>
+                  <div class="bn-list" id="bn-list">
+                    <div style="display: flex; align-items: center; justify-content: center; height: 200px; color: #6b7280;">로딩 중...</div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
+          <!-- 커뮤니티 카드: 속보 뉴스 카드 바로 아래 -->
+          <div class="dashboard-card community-card">
+            <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
+              <h3><span style="color:#2962ff;">커뮤니티</span></h3>
+              <a href="/feed/" class="link-more" aria-label="커뮤니티 더보기">더보기</a>
+            </div>
+            <div class="community-card-body">
+              <div id="community-card-list" class="community-card-list">
+                <div class="loading" style="padding:30px 10px;">커뮤니티 글을 불러오는 중...</div>
+              </div>
+            </div>
+          </div>
         </div>
         <div class="split-right">
+          <!-- 원위치 복귀용 앵커 -->
+          <div id="login-home"></div>
           <div class="dashboard-card login-card" id="home-login-card">
             <div class="login-card-inner">
               <div class="login-header">
@@ -232,30 +289,28 @@
             </div>
           </div>
           
-          <!-- 시장 지표 카드 (로그인 카드 하단) -->
+      <!-- TradingView 이벤트 위젯: 로그인 카드 하단 -->
+      <div class="dashboard-card tv-events-card">
+        <div class="card-header">
+          <h3>경제캘린더</h3>
+        </div>
+        <div class="tv-events-body" style="padding: 12px;">
+          <div id="tv-events-embed"></div>
+        </div>
+      </div>
+
+      <!-- 공지 카드: 경제캘린더 하단 -->
+      <div class="dashboard-card notice-card">
+        <div class="notice-card-body">
+          <div id="home-notice-list" class="home-notice-list">
+            <div class="loading" style="padding:18px 10px;color:var(--text-color-secondary);">공지 불러오는 중...</div>
+          </div>
+        </div>
+      </div>
+
+          <!-- 공포/탐욕 지수 카드만 유지 -->
           <div class="dashboard-card market-indicators-card" aria-label="시장 지표">
             <div class="mi-grid">
-              <!-- 전체 시가총액 -->
-              <div class="mi-card" id="mi-marketcap">
-                <div class="mi-head">Market Cap</div>
-                <div class="mi-body">
-                  <div class="mi-value" id="mi-mc-value">--</div>
-                  <div class="mi-change" id="mi-mc-change">--</div>
-                </div>
-                <canvas class="mi-spark" id="mi-mc-spark" width="260" height="60" aria-hidden="true"></canvas>
-              </div>
-              
-              <!-- 상위 20 코인 지수 (시총가중, 실시간 계산) -->
-              <div class="mi-card" id="mi-top20">
-                <div class="mi-head">상위 20 코인 지수</div>
-                <div class="mi-body">
-                  <div class="mi-value" id="mi-top20-value">--</div>
-                  <div class="mi-change" id="mi-top20-change">--</div>
-                </div>
-                <canvas class="mi-spark" id="mi-top20-spark" width="260" height="60" aria-hidden="true"></canvas>
-              </div>
-              
-              <!-- 공포/탐욕 지수 -->
               <div class="mi-card fng" id="mi-fng">
                 <div class="mi-fng-layout">
                   <div class="mi-fng-left">
@@ -312,61 +367,10 @@
       </div>
       
 
-      <!-- 실시간 코인 시세 테이블 -->
-      <div class="crypto-table-section">
-        <div class="section-header">
-          <h3 class="section-title">실시간 코인 시세</h3>
-        <div class="table-controls">
-          <div class="search-box">
-            <i class="fas fa-search"></i>
-            <input type="text" id="coin-search" placeholder="코인 검색...">
-          </div>
-          <button class="refresh-btn" id="refresh-data">
-            <i class="fas fa-sync-alt"></i>
-          </button>
-        </div>
-      </div>
       
-      <div class="crypto-table-wrapper">
-                 <div class="table-tabs">
-           <button class="tab-btn active" data-category="all">전체</button>
-           <button class="tab-btn" data-category="gainers">상승</button>
-           <button class="tab-btn" data-category="losers">하락</button>
-         </div>
-        
-        <div class="crypto-table-container">
-                     <table class="crypto-table" id="crypto-table">
-             <thead>
-               <tr>
-                 <th class="sortable rank-col" data-sort="rank">순위</th>
-                 <th class="sortable name-col" data-sort="name">코인</th>
-                 <th class="sortable price-col" data-sort="price">가격</th>
-                 <th class="sortable change-col" data-sort="change1h">가격(1H%)</th>
-                 <th class="sortable change-col" data-sort="change24h">가격(24H %)</th>
-                 <th class="sortable funding-col" data-sort="fundingRate">자금 조달 비율</th>
-                 <th class="sortable volume-col" data-sort="volume">24H 볼륨($)</th>
-                 <th class="sortable oi-col" data-sort="openInterest">OI($)</th>
-                 <th class="sortable market-col" data-sort="marketCap">Market Cap($)</th>
-                 <th class="sortable liquidation-col" data-sort="liquidation1h">1H 청산($)</th>
-                 <th class="sortable liquidation-col" data-sort="liquidation24h">24H 청산($)</th>
-                 <th class="chart-col">차트</th>
-               </tr>
-             </thead>
-            <tbody id="crypto-table-body">
-              <!-- 코인 데이터가 여기에 동적으로 추가됩니다 -->
-            </tbody>
-          </table>
-        </div>
-        
-        <div class="table-pagination">
-          <button class="page-btn" id="prev-page" disabled>이전</button>
-          <span class="page-info" id="page-info">1 / 1</span>
-          <button class="page-btn" id="next-page">다음</button>
-          </div>
-        </div>
-      </div>
     </div>
   </section>
+
 
   <!-- 고래 거래 설정 모달 -->
   <div id="whale-settings-modal" class="modal-overlay" style="display: none;">
@@ -451,17 +455,20 @@
   <!-- Index Page Scripts -->
   <script src="js/index/tradingview-widgets.js"></script>
   <script src="js/index/dashboard-manager.js"></script>
-  <script src="js/index/crypto-table-manager.js"></script>
+  <script src="js/market-data-manager.js"></script>
+  
   <script src="js/index/long-short-gauge.js"></script>
   <script src="js/analysis/whale-tracker.js"></script>
   <script src="js/index/mobile-dashboard-slider.js"></script>
   <script src="js/index/market-indicators.js"></script>
   <script src="js/index/firebase-manager.js"></script>
   <script src="js/index/main-initializer.js"></script>
+  <script src="/components/bottom-nav/bottom-nav.js" defer></script>
   
   <!-- Card-specific JavaScript files -->
   <script src="js/cards/trading-charts.js"></script>
   <script src="js/cards/feature-cards.js"></script>
+  <script src="js/index/community-card.js" defer></script>
   <!-- ONBIT 채굴 모듈 (잔액 표시 연동) -->
   <script type="module" src="js/onbit-miner.js"></script>
   

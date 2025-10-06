@@ -74,6 +74,23 @@ document.addEventListener('DOMContentLoaded', () => {
             if (mainHeader) {
                 mainHeader.style.opacity = '1';
             }
+            // 모바일 메뉴 시트 이벤트 바인딩
+            try {
+                const btn = document.getElementById('mobile-menu-button');
+                const sheet = document.getElementById('mobile-menu');
+                const overlay = document.getElementById('mobile-menu-overlay');
+                const closeBtn = document.getElementById('mobile-menu-close');
+                function open(){ if(sheet){ sheet.style.display='block'; requestAnimationFrame(()=> sheet.classList.add('is-open')); } }
+                function close(){ if(sheet){ sheet.classList.remove('is-open'); setTimeout(()=>{ sheet.style.display='none'; }, 220); } }
+                if (btn && sheet && overlay && closeBtn){
+                    btn.addEventListener('click', function(){
+                      if (sheet.classList && sheet.classList.contains('is-open')) close(); else open();
+                    });
+                    overlay.addEventListener('click', close);
+                    closeBtn.addEventListener('click', close);
+                    document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') close(); });
+                }
+            } catch(_) {}
             // 현재 경로에 맞춰 활성 메뉴 강조
             const path = window.location.pathname.replace(/\/index\.html$/, '/');
             document.querySelectorAll('.desktop-nav a').forEach(a => {
@@ -87,31 +104,105 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
             
-            // 1. Start the main authentication and header logic (if startApp exists)
-            if (typeof startApp === 'function') {
+            // 1. Start the main authentication and header logic
+            async function ensureAuthScript() {
+                if (typeof startApp === 'function') return true;
                 try {
-                    await startApp(); // Wait for firebase etc. to be ready
-                    
-                    // Attach auth form handlers now that header/DOM elements exist
-                    if (typeof window.bindAuthForms === 'function') {
-                        window.bindAuthForms();
+                    // 이미 어떤 경로로든 auth.js가 포함되어 있는지 탐지 (상대/절대 모두)
+                    const anyAuth = document.querySelector('script[src$="/auth.js"], script[src*="/js/auth.js"], script[src$="auth.js"]');
+                    if (anyAuth) {
+                        let tries = 0; const max = 50;
+                        await new Promise((res)=>{
+                            (function wait(){
+                                if (typeof startApp === 'function' || tries++ > max) return res();
+                                setTimeout(wait, 100);
+                            })();
+                        });
+                        if (typeof startApp === 'function') return true;
                     }
-                    
-                    // Firebase 초기화 후 현재 인증 상태 확인
-                    if (window.auth && typeof window.updateAuthUI === 'function') {
-                        const currentUser = window.auth.currentUser;
-                        window.updateAuthUI(currentUser);
-                    }
-                    
-                    // TurnstileManager가 모든 이벤트 처리 - 별도 설정 불필요
-                } catch (error) {
+
+                    // 1차: 루트 경로 `/auth.js` 시도
+                    await new Promise((resolve)=>{
+                        const s = document.createElement('script');
+                        s.src = '/auth.js';
+                        s.async = true;
+                        s.onload = resolve; s.onerror = resolve;
+                        document.head.appendChild(s);
+                    });
+                    if (typeof startApp === 'function') return true;
+
+                    // 2차: `/js/auth.js` 시도 (서브 폴더 배치 대응)
+                    await new Promise((resolve)=>{
+                        const s = document.createElement('script');
+                        s.src = '/js/auth.js';
+                        s.async = true;
+                        s.onload = resolve; s.onerror = resolve;
+                        document.head.appendChild(s);
+                    });
+                    return typeof startApp === 'function';
+                } catch (_) { return false; }
+            }
+
+            try {
+                if (!(typeof startApp === 'function')) {
+                    await ensureAuthScript();
                 }
-            } else {
-                // startApp이 없어도 인증 폼 바인딩 시도
+                if (typeof startApp === 'function') {
+                    await startApp(); // Wait for firebase etc. to be ready
+                }
+
+                // Attach auth form handlers now that header/DOM elements exist
                 if (typeof window.bindAuthForms === 'function') {
                     window.bindAuthForms();
                 }
+                
+                // Firebase 초기화 후 현재 인증 상태 확인
+                if (window.auth && typeof window.updateAuthUI === 'function') {
+                    const currentUser = window.auth.currentUser;
+                    window.updateAuthUI(currentUser);
+                }
+                
+                // 헤더 DOM이 준비된 직후 이벤트 리스너 강제 초기화 (안전장치)
+                if (typeof window.initializeHeaderEventListeners === 'function') {
+                    try { window.initializeHeaderEventListeners(); } catch (_) {}
+                }
+                
+                // TurnstileManager가 모든 이벤트 처리 - 별도 설정 불필요
+            } catch (error) {
             }
+
+            // 추가 안전 동기화: 초기 몇 초 동안 인증 상태에 맞춰 버튼 토글 보정
+            (function ensureHeaderAuthSync(){
+                let attempts = 0; const max = 30; // 약 6초
+                const iv = setInterval(()=>{
+                    attempts++;
+                    try {
+                        const user = (window.auth && window.auth.currentUser) || null;
+                        if (typeof window.updateAuthUI === 'function') {
+                            window.updateAuthUI(user);
+                        } else {
+                            const authButtons = document.querySelector('.auth-buttons');
+                            const myPageLink = document.getElementById('my-page-link');
+                            const notifBtn = document.getElementById('notif-toggle');
+                            const walletBtn = document.getElementById('wallet-toggle');
+                            const headerDivider = document.querySelector('.header-divider');
+                            const pipeSep = document.querySelector('.pipe-sep');
+                            const profileDropdown = document.getElementById('profile-dropdown');
+                            if (authButtons) authButtons.style.display = user ? 'none' : 'flex';
+                            if (myPageLink) myPageLink.style.display = user ? '' : 'none';
+                            if (notifBtn) notifBtn.style.display = user ? '' : 'none';
+                            if (walletBtn) walletBtn.style.display = user ? '' : 'none';
+                            if (headerDivider) headerDivider.style.display = user ? '' : 'none';
+                            if (pipeSep) pipeSep.style.display = user ? 'inline' : 'inline';
+                            if (!user && profileDropdown) { profileDropdown.style.display='none'; profileDropdown.setAttribute('aria-hidden','true'); }
+                        }
+                        // 사용자가 결정되면 조기 종료
+                        if (user || attempts >= max) clearInterval(iv);
+                    } catch(_) {
+                        if (attempts >= max) clearInterval(iv);
+                    }
+                }, 200);
+            })();
 
             // 2. Run page-specific logic if it exists
             if (typeof initializePage === 'function') {
@@ -120,6 +211,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 } catch (error) {
                 }
             }
+            
+            // 최종 안전장치: 약간의 지연 후 한 번 더 이벤트 리스너/인증 UI 동기화
+            setTimeout(()=>{
+                try {
+                    if (typeof window.initializeHeaderEventListeners === 'function') {
+                        window.initializeHeaderEventListeners();
+                    }
+                } catch(_) {}
+                try {
+                    if (typeof window.updateAuthUI === 'function') {
+                        const user = (window.auth && window.auth.currentUser) || null;
+                        window.updateAuthUI(user);
+                    }
+                } catch(_) {}
+            }, 250);
         })
         .catch(error => {
             headerPlaceholder.innerHTML = `

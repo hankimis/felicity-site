@@ -4,6 +4,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>ONBit - 마이페이지</title>
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://challenges.cloudflare.com https://www.gstatic.com https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; img-src 'self' data: blob:; font-src 'self' https://cdnjs.cloudflare.com data:; connect-src 'self' https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com https://www.googleapis.com https://*.googleapis.com https://challenges.cloudflare.com; frame-src 'self' https://challenges.cloudflare.com;">
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='8' fill='%233b82f6'/%3E%3Cpath d='M11 5 L8 8 L9.5 9.5 L13 6' stroke='%23fff' stroke-width='1.5' fill='none'/%3E%3C/svg%3E" />
     
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
@@ -33,34 +35,345 @@
     <div id="header-placeholder"></div>
     
     <!-- Main Content -->
-    <main class="main-container">
-        <div class="account-container">
-            <h1>계정 설정</h1>
-            <div class="profile-card">
-                <div class="profile-picture-section">
-                    <img id="profile-picture-preview" src="../assets/icon/profileicon.png" alt="프로필 사진">
-                    <input type="file" id="profile-picture-input" accept="image/*" style="display: none;">
-                    <button id="change-picture-btn" class="secondary-btn">사진 변경</button>
-                    <div id="upload-status" class="upload-status"></div>
-                </div>
-                <div class="profile-info-section">
-                    <form id="profile-update-form">
-                        <div class="form-group">
-                            <label for="display-name">닉네임</label>
-                            <input type="text" id="display-name" required>
-                            <p class="input-hint">다른 사용자와 겹치지 않는 멋진 닉네임을 만들어보세요.</p>
+    <main class="main-account-container">
+        <div class="account-layout">
+            <aside class="sidebar">
+                <div class="header_subindex">
+                    <div class="gnb_area">
+                        <a href="../index.html" class="sidebar-logo"><img src="../assets/indexicon/onbitsearch.png" alt="ONBIT" width="23" height="23"></a>
+                        <a href="#" class="gnb_title"><h1 class="text"><span class="blind">온비트ID</span></h1></a>
+                    </div>
+
+                    <div class="profile_area">
+                        <div class="profile_inner">
+                            <a href="#" class="photo" id="open-photo-modal">
+                                <img id="left-profile-img" src="../assets/icon/profileicon.png" width="112" height="112" alt="프로필 이미지">
+                                <span class="photo-edit-badge">✎</span>
+                            </a>
+                            <div class="profile">
+                                <p class="useid" id="left-username">사용자</p>
+                                <p class="usemail" id="left-useremail">email@example.com</p>
+                            </div>
                         </div>
-                        <div class="form-group">
-                            <label for="email">이메일</label>
-                            <input type="email" id="email" disabled>
-                            <p class="input-hint">이메일 주소는 변경할 수 없습니다.</p>
-                        </div>
-                        <button type="submit" id="save-profile-btn" class="primary-btn">변경사항 저장</button>
-                    </form>
+                    </div>
+
+                    <div id="headerLeft" class="header_left" aria-hidden="false">
+                        <ul class="left_menu" role="menu">
+                            <li>
+                                <a href="#" class="left_item" role="menuitem" data-section="profile" aria-current="true">
+                                    <div class="menu_text on">내프로필</div>
+                                </a>
+                            </li>
+                            <li>
+                                <a href="#" class="left_item" role="menuitem" data-section="security">
+                                    <div class="menu_text">보안설정</div>
+                                </a>
+                            </li>
+                        </ul>
+                        <ul class="left_link">
+                            
+                        </ul>
+
+                        <footer class="left_footer" role="contentinfo">
+                            <ul class="left_guide">
+                                <li><a href="#" class="left_item" id="left-logout-btn"><div class="footer_text">로그아웃</div></a></li>
+                                <li><a href="https://t.me/onbitcs" target="_blank" rel="noopener" class="left_item"><div class="footer_text">고객센터</div></a></li>
+                                <li>
+                                    <a href="#" class="left_item arrow"><div class="footer_text">한국어</div></a>
+                                </li>
+                            </ul>
+                            <div class="footer_logo"><span class="logo"><span class="blind">ONBIT</span></span></div>
+                        </footer>
+                    </div>
                 </div>
-            </div>
+            </aside>
+
+            <section class="account-content">
+
+                <!-- 기본정보 카드 -->
+                <div class="card basic-info-card section-block" data-section="profile">
+                    <div class="card-header">
+                        <h2>기본정보</h2>
+                    </div>
+                    <div class="info-list">
+                        <div class="info-row">
+                            <div class="row-label">이름</div>
+                            <div class="row-value" id="name-display">-</div>
+                            <button class="row-action" id="edit-name-btn">수정</button>
+                        </div>
+                        <div class="info-row">
+                            <div class="row-label">소개</div>
+                            <div class="row-value" id="intro-display"></div>
+                            <button class="row-action" id="edit-intro-btn">수정</button>
+                        </div>
+                        <div class="info-row">
+                            <div class="row-label">휴대전화</div>
+                            <div class="row-value" id="phone-display">미등록</div>
+                            <button class="row-action" id="edit-phone-btn">수정</button>
+                        </div>
+                        <div class="info-row">
+                            <div class="row-label">이메일</div>
+                            <div class="row-value" id="email-display">-</div>
+                            <button class="row-action" id="edit-email-btn">수정</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 수신 동의 -->
+                <div class="card consent-card section-block" data-section="profile">
+                    <div class="card-header">
+                        <h2>프로모션 정보수신 동의</h2>
+                    </div>
+                    <div class="info-list">
+                        <div class="info-row">
+                            <div class="row-label">휴대전화</div>
+                            <div class="row-value"></div>
+                            <label class="switch">
+                                <input type="checkbox" id="toggle-promo-phone">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <div class="info-row">
+                            <div class="row-label">이메일</div>
+                            <div class="row-value"></div>
+                            <label class="switch">
+                                <input type="checkbox" id="toggle-promo-email">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 게시물 조치 알림 수신 동의 -->
+                <div class="card alert-card section-block" data-section="profile">
+                    <div class="card-header">
+                        <h2>게시물 조치 알림 수신 동의</h2>
+                    </div>
+                    <div class="info-list">
+                        <div class="info-row">
+                            <div class="row-label">휴대전화(문자메시지)</div>
+                            <div class="row-value"></div>
+                            <label class="switch">
+                                <input type="checkbox" id="toggle-alert-sms">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 프로필 편집 카드 -->
+                <div class="profile-card section-block" data-section="profile">
+                    <div class="profile-picture-section">
+                        <img id="profile-picture-preview" src="../assets/icon/profileicon.png" alt="프로필 사진">
+                        <input type="file" id="profile-picture-input" accept="image/*" style="display: none;">
+                        <button id="change-picture-btn" class="secondary-btn">사진 변경</button>
+                        <div id="upload-status" class="upload-status"></div>
+                    </div>
+                    <div class="profile-info-section">
+                        <form id="profile-update-form">
+                            <div class="form-group">
+                                <label for="display-name">닉네임</label>
+                                <input type="text" id="display-name" required>
+                                <p class="input-hint">다른 사용자와 겹치지 않는 멋진 닉네임을 만들어보세요.</p>
+                            </div>
+                            <div class="form-group">
+                                <label for="email">이메일</label>
+                                <input type="email" id="email" disabled>
+                                <p class="input-hint">이메일 주소는 변경할 수 없습니다.</p>
+                            </div>
+                            <div class="form-group">
+                                <label for="bio">소개</label>
+                                <textarea id="bio" rows="3" placeholder="자기소개를 입력하세요 (최대 3줄)" style="width:100%; padding:12px 16px; border:1px solid var(--border-color); border-radius:8px; background:var(--bg-color); color:var(--text-color);"></textarea>
+                                <p class="input-hint">최대 300자. 프로필과 검색 추천에 표시됩니다.</p>
+                            </div>
+                            <button type="submit" id="save-profile-btn" class="primary-btn">변경사항 저장</button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- 보안설정 카드 (동일 컨테이너 내 탭 전환) -->
+                <div class="card security-card section-block" data-section="security" style="display:none;">
+                    <div class="card-header">
+                        <h2>기본보안설정</h2>
+                    </div>
+                    <div class="info-list">
+                        <div class="info-row">
+                            <div class="row-label">비밀번호</div>
+                            <div class="row-value">계정 비밀번호 변경</div>
+                            <button class="row-action" id="open-password-modal">수정</button>
+                        </div>
+                        <div class="info-row">
+                            <div class="row-label">회원탈퇴</div>
+                            <div class="row-value">계정과 데이터 삭제</div>
+                            <button class="row-action btn-danger" id="open-delete-modal">탈퇴</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
         </div>
     </main>
+
+    <!-- 수정 모달 -->
+    <div id="edit-modal" class="account-modal" style="display:none;">
+        <div class="account-modal-content">
+            <button type="button" class="account-modal-close" data-close>×</button>
+            <h3 id="edit-modal-title">정보 수정</h3>
+            <form id="edit-modal-form">
+                <div class="form-item">
+                    <div class="form-control-wrap">
+                        <input id="edit-input" type="text" class="form-input" />
+                        <textarea id="edit-textarea" rows="4" class="form-textarea" style="display:none;"></textarea>
+                    </div>
+                    <p id="edit-message" class="form-message" style="display:none;"></p>
+                    <p id="edit-success" class="form-message success" style="display:none;"></p>
+                    <p id="edit-error" class="form-message" style="display:none;"></p>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-outline" data-close>취소</button>
+                    <button type="submit" id="edit-submit-btn" class="btn btn-primary">변경</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 사진 수정 모달 -->
+    <div id="photo-modal" class="account-modal" style="display:none;">
+        <div class="account-modal-content">
+            <button type="button" class="account-modal-close" data-close>×</button>
+            <h3>프로필 사진 변경</h3>
+            <div class="photo-modal-body">
+                <img id="photo-preview" src="../assets/icon/profileicon.png" alt="미리보기" class="photo-preview">
+                <div class="input-file-group">
+                    <label for="photo-file" class="form-label">Picture</label>
+                    <input type="file" id="photo-file" accept="image/*" class="form-input-file" />
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-outline" data-close>취소</button>
+                <button type="button" class="btn btn-primary" id="photo-save-btn">변경</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 휴대전화 인증 모달 -->
+    <div id="phone-modal" class="account-modal" style="display:none;">
+        <div class="account-modal-content">
+            <button type="button" class="account-modal-close" data-close>×</button>
+            <h3>휴대전화 인증</h3>
+            <div class="form-item" style="margin-top:12px;">
+                <form id="phone-send-form" class="phone-form">
+                    <div class="phone-row">
+                        <button id="dropdown-phone-button" type="button" class="phone-dd-btn">+82 ▾</button>
+                        <div id="dropdown-phone" class="phone-dd hidden">
+                            <button type="button" class="phone-dd-item" data-code="+82">대한민국 (+82)</button>
+                            <button type="button" class="phone-dd-item" data-code="+1">United States (+1)</button>
+                            <button type="button" class="phone-dd-item" data-code="+44">United Kingdom (+44)</button>
+                            <button type="button" class="phone-dd-item" data-code="+61">Australia (+61)</button>
+                            <button type="button" class="phone-dd-item" data-code="+49">Germany (+49)</button>
+                        </div>
+                        <input type="text" id="phone-input" class="phone-input" placeholder="01012345678" />
+                    </div>
+                    <p class="phone-help">SMS로 인증번호를 전송합니다.</p>
+                    <button type="submit" id="send-code-btn" class="btn btn-primary phone-send-btn">인증번호 전송</button>
+                </form>
+                <div id="recaptcha-container" style="margin-top:8px;"></div>
+                <div class="otp-wrap" id="otp-wrap" style="display:none; margin-top:12px;">
+                    <div class="otp-group">
+                        <input class="otp-slot" id="otp-0" maxlength="1" inputmode="numeric" />
+                        <input class="otp-slot" id="otp-1" maxlength="1" inputmode="numeric" />
+                        <input class="otp-slot" id="otp-2" maxlength="1" inputmode="numeric" />
+                    </div>
+                    <div class="otp-sep"></div>
+                    <div class="otp-group">
+                        <input class="otp-slot" id="otp-3" maxlength="1" inputmode="numeric" />
+                        <input class="otp-slot" id="otp-4" maxlength="1" inputmode="numeric" />
+                        <input class="otp-slot" id="otp-5" maxlength="1" inputmode="numeric" />
+                    </div>
+                </div>
+                <p id="phone-status" class="form-message" style="display:none;"></p>
+                <p id="phone-success" class="form-message success" style="display:none;"></p>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-outline" data-close>취소</button>
+                <button type="button" id="phone-verify-btn" class="btn btn-primary" disabled>변경</button>
+            </div>
+        </div>
+    </div>
+
+    
+
+    <!-- 비밀번호 변경 모달 -->
+    <div id="password-modal" class="account-modal" style="display:none;">
+        <div class="account-modal-content password-modal-content">
+            <button type="button" class="account-modal-close" data-close>×</button>
+            <h3 class="pw-title">비밀번호 변경</h3>
+            <p class="pw-desc"><a href="#">안전한 비밀번호로 내 정보를 보호</a>하세요<br>다른 사이트에서 사용한 적 없는 비밀번호, 이전에 사용한 적 없는 비밀번호가 안전합니다.</p>
+            <form id="password-form" class="pw-form">
+                <input id="current-password" type="password" class="pw-input" placeholder="현재 비밀번호" />
+                <input id="new-password" type="password" class="pw-input" placeholder="새 비밀번호" />
+                <input id="confirm-password" type="password" class="pw-input" placeholder="새 비밀번호 확인" />
+                <div class="captcha-row">
+                    <div id="password-turnstile" style="width:100%;"></div>
+                </div>
+                <p id="password-status" class="form-message" style="display:none;"></p>
+                <p id="password-success" class="form-message success" style="display:none;"></p>
+                <button type="submit" class="btn btn-primary btn-lg">확인</button>
+                <button type="button" class="btn btn-outline btn-lg" data-close>취소</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 회원탈퇴 모달 -->
+    <div id="delete-modal" class="account-modal" style="display:none;">
+        <div class="account-modal-content">
+            <button type="button" class="account-modal-close" data-close>×</button>
+            <h3>회원탈퇴</h3>
+            <form id="delete-form">
+                <div class="form-item">
+                    <input id="delete-password" type="password" class="form-input" placeholder="현재 비밀번호" />
+                </div>
+                <p class="form-description">확인 후 계정이 영구 삭제됩니다.</p>
+                <p id="delete-status" class="form-message" style="display:none;"></p>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-outline" data-close>취소</button>
+                    <button type="submit" class="btn btn-danger">탈퇴</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 이메일 변경 모달 -->
+    <div id="email-modal" class="account-modal" style="display:none;">
+        <div class="account-modal-content">
+            <button type="button" class="account-modal-close" data-close>×</button>
+            <h3>변경할 이메일 인증</h3>
+            <div class="form-item" style="margin-top:12px;">
+                <div class="flex-input-with-button">
+                    <input id="email-change-input" type="email" class="form-input" placeholder="변경할 이메일 입력" />
+                    <button type="email-button" id="email-send-verify" class=" btn-outline-mail-send-verify">인증</button>
+                </div>
+                <div class="otp-wrap" id="otp-wrap-email" style="display:none; margin-top:12px;">
+                    <div class="otp-group">
+                        <input class="otp-slot" maxlength="1" disabled />
+                        <input class="otp-slot" maxlength="1" disabled />
+                        <input class="otp-slot" maxlength="1" disabled />
+                    </div>
+                    <div class="otp-sep"></div>
+                    <div class="otp-group">
+                        <input class="otp-slot" maxlength="1" disabled />
+                        <input class="otp-slot" maxlength="1" disabled />
+                        <input class="otp-slot" maxlength="1" disabled />
+                    </div>
+                </div>
+                <p id="email-status" class="form-message" style="display:none;"></p>
+                <p id="email-success" class="form-message success" style="display:none;"></p>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-outline" data-close>취소</button>
+                <button type="button" id="email-close-btn" class="btn btn-primary">닫기</button>
+            </div>
+        </div>
+    </div>
 
     <!-- Modals -->
     <div id="login-modal" class="auth-modal">
@@ -110,12 +423,8 @@
         </div>
     </div>
 
-    <!-- Footer -->
-    <div id="footer-placeholder"></div>
-
     <!-- Scripts -->
     <script src="../script.js"></script>
-    <script src="../js/footer-loader.js" defer></script>
     <script type="module" src="../js/auth.js"></script>
     <script type="module" src="my-account.js"></script>
 </body>

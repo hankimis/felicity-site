@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>검색 - ONBIT</title>
+  <link rel="stylesheet" href="/css/base/_variables.css" />
+  <link rel="stylesheet" href="/css/base/_reset.css" />
+  <link rel="stylesheet" href="/components/header/navbar.css" />
+  <link rel="stylesheet" href="/search/search.css" />
+  <link rel="stylesheet" href="/components/bottom-nav/bottom-nav.css" />
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+  <script src="/auth.js" defer></script>
+  <script src="/search/search.js" defer></script>
+  <script src="/components/header/header-loader.js" defer></script>
+  <script src="/components/bottom-nav/bottom-nav.js" defer></script>
+</head>
+<body class="global-search-page">
+  <div id="header-placeholder"></div>
+  <main class="search-layout">
+    <div class="search-hero">
+      <div class="search-bar-row">
+        <img src="/assets/indexicon/onbitsearch.png" alt="ONBIT" class="search-logo" />
+        <div class="input-group">
+          <input id="global-search-input" placeholder="검색어를 입력해 주세요." />
+          <span class="addon inline-start" id="search-trigger" role="button" tabindex="0" aria-label="검색 실행"><i data-lucide="search"></i></span>
+        </div>
+      </div>
+      <div id="search-layer" class="search-layer" style="display:none;">
+        <div class="layer-title">연관 검색어</div>
+        <div id="suggest-list" class="suggest-list"></div>
+      </div>
+    </div>
+
+    <div id="search-tabs" class="tabs" style="display:none;">
+      <button class="tab active" data-pane="news"><i class="fas fa-newspaper tab-fa"></i><span>뉴스</span></button>
+      <button class="tab" data-pane="community"><i class="fas fa-users tab-fa"></i><span>커뮤니티</span></button>
+      <button class="tab" data-pane="users"><i class="fas fa-id-badge tab-fa"></i><span>닉네임</span></button>
+    </div>
+
+    <section id="pane-news" class="pane" style="display:none">
+      <div id="news-results" class="result-list"></div>
+    </section>
+    <section id="pane-community" class="pane" style="display:none">
+      <div id="community-results" class="result-list"></div>
+    </section>
+    <section id="pane-users" class="pane" style="display:none">
+      <div id="user-results" class="user-list"></div>
+    </section>
+  </main>
+</body>
+</html>
+
+

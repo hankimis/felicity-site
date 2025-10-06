@@ -1,5 +1,6 @@
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore, collection, getDocs, doc, getDoc, deleteDoc, updateDoc, addDoc, serverTimestamp, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-functions.js";
 import { firebaseConfig } from '../firebase-config.js';
 import { getVisitStats } from '../js/visit-tracker.js';
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -10,6 +11,7 @@ console.log("admin.js started");
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+const fns = getFunctions(app, 'asia-northeast3');
 
 const adminDashboard = document.getElementById('admin-dashboard');
 const accessDenied = document.getElementById('admin-access-denied');
@@ -18,12 +20,74 @@ const newUsersCount = document.getElementById('new-users-count');
 const totalVisitsCount = document.getElementById('total-visits-count');
 const todayVisitsCount = document.getElementById('today-visits-count');
 const usersTableBody = document.getElementById('users-table-body');
-const userSearch = document.getElementById('user-search');
+const usersTableBodyUM = document.getElementById('users-table-body-um');
+const userSearchUid = document.getElementById('filter-uid-input');
+const filterTypeSelect = document.getElementById('filter-type');
 const refreshBtn = document.querySelector('.refresh-btn');
+const sidebar = document.querySelector('.admin-sidebar');
+const sidebarUserEmail = document.getElementById('sidebar-user-email');
+
+// Data table controls
+const selectAllCheckbox = document.getElementById('select-all-rows');
+const selectAllCheckboxUM = document.getElementById('select-all-rows-um');
+const selectionInfo = document.getElementById('selection-info');
+const selectionInfoUM = document.getElementById('selection-info-um');
+const prevPageBtn = document.getElementById('prev-page');
+const nextPageBtn = document.getElementById('next-page');
+const pageInfo = document.getElementById('page-info');
+const pageSizeSelect = document.getElementById('page-size');
+const prevPageBtnUM = document.getElementById('prev-page-um');
+const nextPageBtnUM = document.getElementById('next-page-um');
+const pageInfoUM = document.getElementById('page-info-um');
+const pageSizeSelectUM = document.getElementById('page-size-um');
+const columnToggleBtn = document.getElementById('column-toggle-btn');
+const columnToggleMenu = document.getElementById('column-toggle-menu');
+const userEditModal = document.getElementById('user-edit-modal');
+const closeUserEditModalBtn = document.getElementById('close-user-edit-modal');
+const userEditForm = document.getElementById('user-edit-form');
+const editUidInput = document.getElementById('edit-uid');
+const editDisplayNameInput = document.getElementById('edit-display-name');
+const editRoleSelect = document.getElementById('edit-role');
+const editUsdtInput = document.getElementById('edit-usdt');
+const editOnbitInput = document.getElementById('edit-onbit');
+const deleteUserBtn = document.getElementById('delete-user-btn');
+const cancelEditBtn = document.getElementById('cancel-edit-btn');
 
 let allUsers = [];
+let allUsersUM = [];
 let currentUser = null;
 let isAdmin = false;
+let selectionSet = new Set();
+let currentPage = 1;
+let pageSize = 10;
+let currentPageUM = 1;
+let pageSizeUM = 10;
+let sortState = { key: null, dir: 'asc' }; // dir: 'asc' | 'desc'
+let sortStateUM = { key: null, dir: 'asc' };
+let visibleColumns = {
+    uid: true,
+    nickname: true,
+    email: true,
+    usdt: true,
+    onbit: true,
+    role: true,
+    createdAt: true,
+    actions: true
+};
+let visibleColumnsUM = {
+    uid: true,
+    nickname: true,
+    email: true,
+    postCount: true,
+    likeCount: true,
+    followerCount: true,
+    commentCount: true,
+    role: true,
+    createdAt: true,
+    actions: true
+};
+let hasShownUsersPermissionToast = false;
+let hasShownDetailPermissionToast = false;
 
 // 차단/금지 관련 변수
 let currentBlockTab = 'banned';
@@ -47,6 +111,8 @@ async function initializeAdminAuth() {
             accessDenied.style.display = 'none';
             loadDashboardData();
             updateAdminSecurityUI(user, isAdminUser);
+            if (sidebarUserEmail) sidebarUserEmail.textContent = user?.email || '-';
+            restoreSidebarState();
         } else if (user && !isAdminUser) {
             console.log("🔐 관리자 페이지 접근 거부: 권한 없음");
             showAccessDenied("관리자 계정이 아닙니다.");
@@ -73,6 +139,13 @@ if (!adminDashboard || !accessDenied || !usersTableBody) {
     // 페이지 로드 시 어드민 인증 초기화
     document.addEventListener('DOMContentLoaded', () => {
         initializeAdminAuth();
+        setupSidebarMenuScroll();
+        setupColumnVisibility();
+        setupPaginationControls();
+        setupOutsideClickForColumns();
+        setupSortableHeaders();
+        setupPaginationControlsUM();
+        setupSortableHeadersUM();
     });
 }
 
@@ -130,11 +203,28 @@ async function loadDashboardData() {
 
         updateStats();
         updateVisitStats();
-        renderUsersTable(allUsers);
+        selectionSet.clear();
+        currentPage = 1;
+        applyAndRender();
+
+        // 사용자 관리 탭 데이터는 동일한 원본을 사용
+        allUsersUM = allUsers.map(u => ({ ...u }));
+        await enrichUsersWithCommunityMetrics(allUsersUM);
+        selectionSet.clear();
+        currentPageUM = 1;
+        applyAndRenderUM();
 
     } catch (error) {
         console.error("Error loading dashboard data: ", error);
-        alert('대시보드 데이터를 불러오는 중 오류가 발생했습니다.');
+        // 권한 문제는 중복 노이즈 방지 및 안내 최적화
+        if (error && (error.code === 'permission-denied' || error.message?.includes('Missing or insufficient permissions.'))) {
+            if (!hasShownUsersPermissionToast) {
+                showToast('관리 권한 확인 중입니다. 잠시 후 다시 시도해주세요.');
+                hasShownUsersPermissionToast = true;
+            }
+        } else {
+            showToast('대시보드 데이터를 불러오는 중 문제가 발생했습니다.');
+        }
     }
 }
 
@@ -166,43 +256,34 @@ function renderUsersTable(users) {
     users.forEach(user => {
         const row = document.createElement('tr');
         const registrationDate = user.createdAt?.toDate ? user.createdAt.toDate().toLocaleDateString('ko-KR') : '알 수 없음';
-        
-        
+        const isChecked = selectionSet.has(user.id) ? 'checked' : '';
         row.innerHTML = `
-            <td><span class="user-uid">${user.id}</span></td>
-            <td><span class="user-nickname">${user.displayName || 'N/A'}</span></td>
-            <td><span class="user-email">${user.email || 'N/A'}</span></td>
-            <td><span class="user-usdt">${(user.paperTrading?.balanceUSDT ?? 0).toLocaleString()} USDT</span>
-                <button class="admin-btn points set-usdt" data-uid="${user.id}" title="USDT 잔고 설정" style="margin-left:8px;min-width:auto;">
-                    <i class="fas fa-dollar-sign"></i>
-                </button>
+            <td class="row-select"><input type="checkbox" class="row-select-checkbox" data-uid="${user.id}" ${isChecked}></td>
+            <td data-col="uid" style="${visibleColumns.uid ? '' : 'display:none'}"><span class="user-uid truncate">${user.id}</span></td>
+            <td data-col="nickname" style="${visibleColumns.nickname ? '' : 'display:none'}"><span class="user-nickname truncate">${user.displayName || 'N/A'}</span></td>
+            <td data-col="email" style="${visibleColumns.email ? '' : 'display:none'}"><span class="user-email truncate">${user.email || 'N/A'}</span></td>
+            <td data-col="usdt" style="${visibleColumns.usdt ? '' : 'display:none'}">
+                <div class="cell-inline">
+                    <span class="user-usdt">${(user.paperTrading?.balanceUSDT ?? 0).toLocaleString()} USDT</span>
+                </div>
             </td>
-            <td><span class="user-onbit">${Number(user.mining?.onbit || 0).toFixed(3)} ONBIT</span>
-                <button class="admin-btn set-onbit" data-uid="${user.id}" title="ONBIT 설정" style="margin-left:8px;min-width:auto;">
-                    <i class="fas fa-gem"></i>
-                </button>
+            <td data-col="onbit" style="${visibleColumns.onbit ? '' : 'display:none'}">
+                <div class="cell-inline">
+                    <span class="user-onbit">${Number(user.mining?.onbit || 0).toFixed(3)} ONBIT</span>
+                </div>
             </td>
             
-            <td>
+            <td data-col="role" style="${visibleColumns.role ? '' : 'display:none'}">
                 <span class="user-role ${user.role || 'user'}">
                     ${getRoleDisplayName(user.role || 'user')}
                 </span>
             </td>
-            <td><span class="user-join-date">${registrationDate}</span></td>
-            <td>
+            <td data-col="createdAt" style="${visibleColumns.createdAt ? '' : 'display:none'}"><span class="user-join-date truncate">${registrationDate}</span></td>
+            <td data-col="actions" style="${visibleColumns.actions ? '' : 'display:none'}">
                 <div class="admin-actions-cell">
-                    <button class="admin-btn edit" data-uid="${user.id}" data-name="${user.displayName || ''}" title="닉네임 수정">
-                        <i class="fas fa-edit"></i>
-                    </button>
-                    
-                    <button class="admin-btn role" data-uid="${user.id}" data-role="${user.role || 'user'}" title="권한 변경">
-                        <i class="fas fa-shield-alt"></i>
-                    </button>
-                    <button class="admin-btn view" data-uid="${user.id}" title="상세 정보">
-                        <i class="fas fa-eye"></i>
-                    </button>
-                    <button class="admin-btn danger" data-uid="${user.id}" title="사용자 삭제">
-                        <i class="fas fa-trash"></i>
+                    <button class="admin-btn points open-edit" data-uid="${user.id}" data-name="${user.displayName || ''}" data-role="${user.role || 'user'}" data-usdt="${user.paperTrading?.balanceUSDT ?? 0}" data-onbit="${Number(user.mining?.onbit || 0)}" title="편집">
+                        <i class="fas fa-pen"></i>
+                        Edit
                     </button>
                 </div>
             </td>
@@ -211,42 +292,18 @@ function renderUsersTable(users) {
     });
 
     // 이벤트 리스너 추가
-    document.querySelectorAll('.admin-btn.edit').forEach(button => {
-        button.addEventListener('click', function(e) {
-            const uid = e.target.closest('.admin-btn').dataset.uid;
-            const name = e.target.closest('.admin-btn').dataset.name;
-            openNicknameModal(uid, name);
-        });
-    });
+    // 단일 Edit 버튼
     
-    // 포인트 관련 버튼 제거됨
-    // USDT 설정 버튼
-    document.querySelectorAll('.admin-btn.set-usdt').forEach(button => {
-        button.addEventListener('click', async function(e) {
-            const uid = e.target.closest('.admin-btn').dataset.uid;
-            await openUsdtPrompt(uid);
-        });
-    });
-    // ONBIT 설정 버튼
-    document.querySelectorAll('.admin-btn.set-onbit').forEach(button => {
-        button.addEventListener('click', async function(e) {
-            const uid = e.target.closest('.admin-btn').dataset.uid;
-            await openOnbitPrompt(uid);
-        });
-    });
-    
-    document.querySelectorAll('.admin-btn.role').forEach(button => {
+    // 빠른 편집 버튼
+    document.querySelectorAll('.admin-btn.open-edit').forEach(button => {
         button.addEventListener('click', function(e) {
-            const uid = e.target.closest('.admin-btn').dataset.uid;
-            const currentRole = e.target.closest('.admin-btn').dataset.role;
-            openRoleModal(uid, currentRole);
-        });
-    });
-    
-    document.querySelectorAll('.admin-btn.view').forEach(button => {
-        button.addEventListener('click', function(e) {
-            const uid = e.target.closest('.admin-btn').dataset.uid;
-            openUserDetailModal(uid);
+            const btn = e.target.closest('.admin-btn');
+            const uid = btn.dataset.uid;
+            const name = btn.dataset.name || '';
+            const role = btn.dataset.role || 'user';
+            const usdt = Number(btn.dataset.usdt || 0);
+            const onbit = Number(btn.dataset.onbit || 0);
+            openUserEditModal(uid, name, role, usdt, onbit);
         });
     });
     
@@ -305,7 +362,539 @@ function renderUsersTable(users) {
             }
         }
     });
+    // 행 선택 핸들러
+    usersTableBody.querySelectorAll('.row-select-checkbox').forEach(cb => {
+        cb.addEventListener('change', (e) => {
+            const uid = e.target.dataset.uid;
+            if (e.target.checked) selectionSet.add(uid); else selectionSet.delete(uid);
+            updateSelectionInfo();
+            updateSelectAllState();
+        });
+    });
 }
+
+function renderUsersTableUM(users) {
+    if (!usersTableBodyUM) return;
+    usersTableBodyUM.innerHTML = '';
+    users.forEach(user => {
+        const row = document.createElement('tr');
+        const registrationDate = user.createdAt?.toDate ? user.createdAt.toDate().toLocaleDateString('ko-KR') : '알 수 없음';
+        const isChecked = selectionSet.has(user.id) ? 'checked' : '';
+        row.innerHTML = `
+            <td class="row-select"><input type="checkbox" class="row-select-checkbox-um" data-uid="${user.id}" ${isChecked}></td>
+            <td data-col="uid" style="${visibleColumnsUM.uid ? '' : 'display:none'}"><span class="user-uid truncate">${user.id}</span></td>
+            <td data-col="nickname" style="${visibleColumnsUM.nickname ? '' : 'display:none'}"><span class="user-nickname truncate">${user.displayName || 'N/A'}</span></td>
+            <td data-col="email" style="${visibleColumnsUM.email ? '' : 'display:none'}"><span class="user-email truncate">${user.email || 'N/A'}</span></td>
+            <td data-col="postCount" style="${visibleColumnsUM.postCount ? '' : 'display:none'}"><span class="user-posts truncate">${Number(user.__metrics?.postCount || 0).toLocaleString()}</span></td>
+            <td data-col="likeCount" style="${visibleColumnsUM.likeCount ? '' : 'display:none'}"><span class="user-likes truncate">${Number(user.__metrics?.likeCount || 0).toLocaleString()}</span></td>
+            <td data-col="followerCount" style="${visibleColumnsUM.followerCount ? '' : 'display:none'}"><span class="user-followers truncate">${Number(user.__metrics?.followerCount || 0).toLocaleString()}</span></td>
+            <td data-col="commentCount" style="${visibleColumnsUM.commentCount ? '' : 'display:none'}"><span class="user-comments truncate">${Number(user.__metrics?.commentCount || 0).toLocaleString()}</span></td>
+            <td data-col="role" style="${visibleColumnsUM.role ? '' : 'display:none'}">
+                <span class="user-role ${user.role || 'user'}">
+                    ${getRoleDisplayName(user.role || 'user')}
+                </span>
+            </td>
+            <td data-col="createdAt" style="${visibleColumnsUM.createdAt ? '' : 'display:none'}"><span class="user-join-date truncate">${registrationDate}</span></td>
+            <td data-col="actions" style="${visibleColumnsUM.actions ? '' : 'display:none'}">
+                <div class="admin-actions-cell">
+                    <button class="admin-btn points open-edit" data-uid="${user.id}" data-name="${user.displayName || ''}" data-role="${user.role || 'user'}" data-usdt="${user.paperTrading?.balanceUSDT ?? 0}" data-onbit="${Number(user.mining?.onbit || 0)}" title="편집">
+                        <i class="fas fa-pen"></i>
+                        Edit
+                    </button>
+                </div>
+            </td>
+        `;
+        usersTableBodyUM.appendChild(row);
+    });
+
+    usersTableBodyUM.querySelectorAll('.row-select-checkbox-um').forEach(cb => {
+        cb.addEventListener('change', (e) => {
+            const uid = e.target.dataset.uid;
+            if (e.target.checked) selectionSet.add(uid); else selectionSet.delete(uid);
+            updateSelectionInfoUM();
+            updateSelectAllStateUM();
+        });
+    });
+}
+
+function applyAndRender() {
+    const filtered = applyFilter(allUsers);
+    const sorted = applySort(filtered);
+    const paged = applyPagination(sorted);
+    renderUsersTable(paged);
+    updatePaginationInfo(sorted.length);
+    updateSelectionInfo();
+    updateSelectAllState();
+}
+
+function applyAndRenderUM() {
+    const filtered = applyFilterUM(allUsersUM);
+    const sorted = applySortUM(filtered);
+    const paged = applyPaginationUM(sorted);
+    renderUsersTableUM(paged);
+    updatePaginationInfoUM(sorted.length);
+    updateSelectionInfoUM();
+    updateSelectAllStateUM();
+}
+
+function applyFilter(users) {
+    const term = (userSearchUid?.value || '').toLowerCase();
+    const type = filterTypeSelect?.value || 'uid';
+    if (!term) return users;
+    return users.filter(user => {
+        switch (type) {
+            case 'nickname':
+                return (user.displayName || '').toLowerCase().includes(term);
+            case 'email':
+                return (user.email || '').toLowerCase().includes(term);
+            case 'uid':
+            default:
+                return (user.id || '').toLowerCase().includes(term);
+        }
+    });
+}
+
+function applyFilterUM(users) {
+    const term = (document.getElementById('filter-uid-input-um')?.value || '').toLowerCase();
+    const type = document.getElementById('filter-type-um')?.value || 'uid';
+    if (!term) return users;
+    return users.filter(user => {
+        switch (type) {
+            case 'nickname':
+                return (user.displayName || '').toLowerCase().includes(term);
+            case 'email':
+                return (user.email || '').toLowerCase().includes(term);
+            case 'uid':
+            default:
+                return (user.id || '').toLowerCase().includes(term);
+        }
+    });
+}
+
+function applySort(users) {
+    if (!sortState.key) return users;
+    const dir = sortState.dir === 'asc' ? 1 : -1;
+    const key = sortState.key;
+    return [...users].sort((a, b) => {
+        let va, vb;
+        switch (key) {
+            case 'amount':
+            case 'usdt': va = a.paperTrading?.balanceUSDT ?? 0; vb = b.paperTrading?.balanceUSDT ?? 0; break;
+            case 'onbit': va = Number(a.mining?.onbit || 0); vb = Number(b.mining?.onbit || 0); break;
+            case 'email': va = (a.email || '').toLowerCase(); vb = (b.email || '').toLowerCase(); break;
+            case 'nickname': va = (a.displayName || '').toLowerCase(); vb = (b.displayName || '').toLowerCase(); break;
+            case 'role': va = a.role || 'user'; vb = b.role || 'user'; break;
+            case 'createdAt': va = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : 0; vb = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : 0; break;
+            default: va = (a[key] || '').toString(); vb = (b[key] || '').toString();
+        }
+        if (va < vb) return -1 * dir;
+        if (va > vb) return 1 * dir;
+        return 0;
+    });
+}
+
+function applySortUM(users) {
+    if (!sortStateUM.key) return users;
+    const dir = sortStateUM.dir === 'asc' ? 1 : -1;
+    const key = sortStateUM.key;
+    return [...users].sort((a, b) => {
+        let va, vb;
+        switch (key) {
+            case 'postCount': va = a.__metrics?.postCount || 0; vb = b.__metrics?.postCount || 0; break;
+            case 'likeCount': va = a.__metrics?.likeCount || 0; vb = b.__metrics?.likeCount || 0; break;
+            case 'followerCount': va = a.__metrics?.followerCount || 0; vb = b.__metrics?.followerCount || 0; break;
+            case 'commentCount': va = a.__metrics?.commentCount || 0; vb = b.__metrics?.commentCount || 0; break;
+            case 'email': va = (a.email || '').toLowerCase(); vb = (b.email || '').toLowerCase(); break;
+            case 'nickname': va = (a.displayName || '').toLowerCase(); vb = (b.displayName || '').toLowerCase(); break;
+            case 'role': va = a.role || 'user'; vb = b.role || 'user'; break;
+            case 'createdAt': va = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : 0; vb = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : 0; break;
+            default: va = (a[key] || '').toString(); vb = (b[key] || '').toString();
+        }
+        if (va < vb) return -1 * dir;
+        if (va > vb) return 1 * dir;
+        return 0;
+    });
+}
+
+function applyPagination(users) {
+    const start = (currentPage - 1) * pageSize;
+    return users.slice(start, start + pageSize);
+}
+
+function applyPaginationUM(users) {
+    const start = (currentPageUM - 1) * pageSizeUM;
+    return users.slice(start, start + pageSizeUM);
+}
+
+function updatePaginationInfo(total) {
+    const totalPages = Math.max(1, Math.ceil(total / pageSize));
+    if (currentPage > totalPages) currentPage = totalPages;
+    if (pageInfo) pageInfo.textContent = `${currentPage} / ${totalPages}`;
+    if (prevPageBtn) prevPageBtn.disabled = currentPage <= 1;
+    if (nextPageBtn) nextPageBtn.disabled = currentPage >= totalPages;
+}
+
+function updatePaginationInfoUM(total) {
+    const totalPages = Math.max(1, Math.ceil(total / pageSizeUM));
+    if (currentPageUM > totalPages) currentPageUM = totalPages;
+    if (pageInfoUM) pageInfoUM.textContent = `${currentPageUM} / ${totalPages}`;
+    if (prevPageBtnUM) prevPageBtnUM.disabled = currentPageUM <= 1;
+    if (nextPageBtnUM) nextPageBtnUM.disabled = currentPageUM >= totalPages;
+}
+
+function updateSelectionInfo() {
+    const filtered = applyFilter(allUsers);
+    const selectedOnFiltered = [...selectionSet].filter(uid => filtered.some(u => u.id === uid));
+    if (selectionInfo) selectionInfo.textContent = `${selectedOnFiltered.length} / ${filtered.length} 선택됨`;
+}
+
+function updateSelectionInfoUM() {
+    const filtered = applyFilterUM(allUsersUM);
+    const selectedOnFiltered = [...selectionSet].filter(uid => filtered.some(u => u.id === uid));
+    if (selectionInfoUM) selectionInfoUM.textContent = `${selectedOnFiltered.length} / ${filtered.length} 선택됨`;
+}
+
+function updateSelectAllState() {
+    if (!selectAllCheckbox) return;
+    const currentRows = [...usersTableBody.querySelectorAll('.row-select-checkbox')];
+    const allChecked = currentRows.length > 0 && currentRows.every(cb => cb.checked);
+    const someChecked = currentRows.some(cb => cb.checked);
+    selectAllCheckbox.indeterminate = !allChecked && someChecked;
+    selectAllCheckbox.checked = allChecked;
+}
+
+function updateSelectAllStateUM() {
+    if (!selectAllCheckboxUM || !usersTableBodyUM) return;
+    const currentRows = [...usersTableBodyUM.querySelectorAll('.row-select-checkbox-um')];
+    const allChecked = currentRows.length > 0 && currentRows.every(cb => cb.checked);
+    const someChecked = currentRows.some(cb => cb.checked);
+    selectAllCheckboxUM.indeterminate = !allChecked && someChecked;
+    selectAllCheckboxUM.checked = allChecked;
+}
+
+function setupPaginationControls() {
+    if (prevPageBtn) prevPageBtn.addEventListener('click', () => { currentPage = Math.max(1, currentPage - 1); applyAndRender(); });
+    if (nextPageBtn) nextPageBtn.addEventListener('click', () => { currentPage = currentPage + 1; applyAndRender(); });
+    if (pageSizeSelect) pageSizeSelect.addEventListener('change', (e) => { pageSize = Number(e.target.value) || 10; currentPage = 1; applyAndRender(); });
+    if (selectAllCheckbox) selectAllCheckbox.addEventListener('change', (e) => {
+        const pageRows = [...usersTableBody.querySelectorAll('.row-select-checkbox')];
+        pageRows.forEach(cb => { cb.checked = e.target.checked; const uid = cb.dataset.uid; if (e.target.checked) selectionSet.add(uid); else selectionSet.delete(uid); });
+        updateSelectionInfo();
+        updateSelectAllState();
+    });
+}
+
+function setupPaginationControlsUM() {
+    if (prevPageBtnUM) prevPageBtnUM.addEventListener('click', () => { currentPageUM = Math.max(1, currentPageUM - 1); applyAndRenderUM(); });
+    if (nextPageBtnUM) nextPageBtnUM.addEventListener('click', () => { currentPageUM = currentPageUM + 1; applyAndRenderUM(); });
+    if (pageSizeSelectUM) pageSizeSelectUM.addEventListener('change', (e) => { pageSizeUM = Number(e.target.value) || 10; currentPageUM = 1; applyAndRenderUM(); });
+    if (selectAllCheckboxUM) selectAllCheckboxUM.addEventListener('change', (e) => {
+        if (!usersTableBodyUM) return;
+        const pageRows = [...usersTableBodyUM.querySelectorAll('.row-select-checkbox-um')];
+        pageRows.forEach(cb => { cb.checked = e.target.checked; const uid = cb.dataset.uid; if (e.target.checked) selectionSet.add(uid); else selectionSet.delete(uid); });
+        updateSelectionInfoUM();
+        updateSelectAllStateUM();
+    });
+}
+
+function setupColumnVisibility() {
+    // restore from localStorage
+    try {
+        const saved = localStorage.getItem('admin_column_visibility');
+        if (saved) visibleColumns = { ...visibleColumns, ...JSON.parse(saved) };
+    } catch (_) {}
+
+    if (columnToggleBtn && columnToggleMenu) {
+        columnToggleBtn.addEventListener('click', () => {
+            const expanded = columnToggleBtn.getAttribute('aria-expanded') === 'true';
+            columnToggleBtn.setAttribute('aria-expanded', String(!expanded));
+            columnToggleMenu.setAttribute('aria-hidden', String(expanded));
+        });
+        columnToggleMenu.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+            const key = cb.dataset.col;
+            if (key in visibleColumns) cb.checked = !!visibleColumns[key];
+            cb.addEventListener('change', () => {
+                visibleColumns[key] = cb.checked;
+                try { localStorage.setItem('admin_column_visibility', JSON.stringify(visibleColumns)); } catch (_) {}
+                applyAndRender();
+            });
+        });
+    }
+}
+
+function setupOutsideClickForColumns() {
+    document.addEventListener('click', (e) => {
+        if (!columnToggleBtn || !columnToggleMenu) return;
+        const within = columnToggleBtn.contains(e.target) || columnToggleMenu.contains(e.target);
+        if (!within) {
+            columnToggleBtn.setAttribute('aria-expanded', 'false');
+            columnToggleMenu.setAttribute('aria-hidden', 'true');
+        }
+    });
+}
+
+function restoreSidebarState() {
+    if (!sidebar) return;
+    try {
+        const state = localStorage.getItem('admin_sidebar_state') || 'expanded';
+        sidebar.setAttribute('data-state', state);
+    } catch (_) {}
+}
+
+// sidebar toggle 제거됨
+
+function setupSortableHeaders() {
+    const headerMap = [
+        { selector: 'th[data-col="uid"]', key: 'id' },
+        { selector: 'th[data-col="nickname"]', key: 'nickname' },
+        { selector: 'th[data-col="email"]', key: 'email' },
+        { selector: 'th[data-col="usdt"]', key: 'usdt' },
+        { selector: 'th[data-col="onbit"]', key: 'onbit' },
+        { selector: 'th[data-col="role"]', key: 'role' },
+        { selector: 'th[data-col="createdAt"]', key: 'createdAt' },
+    ];
+    headerMap.forEach(({ selector, key }) => {
+        const th = document.querySelector(selector);
+        if (!th) return;
+        th.classList.add('sortable');
+        th.addEventListener('click', () => {
+            if (sortState.key === key) {
+                sortState.dir = sortState.dir === 'asc' ? 'desc' : 'asc';
+            } else {
+                sortState.key = key;
+                sortState.dir = 'asc';
+            }
+            applyAndRender();
+            updateHeaderSortUI();
+        });
+    });
+    updateHeaderSortUI();
+}
+
+function setupSortableHeadersUM() {
+    const headerMap = [
+        { selector: '#users-table-um thead th[data-col="uid"]', key: 'id' },
+        { selector: '#users-table-um thead th[data-col="nickname"]', key: 'nickname' },
+        { selector: '#users-table-um thead th[data-col="email"]', key: 'email' },
+        { selector: '#users-table-um thead th[data-col="postCount"]', key: 'postCount' },
+        { selector: '#users-table-um thead th[data-col="likeCount"]', key: 'likeCount' },
+        { selector: '#users-table-um thead th[data-col="followerCount"]', key: 'followerCount' },
+        { selector: '#users-table-um thead th[data-col="commentCount"]', key: 'commentCount' },
+        { selector: '#users-table-um thead th[data-col="role"]', key: 'role' },
+        { selector: '#users-table-um thead th[data-col="createdAt"]', key: 'createdAt' },
+    ];
+    headerMap.forEach(({ selector, key }) => {
+        const th = document.querySelector(selector);
+        if (!th) return;
+        th.classList.add('sortable');
+        th.addEventListener('click', () => {
+            if (sortStateUM.key === key) {
+                sortStateUM.dir = sortStateUM.dir === 'asc' ? 'desc' : 'asc';
+            } else {
+                sortStateUM.key = key;
+                sortStateUM.dir = 'asc';
+            }
+            applyAndRenderUM();
+            updateHeaderSortUIUM();
+        });
+    });
+    updateHeaderSortUIUM();
+}
+
+function updateHeaderSortUI() {
+    document.querySelectorAll('#users-table thead th').forEach(th => {
+        const col = th.getAttribute('data-col');
+        const isActive = (col === (sortState.key === 'nickname' ? 'nickname' : sortState.key));
+        th.querySelector('.sort-icon')?.remove();
+        if (isActive) {
+            const icon = document.createElement('span');
+            icon.className = 'sort-icon';
+            icon.textContent = sortState.dir === 'asc' ? '▲' : '▼';
+            th.appendChild(icon);
+        }
+    });
+}
+
+function updateHeaderSortUIUM() {
+    document.querySelectorAll('#users-table-um thead th').forEach(th => {
+        const col = th.getAttribute('data-col');
+        const isActive = (col === (sortStateUM.key === 'nickname' ? 'nickname' : sortStateUM.key));
+        th.querySelector('.sort-icon')?.remove();
+        if (isActive) {
+            const icon = document.createElement('span');
+            icon.className = 'sort-icon';
+            icon.textContent = sortStateUM.dir === 'asc' ? '▲' : '▼';
+            th.appendChild(icon);
+        }
+    });
+}
+
+// 사용자 커뮤니티 지표 집계: posts, likes, comments, followers (간략 조회)
+const userMetricsCache = new Map();
+async function enrichUsersWithCommunityMetrics(users) {
+    try {
+        const dbCompat = window.firebase && window.firebase.firestore ? window.firebase.firestore() : null;
+        if (!dbCompat) {
+            users.forEach(u => { u.__metrics = u.__metrics || { postCount: 0, likeCount: 0, followerCount: 0, commentCount: 0 }; });
+            return;
+        }
+        const pageUsers = users.slice();
+        await Promise.all(pageUsers.map(async (u) => {
+            if (!u || !u.id) return;
+            if (userMetricsCache.has(u.id)) { u.__metrics = userMetricsCache.get(u.id); return; }
+            const uid = u.id;
+            const metrics = { postCount: 0, likeCount: 0, followerCount: 0, commentCount: 0 };
+            try {
+                const postsSnap = await dbCompat.collection('posts').where('authorId', '==', uid).get();
+                metrics.postCount = postsSnap.size;
+                let likeSum = 0;
+                postsSnap.forEach(d => { const c = d.data()?.counts?.likes || 0; likeSum += (typeof c === 'number' ? c : 0); });
+                metrics.likeCount = likeSum;
+            } catch (_) {}
+            try {
+                const commentsSnap = await dbCompat.collection('comments').where('authorId', '==', uid).get();
+                metrics.commentCount = commentsSnap.size;
+            } catch (_) {}
+            try {
+                const followersSnap = await dbCompat.collection('users').doc(uid).collection('followers').get();
+                metrics.followerCount = followersSnap.size;
+            } catch (_) {}
+            u.__metrics = metrics;
+            userMetricsCache.set(uid, metrics);
+        }));
+    } catch (e) {
+        users.forEach(u => { u.__metrics = u.__metrics || { postCount: 0, likeCount: 0, followerCount: 0, commentCount: 0 }; });
+    }
+}
+
+// 사용자 관리 탭 필터 이벤트
+document.getElementById('filter-search-um')?.addEventListener('click', () => { currentPageUM = 1; applyAndRenderUM(); });
+document.getElementById('filter-uid-input-um')?.addEventListener('keydown', (e) => { if (e.key === 'Enter') { currentPageUM = 1; applyAndRenderUM(); }});
+document.getElementById('filter-uid-input-um')?.addEventListener('input', () => { currentPageUM = 1; applyAndRenderUM(); });
+document.getElementById('filter-type-um')?.addEventListener('change', () => { currentPageUM = 1; applyAndRenderUM(); });
+document.getElementById('filter-reset-um')?.addEventListener('click', () => {
+    const term = document.getElementById('filter-uid-input-um');
+    const typeSel = document.getElementById('filter-type-um');
+    if (term) term.value = '';
+    if (typeSel) typeSel.value = 'uid';
+    currentPageUM = 1;
+    applyAndRenderUM();
+});
+
+function setupSidebarMenuScroll() {
+    document.querySelectorAll('.sidebar-menu-button[data-scroll]')?.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const target = btn.getAttribute('data-scroll');
+            const dashboard = document.querySelector('#dashboard-users');
+            const userMgmt = document.querySelector('#user-management');
+            if (target === '#dashboard-users') {
+                if (dashboard) dashboard.style.display = '';
+                if (userMgmt) userMgmt.style.display = 'none';
+                dashboard?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            } else if (target === '#user-management') {
+                if (dashboard) dashboard.style.display = 'none';
+                if (userMgmt) userMgmt.style.display = '';
+                userMgmt?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            } else {
+                const el = document.querySelector(target);
+                if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        });
+    });
+}
+
+// 사용자 편집 모달 로직
+function openUserEditModal(uid, displayName, role, usdt, onbit) {
+    if (!userEditModal) return;
+    editUidInput.value = uid;
+    editDisplayNameInput.value = displayName || '';
+    editRoleSelect.value = role || 'user';
+    if (typeof usdt === 'number') editUsdtInput.value = String(Math.max(0, Math.floor(usdt)));
+    if (typeof onbit === 'number') editOnbitInput.value = Number(onbit).toFixed(3);
+    userEditModal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+}
+
+closeUserEditModalBtn?.addEventListener('click', () => {
+    if (!userEditModal) return;
+    userEditModal.style.display = 'none';
+    document.body.style.overflow = '';
+});
+
+cancelEditBtn?.addEventListener('click', () => {
+    if (!userEditModal) return;
+    userEditModal.style.display = 'none';
+    document.body.style.overflow = '';
+});
+
+userEditForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    try {
+        const isAdminUser = await adminAuthManager.isAdminUser();
+        if (!isAdminUser) {
+            showToast('관리자 권한이 필요합니다.');
+            return;
+        }
+        const uid = editUidInput.value;
+        const newName = editDisplayNameInput.value.trim();
+        const newRole = editRoleSelect.value;
+        const newUsdt = Number(editUsdtInput.value);
+        const newOnbit = Number(editOnbitInput.value);
+        if (!uid || !newName || !newRole) {
+            showToast('필수 값을 입력해주세요.');
+            return;
+        }
+        if (!Number.isFinite(newUsdt) || newUsdt < 0) {
+            showToast('USDT 잔고는 0 이상 숫자여야 합니다.');
+            return;
+        }
+        if (!Number.isFinite(newOnbit) || newOnbit < 0) {
+            showToast('ONBIT은 0 이상 숫자여야 합니다.');
+            return;
+        }
+        await updateDoc(doc(db, 'users', uid), {
+            displayName: newName,
+            role: newRole,
+            paperTrading: {
+                balanceUSDT: Math.floor(newUsdt),
+                equityUSDT: Math.floor(newUsdt)
+            },
+            mining: {
+                onbit: Number(newOnbit.toFixed(3))
+            }
+        });
+        showToast('사용자 정보가 저장되었습니다.');
+        userEditModal.style.display = 'none';
+        document.body.style.overflow = '';
+        loadDashboardData();
+    } catch (error) {
+        console.error('사용자 편집 저장 오류:', error);
+        showToast('저장 중 오류가 발생했습니다.');
+    }
+});
+
+// 회원 탈퇴 (클라우드 함수 호출)
+deleteUserBtn?.addEventListener('click', async () => {
+    try {
+        const isAdminUser = await adminAuthManager.isAdminUser();
+        if (!isAdminUser) {
+            showToast('관리자 권한이 필요합니다.');
+            return;
+        }
+        const uid = editUidInput.value;
+        if (!uid) return;
+        if (!confirm('정말 이 회원을 탈퇴 처리하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) return;
+        const call = httpsCallable(fns, 'adminDeleteUser');
+        await call({ uid });
+        showToast('회원 탈퇴가 완료되었습니다.');
+        userEditModal.style.display = 'none';
+        document.body.style.overflow = '';
+        loadDashboardData();
+    } catch (e) {
+        console.error('회원 탈퇴 실패:', e);
+        showToast('회원 탈퇴 중 오류가 발생했습니다.');
+    }
+});
 
 // USDT 잔고 설정 프롬프트 + 저장
 async function openUsdtPrompt(uid) {
@@ -461,22 +1050,32 @@ document.getElementById('nickname-form')?.addEventListener('submit', async (e) =
     }
 });
 
-// 사용자 검색 기능
-userSearch?.addEventListener('input', (e) => {
-    const searchTerm = e.target.value.toLowerCase();
-    const filteredUsers = allUsers.filter(user => 
-        user.displayName?.toLowerCase().includes(searchTerm) ||
-        user.email?.toLowerCase().includes(searchTerm) ||
-        user.id.toLowerCase().includes(searchTerm)
-    );
-    renderUsersTable(filteredUsers);
-});
+// 사용자 검색 기능 제거됨 (개별 필터 입력 사용)
 
 // 새로고침 버튼
 refreshBtn?.addEventListener('click', () => {
     loadDashboardData();
     showToast('데이터가 새로고침되었습니다.');
 });
+
+// Filter bar actions
+document.getElementById('filter-reset')?.addEventListener('click', () => {
+    const uid = document.getElementById('filter-uid-input');
+    const typeSel = document.getElementById('filter-type');
+    if (uid) uid.value = '';
+    if (typeSel) typeSel.value = 'uid';
+    currentPage = 1;
+    applyAndRender();
+});
+
+function triggerFilter() {
+    currentPage = 1;
+    applyAndRender();
+}
+document.getElementById('filter-search')?.addEventListener('click', triggerFilter);
+document.getElementById('filter-uid-input')?.addEventListener('keydown', (e) => { if (e.key === 'Enter') triggerFilter(); });
+document.getElementById('filter-uid-input')?.addEventListener('input', () => { triggerFilter(); });
+document.getElementById('filter-type')?.addEventListener('change', () => { triggerFilter(); });
 
 // 권한 표시명 반환 함수
 function getRoleDisplayName(role) {
@@ -504,7 +1103,7 @@ async function openUserDetailModal(uid) {
     try {
         const userDoc = await getDoc(doc(db, 'users', uid));
         if (!userDoc.exists()) {
-            alert('사용자 정보를 찾을 수 없습니다.');
+            showToast('사용자 정보를 찾을 수 없습니다.');
             return;
         }
         
@@ -562,7 +1161,14 @@ async function openUserDetailModal(uid) {
         document.body.style.overflow = 'hidden';
     } catch (error) {
         console.error('사용자 상세 정보 로드 오류:', error);
-        alert('사용자 정보를 불러오는 중 오류가 발생했습니다.');
+        if (error && (error.code === 'permission-denied' || error.message?.includes('Missing or insufficient permissions.'))) {
+            if (!hasShownDetailPermissionToast) {
+                showToast('권한이 없어 사용자 상세를 볼 수 없습니다.');
+                hasShownDetailPermissionToast = true;
+            }
+        } else {
+            showToast('사용자 정보 로드에 문제가 발생했습니다. 잠시 후 다시 시도하세요.');
+        }
     }
 }
 

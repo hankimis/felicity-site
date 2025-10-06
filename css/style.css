@@ -23,7 +23,7 @@
 /* 5. Pages (특정 페이지만을 위한 스타일) */
 @import url('pages/_home.css');
 @import url('pages/_affiliated.css');
-@import url('pages/_community.css');
+
 
 /*
   참고: @import는 CSS 파일의 최상단에 위치해야 합니다.

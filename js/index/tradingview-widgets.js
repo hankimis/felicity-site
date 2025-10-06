@@ -37,16 +37,35 @@ window.TradingViewManager = {
       script: 'embed-widget-symbol-overview.js',
       config: {
         symbols: [["BINANCE:BTCUSD|1M"]],
-        chartOnly: false,
+        chartOnly: true,
         width: "100%",
         height: "100%",
         locale: "kr",
         colorTheme: document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light',
         autosize: true,
+        isTransparent: true,
         showVolume: true,
         lineColor: "rgba(41, 98, 255, 1)",
         "topColor": "rgba(41, 98, 255, 0.2)",
         "bottomColor": "rgba(41, 98, 255, 0)"
+      }
+    },
+    'eth-chart': {
+      container: 'tradingview-eth-chart',
+      script: 'embed-widget-symbol-overview.js',
+      config: {
+        symbols: [["BINANCE:ETHUSD|1M"]],
+        chartOnly: true,
+        width: "100%",
+        height: "100%",
+        locale: "kr",
+        colorTheme: document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light',
+        autosize: true,
+        isTransparent: true,
+        showVolume: true,
+        lineColor: "rgba(16, 185, 129, 1)",
+        "topColor": "rgba(16, 185, 129, 0.2)",
+        "bottomColor": "rgba(16, 185, 129, 0)"
       }
     },
     // technical-analysis 위젯은 롱/숏 게이지로 대체되었습니다
@@ -59,10 +78,10 @@ window.TradingViewManager = {
     // 1. Ticker tape는 즉시 로드
     await this.createWidget('ticker-tape', this.widgetConfigs['ticker-tape']);
     
-    // 2. 메인 대시보드 위젯들 로드
+    // 2. 메인 대시보드 위젯들 로드 (BTC + ETH 그리드)
     await this.createWidget('btc-chart', this.widgetConfigs['btc-chart']);
+    await this.createWidget('eth-chart', this.widgetConfigs['eth-chart']);
     await new Promise(resolve => setTimeout(resolve, 200));
-    // 기술적 분석 위젯은 더 이상 사용하지 않습니다
     
     this.isInitialized = true;
   },
@@ -74,12 +93,18 @@ window.TradingViewManager = {
       if (!container) return;
       
       container.innerHTML = '';
-      // 차트 영역이 탭 높이에 의해 잘리지 않도록 부모 높이를 계산해 적용
       try {
         const card = container.closest('.bitcoin-chart-card');
         if (card) {
-          // flex 레이아웃으로 높이를 자동 분배하므로 명시 높이는 제거
           container.style.height = 'auto';
+          // 모바일에서 차트 컨테이너가 폭을 밀어내는 현상 방지
+          card.style.maxWidth = '100%';
+          card.style.overflow = 'hidden';
+          const grid = card.querySelector('.tv-grid');
+          if (grid) {
+            grid.style.display = 'grid';
+            grid.style.gridTemplateColumns = window.matchMedia('(max-width: 768px)').matches ? '1fr' : '1fr 1fr';
+          }
         }
       } catch(_) {}
       
@@ -105,20 +130,20 @@ window.TradingViewManager = {
     }
   },
 
-  // 심볼 변경 API
+  // 심볼 변경 API (왼쪽 BTC/오른쪽 ETH만 지원)
   setChartSymbol(tvSymbol) {
-    const cfg = this.widgetConfigs['btc-chart'];
+    const isBTC = /BTC/.test(tvSymbol);
+    const key = isBTC ? 'btc-chart' : 'eth-chart';
+    const cfg = this.widgetConfigs[key];
     if (!cfg) return;
-    // 심볼 변경 후 위젯 재생성
     const newCfg = JSON.parse(JSON.stringify(cfg));
     newCfg.config.symbols = [[`${tvSymbol}|1M`]];
-    this.createWidget('btc-chart', newCfg);
+    this.createWidget(key, newCfg);
   },
 
   // 테마 변경 시 위젯 업데이트
   updateWidgetTheme() {
     const currentTheme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
-    
     Object.keys(this.widgets).forEach(key => {
       const config = this.widgetConfigs[key];
       if (config) {

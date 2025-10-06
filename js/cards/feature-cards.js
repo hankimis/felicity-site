@@ -4,8 +4,9 @@
 class FeatureCardsManager {
   constructor() {
     this.breakingPage = 1;
-    this.breakingPageSize = 3;
+    this.breakingPageSize = 10; // show enough items for grid + list
     this.sortedBreakingNews = [];
+    this.currentKeywordExpr = 'all';
     this.init();
   }
   
@@ -171,42 +172,93 @@ class FeatureCardsManager {
     this.renderBreakingNewsPage();
   }
 
+  getFilteredNews() {
+    if (this.currentKeywordExpr === 'all') return this.sortedBreakingNews.slice();
+    try {
+      const re = new RegExp(this.currentKeywordExpr, 'i');
+      return this.sortedBreakingNews.filter(n=> re.test(`${n.title||''} ${n.contentSnippet||''}`));
+    } catch(_) {
+      return this.sortedBreakingNews.slice();
+    }
+  }
+
   // 페이지 단위 렌더링 (4개씩)
   renderBreakingNewsPage() {
     const breakingContainer = document.getElementById('breaking-news-list');
     if (!breakingContainer) return;
     const parent = breakingContainer.parentElement;
     const total = this.sortedBreakingNews.length;
-    const totalPages = Math.max(1, Math.ceil(total / this.breakingPageSize));
+    let totalPages = Math.max(1, Math.ceil(total / this.breakingPageSize));
     if (this.breakingPage > totalPages) this.breakingPage = totalPages;
     if (this.breakingPage < 1) this.breakingPage = 1;
     const start = (this.breakingPage - 1) * this.breakingPageSize;
-    const slice = this.sortedBreakingNews.slice(start, start + this.breakingPageSize);
+    const working = this.getFilteredNews();
+    const slice = working.slice(start, start + this.breakingPageSize);
+
+    const hasImage = (item)=> !!(item && item.image && item.image !== '/img/default-news.jpg' && /^(https?:)?\//.test(item.image));
 
     if (slice.length === 0) {
       breakingContainer.innerHTML = `
-        <div style="display: flex; align-items: center; justify-content: center; height: 200px; color: #6b7280;">
-          <div style="text-align: center; padding: 20px;">
-            <i class=\"fas fa-newspaper\" style=\"font-size: 2rem; margin-bottom: 1rem; color: #ef4444;\"></i>
-            <div style=\"margin-bottom: 0.5rem;\">표시할 속보가 없습니다</div>
-          </div>
+        <div class="bn-layout">
+          <div class="bn-grid"><div style="padding:20px;color:var(--text-color-secondary)">표시할 속보가 없습니다.</div></div>
+          <div class="bn-list"></div>
         </div>`;
     } else {
-      const newsHTML = slice.map(item => {
+      // 좌측: 이미지 있는 뉴스 4개 고정 (현재 페이지에 부족하면 이후 아이템에서 보충)
+      const leftItems = [];
+      // 1) 현재 페이지에서 채움
+      for (const it of slice) {
+        if (leftItems.length >= 4) break;
+        if (hasImage(it)) leftItems.push(it);
+      }
+      // 2) 부족하면 이후 전체 리스트에서 보충
+      if (leftItems.length < 4) {
+        for (let i = start + this.breakingPageSize; i < this.sortedBreakingNews.length && leftItems.length < 4; i++) {
+          const it = this.sortedBreakingNews[i];
+          if (hasImage(it)) leftItems.push(it);
+        }
+      }
+      // 3) 그래도 부족하면 앞쪽에서 보충 (예외 케이스)
+      if (leftItems.length < 4) {
+        for (let i = 0; i < start && leftItems.length < 4; i++) {
+          const it = this.sortedBreakingNews[i];
+          if (hasImage(it)) leftItems.push(it);
+        }
+      }
+
+      // 우측: 나머지 텍스트 뉴스 (이미지/비이미지 모두 허용)
+      const used = new Set(leftItems.map(it => it.link));
+      let rightItems = [];
+      // 1) 현재 페이지 슬라이스에서 우선 채우기
+      for (const it of slice) {
+        if (rightItems.length >= 8) break;
+        if (!used.has(it.link)) rightItems.push(it);
+      }
+      // 2) 부족하면 이후 뉴스로 보충
+      if (rightItems.length < 8) {
+        for (let i = start + this.breakingPageSize; i < working.length && rightItems.length < 8; i++) {
+          const it = working[i];
+          if (!it) continue;
+          if (!used.has(it.link)) rightItems.push(it);
+        }
+      }
+      rightItems = rightItems.slice(0, 8);
+
+      const leftHTML = leftItems.map(item => {
         const relativeTime = window.getRelativeTime ? window.getRelativeTime(item.pubDate) : '방금 전';
         const sourceName = window.getSourceDisplayName ? window.getSourceDisplayName(item.source) : item.source;
-        const starRating = window.createStarRating ? window.createStarRating(item) : '';
+        const img = hasImage(item) ? item.image : '';
+        const thumb = img ? `style=\"background-image:url('${img}')\"` : '';
         return `
-          <div class=\"breaking-news-item\" onclick=\"window.open('${item.link}', '_blank')\">
-            <div class=\"breaking-news-meta\">
-              <span class=\"breaking-news-source\">${sourceName}</span>
-              <span class=\"breaking-news-time\">${relativeTime} ${starRating}</span>
-            </div>
-            <h4 class=\"breaking-news-title\">${item.title}</h4>
-            <p class=\"breaking-news-desc\">${item.contentSnippet || item.title}</p>
-          </div>`;
+          <div class=\"bn-card\" onclick=\"window.open('${item.link}','_blank','noopener,noreferrer')\">\n            <div class=\"thumb\" ${thumb}></div>\n            <div class=\"body\">\n              <div class=\"title\">${item.title}</div>\n              <div class=\"meta\"><span>${sourceName}</span></div>\n            </div>\n          </div>`;
       }).join('');
-      breakingContainer.innerHTML = newsHTML;
+
+      const rightHTML = rightItems.map(item => {
+        const relativeTime = window.getRelativeTime ? window.getRelativeTime(item.pubDate) : '방금 전';
+        return `<div class=\"bn-row\" onclick=\"window.open('${item.link}','_blank','noopener,noreferrer')\"><div class=\"txt\">${item.title}</div></div>`;
+      }).join('');
+
+      breakingContainer.innerHTML = `<div class=\"bn-layout\"><div class=\"bn-grid\">${leftHTML}</div><div class=\"bn-list\">${rightHTML}</div></div>`;
     }
 
     // 페이지네이션 렌더링
@@ -217,10 +269,11 @@ class FeatureCardsManager {
       paginator.className = 'breaking-pagination';
       parent.appendChild(paginator);
     }
+    totalPages = Math.max(1, Math.ceil(this.getFilteredNews().length / this.breakingPageSize));
     paginator.innerHTML = `
-      <button class=\"bp-btn prev\" aria-label=\"이전\"><i class=\"fas fa-chevron-left\"></i></button>
-      <span class=\"bp-text\">속보 더보기 ${this.breakingPage}/${totalPages}</span>
-      <button class=\"bp-btn next\" aria-label=\"다음\"><i class=\"fas fa-chevron-right\"></i></button>
+      <button class="bp-btn prev" aria-label="이전"><i class="fas fa-chevron-left"></i></button>
+      <span class="bp-text">속보 더보기 ${this.breakingPage}/${totalPages}</span>
+      <button class="bp-btn next" aria-label="다음"><i class="fas fa-chevron-right"></i></button>
     `;
 
     // 이벤트 바인딩
@@ -228,6 +281,22 @@ class FeatureCardsManager {
     const nextBtn = paginator.querySelector('.bp-btn.next');
     prevBtn.onclick = () => { this.breakingPage = this.breakingPage <= 1 ? totalPages : this.breakingPage - 1; this.renderBreakingNewsPage(); };
     nextBtn.onclick = () => { this.breakingPage = this.breakingPage >= totalPages ? 1 : this.breakingPage + 1; this.renderBreakingNewsPage(); };
+  }
+
+  bindNewsTabs(){
+    try {
+      const tabs = document.querySelectorAll('#news-tabs .ntab');
+      tabs.forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+          tabs.forEach(b=> b.classList.remove('active'));
+          btn.classList.add('active');
+          const kw = btn.getAttribute('data-kw') || 'all';
+          this.currentKeywordExpr = kw === 'all' ? 'all' : kw;
+          this.breakingPage = 1;
+          this.renderBreakingNewsPage();
+        });
+      });
+    } catch(_) {}
   }
 
   // 속보 뉴스 대체 메시지
@@ -264,6 +333,7 @@ window.updateBreakingNewsCard = function() {
 // DOM 로드 후 초기화
 document.addEventListener('DOMContentLoaded', () => {
   window.featureCardsManager = new FeatureCardsManager();
+  window.featureCardsManager.bindNewsTabs();
   
   // 전역 뉴스 데이터 변경 이벤트 리스너
   window.addEventListener('newsDataUpdated', () => {

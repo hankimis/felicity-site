@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>비밀번호 찾기 - Onbit</title>
+    <meta name="description" content="가입한 이메일로 비밀번호 재설정 메일을 받습니다.">
+    <link rel="preconnect" href="https://www.gstatic.com">
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+    <link rel="preconnect" href="https://cdn.jsdelivr.net">
+    <link rel="stylesheet" href="login.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="../components/header/navbar.css">
+    <script src="../components/header/header-loader.js"></script>
+    <script src="../js/footer-loader.js"></script>
+</head>
+<body>
+    <div id="header-placeholder"></div>
+
+    <div class="login-container">
+        <div class="login-card">
+            <div class="login-header">
+                <h1 class="login-title">비밀번호 찾기</h1>
+            </div>
+
+            <form class="login-form" id="reset-form">
+                <div class="error-message" id="msg-error" role="alert"></div>
+                <div class="success-message" id="msg-success"></div>
+
+                <div class="form-group">
+                    <input 
+                        type="email" 
+                        id="reset-email" 
+                        name="email" 
+                        class="form-input" 
+                        placeholder="이메일"
+                        required
+                        autocomplete="email"
+                        aria-label="이메일"
+                    >
+                </div>
+
+                <button type="submit" class="login-button" id="btn-send">
+                    <span id="btn-text">인증메일 보내기</span>
+                    <div class="loading-spinner" id="btn-spinner"></div>
+                </button>
+
+                <div class="login-footer" style="margin-top:16px">
+                    <div class="footer-links">
+                        <a href="/login/" class="footer-link">로그인으로 돌아가기</a>
+                        <span class="separator">|</span>
+                        <a href="/signup/" class="footer-link">회원가입</a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="footer-placeholder"></div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+    <script src="../js/firebase-config.js" defer></script>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('reset-form');
+        const emailInput = document.getElementById('reset-email');
+        const btn = document.getElementById('btn-send');
+        const btnText = document.getElementById('btn-text');
+        const spinner = document.getElementById('btn-spinner');
+        const msgError = document.getElementById('msg-error');
+        const msgSuccess = document.getElementById('msg-success');
+
+        function setLoading(loading){
+            if(loading){
+                btn.disabled = true;
+                btnText.style.display = 'none';
+                spinner.style.display = 'block';
+            } else {
+                btn.disabled = false;
+                btnText.style.display = 'block';
+                spinner.style.display = 'none';
+            }
+        }
+
+        function showMessage(type, text){
+            msgError.style.display = 'none';
+            msgSuccess.style.display = 'none';
+            if(type==='error'){
+                msgError.textContent = text;
+                msgError.style.display = 'block';
+            } else if (type==='success'){
+                msgSuccess.textContent = text;
+                msgSuccess.style.display = 'block';
+            }
+        }
+
+        function waitForFirebase(){
+            return new Promise((resolve)=>{
+                let tries=0; const max=100;
+                (function check(){
+                    tries++;
+                    if(window.firebase && window.firebase.apps && window.firebase.apps.length){
+                        if(!window.auth) window.auth = window.firebase.auth();
+                        if(!window.db) window.db = window.firebase.firestore();
+                        resolve();
+                    } else if(tries<max){
+                        setTimeout(check,100);
+                    } else {
+                        resolve();
+                    }
+                })();
+            });
+        }
+
+        async function sendReset(email){
+            try{
+                setLoading(true);
+                showMessage('', '');
+                if(!window.auth){
+                    throw new Error('Firebase 초기화 실패');
+                }
+
+                // 우선 전송 시도 (일부 환경에서 methods 응답이 지연/비어있는 문제 대응)
+                const actionCodeSettings = {
+                    url: `${location.origin}/login/?reset=1`,
+                    handleCodeInApp: false
+                };
+                await window.auth.sendPasswordResetEmail(email, actionCodeSettings);
+                showMessage('success','재설정 메일을 전송했습니다. 메일함을 확인해 주세요.');
+            } catch(err){
+                let m = '요청을 처리할 수 없습니다.';
+                if(err && err.code){
+                    switch(err.code){
+                        case 'auth/invalid-email': m='올바르지 않은 이메일 형식입니다.'; break;
+                        case 'auth/user-not-found': m='가입된 계정을 찾을 수 없습니다.'; break;
+                        case 'auth/too-many-requests': m='요청이 많습니다. 잠시 후 다시 시도해 주세요.'; break;
+                        default: m='오류가 발생했습니다. 잠시 후 다시 시도해 주세요.';
+                    }
+                }
+                // 소셜 전용 계정 안내 보강
+                if (err && err.code === 'auth/user-not-found') {
+                    try {
+                        const methods = await window.auth.fetchSignInMethodsForEmail(email);
+                        if (Array.isArray(methods) && methods.length && !methods.includes('password')) {
+                            const map = { 'google.com':'구글', 'facebook.com':'페이스북', 'github.com':'깃허브', 'apple.com':'애플' };
+                            const providerNames = methods.map(m => map[m] || '소셜').filter(Boolean).join(', ');
+                            m = `해당 이메일은 소셜 로그인 계정입니다${providerNames ? ` (${providerNames})` : ''}. 해당 소셜 버튼으로 로그인해 주세요.`;
+                        }
+                    } catch(_) {}
+                }
+                showMessage('error', m);
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        form.addEventListener('submit', async function(e){
+            e.preventDefault();
+            const email = emailInput.value.trim();
+            if(!email){
+                showMessage('error','이메일을 입력해 주세요.');
+                return;
+            }
+            await waitForFirebase();
+            await sendReset(email);
+        });
+    });
+    </script>
+</body>
+</html>
+
+

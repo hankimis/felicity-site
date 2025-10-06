@@ -130,8 +130,6 @@ tr:hover {
 
 /* 🔥 Form Elements */
 input, textarea, select {
-    font-family: inherit;
-    font-size: var(--font-size-sm);
     border: 1px solid var(--border-color);
     border-radius: var(--radius-md);
     background-color: var(--card-bg);

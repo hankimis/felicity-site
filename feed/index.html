@@ -14,12 +14,29 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
   <script src="../auth.js" defer></script>
   <script src="feed.js" defer></script>
+  <script src="sidebar.js" defer></script>
   <script src="../components/header/header-loader.js" defer></script>
 </head>
 <body>
   <div id="header-placeholder"></div>
-  <main class="feed-container">
-    <section class="feed-main">
+  <div id="feed-sidebar"></div>
+  <main class="main-container">
+
+    <div class="feed-container">
+    <section class="feed-section">
+
+      <div class="search-topbar">
+        <div class="filter-dropdown">
+          <button id="filter-toggle" class="filter-btn"><span id="filter-label">추천</span><i data-lucide="chevron-down" style="margin-left:6px;"></i></button>
+          <div id="filter-menu" class="filter-menu" style="display:none;">
+            <div class="filter-menu-header">피드</div>
+            <button class="filter-item" data-filter="recommended"><span>추천</span><span class="check" data-check="recommended" style="display:none;">✔</span></button>
+            <button class="filter-item" data-filter="following"><span>팔로잉</span><span class="check" data-check="following" style="display:none;">✔</span></button>
+          </div>
+        </div>
+      </div>
+
+      <div class="feed-main">
       <div class="composer" id="composer" style="display:none">
         <textarea id="composer-text" maxlength="280" placeholder="무슨 일이 일어나고 있나요?"></textarea>
         <div class="composer-actions">
@@ -30,6 +47,7 @@
       
       <div id="feed-list" class="feed-list"></div>
       <button id="load-more" class="load-more">더 보기</button>
+      </div>
     </section>
     <aside class="feed-right">
       <div class="write-widget">
@@ -45,6 +63,7 @@
         <ul id="top-authors"></ul>
       </div>
     </aside>
+  </div>
   </main>
 </body>
 </html>

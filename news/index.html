@@ -31,8 +31,10 @@
     <!-- Common Scripts -->
     <script src="/js/auth.js"></script>
     <script src="/components/header/header-loader.js" defer></script>
+    <link rel="stylesheet" href="/components/bottom-nav/bottom-nav.css" />
+    <script src="/components/bottom-nav/bottom-nav.js" defer></script>
 </head>
-<body>
+<body class="news-page">
     <div id="header-placeholder"></div>
 
     <!-- Main Content -->
@@ -43,123 +45,98 @@
         <div class="tab-navigation">
             <button class="tab-btn" data-tab="breaking">속보</button>
             <button class="tab-btn active" data-tab="news">뉴스</button>
-            <button class="tab-btn" data-tab="calendar">일정</button>
         </div>
 
         <!-- Breaking News Tab Content -->
         <div class="tab-content" id="breakingTab" style="display: none;">
-            <div class="news-list" id="breakingGrid">
-                <div class="loading">속보를 불러오는 중...</div>
+            <div class="news-layout">
+                <!-- 좌측 키워드 사이드바 (속보 탭) -->
+                <aside class="news-sidebar">
+                    <div class="sidebar-date"></div>
+                    <ul class="keyword-list">
+                        <li><button class="keyword-btn active" data-keyword="all">전체</button></li>
+                        <li><button class="keyword-btn" data-keyword="bitcoin|BTC|비트코인">비트코인</button></li>
+                        <li><button class="keyword-btn" data-keyword="ethereum|ETH|이더리움">이더리움</button></li>
+                        <li><button class="keyword-btn" data-keyword="solana|SOL|솔라나">솔라나</button></li>
+                        <li><button class="keyword-btn" data-keyword="ripple|XRP|리플">리플</button></li>
+                        <li><button class="keyword-btn" data-keyword="binance|BNB|바이낸스">바이낸스BNB</button></li>
+                        <li><button class="keyword-btn" data-keyword="dogecoin|DOGE|도지">도지코인</button></li>
+                        <li><button class="keyword-btn" data-keyword="chainlink|LINK|체인링크">체인링크</button></li>
+                        <li class="divider"></li>
+                        <li class="section-label">섹터</li>
+                        <li><button class="keyword-btn" data-keyword="ETF|상장|상장폐지|승인">ETF/상장</button></li>
+                        <li><button class="keyword-btn" data-keyword="layer\s*2|L2|레이어2|rollup|롤업">레이어2</button></li>
+                        <li><button class="keyword-btn" data-keyword="DeFi|디파이|staking|스테이킹">디파이</button></li>
+                        <li><button class="keyword-btn" data-keyword="NFT|엔에프티|collection|민팅">NFT</button></li>
+                        <li><button class="keyword-btn" data-keyword="airdrop|에어드랍|에어드롭">에어드랍</button></li>
+                        <li><button class="keyword-btn" data-keyword="hack|해킹|피싱|보안">보안/해킹</button></li>
+                    </ul>
+                </aside>
+
+                <!-- 속보 리스트 -->
+                <div class="news-list" id="breakingGrid">
+                    <div class="loading">속보를 불러오는 중...</div>
+                </div>
+
+                <!-- 오른쪽 인기 뉴스 사이드바 (속보 탭) -->
+                <aside class="news-rightbar">
+                    <div class="rightbar-title">온비트에서 많이 본 뉴스</div>
+                    <ol class="popular-list">
+                        <!-- JS 렌더링 -->
+                    </ol>
+                </aside>
             </div>
         </div>
 
         <!-- News Tab Content -->
         <div class="tab-content" id="newsTab">
-            <div class="news-list" id="newsGrid">
-                <div class="loading">뉴스를 불러오는 중...</div>
+            <div class="news-layout">
+                <!-- 좌측 키워드 사이드바 -->
+                <aside class="news-sidebar" id="newsSidebar">
+                    <div class="sidebar-date" id="sidebarDate"></div>
+                    <ul class="keyword-list" id="keywordList">
+                        <!-- 주요 코인 및 섹터 키워드 (필터 버튼) -->
+                        <li><button class="keyword-btn active" data-keyword="all">전체</button></li>
+                        <li><button class="keyword-btn" data-keyword="bitcoin|BTC|비트코인">비트코인</button></li>
+                        <li><button class="keyword-btn" data-keyword="ethereum|ETH|이더리움">이더리움</button></li>
+                        <li><button class="keyword-btn" data-keyword="solana|SOL|솔라나">솔라나</button></li>
+                        <li><button class="keyword-btn" data-keyword="ripple|XRP|리플">리플</button></li>
+                        <li><button class="keyword-btn" data-keyword="binance|BNB|바이낸스">바이낸스BNB</button></li>
+                        <li><button class="keyword-btn" data-keyword="dogecoin|DOGE|도지">도지코인</button></li>
+                        <li><button class="keyword-btn" data-keyword="cardano|ADA|에이다">카르다노</button></li>
+                        <li><button class="keyword-btn" data-keyword="polkadot|DOT|폴카닷">폴카닷</button></li>
+                        <li><button class="keyword-btn" data-keyword="chainlink|LINK|체인링크">체인링크</button></li>
+                        <li class="divider"></li>
+                        <li class="section-label">섹터</li>
+                        <li><button class="keyword-btn" data-keyword="ETF|상장|상장폐지|승인">ETF/상장</button></li>
+                        <li><button class="keyword-btn" data-keyword="layer\s*2|L2|레이어2|rollup|롤업">레이어2</button></li>
+                        <li><button class="keyword-btn" data-keyword="DeFi|디파이|staking|스테이킹">디파이</button></li>
+                        <li><button class="keyword-btn" data-keyword="NFT|엔에프티|collection|민팅">NFT</button></li>
+                        <li><button class="keyword-btn" data-keyword="airdrop|에어드랍|에어드롭">에어드랍</button></li>
+                        <li><button class="keyword-btn" data-keyword="hack|해킹|피싱|보안">보안/해킹</button></li>
+                    </ul>
+                </aside>
+
+                <!-- 뉴스 리스트 -->
+                <div class="news-list" id="newsGrid">
+                    <div class="loading">뉴스를 불러오는 중...</div>
+                </div>
+
+                <!-- 오른쪽 인기 뉴스 사이드바 -->
+                <aside class="news-rightbar">
+                    <div class="rightbar-title">온비트에서 많이 본 뉴스</div>
+                    <ol class="popular-list">
+                        <!-- JS 렌더링 -->
+                    </ol>
+                </aside>
             </div>
         </div>
 
-        <!-- Economic Calendar Tab Content -->
-        <div class="tab-content" id="calendarTab" style="display: none;">
-            <div class="calendar-filters">
-                <button class="filter-btn active" data-category="all">전체</button>
-                <button class="filter-btn" data-category="major-issue">주요이슈</button>
-                <button class="filter-btn" data-category="exchange">거래소</button>
-            </div>
 
-            <!-- 관리자 전용 버튼 -->
-            <div class="admin-controls" id="calendar-admin-controls" style="display: none;">
-                <button class="admin-btn add-event-btn" id="add-calendar-event">
-                    <i class="fas fa-plus"></i> 일정 추가
-                </button>
-            </div>
-
-
-
-            <div class="calendar-list" id="calendarList">
-                <!-- 경제 일정 아이템들이 여기에 표시됩니다 -->
-            </div>
-        </div>
 
 
     </main>
 
-    <!-- 경제 일정 등록/수정 모달 -->
-    <div id="calendar-modal" class="calendar-modal">
-        <div class="calendar-modal-content">
-            <span class="calendar-modal-close" id="close-calendar-modal">&times;</span>
-            <div style="padding: 20px;">
-                <h2 id="calendar-modal-title" style="margin: 0 0 20px 0; font-size: 18px;">
-                    <i class="fas fa-calendar-plus"></i> 경제 일정 등록
-                </h2>
-                
-                <form id="calendar-event-form">
-                    <div class="form-group">
-                        <label for="event-title">일정 제목 *</label>
-                        <input type="text" id="event-title" name="title" required placeholder="예: 미국 금리 결정">
-                    </div>
-                    
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="event-date">날짜 *</label>
-                            <input type="date" id="event-date" name="date" required>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="event-time">시간</label>
-                            <input type="time" id="event-time" name="time" placeholder="예: 14:00">
-                        </div>
-                    </div>
-                    
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="event-category">카테고리 *</label>
-                            <select id="event-category" name="category" required>
-                                <option value="">카테고리 선택</option>
-                                <option value="major-issue">주요이슈</option>
-                                <option value="exchange">거래소</option>
-                            </select>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="event-importance">중요도 *</label>
-                            <select id="event-importance" name="importance" required>
-                                <option value="">중요도 선택</option>
-                                <option value="1">1 (낮음)</option>
-                                <option value="2">2</option>
-                                <option value="3">3 (보통)</option>
-                                <option value="4">4</option>
-                                <option value="5">5 (높음)</option>
-                            </select>
-                        </div>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="event-impact">영향도 *</label>
-                        <select id="event-impact" name="impact" required>
-                            <option value="">영향도 선택</option>
-                            <option value="low">낮음</option>
-                            <option value="medium">보통</option>
-                            <option value="high">높음</option>
-                        </select>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="event-description">설명</label>
-                        <textarea id="event-description" name="description" rows="3" placeholder="일정에 대한 추가 설명을 입력하세요"></textarea>
-                    </div>
-                    
-                    <div class="modal-actions">
-                        <button type="button" class="btn btn-secondary" id="cancel-calendar-event">취소</button>
-                        <button type="submit" class="btn btn-primary" id="save-calendar-event">
-                            <i class="fas fa-save"></i> 저장
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
 
     <!-- Footer -->
     <div id="footer-placeholder"></div>

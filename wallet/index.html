@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Wallet - ONBIT</title>
+
+    <!-- Base CSS -->
+    <link rel="stylesheet" href="../css/base/_variables.css" />
+    <link rel="stylesheet" href="../css/base/_reset.css" />
+    <link rel="stylesheet" href="../css/base/_base.css" />
+
+    <!-- Header -->
+    <link rel="stylesheet" href="../components/header/navbar.css" />
+
+    <!-- Page CSS -->
+    <link rel="stylesheet" href="./wallet.css" />
+    <!-- Bottom Nav CSS -->
+    <link rel="stylesheet" href="/components/bottom-nav/bottom-nav.css" />
+
+    <!-- Odometer CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/odometer.js/0.4.8/themes/odometer-theme-default.min.css" />
+
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
+    <!-- Odometer JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/odometer.js/0.4.8/odometer.min.js"></script>
+</head>
+<body>
+    <div id="header-placeholder"></div>
+
+    <main class="wallet-main">
+        <section class="lb-subtabs" style="margin-bottom:8px;">
+            <button class="subtab active" aria-current="page">Asset Overview</button>
+        </section>
+        <section class="wallet-container">
+            <div class="wallet-grid">
+                <div class="wallet-left">
+                    <div class="total-balance-card">
+                    <div class="tb-head">
+                        <div class="tb-title">총 잔액 <span id="tb-eye" class="tb-eye" aria-label="toggle visibility">👁️</span></div>
+                    </div>
+                    <div class="tb-body">
+                        <div class="tb-amount-row">
+                            <span id="tb-amount" class="tb-amount odometer odometer-theme-default" data-format="(,ddd).dddd">0.0000</span>
+                            <button id="tb-currency" class="tb-currency-btn" aria-haspopup="listbox" aria-expanded="false">USDT <span class="tb-caret">▾</span></button>
+                            <div id="tb-currency-menu" class="tb-currency-menu" role="listbox" hidden>
+                                <button role="option" data-cur="USD">USD</button>
+                                <button role="option" data-cur="BTC">BTC</button>
+                                <button role="option" data-cur="USDT" class="active">USDT</button>
+                                <button role="option" data-cur="KRW">KRW</button>
+                            </div>
+                        </div>
+                        <div class="tb-today-row">
+                            <span class="tb-today-label">오늘의 손익</span>
+                            <span class="tb-pnl" id="tb-pnl">--</span>
+                        </div>
+                    </div>
+                    </div>
+                    <div class="pair-card">
+                        <div class="pair-head">
+                            <div class="pair-title">Pair</div>
+                            <div class="pair-search">
+                                <input type="text" id="pair-search" placeholder="Search" />
+                            </div>
+                        </div>
+                        <div class="pair-table">
+                            <div class="pair-table-head">
+                                <div>Assets</div>
+                                <div>Amount</div>
+                                <div>Price</div>
+                                <div>Action</div>
+                            </div>
+                            <div class="pair-table-body" id="pair-table-body"></div>
+                            <div class="pair-table-foot" id="pair-table-foot"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <aside class="account-summary">
+                    <div class="as-title">Account</div>
+                    <div class="as-bar">
+                        <div class="as-bar-fill" id="as-bar-fill" style="width: 0%;"></div>
+                    </div>
+                    <ul class="as-list" id="as-list">
+                        <!-- rows rendered by JS -->
+                    </ul>
+                </aside>
+            </div>
+        </section>
+    </main>
+
+    <script src="../components/header/header-loader.js" defer></script>
+    <script src="../js/auth.js"></script>
+    <script type="module" src="/js/onbit-miner.js"></script>
+    <script src="./wallet.js" type="module"></script>
+    <!-- Bottom Nav JS -->
+    <script src="/components/bottom-nav/bottom-nav.js" defer></script>
+</body>
+</html>
+
+

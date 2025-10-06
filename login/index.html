@@ -80,7 +80,7 @@
 
             <div class="login-footer">
                 <div class="footer-links">
-                    <a href="#" class="footer-link">비밀번호 찾기</a>
+                    <a href="/login/forgot.html" class="footer-link">비밀번호 찾기</a>
                     <span class="separator">|</span>
                     <a href="../signup/" class="footer-link">회원가입</a>
                 </div>
@@ -275,6 +275,20 @@
                 await handleLogin(email, password);
             });
 
+            // 비밀번호 재설정 후 유입 시 안내 메시지 표시
+            (function showResetSuccessIfAny(){
+                try {
+                    const params = new URLSearchParams(location.search);
+                    if (params.get('reset') === '1') {
+                        showMessage('success', '비밀번호가 재설정되었습니다. 새 비밀번호로 로그인해 주세요.');
+                        // 한 번만 보이도록 쿼리 제거
+                        const url = new URL(location.href);
+                        url.searchParams.delete('reset');
+                        window.history.replaceState({}, '', url.toString());
+                    }
+                } catch(_) {}
+            })();
+
             // ===== 소셜 로그인 공통 처리 =====
             function signInWithCustomTokenFromPopup(url) {
                 return new Promise((resolve, reject) => {
@@ -296,9 +310,26 @@
                 });
             }
 
+            // 로컬/프로덕션 환경별 OAuth 엔드포인트 선택
+            function getOAuthEndpoint(name) {
+                try {
+                    const isLocal = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+                    if (isLocal) {
+                        const map = {
+                            naver: 'https://asia-northeast3-livechattest-35101.cloudfunctions.net/naverAuth',
+                            kakao: 'https://asia-northeast3-livechattest-35101.cloudfunctions.net/kakaoAuth'
+                        };
+                        return map[name] || '';
+                    }
+                    return `/__/functions/v2/${name}Auth`;
+                } catch (_) {
+                    return `/__/functions/v2/${name}Auth`;
+                }
+            }
+
             async function handleNaverLogin() {
                 try {
-                    await signInWithCustomTokenFromPopup('/__/functions/v2/naverAuth');
+                    await signInWithCustomTokenFromPopup(getOAuthEndpoint('naver'));
                     window.location.href = '../';
                 } catch (err) {
                     console.error('네이버 로그인 실패', err);
@@ -308,7 +339,7 @@
 
             async function handleKakaoLogin() {
                 try {
-                    await signInWithCustomTokenFromPopup('/__/functions/v2/kakaoAuth');
+                    await signInWithCustomTokenFromPopup(getOAuthEndpoint('kakao'));
                     window.location.href = '../';
                 } catch (err) {
                     console.error('카카오 로그인 실패', err);

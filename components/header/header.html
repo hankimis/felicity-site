@@ -3,6 +3,9 @@
 
 <!-- Main Navigation Bar -->
 <header class="navbar" id="main-header" style="opacity: 1; transition: opacity 0.3s ease;">
+    <button id="mobile-menu-button" class="mobile-menu-button" aria-label="메뉴 열기" title="메뉴">
+        <i class="fas fa-bars"></i>
+    </button>
     <a href="/" class="logo">
         <img id="main-logo" src="/assets/lightlogo.png" alt="Onbit Logo" height="40"/>
     </a>
@@ -17,17 +20,7 @@
         </ul>
     </nav>
     <div class="header-right">
-        <aside class="auth-buttons">
-            <a href="/login/" class="login">로그인</a>
-        </aside>
-        <div class="user-info" id="user-profile" style="display: none;">
-            <span id="user-display-name"></span>
-            <!-- user level removed -->
-            <a href="/admin/" id="admin-page-link" style="display: none;" title="관리자 페이지">
-                <i class="fas fa-shield-alt"></i>
-            </a>
-            <button id="logout-btn" data-action="logout" title="로그아웃"><i class="fas fa-sign-out-alt"></i></button>
-        </div>
+        
         <!-- 모바일용 사용자 정보 -->
         <div class="mobile-user-info" id="mobile-user-profile" style="display: none;">
             <div class="mobile-user-link">
@@ -38,13 +31,97 @@
                 <i class="fas fa-sign-out-alt"></i>
             </button>
         </div>
+        <!-- 검색 페이지 이동 버튼 -->
+        <a href="/search/" id="search-page-link" class="icon-button" aria-label="검색">
+            <i class="fas fa-search"></i>
+        </a>
+        <!-- 지갑 토글 버튼 (알림 앞에 배치) -->
+        <button class="icon-button" id="wallet-toggle" title="지갑 토글" aria-haspopup="true" aria-expanded="false">
+            <i class="fas fa-wallet"></i>
+        </button>
+        <!-- 알림 토글 버튼 -->
+        <button class="icon-button" id="notif-toggle" title="알림" aria-haspopup="true" aria-expanded="false">
+            <i class="fas fa-bell"></i>
+        </button>
+        <!-- 알림 드롭다운 -->
+        <div id="header-notif-popover" class="notif-popover" role="dialog" aria-hidden="true" style="display: none;">
+            <div class="notif-head">
+                <span class="notif-title">알림</span>
+                <a href="/feed/notifications.html" class="notif-more" title="모두 보기">더보기</a>
+            </div>
+            <div id="notif-list" class="notif-list"></div>
+        </div>
+        <!-- 지갑 잔고 팝오버 -->
+        <div id="header-wallet-popover" class="wallet-popover" role="dialog" aria-hidden="true" style="display: none;">
+            <div class="hw-inner" id="hw-inner" role="button" tabindex="0" aria-label="월렛 열기">
+                <div class="hw-head">
+                    <span class="hw-title">자산 개요</span>
+                    <span class="hw-hint" aria-hidden="true"><i class="fas fa-arrow-right"></i></span>
+                </div>
+                <div class="tb-amount-row hw-amount-row">
+                    <span id="hw-amount" class="tb-amount">0.0000</span>
+                    <span class="hw-unit">USDT</span>
+                </div>
+            </div>
+        </div>
         <button class="theme-button" id="theme-toggle" data-action="toggle-theme" title="테마 변경">
             <i class="fas fa-moon"></i>
         </button>
-        <a href="/my-account/" id="my-page-link" class="icon-button" data-action="my-page" aria-label="마이페이지"><i class="fas fa-user-circle"></i></a>
+        <span class="pipe-sep" style="display:none;color:var(--text-color-secondary);margin:0 6px;">|</span>
+        <aside class="auth-buttons" style="display:flex;align-items:center;gap:10px;">
+            <a href="/login/" class="login">로그인</a>
+            <a href="/signup/" class="signup">회원가입</a>
+        </aside>
+        <span class="header-divider" aria-hidden="true"></span>
+        <a href="/my-account/" id="my-page-link" class="icon-button" data-action="my-page" aria-label="마이페이지">
+            <img id="my-page-avatar" alt="프로필 이미지" style="display: none; width: 32px; height: 32px; border-radius: 50%; object-fit: cover;" />
+            <i class="fas fa-user-circle" id="my-page-icon"></i>
+        </a>
+        <!-- 프로필 드롭다운 -->
+        <div id="profile-dropdown" class="profile-dropdown" role="menu" aria-hidden="true" style="display: none;">
+            <div class="profile-dropdown-header-container">
+            <div class="profile-dropdown-header">
+                <img id="profile-dropdown-avatar" alt="프로필 이미지" />
+                <div class="profile-dropdown-user">
+                    <div id="profile-dropdown-name">사용자</div>
+                    <div id="profile-dropdown-email"></div>
+                </div>
+            </div>
+            </div>
+            <ul class="profile-dropdown-menu">
+                <li><a href="/my-account/"><i class="fas fa-user-gear"></i><span>마이페이지</span></a></li>
+                <li><a href="/wallet/"><i class="fas fa-wallet"></i><span>지갑</span></a></li>
+                <li><a href="/feed/profile.html"><i class="fas fa-id-badge"></i><span>프로필</span></a></li>
+                <li class="menu-separator" aria-hidden="true"></li>
+                <li><button type="button" data-action="logout" class="logout-button"><i class="fas fa-sign-out-alt"></i><span>로그아웃</span></button></li>
+            </ul>
+        </div>  
     </div>
 
 </header>
+
+<!-- 모바일 메뉴 시트 -->
+<div id="mobile-menu" class="mobile-menu" style="display:none;">
+  <div class="mobile-menu-overlay" id="mobile-menu-overlay"></div>
+  <aside class="mobile-menu-panel" role="dialog" aria-modal="true" aria-labelledby="mobile-menu-title">
+    <header class="mobile-menu-header">
+      <div class="title" id="mobile-menu-title">메뉴</div>
+      <button id="mobile-menu-close" class="mobile-menu-close" aria-label="닫기"><i class="fas fa-times"></i></button>
+    </header>
+    <nav class="mobile-menu-list">
+      <a href="/" class="mitem"><i class="fas fa-house"></i><span>홈</span></a>
+      <a href="/community/" class="mitem"><i class="fas fa-chart-line"></i><span>실시간 차트</span></a>
+      <a href="/chat/" class="mitem"><i class="fas fa-comments"></i><span>실시간 채팅</span></a>
+      <a href="/feed/" class="mitem"><i class="fas fa-users"></i><span>커뮤니티</span></a>
+      <a href="/news/" class="mitem"><i class="fas fa-newspaper"></i><span>뉴스</span></a>
+      <a href="/notice-board/" class="mitem"><i class="fas fa-bullhorn"></i><span>공지사항</span></a>
+      <hr/>
+      <a href="/my-account/" class="mitem"><i class="fas fa-user-circle"></i><span>프로필</span></a>
+      <a href="/wallet/" class="mitem"><i class="fas fa-wallet"></i><span>지갑</span></a>
+    </nav>
+  </aside>
+  
+</div>
 
 <!-- Loading Spinner for Auth State -->
 <div id="auth-loading" style="

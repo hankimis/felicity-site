@@ -363,28 +363,10 @@
       font-size: 0.9em;
   }
   
-  .notice-card {
-    background: var(--card-bg);
-    border-radius: 16px;
-    box-shadow: 0 4px 24px rgba(0,0,0,0.08);
-    padding: 24px;
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-    transition: all 0.2s ease;
-    border: 1px solid var(--border-color);
-    position: relative;
-    cursor: pointer;
-  }
-  
   :root.dark-mode .notice-card {
     background: var(--card-bg);
     border-color: var(--border-color);
     box-shadow: 0 4px 24px rgba(0,0,0,0.15);
-  }
-  .notice-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 32px rgba(49,130,246,0.15);
   }
   .notice-title {
     font-size: 1.18em;

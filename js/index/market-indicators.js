@@ -114,68 +114,56 @@
     return fetchJSON(proxied, { headers: { 'x-cg-demo-api-key': CG_DEMO_API_KEY } });
   }
 
+  // CoinPaprika 직접 호출 (백업)
+  async function cpFetch(path){
+    const base = 'https://api.coinpaprika.com/v1';
+    const url = path.startsWith('http') ? path : base + path;
+    return fetchJSON(url);
+  }
+
   // 1) 전체 시가총액 (CoinGecko Global)
   async function updateMarketCap(){
+    // 1차: CoinGecko
+    let ok = false;
     try{
       const data = await cgFetch('https://api.coingecko.com/api/v3/global');
       const mc = Number(data?.data?.total_market_cap?.usd);
       const changePct = Number(data?.data?.market_cap_change_percentage_24h_usd);
       $('mi-mc-value').textContent = formatUSD(mc);
       setChange($('mi-mc-change'), changePct);
-    }catch(_){/* ignore */}
-    // 스파크라인: 최근 1일(24h) 시총 히스토리
+      ok = true;
+    }catch(_){ ok = false; }
+    // 2차: CoinPaprika 글로벌 (백업)
+    if (!ok){
+      try{
+        const g = await cpFetch('/global');
+        const mc = Number(g?.market_cap_usd);
+        const changePct = Number(g?.market_cap_change_24h) || 0;
+        $('mi-mc-value').textContent = formatUSD(mc);
+        setChange($('mi-mc-change'), changePct);
+      }catch(_){/* ignore */}
+    }
+    // 스파크라인: 최근 1일 근사 (BTC+ETH 가격 합성)
     try{
-      // CoinGecko는 글로벌 시총 차트 전용 엔드포인트가 없어 대체: BTC+ETH 근사 합성
+      const end = new Date();
+      const start = new Date(end.getTime() - 24*60*60*1000);
+      const iso = start.toISOString().slice(0,10);
       const [btc, eth] = await Promise.all([
-        cgFetch('https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=usd&days=1'),
-        cgFetch('https://api.coingecko.com/api/v3/coins/ethereum/market_chart?vs_currency=usd&days=1')
+        // Paprika OHLCV 1시간 간격 근사
+        cpFetch(`/coins/btc-bitcoin/ohlcv/historical?start=${iso}&interval=1h`),
+        cpFetch(`/coins/eth-ethereum/ohlcv/historical?start=${iso}&interval=1h`)
       ]);
-      const pickSeries = (obj)=>{
-        let s = Array.isArray(obj?.market_caps) && obj.market_caps.length>0 ? obj.market_caps
-              : (Array.isArray(obj?.prices) ? obj.prices : []);
-        return s.map(p=>Number(p[1]||0)).filter(isFinite);
-      };
-      const btcMc = pickSeries(btc);
-      const ethMc = pickSeries(eth);
-      const len = Math.min(btcMc.length, ethMc.length);
-      const series = len>1 ? new Array(len).fill(0).map((_,i)=> btcMc[i]+ethMc[i]) : [];
+      const pickClose = (arr)=> Array.isArray(arr) ? arr.map(p=> Number(p?.close||0)).filter(isFinite) : [];
+      const b = pickClose(btc);
+      const e = pickClose(eth);
+      const len = Math.min(b.length, e.length);
+      const series = len>1 ? new Array(len).fill(0).map((_,i)=> b[i]+e[i]) : [];
       spark($('mi-mc-spark'), series);
-    }catch(_){/* endpoint 미제공 시 무시 */}
+    }catch(_){/* ignore */}
   }
 
   // 2) 상위 20 코인 지수 (시총가중, CoinGecko markets)
-  async function updateTop20Index(){
-    try{
-      const list = await cgFetch('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=20&page=1&sparkline=true&price_change_percentage=24h');
-      if (!Array.isArray(list) || list.length === 0) return;
-      // 시총가중 지수: sum(price * weight), weight = mc/sum(mc), 기준 100 = 첫 항목 기준
-      const totalMc = list.reduce((s,x)=>s+Number(x.market_cap||0),0);
-      const indexVal = list.reduce((s,x)=>{
-        const w = totalMc>0 ? (Number(x.market_cap||0)/totalMc) : 0;
-        return s + w * Number(x.current_price||0);
-      }, 0);
-      $('mi-top20-value').textContent = '$' + indexVal.toFixed(2);
-      // 24h 지수 변화: 시총가중 평균 24h 변화율 적용
-      const avgPct = list.reduce((s,x)=>{
-        const w = totalMc>0 ? (Number(x.market_cap||0)/totalMc) : 0;
-        return s + w * Number(x.price_change_percentage_24h_in_currency||0);
-      }, 0);
-      setChange($('mi-top20-change'), avgPct);
-      // 스파크: 전체 스파크라인을 평균(동일 길이 가정)으로 합성
-      try{
-        const seriesCount = list[0]?.sparkline_in_7d?.price?.length || 0;
-        if (seriesCount > 0){
-          const acc = new Array(seriesCount).fill(0);
-          list.forEach(item => {
-            const s = item?.sparkline_in_7d?.price || [];
-            for (let i=0;i<seriesCount;i++) acc[i] += Number(s[i]||0);
-          });
-          const avg = acc.map(v=> v / list.length);
-          spark($('mi-top20-spark'), avg);
-        }
-      }catch(_){/* ignore */}
-    }catch(_){/* ignore */}
-  }
+  function updateTop20Index(){ /* removed */ }
 
   // 3) 공포/탐욕 지수 (Alternative.me)
   async function updateFNG(){
@@ -246,13 +234,9 @@
 
   async function init(){
     // DOM 존재 확인 후 업데이트
-    if (!document.getElementById('mi-marketcap')) return;
-    updateMarketCap();
-    updateTop20Index();
+    if (!document.getElementById('mi-fng')) return;
     updateFNG();
     // 주기 갱신
-    setInterval(updateMarketCap, 60*1000);
-    setInterval(updateTop20Index, 60*1000);
     setInterval(updateFNG, 60*1000*5);
   }
 

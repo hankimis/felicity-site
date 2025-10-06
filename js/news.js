@@ -32,6 +32,106 @@ let hasMoreNews = true; // 더 불러올 뉴스가 있는지
 const newsAnalysisCache = new Map(); // key: newsId, value: { score, details }
 let keywordMatchersCache = null; // 최초 1회 컴파일된 정규식들
 
+// 좌측 키워드 필터 상태
+let currentKeywordExpr = 'all';
+
+// 뉴스 기본 이미지 경로(통일)
+const DEFAULT_NEWS_IMAGE = '/img/default-news.jpg';
+
+// 프로토콜 상대 URL 및 기타 케이스 정규화
+function normalizeImageUrl(url) {
+    if (!url) return '';
+    const trimmed = url.trim();
+    if (trimmed.startsWith('//')) return 'https:' + trimmed;
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) return trimmed;
+    return '';
+}
+
+// HTML 엔티티 디코딩 유틸
+function decodeHtmlEntities(html) {
+    if (!html) return '';
+    const textarea = document.createElement('textarea');
+    textarea.innerHTML = html;
+    return textarea.value;
+}
+
+// 콘텐츠 스니펫 정리: 태그/불필요 문구/공백 정리 및 길이 제한
+function buildContentSnippet(rawHtmlOrText, fallbackTitle = '') {
+    if (!rawHtmlOrText) {
+        return '';
+    }
+
+    // 1) 엔티티 디코딩
+    let text = decodeHtmlEntities(rawHtmlOrText);
+
+    // 2) 태그 제거
+    text = text.replace(/<[^>]*>/g, ' ');
+
+    // 3) 흔한 잔여 문구 및 CDATA 토큰 제거
+    text = text
+        .replace(/\]\]>?/g, ' ') // CDATA 종료 토큰
+        .replace(/더\s*보기\s*(»|>>)?/gi, ' ')
+        .replace(/read\s*more/gi, ' ')
+        .replace(/기사\s*원문/gi, ' ')
+        .replace(/원문보기/gi, ' ')
+        .replace(/자세히\s*보기/gi, ' ')
+        .replace(/The post .*? appeared first on.*/i, ' ');
+
+    // 4) 공백 정리
+    text = text.replace(/&[^;]+;/g, ' ').replace(/\s+/g, ' ').trim();
+
+    // 4.5) 제목과 중복될 경우 제거 시도
+    const escapeRegex = (s) => (s || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const normalizeSimple = (s) => (s || '').toString().toLowerCase()
+        .replace(/[\-–—_.,:;!"'`\[\]\(\)]+/g, ' ')
+        .replace(/\s+/g, ' ').trim();
+    const normTitle = normalizeSimple(fallbackTitle);
+    let normText = normalizeSimple(text);
+    if (normTitle && normText && (normText === normTitle || normText.startsWith(normTitle))) {
+        // 원본문에서 제목을 제거하고 다시 정리
+        const rawDecoded = decodeHtmlEntities(rawHtmlOrText);
+        const removed = rawDecoded.replace(new RegExp('^\uFEFF?\s*' + escapeRegex(fallbackTitle) + '\s*', 'i'), ' ');
+        let retried = removed.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+        retried = retried.replace(/&[^;]+;/g, ' ').replace(/\s+/g, ' ').trim();
+        text = retried;
+        normText = normalizeSimple(text);
+    }
+
+    // 5) 길이 제한 및 폴백
+    if (!text || text.length < 15 || normText === normTitle) {
+        return '';
+    }
+    return text.substring(0, 150);
+}
+
+// content:encoded, description, summary 등에서 본문 HTML/텍스트를 안정적으로 추출
+function extractDescriptionRaw(item) {
+    // 1) content:encoded (namespaced 포함 다양한 접근)
+    let node = item.querySelector('content\\:encoded');
+    if (!node) node = item.getElementsByTagName('content:encoded')[0];
+    if (!node) node = item.getElementsByTagName('encoded')[0];
+    if (node && (node.textContent || node.innerHTML)) {
+        return node.textContent || node.innerHTML || '';
+    }
+
+    // 2) description
+    node = item.querySelector('description');
+    if (!node) node = item.getElementsByTagName('description')[0];
+    if (node && (node.textContent || node.innerHTML)) {
+        return node.textContent || node.innerHTML || '';
+    }
+
+    // 3) summary / content (Atom)
+    node = item.querySelector('summary') || item.querySelector('content');
+    if (!node) node = item.getElementsByTagName('summary')[0];
+    if (!node) node = item.getElementsByTagName('content')[0];
+    if (node && (node.textContent || node.innerHTML)) {
+        return node.textContent || node.innerHTML || '';
+    }
+
+    return '';
+}
+
 function getOrBuildKeywordMatchers() {
   if (keywordMatchersCache) return keywordMatchersCache;
   const escape = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -76,10 +176,10 @@ function initializePage() {
     }
     
     initializeNewsUI();
+    initializeKeywordSidebar();
     initializeInfiniteScroll();
     loadNewsImportanceData();
     loadNewsFeeds();
-    initializeEconomicCalendar();
     
     // 기본 탭을 뉴스로 설정
     switchTab('news');
@@ -117,17 +217,23 @@ function initializeInfiniteScroll() {
     breakingLoadingTrigger.style.height = '20px';
     breakingLoadingTrigger.style.margin = '20px 0';
     
-    // 뉴스 그리드 뒤에 추가
+    // 뉴스 레이아웃(행) 뒤에 추가 → 행 아래에 로딩 영역 표시
     if (newsGrid && newsGrid.parentNode) {
-        newsGrid.parentNode.insertBefore(newsLoadingTrigger, newsGrid.nextSibling);
-        observer.observe(newsLoadingTrigger);
+        const layout = newsGrid.parentNode; // .news-layout
+        if (layout && layout.parentNode) {
+            layout.parentNode.insertBefore(newsLoadingTrigger, layout.nextSibling);
+            observer.observe(newsLoadingTrigger);
+        }
     }
     
-    // 속보 그리드 뒤에 추가
+    // 속보 레이아웃(행) 뒤에 추가
     const breakingGrid = document.getElementById('breakingGrid');
     if (breakingGrid && breakingGrid.parentNode) {
-        breakingGrid.parentNode.insertBefore(breakingLoadingTrigger, breakingGrid.nextSibling);
-        observer.observe(breakingLoadingTrigger);
+        const breakingLayout = breakingGrid.parentNode; // .news-layout
+        if (breakingLayout && breakingLayout.parentNode) {
+            breakingLayout.parentNode.insertBefore(breakingLoadingTrigger, breakingLayout.nextSibling);
+            observer.observe(breakingLoadingTrigger);
+        }
     }
 }
 
@@ -156,6 +262,8 @@ function loadMoreNews() {
         } else {
             filteredNews = window.newsItems;
         }
+        // 키워드 필터 적용
+        filteredNews = getKeywordFilteredNews(filteredNews);
         
         const totalNews = filteredNews.length;
         const newDisplayCount = Math.min(currentDisplayCount + loadMoreCount, totalNews);
@@ -244,6 +352,51 @@ function initializeNewsUI() {
             switchTab(tabName);
         });
     });
+}
+
+// 좌측 키워드 사이드바 초기화 및 클릭 핸들러(다중 지원)
+function initializeKeywordSidebar() {
+    const lists = document.querySelectorAll('.keyword-list');
+    if (!lists || lists.length === 0) return;
+
+    // 날짜 표시(모든 사이드바)
+    document.querySelectorAll('.sidebar-date').forEach(dateEl => {
+        const now = new Date();
+        const weekday = ['일','월','화','수','목','금','토'][now.getDay()];
+        const mm = String(now.getMonth() + 1).padStart(2, '0');
+        const dd = String(now.getDate()).padStart(2, '0');
+        dateEl.textContent = `${mm}.${dd}(${weekday})`;
+    });
+
+    lists.forEach(listEl => {
+        listEl.addEventListener('click', (e) => {
+            const btn = e.target.closest('.keyword-btn');
+            if (!btn) return;
+            listEl.querySelectorAll('.keyword-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            const expr = btn.getAttribute('data-keyword') || 'all';
+            applyNewsKeywordFilter(expr);
+        });
+    });
+}
+
+function getKeywordFilteredNews(list) {
+    if (!Array.isArray(list)) return [];
+    if (currentKeywordExpr === 'all') return list;
+    const regex = new RegExp(currentKeywordExpr, 'i');
+    return list.filter(item => {
+        const t = `${item.title || ''} ${item.contentSnippet || ''}`;
+        return regex.test(t);
+    });
+}
+
+function applyNewsKeywordFilter(expr) {
+    currentKeywordExpr = expr || 'all';
+    if (!Array.isArray(window.newsItems)) return;
+    const activeTabBtn = document.querySelector('.tab-btn.active');
+    const currentTab = activeTabBtn?.getAttribute('data-tab') || 'news';
+    resetInfiniteScroll();
+    displayNews(window.newsItems, true, currentTab);
 }
 
 // 무한스크롤 상태 리셋
@@ -590,44 +743,45 @@ async function fetchAndParseFeed({ url, source }) {
                                        item.querySelector('updated')?.textContent?.trim() ||
                                        new Date().toISOString();
                         
-                        // 설명 추출 (간소화)
-                        let description = '';
-                        const descElement = item.querySelector('description') || 
-                                          item.querySelector('content') ||
-                                          item.querySelector('summary');
+                        // 설명/본문 추출(안정화)
+                        const description = extractDescriptionRaw(item);
                         
-                        if (descElement) {
-                            description = descElement.textContent || descElement.innerHTML || '';
+                        // 텍스트 정리 (강화)
+                        const contentSnippet = buildContentSnippet(description, title);
+                        
+                        // 이미지 추출(강화): media:content/thumbnail → enclosure → description img 순
+                        let imageUrl = DEFAULT_NEWS_IMAGE;
+
+                        // 1) media:content url
+                        const mediaContent = item.querySelector('media\\:content, content');
+                        const mediaContentUrl = mediaContent?.getAttribute?.('url');
+                        if (!imageUrl || imageUrl === DEFAULT_NEWS_IMAGE) {
+                            const normalized = normalizeImageUrl(mediaContentUrl);
+                            if (normalized) imageUrl = normalized;
                         }
-                        
-                        // 텍스트 정리 (최적화)
-                        let contentSnippet = '';
-                        if (description) {
-                            contentSnippet = description
-                                .replace(/<[^>]*>/g, '')
-                                .replace(/&[^;]+;/g, ' ')
-                                .replace(/\s+/g, ' ')
-                                .trim()
-                                .substring(0, 150); // 길이 단축
+
+                        // 2) media:thumbnail url
+                        const mediaThumb = item.querySelector('media\\:thumbnail');
+                        const mediaThumbUrl = mediaThumb?.getAttribute?.('url');
+                        if (!imageUrl || imageUrl === DEFAULT_NEWS_IMAGE) {
+                            const normalized = normalizeImageUrl(mediaThumbUrl);
+                            if (normalized) imageUrl = normalized;
                         }
-                        
-                        if (!contentSnippet.trim()) {
-                            contentSnippet = title.substring(0, 80);
-                        }
-                        
-                        // 이미지 추출 (간소화)
-                        let imageUrl = '/img/default-news.jpg';
-                        
-                        // 기본적인 이미지 소스만 확인
+
+                        // 3) enclosure
                         const enclosure = item.querySelector('enclosure');
                         if (enclosure && enclosure.getAttribute('url') && 
-                            enclosure.getAttribute('type')?.startsWith('image/')) {
-                            imageUrl = enclosure.getAttribute('url');
-                        } else {
-                            // description에서 첫 번째 이미지만 추출
+                            (enclosure.getAttribute('type')?.startsWith('image/') || !enclosure.getAttribute('type'))) {
+                            const normalized = normalizeImageUrl(enclosure.getAttribute('url'));
+                            if (normalized) imageUrl = normalized;
+                        }
+
+                        // 4) description 내 <img src>
+                        if (imageUrl === DEFAULT_NEWS_IMAGE && description) {
                             const imgMatch = description.match(/<img[^>]+src=["']([^"']+)["']/i);
-                            if (imgMatch && imgMatch[1] && imgMatch[1].startsWith('http')) {
-                                imageUrl = imgMatch[1];
+                            if (imgMatch && imgMatch[1]) {
+                                const normalized = normalizeImageUrl(imgMatch[1]);
+                                if (normalized) imageUrl = normalized;
                             }
                         }
                         
@@ -636,7 +790,7 @@ async function fetchAndParseFeed({ url, source }) {
                             link,
                             pubDate,
                             contentSnippet,
-                            image: imageUrl,
+                            image: imageUrl || DEFAULT_NEWS_IMAGE,
                             source
                         };
                     });
@@ -672,21 +826,12 @@ function parseRSSFeed(xmlString) {
     return items.map(item => {
         const link = item.querySelector('link')?.textContent || '';
         const title = item.querySelector('title')?.textContent || '';
-        const description = item.querySelector('description')?.textContent || '';
+        // 안정화된 본문 추출
+        const description = extractDescriptionRaw(item);
         const pubDate = item.querySelector('pubDate')?.textContent || '';
         
-        // 컨텐츠 스니펫 생성
-        let contentSnippet = '';
-        if (description) {
-            contentSnippet = description.replace(/<[^>]*>/g, '')
-                                       .replace(/&nbsp;/g, ' ')
-                                       .replace(/&amp;/g, '&')
-                                       .replace(/&lt;/g, '<')
-                                       .replace(/&gt;/g, '>')
-                                       .replace(/&quot;/g, '"')
-                                       .trim()
-                                       .substring(0, 180);
-        }
+        // 컨텐츠 스니펫 생성(정리 함수 사용)
+        const contentSnippet = buildContentSnippet(description, title);
         
         return {
             title: title,
@@ -704,25 +849,30 @@ function findImageInItem(item) {
     // media:content 시도
     const mediaContent = item.querySelector('media\\:content, content');
     if (mediaContent?.getAttribute('url')) {
-        return mediaContent.getAttribute('url');
+        const normalized = normalizeImageUrl(mediaContent.getAttribute('url'));
+        if (normalized) return normalized;
     }
 
     // enclosure 시도
     const enclosure = item.querySelector('enclosure');
-    if (enclosure?.getAttribute('url') && enclosure?.getAttribute('type')?.startsWith('image/')) {
-        return enclosure.getAttribute('url');
+    if (enclosure?.getAttribute('url') && (enclosure?.getAttribute('type')?.startsWith('image/') || !enclosure?.getAttribute('type'))) {
+        const normalized = normalizeImageUrl(enclosure.getAttribute('url'));
+        if (normalized) return normalized;
     }
 
     // 설명에서 이미지 찾기
-    const description = item.querySelector('description')?.textContent || '';
+    const encodedContent = item.querySelector('content\\:encoded');
+    const descElement = encodedContent || item.querySelector('description');
+    const description = descElement ? (descElement.innerHTML || descElement.textContent || '') : '';
     const tempDiv = document.createElement('div');
     tempDiv.innerHTML = description;
     const firstImage = tempDiv.querySelector('img');
-    if (firstImage?.src) {
-        return firstImage.src;
+    if (firstImage?.getAttribute('src')) {
+        const normalized = normalizeImageUrl(firstImage.getAttribute('src'));
+        if (normalized) return normalized;
     }
 
-    return '/assets/default-news.jpg';
+    return DEFAULT_NEWS_IMAGE;
 }
 
 // 뉴스 표시 (최적화된 이미지 로딩)
@@ -744,6 +894,8 @@ function displayNews(news, isInitialLoad = true, currentTab = 'news') {
         // 중요도 4 이상만 속보로 간주
         workingNews = workingNews.filter(item => getNewsImportance(item) >= 4);
     }
+    // 키워드 필터 적용
+    workingNews = getKeywordFilteredNews(workingNews);
 
     // 초기 로드 시 전체 초기화
     if (isInitialLoad) {
@@ -778,8 +930,12 @@ function displayNews(news, isInitialLoad = true, currentTab = 'news') {
         const starRating = createStarRating(item);
         const importance = getNewsImportance(item);
         
-        // 이미지가 있는지 확인
-        const hasImage = item.image && item.image !== '/img/default-news.jpg' && item.image.startsWith('http');
+        // 이미지가 있는지 확인 (프로토콜 상대 URL 허용)
+        const hasImage = (() => {
+            if (!item.image) return false;
+            if (item.image === DEFAULT_NEWS_IMAGE) return false;
+            return /^(https?:)?\/\//.test(item.image);
+        })();
         
         const newsItem = document.createElement('div');
         newsItem.className = `news-item ${hasImage ? 'has-image' : 'no-image'} importance-${importance}`;
@@ -811,6 +967,7 @@ function displayNews(news, isInitialLoad = true, currentTab = 'news') {
             // 별 아이콘 영역은 클릭 무시
             if (!event.target.closest('.news-importance')) {
                 if (item.link) {
+                    try { trackPopularClick(item); } catch (e) { /* noop */ }
                     window.open(item.link, '_blank', 'noopener,noreferrer');
                 }
             }
@@ -833,6 +990,8 @@ function displayNews(news, isInitialLoad = true, currentTab = 'news') {
     // 실시간 시간 업데이트 시작
     if (isInitialLoad) {
         startRealTimeUpdates();
+        // 인기 뉴스 갱신
+        try { renderPopularSidebar(); } catch (e) { /* noop */ }
     }
 }
 
@@ -890,15 +1049,6 @@ function switchTab(tabName) {
             resetInfiniteScroll();
             displayNews(window.newsItems, true, tabName);
         }
-    } else if (tabName === 'calendar') {
-        // 경제 일정 탭
-        
-        // 잠시 후 관리자 권한 체크 (DOM 렌더링 완료 후)
-        setTimeout(() => {
-            checkAdminPermissions();
-        }, 100);
-        
-        loadEconomicCalendar();
     }
 }
 
@@ -1452,6 +1602,122 @@ window.updateHeaderBreakingTicker = function() {
     buildHeaderBreakingTickerItems();
     startHeaderTickerRollingVertical();
 };
+
+// =============================
+// 인기 뉴스 사이드바 (로컬 집계) - 일일 기준(오후 3시 리셋)
+// =============================
+const POPULAR_KEY = 'onbit_popular_news_v2';
+
+function getCurrentPeriodKey(now = new Date()) {
+    const d = new Date(now);
+    if (d.getHours() < 15) {
+        d.setDate(d.getDate() - 1);
+    }
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${yyyy}${mm}${dd}_1500`;
+}
+
+function getPopularStore() {
+    try {
+        const raw = localStorage.getItem(POPULAR_KEY);
+        if (raw) {
+            const parsed = JSON.parse(raw);
+            if (parsed && parsed.periods) return parsed;
+        }
+
+        // v1 데이터가 있으면 간단 이관
+        const legacy = localStorage.getItem('onbit_popular_news_v1');
+        if (legacy) {
+            const legacyObj = JSON.parse(legacy);
+            const periodKey = getCurrentPeriodKey();
+            return {
+                periods: {
+                    [periodKey]: { items: legacyObj || {}, updatedAt: Date.now() }
+                }
+            };
+        }
+        return { periods: {} };
+    } catch (e) {
+        return { periods: {} };
+    }
+}
+
+function setPopularStore(data) {
+    try { localStorage.setItem(POPULAR_KEY, JSON.stringify(data)); } catch (e) {}
+}
+
+function ensurePeriod(store, periodKey) {
+    if (!store.periods[periodKey]) {
+        store.periods[periodKey] = { items: {}, updatedAt: Date.now() };
+    }
+    return store.periods[periodKey];
+}
+
+function getItemKey(item) {
+    return item.link || `${item.source || 'src'}:${item.title || ''}`;
+}
+
+function trackPopularClick(item) {
+    const store = getPopularStore();
+    const periodKey = getCurrentPeriodKey();
+    const period = ensurePeriod(store, periodKey);
+    const key = getItemKey(item);
+    const existing = period.items[key] || { title: item.title, link: item.link, count: 0, last: Date.now(), source: item.source };
+    existing.count += 1;
+    existing.title = item.title;
+    existing.link = item.link;
+    existing.last = Date.now();
+    existing.source = item.source;
+    period.items[key] = existing;
+    period.updatedAt = Date.now();
+    setPopularStore(store);
+    renderPopularSidebar();
+}
+
+function renderPopularSidebar() {
+    const lists = document.querySelectorAll('.popular-list');
+    if (!lists || lists.length === 0) return;
+
+    const store = getPopularStore();
+    const periodKey = getCurrentPeriodKey();
+    const period = store.periods[periodKey];
+    const counted = period ? Object.values(period.items) : [];
+    const hasCounts = counted && counted.length > 0;
+
+    let items;
+    let isFallback = false;
+    if (hasCounts) {
+        items = counted
+            .sort((a,b) => (b.count - a.count) || (b.last - a.last))
+            .slice(0, 10);
+    } else {
+        // 데이터 없을 때 최신 뉴스 순으로 대체
+        isFallback = true;
+        const src = Array.isArray(window.newsItems) ? window.newsItems.slice() : [];
+        items = src
+            .sort((a,b) => new Date(b.pubDate) - new Date(a.pubDate))
+            .slice(0, 10)
+            .map(n => ({ title: n.title, link: n.link, count: 0 }));
+    }
+
+    lists.forEach(list => {
+        if (!items || items.length === 0) {
+            list.innerHTML = '<li class="popular-empty" style="color: var(--text-color-tertiary); font-size: 13px;">표시할 항목이 없습니다.</li>';
+            return;
+        }
+        list.innerHTML = items.map((it, idx) => `
+            <li class="popular-item">
+                <div class="popular-rank">${idx + 1}</div>
+                <div>
+                    <div class="popular-title" onclick="window.open('${it.link}','_blank','noopener,noreferrer')">${it.title}</div>
+                    <div class="popular-meta">${isFallback ? '최신' : `조회수 ${it.count.toLocaleString()}회`}</div>
+                </div>
+            </li>
+        `).join('');
+    });
+}
 
 
 

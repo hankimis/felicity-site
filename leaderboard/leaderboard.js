@@ -96,7 +96,7 @@ function renderTop3(items) {
       return `
         <div class="lb-card top-card ${cls}">
           <div class="avatar-wrap">
-            <img src="${it.avatarUrl||'/onbit/favicon-96x96.png'}" alt=""/>
+            <img src="${it.avatarUrl||'/assets/icon/profileicon.png'}" alt="" onerror="this.src='/assets/icon/profileicon.png'"/>
             <div class="rank-ribbon">🏆 ${rank}</div>
           </div>
           <div class="topcard-name">${it.name||'알 수 없음'}</div>
@@ -111,7 +111,7 @@ function renderTop3(items) {
       return `
         <div class="lb-card top-card ${cls}">
           <div class="avatar-wrap">
-            <img src="${it.avatarUrl||'/onbit/favicon-96x96.png'}" alt=""/>
+            <img src="${it.avatarUrl||'/assets/icon/profileicon.png'}" alt="" onerror="this.src='/assets/icon/profileicon.png'"/>
             <div class="rank-ribbon">🏆 ${rank}</div>
           </div>
           <div class="topcard-name">${it.name||'알 수 없음'}</div>
@@ -141,7 +141,7 @@ function renderRows(items) {
   el.innerHTML = top20.map((it, idx) => `
     <div class="lb-row">
       <div class="col-rank">${idx+1}</div>
-      <div class="col-user user"><img src="${it.avatarUrl||'/onbit/favicon-96x96.png'}" alt=""/><div>
+      <div class="col-user user"><img src="${it.avatarUrl||'/assets/icon/profileicon.png'}" alt="" onerror="this.src='/assets/icon/profileicon.png'"/><div>
         <div class="name">${it.name||'알 수 없음'}</div>
         <div class="meta">@${(it.handle||it.id||'user').slice(0,20)}</div>
       </div></div>
