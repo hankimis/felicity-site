@@ -156,34 +156,24 @@ document.addEventListener('DOMContentLoaded', () => {
                         e.preventDefault();
                         deferredPrompt = e;
                         const btn = document.getElementById('pwa-install');
-                        if (btn) {
-                            btn.title = '앱 설치';
-                            btn.setAttribute('aria-label','앱 설치');
-                        }
+                        if (btn) btn.style.display = '';
                     });
                     const pwaBtn = document.getElementById('pwa-install');
                     if (pwaBtn && !pwaBtn.__bound){
+                        pwaBtn.style.display='none';
                         pwaBtn.addEventListener('click', async ()=>{
                             try {
                                 if (!deferredPrompt) { alert('이 기기/브라우저에서는 설치를 지원하지 않습니다.'); return; }
                                 deferredPrompt.prompt();
                                 const res = await deferredPrompt.userChoice;
                                 deferredPrompt = null;
-                                // 설치 후에도 버튼은 유지합니다 (요청사항)
+                                if (res && res.outcome === 'accepted') {
+                                    try { pwaBtn.style.display='none'; } catch(_) {}
+                                }
                             } catch(_) {}
                         });
                         pwaBtn.__bound = true;
                     }
-                    // 설치 완료 이벤트: 버튼 상태만 안내 텍스트로 변경
-                    window.addEventListener('appinstalled', ()=>{
-                        try {
-                            const btn = document.getElementById('pwa-install');
-                            if (btn) {
-                                btn.title = '설치됨';
-                                btn.setAttribute('aria-label','설치됨');
-                            }
-                        } catch(_) {}
-                    });
                 } catch(_) {}
                 
                 // Firebase 초기화 후 현재 인증 상태 확인
