@@ -1,16 +1,28 @@
 {
-  "name": "ONBIT",
+  "name": "온비트(ONBIT)",
   "short_name": "ONBIT",
-  "description": "온비트 - 암호화폐 페이백, 실시간 차트, 커뮤니티",
+  "description": "온비트 - 암호화폐 수수료 페이백, 실시간 고래추적, 분석 플랫폼",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "theme_color": "#111827",
   "background_color": "#111827",
-  "prefer_related_applications": false,
   "icons": [
-    { "src": "/onbit/android-chrome-192x192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "/onbit/android-chrome-512x512.png", "sizes": "512x512", "type": "image/png" },
-    { "src": "/onbit/apple-touch-icon.png", "sizes": "180x180", "type": "image/png", "purpose": "any" }
+    {
+      "src": "/onbit/android-chrome-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/onbit/android-chrome-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "/assets/lightlogo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
   ]
 }

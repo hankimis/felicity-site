@@ -145,36 +145,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (typeof window.bindAuthForms === 'function') {
                     window.bindAuthForms();
                 }
-
-                // PWA: 서비스 워커 등록 및 설치 버튼 설정
-                try {
-                    if ('serviceWorker' in navigator) {
-                        navigator.serviceWorker.register('/image-cache-sw.js').catch(()=>{});
-                    }
-                    let deferredPrompt = null;
-                    window.addEventListener('beforeinstallprompt', (e)=>{
-                        e.preventDefault();
-                        deferredPrompt = e;
-                        const btn = document.getElementById('pwa-install');
-                        if (btn) btn.style.display = '';
-                    });
-                    const pwaBtn = document.getElementById('pwa-install');
-                    if (pwaBtn && !pwaBtn.__bound){
-                        pwaBtn.style.display='none';
-                        pwaBtn.addEventListener('click', async ()=>{
-                            try {
-                                if (!deferredPrompt) { alert('이 기기/브라우저에서는 설치를 지원하지 않습니다.'); return; }
-                                deferredPrompt.prompt();
-                                const res = await deferredPrompt.userChoice;
-                                deferredPrompt = null;
-                                if (res && res.outcome === 'accepted') {
-                                    try { pwaBtn.style.display='none'; } catch(_) {}
-                                }
-                            } catch(_) {}
-                        });
-                        pwaBtn.__bound = true;
-                    }
-                } catch(_) {}
                 
                 // Firebase 초기화 후 현재 인증 상태 확인
                 if (window.auth && typeof window.updateAuthUI === 'function') {
@@ -200,6 +170,43 @@ document.addEventListener('DOMContentLoaded', () => {
                 // TurnstileManager가 모든 이벤트 처리 - 별도 설정 불필요
             } catch (error) {
             }
+
+            // PWA 설치 버튼 & 서비스워커 등록 초기화
+            try {
+                // 서비스워커 전역 등록(한 번만)
+                if ('serviceWorker' in navigator) {
+                    try {
+                        const reg = await navigator.serviceWorker.getRegistration();
+                        if (!reg) { await navigator.serviceWorker.register('/sw.js').catch(()=>{}); }
+                    } catch(_) {}
+                }
+                // 설치 버튼 로직
+                const installBtn = document.getElementById('pwa-install-btn');
+                let deferredPrompt = null;
+                // 이미 설치됨/스탠드얼론이면 숨김
+                const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+                if (installBtn) installBtn.style.display = isStandalone ? 'none' : 'none';
+                window.addEventListener('beforeinstallprompt', (e)=>{
+                    try {
+                        e.preventDefault();
+                        deferredPrompt = e;
+                        if (installBtn) installBtn.style.display = '';
+                    } catch(_) {}
+                });
+                if (installBtn && !installBtn.__bound) {
+                    installBtn.addEventListener('click', async ()=>{
+                        try {
+                            if (!deferredPrompt) { alert('앱 설치 조건이 아직 충족되지 않았습니다.'); return; }
+                            deferredPrompt.prompt();
+                            const choice = await deferredPrompt.userChoice;
+                            deferredPrompt = null;
+                            installBtn.style.display = 'none';
+                        } catch(_) {}
+                    });
+                    installBtn.__bound = true;
+                }
+                window.addEventListener('appinstalled', ()=>{ try { if (installBtn) installBtn.style.display='none'; } catch(_) {} });
+            } catch(_) {}
 
             // 추가 안전 동기화: 초기 몇 초 동안 인증 상태에 맞춰 버튼 토글 보정
             (function ensureHeaderAuthSync(){
