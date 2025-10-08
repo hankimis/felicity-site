@@ -173,6 +173,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // PWA 설치 버튼 & 서비스워커 등록 초기화
             try {
+                // 매니페스트 링크 없으면 주입(모든 페이지 공통 보장)
+                try {
+                    if (!document.querySelector('link[rel="manifest"]')){
+                        const lm = document.createElement('link');
+                        lm.rel = 'manifest';
+                        lm.href = '/onbit/site.webmanifest';
+                        lm.crossOrigin = 'anonymous';
+                        document.head.appendChild(lm);
+                    }
+                } catch(_) {}
                 // 서비스워커 전역 등록(한 번만)
                 if ('serviceWorker' in navigator) {
                     try {

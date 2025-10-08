@@ -234,6 +234,12 @@
   text-decoration: none;
 }
 
+/* PWA 설치 버튼은 모바일에서도 강제 표시 허용 */
+#pwa-install-btn { display: inline-flex; }
+@media (max-width: 768px) {
+  #pwa-install-btn { display: inline-flex !important; }
+}
+
 .icon-button:hover {
   background-color: var(--bg-secondary-color);
   color: var(--primary-color);
