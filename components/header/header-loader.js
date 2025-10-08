@@ -196,6 +196,28 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (installBtn && !installBtn.__bound) {
                     installBtn.addEventListener('click', async ()=>{
                         try {
+                            // iOS 계열(사파리/크롬)에서는 beforeinstallprompt 미지원 → 안내 표시
+                            const ua = (navigator.userAgent||'');
+                            const isIOS = /iPhone|iPad|iPod/i.test(ua);
+                            if (isIOS && !deferredPrompt) {
+                                try {
+                                    const help = document.createElement('div');
+                                    help.style.position = 'fixed';
+                                    help.style.right = '12px';
+                                    help.style.top = '64px';
+                                    help.style.zIndex = '2000';
+                                    help.style.background = 'var(--card-bg)';
+                                    help.style.color = 'var(--text-color)';
+                                    help.style.border = '1px solid var(--border-color)';
+                                    help.style.borderRadius = '10px';
+                                    help.style.padding = '10px 12px';
+                                    help.style.boxShadow = '0 6px 20px rgba(0,0,0,.12)';
+                                    help.textContent = 'iOS에서는 공유 버튼 → "홈 화면에 추가"로 설치합니다.';
+                                    document.body.appendChild(help);
+                                    setTimeout(()=>{ try{ help.remove(); }catch(_){ } }, 3500);
+                                } catch(_) { alert('iOS에서는 공유 버튼 → "홈 화면에 추가"로 설치하세요.'); }
+                                return;
+                            }
                             if (!deferredPrompt) { alert('앱 설치 조건이 아직 충족되지 않았습니다.'); return; }
                             deferredPrompt.prompt();
                             const choice = await deferredPrompt.userChoice;
@@ -206,6 +228,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     installBtn.__bound = true;
                 }
                 window.addEventListener('appinstalled', ()=>{ try { if (installBtn) installBtn.style.display='none'; } catch(_) {} });
+
+                // iOS 크롬/사파리 폴백: 설치되지 않은 경우 버튼 표시(안내용)
+                try {
+                    const ua = (navigator.userAgent||'');
+                    const isIOS = /iPhone|iPad|iPod/i.test(ua);
+                    if (installBtn && !isStandalone && isIOS) {
+                        installBtn.style.display = '';
+                    }
+                } catch(_) {}
             } catch(_) {}
 
             // 추가 안전 동기화: 초기 몇 초 동안 인증 상태에 맞춰 버튼 토글 보정
