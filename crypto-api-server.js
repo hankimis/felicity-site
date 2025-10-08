@@ -6,14 +6,25 @@ const crypto = require('crypto');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// CORS 설정
+// CORS 설정 (환경변수 우선, 기본 허용 목록 포함)
+const DEFAULT_ORIGINS = [
+  'http://localhost:3000',
+  'http://127.0.0.1:5500',
+  'http://localhost:5500',
+  'http://localhost:8000',
+  'https://www.onbitlabs.com',
+  'https://onbitlabs.com'
+];
+const ALLOWED = (process.env.CORS_ORIGINS || '')
+  .split(',')
+  .map(s=>s.trim())
+  .filter(Boolean);
+const origins = ALLOWED.length ? ALLOWED : DEFAULT_ORIGINS;
 app.use(cors({
-  origin: [
-    'http://localhost:3000',
-    'http://127.0.0.1:5500',
-    'http://localhost:5500',
-    'http://localhost:8000'
-  ],
+  origin: function(origin, callback){
+    if (!origin || origins.includes(origin)) return callback(null, true);
+    return callback(null, false);
+  },
   credentials: true
 }));
 
@@ -151,7 +162,7 @@ async function fetchBinancePerpMarkets() {
       lastUpdated: new Date().toISOString(),
       markPrice: Number(prem.markPrice || last || 0),
       indexPrice: Number(prem.indexPrice || 0),
-      fundingRate: Number(prem.lastFundingRate || 0),
+      fundingRate: (prem.lastFundingRate !== undefined && prem.lastFundingRate !== null) ? Number(prem.lastFundingRate) : undefined,
       nextFundingTime: prem.nextFundingTime ? new Date(Number(prem.nextFundingTime)).toISOString() : null,
       quoteVolume: volQuote
     });
@@ -300,6 +311,11 @@ function calculateLiquidation(coin, period) {
   return period === '24h' ? baseLiquidation : baseLiquidation / 24;
 }
 
+// 공통 캐시 헤더 설정
+function setApiCache(res, seconds=10){
+  res.setHeader('Cache-Control', `public, max-age=${seconds}`);
+}
+
 // API 엔드포인트
 // 기본 데이터는 Binance Perp로 제공, coingecko=1 쿼리 시 이전 소스 사용
 app.get('/api/crypto-data', async (req, res) => {
@@ -311,17 +327,18 @@ app.get('/api/crypto-data', async (req, res) => {
       data = await fetchBinancePerpMarkets();
     }
     
-    // 추가 데이터 계산
+    // 추정치 필드는 별도 접두사로 제공하고, 실데이터(fundingRate 등)는 절대 덮어쓰지 않음
     data = data.map(coin => ({
       ...coin,
-      fundingRate: calculateFundingRate(coin),
-      openInterest: calculateOpenInterest(coin),
-      oiChange1h: calculateOIChange(coin, '1h'),
-      oiChange4h: calculateOIChange(coin, '4h'),
-      liquidation1h: calculateLiquidation(coin, '1h'),
-      liquidation24h: calculateLiquidation(coin, '24h')
+      estimatedOpenInterest: calculateOpenInterest(coin),
+      estimatedOiChange1h: calculateOIChange(coin, '1h'),
+      estimatedOiChange4h: calculateOIChange(coin, '4h'),
+      estimatedLiquidation1h: calculateLiquidation(coin, '1h'),
+      estimatedLiquidation24h: calculateLiquidation(coin, '24h'),
+      source: String(req.query.coingecko||'') === '1' ? 'coingecko' : 'binance'
     }));
     
+    setApiCache(res, 10);
     res.json({
       success: true,
       data: data,
@@ -336,6 +353,47 @@ app.get('/api/crypto-data', async (req, res) => {
       error: error.message,
       timestamp: new Date().toISOString()
     });
+  }
+});
+
+// 단일 심볼 상세 집계 (Binance Perp 실데이터)
+// GET /api/market/:symbol  e.g., BTCUSDT
+// 5초 캐시, 일부 API 실패 시 가능한 항목만 반환
+app.get('/api/market/:symbol', async (req, res) => {
+  try {
+    const raw = String(req.params.symbol || '').toUpperCase().replace(/[^A-Z0-9]/g,'');
+    if (!raw || raw.length > 30) return res.status(400).json({ success:false, error:'invalid symbol' });
+    const cacheKey = `market:${raw}`;
+    const hit = cache.get(cacheKey);
+    if (hit) { setApiCache(res, 3); return res.json({ success:true, symbol: raw, ...hit, cached:true }); }
+
+    const tasks = [
+      binancePublic(`/fapi/v1/premiumIndex?symbol=${raw}`).catch(()=>null),
+      binancePublic(`/fapi/v1/openInterest?symbol=${raw}`).catch(()=>null),
+      binancePublic(`/fapi/v1/ticker/bookTicker?symbol=${raw}`).catch(()=>null),
+      binancePublic(`/fapi/v1/ticker/24hr?symbol=${raw}`).catch(()=>null)
+    ];
+    const [premium, oi, book, t24] = await Promise.all(tasks);
+    const nowIso = new Date().toISOString();
+    const payload = {
+      markPrice: premium ? Number(premium.markPrice) : undefined,
+      indexPrice: premium ? Number(premium.indexPrice) : undefined,
+      fundingRate: premium && premium.lastFundingRate !== undefined ? Number(premium.lastFundingRate) : undefined,
+      nextFundingTime: premium && premium.nextFundingTime ? new Date(Number(premium.nextFundingTime)).toISOString() : null,
+      openInterest: oi ? Number(oi.openInterest) : undefined,
+      bestBid: book ? Number(book.bidPrice) : undefined,
+      bestAsk: book ? Number(book.askPrice) : undefined,
+      lastPrice: t24 ? Number(t24.lastPrice) : (book ? (Number(book.bidPrice)+Number(book.askPrice))/2 : undefined),
+      change24h: t24 ? Number(t24.priceChangePercent) : undefined,
+      timestamp: nowIso,
+      source: 'binance'
+    };
+    cache.set(cacheKey, payload, 5);
+    setApiCache(res, 5);
+    res.json({ success:true, symbol: raw, ...payload, cached:false });
+  } catch (error) {
+    console.error('market symbol error', error);
+    res.status(500).json({ success:false, error:String(error && error.message || error) });
   }
 });
 

@@ -67,7 +67,7 @@
   <link rel="preconnect" href="https://cdn.jsdelivr.net">
   <link rel="preconnect" href="https://api.binance.com">
   <link rel="preconnect" href="https://fstream.binance.com">
-  <link rel="preconnect" href="https://s3.tradingview.com">
+  <link rel="preconnect" href="https://s3.tradingview.com" crossorigin>
   <link rel="dns-prefetch" href="https://s3.tradingview.com">
 
   <!-- Favicon -->
@@ -89,10 +89,10 @@
   <link rel="stylesheet" href="css/base/_variables.css">
   
   <!-- Fonts -->
-  <link rel="preload" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard-dynamic-subset.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <link rel="preload" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard-dynamic-subset.css" as="style" crossorigin="anonymous" onload="this.onload=null;this.rel='stylesheet'">
   <noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard-dynamic-subset.css"></noscript>
   
-  <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" as="style" crossorigin="anonymous" onload="this.onload=null;this.rel='stylesheet'">
   <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"></noscript>
   <link rel="stylesheet" href="/components/bottom-nav/bottom-nav.css" />
 
@@ -450,7 +450,6 @@
   <script src="components/header/header-loader.js"></script>
   <script src="js/footer-loader.js"></script>
   <script src="js/news.js"></script>
-  <script src="js/popup-banner.js"></script>
   
   <!-- Index Page Scripts -->
   <script src="js/index/tradingview-widgets.js"></script>

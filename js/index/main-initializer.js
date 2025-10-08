@@ -59,6 +59,46 @@ function initSplitScrollSync(){
   } catch(_) {}
 }
 
+// 홈 로그인 카드: 잔액/채굴량 탭 및 채굴량 클릭 이동
+function initHomeBalanceTabs(){
+  try {
+    const root = document.getElementById('home-balance-tabs');
+    if (!root) return;
+    const tabs = root.querySelectorAll('.tab-list .tab');
+    const panels = root.querySelectorAll('.tab-panels .tab-panel');
+    const activate = (key)=>{
+      try {
+        tabs.forEach(btn=>{
+          const isActive = btn.getAttribute('data-tab') === key;
+          btn.classList.toggle('active', isActive);
+          btn.setAttribute('aria-selected', isActive ? 'true' : 'false');
+        });
+        panels.forEach(p=>{
+          const match = p.getAttribute('data-panel') === key;
+          p.classList.toggle('active', match);
+          if (match) p.setAttribute('aria-hidden','false'); else p.setAttribute('aria-hidden','true');
+        });
+      } catch(_) {}
+    };
+    tabs.forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const key = btn.getAttribute('data-tab');
+        if (key) activate(key);
+      });
+    });
+    // ONBIT 채굴량 클릭 시 지갑으로 이동 (미로그인 시 로그인 페이지)
+    const onbitAmt = document.getElementById('home-onbit-balance');
+    if (onbitAmt){
+      onbitAmt.style.cursor = 'pointer';
+      onbitAmt.setAttribute('title','지갑으로 이동');
+      onbitAmt.addEventListener('click', ()=>{
+        const loggedIn = !!(window.auth && window.auth.currentUser);
+        window.location.href = loggedIn ? '/wallet/' : '/login/';
+      });
+    }
+  } catch(_) {}
+}
+
 function mountTvEventsWidget(theme){
   try {
     const container = document.getElementById('tv-events-embed');
@@ -158,6 +198,7 @@ document.addEventListener('DOMContentLoaded', function() {
   setTimeout(syncTopSplitHeights, 150);
   window.addEventListener('resize', ()=> setTimeout(syncTopSplitHeights, 120));
   initSplitScrollSync();
+  initHomeBalanceTabs();
 });
 
 // 페이지 로드 후 초기화

@@ -8,24 +8,23 @@
   const STORAGE_KEY = 'paperTradingState_v1';
 
   // =============================
-  // CONFIG
+  // CONFIG (single source of truth: window.PT_CONFIG)
   // =============================
-  const CONFIG = {
+  const CONFIG = (typeof window !== 'undefined' && window.PT_CONFIG) ? window.PT_CONFIG : {
     binanceWsBase: 'wss://fstream.binance.com/ws',
     binanceApiBase: 'https://fapi.binance.com',
-    orderbookDepthStream: (sym) => `${CONFIG.binanceWsBase}/${sym}@depth20`,
-    bookTickerStream: (sym) => `${CONFIG.binanceWsBase}/${sym}@bookTicker`,
-    depthRest: (sym, limit=25) => `${CONFIG.binanceApiBase}/fapi/v1/depth?symbol=${sym}&limit=${limit}`,
-    tickerRest: (sym) => `${CONFIG.binanceApiBase}/fapi/v1/ticker/bookTicker?symbol=${sym}`,
-    leverageBracketRest: (sym) => `${CONFIG.binanceApiBase}/fapi/v1/leverageBracket?symbol=${sym}`,
-    premiumIndexRest: (sym) => `${CONFIG.binanceApiBase}/fapi/v1/premiumIndex?symbol=${sym}`,
-    ui: {
-      minOrderbookRows: 9,
-      rowHeight: 24,
-      ladderTick: 0.1,
-    },
+    orderbookDepthStream: (sym) => `${(window.PT_CONFIG && window.PT_CONFIG.binanceWsBase) || 'wss://fstream.binance.com/ws'}/${sym}@depth20@100ms`,
+    bookTickerStream: (sym) => `${(window.PT_CONFIG && window.PT_CONFIG.binanceWsBase) || 'wss://fstream.binance.com/ws'}/${sym}@bookTicker`,
+    depthRest: (sym, limit=25) => `${(window.PT_CONFIG && window.PT_CONFIG.binanceApiBase) || 'https://fapi.binance.com'}/fapi/v1/depth?symbol=${sym}&limit=${limit}`,
+    tickerRest: (sym) => `${(window.PT_CONFIG && window.PT_CONFIG.binanceApiBase) || 'https://fapi.binance.com'}/fapi/v1/ticker/bookTicker?symbol=${sym}`,
+    leverageBracketRest: (sym) => `${(window.PT_CONFIG && window.PT_CONFIG.binanceApiBase) || 'https://fapi.binance.com'}/fapi/v1/leverageBracket?symbol=${sym}`,
+    premiumIndexRest: (sym) => `${(window.PT_CONFIG && window.PT_CONFIG.binanceApiBase) || 'https://fapi.binance.com'}/fapi/v1/premiumIndex?symbol=${sym}`,
+    ui: { minOrderbookRows: 9, rowHeight: 24, ladderTick: 0.1 },
     fees: { taker: 0.0006, maker: 0.0002 },
     fundingIntervalMs: 60*60*1000,
+    ticks: { price: 0.1, amount: 0.0001 },
+    cache: { formatLruSize: 64, mmrTtlMs: 10*60*1000 },
+    debug: false,
   };
 
   const defaultState = {
@@ -41,7 +40,8 @@
     closeOrders: [], // { id, positionId, symbol, side('sell'|'buy'), price, amount, reduceOnly:true, tif:'GTC' }
     lastPrice: 0,
     history: [],
-    fundingRate: 0.0001,
+    fundingRate: 0, // 실데이터로 채움 (premiumIndex.lastFundingRate)
+    nextFundingTime: 0, // 실데이터로 채움 (premiumIndex.nextFundingTime)
     lastFundingTs: 0,
   };
   const FEE_TAKER = CONFIG.fees.taker; // 6 bps
@@ -109,6 +109,9 @@
       this._priceAbort = null; // REST 가격 AbortController
       this._depthAbort = null; // REST 깊이 AbortController
       this._fmtMax = (CONFIG.cache && CONFIG.cache.formatLruSize) || 64;
+
+      // 심볼 틱/정밀도 실데이터 설정 시도
+      try { this.refreshSymbolMeta && this.refreshSymbolMeta(this.state.symbol); } catch(_) {}
 
       this.cacheElements();
       this.bindEvents();
@@ -261,6 +264,32 @@
 
   getBaseAsset(sym){
     try { return String(sym||this.state.symbol||'BTCUSDT').replace(/[:\-]/g,'').replace(/USDT$/,''); } catch(_) { return 'BTC'; }
+  }
+
+  // 심볼 메타데이터(틱/정밀도) 실데이터 로드
+  async refreshSymbolMeta(sym){
+    try {
+      const up = String(sym||this.state.symbol||'BTCUSDT').toUpperCase();
+      const url = `${(CONFIG.binanceApiBase||'https://fapi.binance.com')}/fapi/v1/exchangeInfo?symbol=${up}`;
+      const res = await fetch(url);
+      if (!res.ok) return;
+      const info = await res.json();
+      const s = (info && info.symbols && info.symbols[0]) || null;
+      if (!s) return;
+      // PRICE_FILTER, LOT_SIZE 기반 틱/스텝 계산
+      const pf = (s.filters||[]).find(f=>f.filterType==='PRICE_FILTER');
+      const ls = (s.filters||[]).find(f=>f.filterType==='LOT_SIZE');
+      if (pf && pf.tickSize){
+        const tick = Number(pf.tickSize);
+        if (isFinite(tick) && tick>0){ this.ladderTick = tick; this.pricePrecision = Math.max(0, (String(tick).split('.')[1]||'').length); }
+      }
+      if (ls && ls.stepSize){
+        const step = Number(ls.stepSize);
+        if (isFinite(step) && step>0){ this.amountPrecision = Math.max(0, (String(step).split('.')[1]||'').length); this._amountStep = step; }
+      }
+      // CONFIG.ticks에도 반영(세션 동안)
+      try { CONFIG.ticks = CONFIG.ticks || {}; if (this.ladderTick) CONFIG.ticks.price = this.ladderTick; if (this._amountStep) CONFIG.ticks.amount = this._amountStep; } catch(_) {}
+    } catch(_) {}
   }
 
   getMarkForSymbol(sym){
@@ -948,7 +977,11 @@
       const mark = this.getMark();
       if (this.el.price.disabled) return mark;
       const p = Number(this.el.price.value);
-      return p > 0 ? p : mark;
+      const raw = p > 0 ? p : mark;
+      // 틱 스냅 (exchangeInfo 기반 or CONFIG 폴백)
+      const tick = Number((CONFIG.ticks && CONFIG.ticks.price) || this.ladderTick || 0.1);
+      if (isFinite(tick) && tick>0){ return Math.round(raw / tick) * tick; }
+      return raw;
     }
 
     updateAmountFromPercent() {
@@ -960,8 +993,9 @@
       const cost = wallet * percent; // 투입 증거금
       const amount = (cost * lev) / Math.max(1e-8, price);
       if (this.el.amount) {
-        // 수량 틱 스냅
-        const snapped = Math.round(this.toAmount(amount) / AMOUNT_TICK) * AMOUNT_TICK;
+        // 수량 틱 스냅 (LOT_SIZE.stepSize 기반)
+        const step = Number((CONFIG.ticks && CONFIG.ticks.amount) || this._amountStep || AMOUNT_TICK);
+        const snapped = isFinite(step) && step>0 ? Math.round(this.toAmount(amount) / step) * step : this.toAmount(amount);
         this.el.amount.value = this.toAmount(snapped);
       }
       if (this.el.amountPercent) this.el.amountPercent.value = `${Math.round((percent)*100)}%`;
@@ -1256,24 +1290,13 @@
     }
 
     getMaintenanceRate(p) {
-      // 1) 실데이터 브래킷 우선 사용 (명목가 상한 cap 기준)
       try {
-        if (this._mmrBrackets && this._mmrBrackets.length) {
-          const mark = this.getMarkForSymbol(p.symbol) || p.entry;
-          const notional = Math.max(0, mark * p.amount);
-          let mmr = this._mmrBrackets[0].mmr;
-          for (const b of this._mmrBrackets) {
-            if (!isFinite(b.cap) || b.cap <= 0) { mmr = b.mmr; break; }
-            if (notional <= b.cap) { mmr = b.mmr; break; }
-            mmr = b.mmr; // 넘어가면 다음 티어로 갱신
-          }
-          if (isFinite(mmr) && mmr > 0) return mmr;
-        }
-      } catch (_) {}
-      // 2) 폴백: 레버리지 기반 근사 (0.25%~0.8%)
+        if (!this._risk) this._risk = new (window.RiskFunding||function(){})({ getState: ()=>this.state, getBrackets: ()=>this._mmrBrackets });
+        if (this._risk && this._risk.getMaintenanceRate) return this._risk.getMaintenanceRate(p);
+      } catch(_) {}
+      // 폴백: RiskFunding와 동일한 근사식
       const L = Math.max(1, p.leverage);
-      const initialMarginRate = 1 / L;
-      const scaled = initialMarginRate * 0.6;
+      const scaled = (1/L) * 0.6;
       return Math.max(0.0025, Math.min(0.008, scaled));
     }
 
@@ -1424,7 +1447,13 @@
     applyFundingIfDue() {
       const now = Date.now();
       if (!this.state.lastFundingTs) this.state.lastFundingTs = now;
-      if (now - this.state.lastFundingTs < FUNDING_INTERVAL_MS) return;
+      // nextFundingTime이 있으면 그 시점 전에는 적용하지 않음
+      if (Number.isFinite(this.state.nextFundingTime) && this.state.nextFundingTime > 0) {
+        if (now < this.state.nextFundingTime - 5000) return; // 약간의 슬랙 허용
+      } else {
+        // 폴백: 설정된 INTERVAL 사용
+        if (now - this.state.lastFundingTs < FUNDING_INTERVAL_MS) return;
+      }
       const rate = Number(this.state.fundingRate || 0);
       if (!isFinite(rate) || this.state.positions.length === 0) {
         this.state.lastFundingTs = now;
@@ -1449,6 +1478,13 @@
         changed = true;
       }
       this.state.lastFundingTs = now;
+      // 다음 펀딩 타임이 있다면 다음 라운드로 미루기(8h 정시 등)
+      try {
+        if (Number.isFinite(this.state.nextFundingTime) && this.state.nextFundingTime > 0) {
+          // 적용 직후에는 다음 사이클까지 대기. nextFundingTime은 바이낸스가 제공하는 다음 시각
+          // 여기서는 그대로 유지하여 다음 루프에서 비교되게 둔다
+        }
+      } catch(_) {}
       if (changed) {
         this.saveState();
         this.syncUserBalanceDebounced && this.syncUserBalanceDebounced();
@@ -1493,57 +1529,12 @@
     }
 
     matchOpenOrders() {
-      if (!Array.isArray(this.state.openOrders) || this.state.openOrders.length === 0) return 0;
-      const price = this.getMark() || 0;
-      const next = [];
-      let filledCount = 0;
-      for (const o of this.state.openOrders) {
-        const shouldFill = (o.side === 'long') ? (price <= o.price + 1e-8) : (price >= o.price - 1e-8);
-        if (shouldFill) {
-          const margin = o.price * o.amount / o.leverage;
-          const openNotional = o.price * o.amount;
-          const openFee = openNotional * FEE_MAKER;
-          if (margin + openFee > this.state.balanceUSDT + 1e-8) {
-            // 잔고 부족 시 유지
-            next.push(o);
-            continue;
-          }
-          const pos = {
-            id: 'pos_' + Date.now(),
-            symbol: o.symbol,
-            side: o.side,
-            entry: o.price,
-            amount: o.amount,
-            leverage: o.leverage,
-            margin,
-            mode: o.mode,
-          };
-          this.state.balanceUSDT -= (margin + openFee);
-          this.state.positions.push(pos);
-          filledCount++;
-          // history record - Limit Fill
-          const __orderId = 'ord_'+Date.now()+Math.floor(Math.random()*1e6);
-          this.state.history.unshift({ id:'his_'+Date.now(), orderId: __orderId, ts:Date.now(), symbol:o.symbol, mode:o.mode, leverage:o.leverage, direction: o.side==='long'?'Open Long':'Open Short', type:'Limit', avgPrice:o.price, orderPrice:o.price, filled:o.amount, fee: openFee, pnl:null });
-          try { fetch(this.getApiUrl('/api/orders'), { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ userId: (this.user&&this.user.uid)||'guest', symbol:o.symbol, side: o.side, type:'LimitOpen', price:o.price, amount:o.amount, fee: openFee, pnl:null }) }).catch(()=>{}); } catch(_) {}
-          if (this.state.history.length>500) this.state.history.length=500;
-          try { window.TradeNotifier && window.TradeNotifier.notify({
-            title: `Open ${o.side==='long'?'Long':'Short'} ${o.symbol} ${o.mode==='cross'?'Cross':'Isolated'} · ${o.leverage}x`,
-            subtitle: 'Limit · Filled',
-            price: o.price,
-            amount: o.amount,
-            mode: o.mode,
-            leverage: o.leverage,
-            type: 'success',
-          }); } catch(_) {}
-          this.syncUserBalanceDebounced();
-        } else {
-          next.push(o);
-        }
-      }
-      this.state.openOrders = next;
-      this.renderOrders();
-      this.saveState();
-      return filledCount;
+      if (!this._risk) this._risk = new (window.RiskFunding||function(){})({ getState: ()=>this.state, getBrackets: ()=>this._mmrBrackets });
+      if (!this._ui) { this._ui = new (window.UIRenderer||function(){})(); this._ui.setFormat && this._ui.setFormat((n)=>this.format(n)); }
+      if (!this._orders) this._orders = new (window.OrderEngine||function(){ })(this.state, this._risk, this._ui);
+      const filled = this._orders.matchOpenOrders(this.getMark());
+      if (filled>0) { this.renderOrders(); this.saveState(); }
+      return filled;
     }
 
     renderOrders() {
@@ -1589,10 +1580,7 @@
     async fetchLeverageBrackets() {
       try {
         // 로컬 개발 환경에서는 인증이 필요한 API 호출을 생략하여 콘솔 401 스팸 방지
-        try {
-          const host = (location && location.hostname) || '';
-          if (host === 'localhost' || host === '127.0.0.1') { this._mmrBrackets = null; return; }
-        } catch(_) {}
+        // 항상 시도: 개발/운영 동일 동작. 실패 시 폴백 처리
         const sym = (this.state.symbol || 'BTCUSDT').toUpperCase();
         // 캐시 확인
         try {
@@ -1659,6 +1647,13 @@
           if (isFinite(mark) && mark > 0) this.state.markPrice = mark; else this.state.markPrice = mid;
           this.state.bestBid = bid;
           this.state.bestAsk = ask;
+          // 펀딩 실데이터 반영
+          try {
+            const fr = (pi && pi.lastFundingRate != null) ? Number(pi.lastFundingRate) : null;
+            if (fr != null && isFinite(fr)) this.state.fundingRate = fr;
+            const nft = (pi && (pi.nextFundingTime != null)) ? Number(pi.nextFundingTime) : null;
+            if (nft != null && isFinite(nft)) this.state.nextFundingTime = nft;
+          } catch(_) {}
           this.renderPrices();
           this.updatePnL();
           // 가격 입력/수수료 프리뷰 즉시 갱신
@@ -1679,6 +1674,13 @@
         const pi = await res.json();
         const mark = Number(pi && (pi.markPrice ?? pi.lastPrice));
         if (isFinite(mark) && mark>0) { this.state.markPrice = mark; }
+        // 펀딩 실데이터 주기 갱신
+        try {
+          const fr = (pi && pi.lastFundingRate != null) ? Number(pi.lastFundingRate) : null;
+          if (fr != null && isFinite(fr)) this.state.fundingRate = fr;
+          const nft = (pi && (pi.nextFundingTime != null)) ? Number(pi.nextFundingTime) : null;
+          if (nft != null && isFinite(nft)) this.state.nextFundingTime = nft;
+        } catch(_) {}
       } catch(_) {}
     }
 

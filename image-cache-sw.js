@@ -42,6 +42,16 @@ function addOptimizationHeaders(response) {
 // Install 이벤트
 self.addEventListener('install', (event) => {
   self.skipWaiting();
+  // PWA 기본 자원 프리캐시
+  const PWA_CACHE = 'onbit-pwa-v1';
+  const PWA_ASSETS = [
+    '/',
+    '/index.html',
+    '/css/style.css',
+    '/index.css',
+    '/components/header/header.html'
+  ];
+  event.waitUntil(caches.open(PWA_CACHE).then((cache)=> cache.addAll(PWA_ASSETS)).catch(()=>{}));
 });
 
 // Activate 이벤트
@@ -50,7 +60,7 @@ self.addEventListener('activate', (event) => {
     caches.keys().then(cacheNames => {
       return Promise.all(
         cacheNames.map(cacheName => {
-          if (cacheName !== CACHE_NAME) {
+          if (cacheName !== CACHE_NAME && !/^onbit-pwa-/.test(cacheName)) {
             return caches.delete(cacheName);
           }
         })
@@ -63,40 +73,38 @@ self.addEventListener('activate', (event) => {
 // Fetch 이벤트 - 이미지 캐싱 전략
 self.addEventListener('fetch', (event) => {
   const request = event.request;
-  
-  // 이미지 요청만 처리
+  const url = new URL(request.url);
+  // PWA 기본 페이지: 네트워크 우선, 실패 시 캐시
+  if (request.method === 'GET' && url.origin === location.origin && (url.pathname === '/' || url.pathname.endsWith('.html') || url.pathname === '/components/header/header.html')){
+    event.respondWith(
+      fetch(request).then((res)=>{
+        try { const copy = res.clone(); caches.open('onbit-pwa-v1').then((c)=> c.put(request, copy)).catch(()=>{}); } catch(_) {}
+        return res;
+      }).catch(()=> caches.match(request))
+    );
+    return;
+  }
+
+  // 이미지 요청 캐시 전략 유지
   if (!isImageRequest(request)) {
     return;
   }
-  
   event.respondWith(
     caches.open(CACHE_NAME).then(async (cache) => {
-      // 캐시에서 먼저 확인
       const cachedResponse = await cache.match(request);
-      
       if (cachedResponse) {
         return cachedResponse;
       }
-      
       try {
-        // 네트워크에서 가져오기
         const response = await fetch(request);
-        
         if (response.ok) {
-          // 캐시에 저장
           const responseToCache = response.clone();
           cache.put(request, addOptimizationHeaders(responseToCache));
-          
-          // 캐시 크기 관리
           manageCacheSize();
-          
           return addOptimizationHeaders(response);
         }
-        
         return response;
-        
       } catch (error) {
-        // 기본 이미지 반환
         return caches.match('/assets/default-event-image.svg');
       }
     })

@@ -5,16 +5,14 @@ const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch
 
 const app = express();
 
-// CORS 설정
-app.use(cors({
-    origin: 'http://localhost:8000',
-    credentials: true
-}));
+// CORS 설정 (환경변수 지원)
+const ORIGIN = process.env.CORS_ORIGIN || 'http://localhost:8000';
+app.use(cors({ origin: ORIGIN, credentials: true }));
 
 // 공통 캐시 헤더 도우미
 function setImageCacheHeaders(res) {
   res.setHeader('Cache-Control', 'public, max-age=604800, immutable'); // 7d
-  res.setHeader('Access-Control-Allow-Origin', 'http://localhost:8000');
+  res.setHeader('Access-Control-Allow-Origin', ORIGIN);
 }
 
 // 아이콘 프록시 (다중 소스 폴백)
@@ -70,7 +68,7 @@ app.use('/api/binance', createProxyMiddleware({
         '^/api/binance': '/api/v3'
     },
     onProxyRes: function (proxyRes, req, res) {
-        proxyRes.headers['Access-Control-Allow-Origin'] = 'http://localhost:8000';
+        proxyRes.headers['Access-Control-Allow-Origin'] = ORIGIN;
         proxyRes.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS';
         proxyRes.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization';
     }
@@ -96,7 +94,7 @@ app.use('/api/coingecko', createProxyMiddleware({
         try { proxyReq.setHeader('x-cg-demo-api-key', CG_DEMO_API_KEY); } catch(_) {}
     },
     onProxyRes: function (proxyRes, req, res) {
-        proxyRes.headers['Access-Control-Allow-Origin'] = 'http://localhost:8000';
+        proxyRes.headers['Access-Control-Allow-Origin'] = ORIGIN;
         proxyRes.headers['Access-Control-Allow-Methods'] = 'GET, OPTIONS';
         proxyRes.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization';
     }

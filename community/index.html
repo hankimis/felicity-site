@@ -51,8 +51,7 @@
     <link rel="stylesheet" href="../css/components/chart.css" />
     <link rel="stylesheet" href="/components/bottom-nav/bottom-nav.css" />
     
-    <!-- 🔥 고래 추적기 CSS 추가 -->
-    <link rel="stylesheet" href="../css/whale-tracker.css" />
+    
     
     <!-- 🔥 TradingView 심볼 아이콘 CSS -->
     <link rel="stylesheet" href="../css/tradingview-symbol-icons.css" />
@@ -179,10 +178,9 @@
                                     <div id="mobile-trade-slot" aria-live="polite"></div>
                                     <div class="orderbook-panel">
                                         <div class="panel-header">
-                                            <div class="tabs" role="tablist">
-                                                <button class="tab active" data-tab="orderbook">오더북</button>
-                                                <button class="tab" data-tab="whale">실시간 고래 탐지</button>
-                                            </div>
+                                        <div class="tabs" role="tablist">
+                                            <button class="tab active" data-tab="orderbook">오더북</button>
+                                        </div>
                                         </div>
                                         <div class="orderbook-body" id="orderbook-body">
                                             <div class="orderbook-table">
@@ -204,13 +202,7 @@
                                                 </div>
                                             </div>
                                         </div>
-                                        <div class="orderbook-body" id="whale-tab-body" style="display:none;">
-                                            <div class="whale-trades-wrapper">
-                                                <div id="whale-trades-container" class="whale-trades-container">
-                                                    <div class="whale-trades-list"></div>
-                                                </div>
-                                            </div>
-                                        </div>
+                                        
                                     </div>
                                     <!-- 모바일에서 채팅을 사이드바로 합치기 위한 슬롯 (현재 미사용) -->
                                     <div id="mobile-chat-slot" aria-live="polite"></div>
@@ -388,23 +380,7 @@
         </div>
     </main>
 
-    <!-- 고래 거래 설정 모달 -->
-    <div id="whale-settings-modal" class="modal-overlay" style="display: none;">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>고래 거래 추적 설정</h2>
-                <button class="modal-close" id="close-whale-settings">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div id="whale-settings-list">
-                    <!-- 설정 항목들이 여기에 동적으로 추가됩니다 -->
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button id="save-whale-settings" class="btn btn-primary">설정 저장</button>
-            </div>
-        </div>
-    </div>
+    
 
     <!-- Margin Mode Modal (pt- 접두사로 충돌 방지) -->
     <div id="pt-margin-modal" class="pt-modal" role="dialog" aria-modal="true" aria-labelledby="pt-margin-modal-title" hidden>
@@ -472,8 +448,7 @@
 
 
 
-    <!-- 고래 추적기 스크립트 -->
-    <script src="../js/analysis/whale-tracker.js" type="module"></script>
+    
     
     <!-- 모의투자 설정 -->
     <script src="../js/paper-config.js"></script>

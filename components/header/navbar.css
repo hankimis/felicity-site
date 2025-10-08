@@ -180,8 +180,19 @@
 }
 
 .auth-buttons .signup {
-  background-color: var(--primary-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 78px;
+  height: 30px;
   color: #fff;
+  background-color: var(--primary-color);
+  border: 1px solid var(--primary-color);
+  text-decoration: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  transition: all 0.2s;
 }
 
 .auth-buttons .signup:hover {
@@ -636,7 +647,8 @@ body.dark-mode .navbar nav a:hover:after {
   }
   
   /* 모바일에서 로그인 버튼 크기 조정 */
-  .auth-buttons .login {
+  .auth-buttons .login,
+  .auth-buttons .signup {
     width: 75px;
     height: 32px;
     font-size: 13px;

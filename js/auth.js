@@ -448,6 +448,9 @@ async function updateAuthUI(user) {
     const notifBtn = document.getElementById('notif-toggle');
     const walletBtn = document.getElementById('wallet-toggle');
     const headerDivider = document.querySelector('.header-divider');
+    // 모바일 메뉴 항목 참조
+    const mProfileLink = document.querySelector('#mobile-menu a[href="/my-account/"]');
+    const mWalletLink = document.querySelector('#mobile-menu a[href="/wallet/"]');
 
     // normalize signup style to match login
     try {
@@ -540,6 +543,9 @@ async function updateAuthUI(user) {
             if (headerDivider) headerDivider.style.display = '';
             const myLink = document.getElementById('my-page-link');
             if (myLink) myLink.style.display='';
+            // 모바일 메뉴 항목 표시
+            if (mProfileLink) mProfileLink.style.display = '';
+            if (mWalletLink) mWalletLink.style.display = '';
             if (getElement('user-display-name')) {
                 getElement('user-display-name').textContent = currentUser.displayName;
             }
@@ -733,6 +739,9 @@ async function updateAuthUI(user) {
         if (notifBtn) notifBtn.style.display = 'none';
         if (walletBtn) walletBtn.style.display = 'none';
         if (headerDivider) headerDivider.style.display = 'none';
+        // 모바일 메뉴 항목 숨김
+        if (mProfileLink) mProfileLink.style.display = 'none';
+        if (mWalletLink) mWalletLink.style.display = 'none';
 
         // 아바타 초기화 (아이콘 노출)
         if (myPageLink) {

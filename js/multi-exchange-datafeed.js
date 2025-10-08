@@ -463,18 +463,26 @@ class MultiExchangeDatafeed {
         }, 0);
     }
 
-    // 심볼 검색 (모든 거래소)
+    // 심볼 검색 (모든 거래소) - 사용자 입력을 기반으로 실제 결과 제공
     searchSymbols(userInput, exchange, symbolType, onResultReadyCallback) {
-        console.log('🔍 멀티 거래소 심볼 검색(비트코인만 노출):', userInput, exchange);
-        let btcOnly = [];
-        this.symbolsCache.forEach((symbols) => {
-            const filtered = (symbols || []).filter(s => s.baseAsset === 'BTC' && s.quoteAsset === 'USDT');
-            btcOnly = btcOnly.concat(filtered);
-        });
-        if (btcOnly.length === 0) {
-            btcOnly = ['BINANCE','OKX','BYBIT'].map(ex => this.createDefaultSymbolList(ex)[0]);
+        console.log('🔍 멀티 거래소 심볼 검색:', userInput, exchange);
+        const q = String(userInput || '').toUpperCase().trim();
+        let results = [];
+        const push = (arr)=>{ if (Array.isArray(arr)) results = results.concat(arr); };
+        if (exchange && exchange !== '') {
+            const key = String(exchange).toLowerCase();
+            const list = this.symbolsCache.get(key) || [];
+            push(list.filter(s => q ? (s.symbol.includes(q) || s.baseAsset?.includes(q)) : true));
+        } else {
+            this.symbolsCache.forEach(list => {
+                push(list.filter(s => q ? (s.symbol.includes(q) || s.baseAsset?.includes(q)) : true));
+            });
         }
-        onResultReadyCallback(btcOnly);
+        if (results.length === 0) {
+            // 비어 있으면 기본 심볼 세트 제공
+            ['BINANCE','OKX','BYBIT'].forEach(ex => push(this.createDefaultSymbolList(ex)));
+        }
+        onResultReadyCallback(results.slice(0, 200));
     }
 
     // 심볼 정보 조회
@@ -844,6 +852,7 @@ class MultiExchangeDatafeed {
         
         this.connectBinanceWebSocket();
         this.subscribeToChannel('binance', channelString);
+        // 빠른 체감 가격: bookTicker를 보조로 구독 (안정화 로직 내장)
         this.subscribeToChannel('binance', bookTickerChannel);
     }
 
@@ -929,14 +938,13 @@ class MultiExchangeDatafeed {
             return;
         }
 
-        // bookTicker 업데이트 (최우선 호가 기반 초저지연 가격)
+        // bookTicker 기반 빠른 체감 업데이트 (고빈도, 고저/거래량은 보정하지 않음)
         if (data && data.s && data.b && data.a) {
             const symbol = String(data.s).toUpperCase();
             const bid = parseFloat(data.b);
             const ask = parseFloat(data.a);
             if (!isFinite(bid) || !isFinite(ask)) return;
             const mid = (bid + ask) / 2;
-            // 서버 이벤트 시간을 우선 사용하여 시간 역행 방지
             const eventMs = (typeof data.E === 'number' && data.E>0) ? data.E : Date.now();
             this.subscribers.forEach((subscriber, uid) => {
                 if (subscriber.exchange !== 'BINANCE') return;
@@ -945,34 +953,25 @@ class MultiExchangeDatafeed {
                 const bucketMs = this.getResolutionMs(subscriber.resolution);
                 const bucketStart = Math.floor(eventMs / bucketMs) * bucketMs;
                 const prev = subscriber.lastBar || this.lastBars.get(uid);
-                let bar;
-                if (prev && prev.time === bucketStart) {
-                    bar = {
-                        time: prev.time,
-                        open: prev.open,
-                        high: Math.max(prev.high, mid),
-                        low: Math.min(prev.low, mid),
-                        close: mid,
-                        volume: prev.volume || 0
-                    };
+                // 초기 상태(히스토리만 있고 kline 기반 lastBar가 설정되지 않은 경우)에는
+                // bookTicker로 새로운 바를 만들지 않음. 기준 시가는 kline로만 확정.
+                if (!prev) return;
+                let bar = prev || null;
+                if (bar && bucketStart < bar.time) return; // 시간 역행 방지
+                if (!bar || bar.time !== bucketStart) {
+                    const open = bar.close; // 새 버킷의 시가는 직전 버킷 종가로 고정
+                    bar = { time: bucketStart, open, high: open, low: open, close: mid, volume: bar ? (bar.volume||0) : 0 };
                 } else {
-                    // 시간 역행 가드: 신규 버킷이 이전 바보다 과거면 무시
-                    if (prev && bucketStart < prev.time) {
-                        return;
-                    }
-                    const open = prev ? prev.close : mid;
-                    bar = {
-                        time: bucketStart,
-                        open,
-                        high: Math.max(open, mid),
-                        low: Math.min(open, mid),
-                        close: mid,
-                        volume: 0
-                    };
+                    // 동일 버킷: 종가만 갱신, 고저는 확정(kline)에서 처리
+                    const close = mid;
+                    // 클램프: 종가가 기존 고저를 살짝 벗어나면 고저를 최소한으로 확장
+                    const hi = Math.max(bar.high, close);
+                    const lo = Math.min(bar.low, close);
+                    bar = { time: bar.time, open: bar.open, high: hi, low: lo, close, volume: bar.volume||0 };
                 }
                 subscriber.lastBar = bar;
                 this.lastBars.set(uid, bar);
-                subscriber.onRealtimeCallback(bar);
+                try { subscriber.onRealtimeCallback(bar); } catch(_) {}
             });
             return;
         }
@@ -1021,6 +1020,13 @@ class MultiExchangeDatafeed {
         if (subscriber) {
             // 구독 해제 로직
             this.subscribers.delete(subscriberUID);
+            // 채널 구독 수가 0이면 Binance WS 연결 정리
+            const anyBinanceLeft = Array.from(this.subscribers.values()).some(s => s.exchange === 'BINANCE');
+            const ws = this.websockets.get('binance');
+            if (!anyBinanceLeft && ws && ws.readyState === WebSocket.OPEN) {
+                try { ws.close(); } catch(_) {}
+                this.websockets.delete('binance');
+            }
         }
     }
 

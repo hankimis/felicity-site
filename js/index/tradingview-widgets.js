@@ -3,6 +3,16 @@
  */
 
 // TradingView 위젯 관리 시스템
+// 일부 임베드 스크립트가 Snowplow 환경값을 요구하며 콘솔 오류를 발생시키는 경우가 있어
+// 기본 환경과 no-op 트래커를 제공해 콘솔 오류를 방지합니다.
+try {
+  if (typeof window !== 'undefined') {
+    window.SNOWPLOW_EMBED_ENV = window.SNOWPLOW_EMBED_ENV || 'prod';
+    window.__SNOWPLOW_ENV = window.__SNOWPLOW_ENV || 'prod';
+    window.snowplow = window.snowplow || function(){ try { /* no-op */ } catch(_) {} };
+  }
+} catch(_) {}
+
 window.TradingViewManager = {
   widgets: {},
   isInitialized: false,

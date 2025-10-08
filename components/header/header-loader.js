@@ -145,11 +145,61 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (typeof window.bindAuthForms === 'function') {
                     window.bindAuthForms();
                 }
+
+                // PWA: 서비스 워커 등록 및 설치 버튼 설정
+                try {
+                    if ('serviceWorker' in navigator) {
+                        navigator.serviceWorker.register('/image-cache-sw.js').catch(()=>{});
+                    }
+                    let deferredPrompt = null;
+                    window.addEventListener('beforeinstallprompt', (e)=>{
+                        e.preventDefault();
+                        deferredPrompt = e;
+                        const btn = document.getElementById('pwa-install');
+                        if (btn) {
+                            btn.title = '앱 설치';
+                            btn.setAttribute('aria-label','앱 설치');
+                        }
+                    });
+                    const pwaBtn = document.getElementById('pwa-install');
+                    if (pwaBtn && !pwaBtn.__bound){
+                        pwaBtn.addEventListener('click', async ()=>{
+                            try {
+                                if (!deferredPrompt) { alert('이 기기/브라우저에서는 설치를 지원하지 않습니다.'); return; }
+                                deferredPrompt.prompt();
+                                const res = await deferredPrompt.userChoice;
+                                deferredPrompt = null;
+                                // 설치 후에도 버튼은 유지합니다 (요청사항)
+                            } catch(_) {}
+                        });
+                        pwaBtn.__bound = true;
+                    }
+                    // 설치 완료 이벤트: 버튼 상태만 안내 텍스트로 변경
+                    window.addEventListener('appinstalled', ()=>{
+                        try {
+                            const btn = document.getElementById('pwa-install');
+                            if (btn) {
+                                btn.title = '설치됨';
+                                btn.setAttribute('aria-label','설치됨');
+                            }
+                        } catch(_) {}
+                    });
+                } catch(_) {}
                 
                 // Firebase 초기화 후 현재 인증 상태 확인
                 if (window.auth && typeof window.updateAuthUI === 'function') {
                     const currentUser = window.auth.currentUser;
                     window.updateAuthUI(currentUser);
+                    // 모바일 메뉴 항목(프로필/지갑)도 동기화
+                    try {
+                        const mProfile = document.querySelector('#mobile-menu a[href="/my-account/"]');
+                        const mWallet = document.querySelector('#mobile-menu a[href="/wallet/"]');
+                        const mUserInfo = document.getElementById('mobile-user-profile');
+                        const user = currentUser;
+                        if (mProfile) mProfile.style.display = user ? '' : 'none';
+                        if (mWallet) mWallet.style.display = user ? '' : 'none';
+                        if (mUserInfo) mUserInfo.style.display = user ? '' : 'none';
+                    } catch(_) {}
                 }
                 
                 // 헤더 DOM이 준비된 직후 이벤트 리스너 강제 초기화 (안전장치)
@@ -185,6 +235,13 @@ document.addEventListener('DOMContentLoaded', () => {
                             if (headerDivider) headerDivider.style.display = user ? '' : 'none';
                             if (pipeSep) pipeSep.style.display = user ? 'inline' : 'inline';
                             if (!user && profileDropdown) { profileDropdown.style.display='none'; profileDropdown.setAttribute('aria-hidden','true'); }
+                            // 모바일 메뉴 항목(프로필/지갑), 상단 모바일 프로필 영역 동기화
+                            const mProfile = document.querySelector('#mobile-menu a[href="/my-account/"]');
+                            const mWallet = document.querySelector('#mobile-menu a[href="/wallet/"]');
+                            const mUserInfo = document.getElementById('mobile-user-profile');
+                            if (mProfile) mProfile.style.display = user ? '' : 'none';
+                            if (mWallet) mWallet.style.display = user ? '' : 'none';
+                            if (mUserInfo) mUserInfo.style.display = user ? '' : 'none';
                         }
                         // 사용자가 결정되면 조기 종료
                         if (user || attempts >= max) clearInterval(iv);
