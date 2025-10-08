@@ -195,7 +195,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 let deferredPrompt = null;
                 // 이미 설치됨/스탠드얼론이면 숨김
                 const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
-                if (installBtn) installBtn.style.display = isStandalone ? 'none' : 'none';
+                if (installBtn) installBtn.style.display = isStandalone ? 'none' : '';
                 window.addEventListener('beforeinstallprompt', (e)=>{
                     try {
                         e.preventDefault();
@@ -203,6 +203,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (installBtn) installBtn.style.display = '';
                     } catch(_) {}
                 });
+                // 크롬 일부 모바일 환경: 페이지 로드 후 지연 표시 보정
+                setTimeout(()=>{ try { if (installBtn && !isStandalone && !deferredPrompt) installBtn.style.display=''; } catch(_) {} }, 800);
                 if (installBtn && !installBtn.__bound) {
                     installBtn.addEventListener('click', async ()=>{
                         try {
