@@ -25,7 +25,9 @@
   }
 
   function buildItem(p, idxGlobal){
-    const href = isLocal ? `/feed/post.html?id=${p.id}` : `/feed/post/${p.id}`;
+    // 도메인 환경에서 pretty URL(/feed/post/:id) 사용 시 404가 발생해
+    // 항상 쿼리 파라미터 방식으로 통일
+    const href = `/feed/post.html?id=${p.id}`;
     const author = p.author || {};
     const name = author.displayName || '사용자';
     const text = (p.text||'').replace(/\n/g,' ').slice(0, 48);
