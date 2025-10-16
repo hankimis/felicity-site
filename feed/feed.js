@@ -9,10 +9,122 @@
   let bgObserver = null;
   let commentsObserver = null;
   const authorCache = (window.__authorCache = window.__authorCache || new Map());
+  let __preloaderTimer = null;
+  const __preconnected = new Set();
+
+  function showPreloader(){
+    try {
+      if (document.getElementById('feed-preloader')) return;
+      const overlay = document.createElement('div');
+      overlay.id = 'feed-preloader';
+      overlay.setAttribute('aria-busy','true');
+      overlay.style.position = 'fixed';
+      overlay.style.inset = '0';
+      overlay.style.zIndex = '1999';
+      overlay.style.background = 'var(--bg-color, #fff)';
+      overlay.style.display = 'flex';
+      overlay.style.alignItems = 'center';
+      overlay.style.justifyContent = 'center';
+      overlay.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;gap:12px;">\
+        <div style="width:48px;height:48px;border:4px solid var(--border-color,#e5e7eb);border-top:4px solid var(--primary-color,#3b82f6);border-radius:50%;animation:spin 1s linear infinite"></div>\
+        <div style="color:var(--text-color-secondary,#6b7280);font-weight:600;">불러오는 중...</div>\
+      </div>';
+      const style = document.createElement('style');
+      style.textContent = '@keyframes spin{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}';
+      overlay.appendChild(style);
+      document.body.appendChild(overlay);
+      document.documentElement.style.overflow = 'hidden';
+      // 안전 타임아웃: 8초 후 강제 해제
+      clearTimeout(__preloaderTimer); __preloaderTimer = setTimeout(hidePreloader, 8000);
+    } catch(_) {}
+  }
+
+  function hidePreloader(){
+    try {
+      clearTimeout(__preloaderTimer); __preloaderTimer = null;
+      const overlay = document.getElementById('feed-preloader');
+      if (overlay) overlay.remove();
+      document.documentElement.style.overflow = '';
+    } catch(_) {}
+  }
+
+  function preconnectOnce(url){
+    try {
+      const u = new URL(url, location.href);
+      const origin = u.origin;
+      if (__preconnected.has(origin)) return;
+      __preconnected.add(origin);
+      const link = document.createElement('link');
+      link.rel = 'preconnect';
+      link.href = origin;
+      link.crossOrigin = 'anonymous';
+      document.head.appendChild(link);
+    } catch(_) {}
+  }
+
+  // Skeleton utilities (feed-list 내부 플레이스홀더)
+  let isSkeletonVisible = false;
+  function ensureSkeletonStyles(){
+    if (document.getElementById('feed-skeleton-style')) return;
+    const style = document.createElement('style');
+    style.id = 'feed-skeleton-style';
+    style.textContent = `
+      @keyframes sk-shimmer { 0% { background-position: -200px 0 } 100% { background-position: calc(200px + 100%) 0 } }
+      .sk-avatar, .sk-line {
+        background-image: linear-gradient(90deg, rgba(0,0,0,0.06) 25%, rgba(0,0,0,0.12) 37%, rgba(0,0,0,0.06) 63%);
+        background-size: 200px 100%;
+        animation: sk-shimmer 1.2s ease-in-out infinite;
+      }
+      @media (prefers-color-scheme: dark){
+        .sk-avatar, .sk-line {
+          background-image: linear-gradient(90deg, rgba(255,255,255,0.08) 25%, rgba(255,255,255,0.16) 37%, rgba(255,255,255,0.08) 63%);
+        }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+  function skeletonItemHtml(){
+    return '<div class="sk-item" style="display:flex;gap:12px;padding:14px 16px;border-bottom:1px solid var(--border-color,#e5e7eb);max-width:720px;width:100%;margin:0 auto;">\
+      <div class="sk-avatar" style="width:40px;height:40px;border-radius:999px;"></div>\
+      <div style="flex:1;display:flex;flex-direction:column;gap:10px;">\
+        <div class="sk-line" style="height:12px;width:35%;border-radius:6px;"></div>\
+        <div class="sk-line" style="height:12px;width:90%;border-radius:6px;"></div>\
+        <div class="sk-line" style="height:12px;width:70%;border-radius:6px;"></div>\
+      </div>\
+    </div>';
+  }
+  function injectSkeleton(count){
+    try {
+      ensureSkeletonStyles();
+      const list = document.getElementById('feed-list');
+      if (!list) return;
+      const n = typeof count === 'number' ? count : 10;
+      list.innerHTML = new Array(n).fill(0).map(()=> skeletonItemHtml()).join('');
+      isSkeletonVisible = true;
+    } catch(_) {}
+  }
+  function clearSkeleton(){
+    if (!isSkeletonVisible) return; isSkeletonVisible = false;
+    try { const list = document.getElementById('feed-list'); if (list) list.innerHTML = ''; } catch(_) {}
+  }
 
   function el(id){ return document.getElementById(id); }
   function qs(sel,root=document){ return root.querySelector(sel); }
   function qsa(sel,root=document){ return Array.from(root.querySelectorAll(sel)); }
+
+  async function waitForFirebase(timeoutMs){
+    const limit = typeof timeoutMs === 'number' ? timeoutMs : 4000;
+    return new Promise((resolve)=>{
+      const start = Date.now();
+      const iv = setInterval(()=>{
+        if (window.firebase && window.firebase.firestore && window.firebase.auth){
+          clearInterval(iv); resolve();
+        } else if (Date.now() - start > limit){
+          clearInterval(iv); resolve();
+        }
+      }, 50);
+    });
+  }
 
   function fmtRel(ts){
     try {
@@ -110,6 +222,7 @@
           try { await Promise.all(missing.map(async (uid)=>{ try { const u = await db.collection('users').doc(uid).get(); authorCache.set(uid, u.exists ? u.data() : {}); } catch(_) { authorCache.set(uid, {}); } })); } catch(_) {}
           const items = baseItems.map(p=> ({ ...p, author: authorCache.get(p.authorId) || {} }));
           if (items.length) cursor = data.docs[data.docs.length-1];
+          if (isSkeletonVisible) { clearSkeleton(); }
           list.insertAdjacentHTML('beforeend', items.map(cardHtml).join(''));
           try { window.lucide && window.lucide.createIcons(); } catch(_) {}
           hydrateNewContent(list);
@@ -135,6 +248,7 @@
     const items = baseItems.map(p=> ({ ...p, author: authorCache.get(p.authorId) || {} }));
     if (items.length) cursor = snap.docs[snap.docs.length-1];
     // Defer comment count updates to viewport observer to reduce initial reads
+    if (isSkeletonVisible) { clearSkeleton(); }
     list.insertAdjacentHTML('beforeend', items.map(cardHtml).join(''));
     try { window.lucide && window.lucide.createIcons(); } catch(_) {}
     hydrateNewContent(list);
@@ -163,7 +277,7 @@
           const img = entry.target;
           const src = img.getAttribute('data-src');
           if (src) {
-            const vpThreshold = (window.innerHeight || 800) * 1.2;
+            const vpThreshold = (window.innerHeight || 800) * 1.5;
             if (entry.boundingClientRect.top < vpThreshold) img.setAttribute('fetchpriority','high');
             img.decoding = 'async';
             img.loading = 'lazy';
@@ -173,7 +287,7 @@
           }
           mediaObserver.unobserve(img);
         });
-      }, { rootMargin: '400px 0px' });
+      }, { rootMargin: '800px 0px' });
     }
     if (!bgObserver) {
       bgObserver = new IntersectionObserver((entries)=>{
@@ -182,6 +296,7 @@
           const el = entry.target;
           const url = el.getAttribute('data-bg');
           if (url) {
+            preconnectOnce(url);
             const im = new Image();
             im.decoding = 'async';
             im.onload = ()=>{ el.style.backgroundImage = `url('${url}')`; el.classList.add('is-loaded'); };
@@ -190,7 +305,7 @@
           }
           bgObserver.unobserve(el);
         });
-      }, { rootMargin: '400px 0px' });
+      }, { rootMargin: '800px 0px' });
     }
     if (!commentsObserver) {
       commentsObserver = new IntersectionObserver((entries)=>{
@@ -208,9 +323,33 @@
   function hydrateNewContent(root){
     createObservers();
     const imgs = root.querySelectorAll('img.lazy-media:not([data-observed])');
-    imgs.forEach((img)=>{ img.setAttribute('data-observed','1'); mediaObserver.observe(img); });
+    let eagerBoostCount = 0;
+    imgs.forEach((img)=>{
+      try {
+        img.setAttribute('data-observed','1');
+        const src = img.getAttribute('data-src');
+        if (src) preconnectOnce(src);
+        const rect = img.getBoundingClientRect();
+        const vh = (window.innerHeight || 800);
+        if (rect.top < vh * 1.1 && eagerBoostCount < 4) {
+          img.setAttribute('fetchpriority','high');
+          img.loading = 'eager';
+          img.decoding = 'async';
+          img.src = src;
+          img.addEventListener('load', ()=>{ img.classList.add('is-loaded'); }, { once:true });
+          img.removeAttribute('data-src');
+          eagerBoostCount++;
+        } else {
+          mediaObserver.observe(img);
+        }
+      } catch(_) { mediaObserver.observe(img); }
+    });
     const bgs = root.querySelectorAll('.lazy-bg[data-bg]:not([data-observed])');
-    bgs.forEach((el)=>{ el.setAttribute('data-observed','1'); bgObserver.observe(el); });
+    bgs.forEach((el)=>{ 
+      el.setAttribute('data-observed','1'); 
+      const url = el.getAttribute('data-bg'); if (url) preconnectOnce(url);
+      bgObserver.observe(el); 
+    });
   }
 
   function observeCardsForComments(root){
@@ -227,7 +366,7 @@
     const post = { authorId: auth.currentUser.uid, text: txt, media: [], topics: [], symbols: [], createdAt: now, updatedAt: now, visibility:'public', counts:{likes:0,replies:0,reposts:0,bookmarks:0} };
     await db.collection('posts').add(post);
     el('composer-text').value='';
-    el('feed-list').innerHTML=''; cursor=null; hasMore=true; fetchFeed(true);
+    el('feed-list').innerHTML=''; cursor=null; hasMore=true; injectSkeleton(6); fetchFeed(true);
   }
 
   async function toggleLike(postId, btn){
@@ -320,7 +459,7 @@
         const mark = document.querySelector(`.filter-item[data-filter="${v}"] .check`); if (mark) mark.style.display='';
         const menu = document.getElementById('filter-menu'); if (menu) menu.style.display='none';
         window.__feedFilter__ = v;
-        el('feed-list').innerHTML=''; cursor=null; hasMore=true; fetchFeed(true);
+        el('feed-list').innerHTML=''; cursor=null; hasMore=true; injectSkeleton(10); fetchFeed(true);
         return;
       }
 
@@ -382,7 +521,13 @@
   // 도메인 환경에서 리라이트 미적용 404 대응: 항상 HTML 쿼리 경로로 이동
   const nav = (pretty, raw) => { window.location.href = raw; };
 
-  document.addEventListener('DOMContentLoaded', ()=>{ bind(); fetchFeed(true); try { window.lucide && window.lucide.createIcons(); } catch(_) {}
+  document.addEventListener('DOMContentLoaded', async ()=>{ 
+    bind();
+    injectSkeleton(10);
+    try { await waitForFirebase(); } catch(_) {}
+    try { await fetchFeed(true); } catch(_) {}
+    try { await loadSidebar(); } catch(_) {}
+    try { window.lucide && window.lucide.createIcons(); } catch(_) {}
     // 모바일: 아래로 스크롤 시 하단 바 숨김, 위로 올리면 표시
     try {
       if (window.matchMedia && window.matchMedia('(max-width: 768px)').matches) {

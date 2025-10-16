@@ -6,7 +6,7 @@
     var wrap = document.createElement('div');
     wrap.id = 'mobile-bottom-nav';
     wrap.innerHTML = '<div class="mbnav-wrap">\
-      <nav class="mbnav" aria-label="Onbit bottom navigation">\
+      <nav class="mbnav backdrop" aria-label="Onbit bottom navigation">\
         <a class="item" href="/" data-key="home"><i class="fas fa-house"></i><span>홈</span></a>\
         <a class="item" href="/news/" data-key="news"><i class="fas fa-newspaper"></i><span>뉴스</span></a>\
         <a class="item" href="/community/" data-key="chart"><i class="fas fa-chart-line"></i><span>트레이딩</span></a>\
