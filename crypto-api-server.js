@@ -176,6 +176,25 @@ async function fetchBinancePerpMarkets() {
   return rows;
 }
 
+// 레버리지 브래킷 프록시 (10분 캐시)
+app.get('/api/binance/leverage-brackets/:symbol', async (req, res) => {
+  try {
+    const raw = String(req.params.symbol||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
+    if (!raw) return res.status(400).json({ success:false, error:'invalid symbol' });
+    const key = `mmr:${raw}`;
+    const hit = cache.get(key);
+    if (hit) { setApiCache(res, 600); return res.json({ success:true, symbol: raw, brackets: hit, cached: true }); }
+    const data = await binancePublic(`/fapi/v1/leverageBracket?symbol=${raw}`);
+    const item = Array.isArray(data) ? data[0] : data;
+    const brackets = (item && item.brackets) ? item.brackets.map(b => ({ cap: Number(b.notionalCap), mmr: Number(b.maintMarginRatio) })) : [];
+    cache.set(key, brackets, 600);
+    setApiCache(res, 600);
+    res.json({ success:true, symbol: raw, brackets, cached:false });
+  } catch (e) {
+    res.status(502).json({ success:false, error:String(e&&e.message||e) });
+  }
+});
+
 // CoinGecko API 호출 함수
 async function fetchCoinGeckoData() {
   const now = Date.now();

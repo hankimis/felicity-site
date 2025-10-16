@@ -8,15 +8,15 @@
   <link rel="stylesheet" href="../css/base/_variables.css" />
   <link rel="stylesheet" href="../css/base/_base.css" />
   <link rel="stylesheet" href="../components/header/navbar.css" />
-  <link rel="stylesheet" href="leaderboard.css" />
+  <link rel="stylesheet" href="/leaderboard/leaderboard.css" />
   <link rel="icon" type="image/png" href="/onbit/favicon-96x96.png" sizes="96x96" />
   <!-- Firebase compat scripts (index.html과 동일 버전) -->
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
-  <!-- 프로젝트 설정 -->
-  <script src="../firebase-config.js"></script>
+  <!-- 프로젝트 설정 (compat, export 없는 버전) -->
+  <script src="/js/firebase-config.js"></script>
   <script src="../js/auth.js" defer></script>
   <script src="../components/header/header-loader.js" defer></script>
 </head>
@@ -52,6 +52,6 @@
     </section>
   </main>
 
-  <script src="leaderboard.js" type="module"></script>
+  <script src="/leaderboard/leaderboard.js" type="module"></script>
 </body>
 </html>

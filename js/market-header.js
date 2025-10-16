@@ -34,6 +34,7 @@
     __price_start_t: null,
     __price_reconnect: null,
     priceToken: 0,
+    ddIv: null,
   };
 
   function setIcon(symbol){
@@ -319,6 +320,9 @@
     requestAnimationFrame(()=>{ els.dropdown.classList.add('is-open'); });
     if (backdrop){ backdrop.style.display='block'; requestAnimationFrame(()=> backdrop.classList.add('is-open')); }
     positionDropdown();
+    // 실시간 가격 리스트 주기 갱신
+    try { clearInterval(state.ddIv); } catch(_) {}
+    state.ddIv = setInterval(prepareDropdown, 3000);
   }
   function closeDropdown(){
     if (!els.dropdown) return;
@@ -330,6 +334,7 @@
       try { els.dropdown.style.display='none'; els.dropdown.classList.remove('is-closing'); } catch(_) {}
       if (backdrop) backdrop.style.display='none';
     }, 280);
+    try { clearInterval(state.ddIv); state.ddIv = null; } catch(_) {}
   }
   function isOpen(){ return els.dropdown && els.dropdown.style.display !== 'none'; }
   function positionDropdown(){ try { const btn = els.symbolBtn; const dd = els.dropdown; if (!btn||!dd) return; /* 기본 좌측 배치 */ } catch(_){} }

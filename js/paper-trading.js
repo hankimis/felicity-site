@@ -64,14 +64,18 @@
       // 새 MarketSockets로 대체 (기존 MarketDataManager 폴백 유지)
       // 새 오더북 엔진 사용
       try {
-        this.ob = new window.OrderbookEngine(this.state.symbol, (st)=>{
+      this.ob = new window.OrderbookEngine(this.state.symbol, (st)=>{
           this.orderbookState = { bids: st.bids||[], asks: st.asks||[] };
           // 최우선 호가 저장
           const bids = this.orderbookState.bids, asks=this.orderbookState.asks;
-          const bestBid = bids && bids.length ? bids[0].price : 0;
-          const bestAsk = asks && asks.length ? asks[0].price : Infinity;
-          this.state.bestBid = isFinite(bestBid)? bestBid : 0;
-          this.state.bestAsk = isFinite(bestAsk)? bestAsk : Infinity;
+        const bestBid = bids && bids.length ? Number(bids[0].price) : NaN;
+        const bestAsk = asks && asks.length ? Number(asks[0].price) : NaN;
+        if (isFinite(bestBid)) this.state.bestBid = bestBid;
+        if (isFinite(bestAsk)) this.state.bestAsk = bestAsk;
+        if (isFinite(this.state.bestBid) && isFinite(this.state.bestAsk)) {
+          const mid = (this.state.bestBid + this.state.bestAsk) / 2;
+          if (isFinite(mid)) this.state.midPrice = mid;
+        }
           this.renderDepth();
         });
         this.ob.start();
@@ -960,6 +964,8 @@
       // 소켓 즉시 재구독을 위해 MarketSockets에도 심볼 반영
       // 새 오더북 엔진으로 즉시 전환
       try { if (this.ob) { this.ob.stop && this.ob.stop(); this.ob.setSymbol && this.ob.setSymbol(this.state.symbol); this.ob.start && this.ob.start(); } } catch(_) {}
+      // 마켓 헤더 심볼과 동기화하여 가격/펀딩/마크도 일관
+      try { window.dispatchEvent(new CustomEvent('mh:symbolChanged', { detail: { symbol: this.state.symbol } })); } catch(_) {}
       // 라더 재설정: 중앙가격 초기화하여 화면 즉시 갱신
       this.ladderCenter = null;
       // 가격/Mark 즉시 갱신
@@ -967,8 +973,8 @@
       this.state.bestBid = 0; this.state.bestAsk = Infinity;
       this.fetchInitialPrice();
       this.fetchMarkPrice && this.fetchMarkPrice();
-      // 트레이드 패널 가격 입력도 즉시 업데이트
-      try { if (this.el && this.el.price) this.el.price.value = (this.getMark()||0).toFixed(1); } catch(_) {}
+      // 트레이드 패널 가격 입력도 즉시 업데이트 (마켓/리밋 모두 최신가 반영)
+      try { if (this.el && this.el.price) { const v = (this.getMark()||this.state.midPrice||0); this.el.price.value = isFinite(v)? v.toFixed(1) : ''; } } catch(_) {}
       // 심볼 변경 시 유지증거금 브래킷 갱신
       this.fetchLeverageBrackets();
     }
@@ -1590,15 +1596,22 @@
             return;
           }
         } catch(_) {}
-        const res = await fetch(CONFIG.leverageBracketRest(sym));
+        // 도메인 환경에서는 서버 프록시 우선 시도
+        let res;
+        try {
+          const host = (location && location.hostname) || '';
+          if (!/^localhost|127\.0\.0\.1$/i.test(host)) {
+            res = await fetch(`/api/binance/leverage-brackets/${sym}`);
+          }
+        } catch(_) {}
+        if (!res) res = await fetch(CONFIG.leverageBracketRest(sym));
+        if (res.status === 401) { this._mmrBrackets = null; return; }
         if (!res.ok) { this._mmrBrackets = null; return; }
         const data = await res.json();
-        // 응답 형태: [{ symbol, brackets:[{ notionalCap, maintMarginRatio, ... }] }]
-        const item = Array.isArray(data) ? data[0] : data;
-        const brackets = (item && item.brackets) ? item.brackets.map(b => ({
-          cap: Number(b.notionalCap),
-          mmr: Number(b.maintMarginRatio)
-        })) : null;
+        // 프록시 응답 혹은 바이낸스 원본 응답 모두 처리
+        const brackets = Array.isArray(data)
+          ? ((data[0] && data[0].brackets) ? data[0].brackets.map(b=>({ cap:Number(b.notionalCap), mmr:Number(b.maintMarginRatio) })) : null)
+          : (data && data.brackets ? data.brackets : null);
         if (brackets && brackets.length) {
           this._mmrBrackets = brackets;
           try { localStorage.setItem('pt_mmr_'+sym, JSON.stringify({ at: Date.now(), brackets })); } catch(_) {}
@@ -1614,8 +1627,12 @@
         this.prev.lastPrice = this.getMark();
       }
       if (this.el.mid) {
-        // 오더북 중앙가도 부드럽게
-        this.renderRollingNumber(this.el.mid, Number(this.state.midPrice || this.getMark() || 0), 1);
+        // 오더북 중앙가도 부드럽게: midPrice → 없으면 bestBid/Ask로 산출 → 최종 Mark
+        const bid = Number(this.state.bestBid);
+        const ask = Number(this.state.bestAsk);
+        const fromBook = (isFinite(bid) && isFinite(ask) && Math.abs(ask-bid) > 1e-12) ? (bid+ask)/2 : NaN;
+        const val = isFinite(this.state.midPrice) ? this.state.midPrice : (isFinite(fromBook) ? fromBook : (this.getMark()||0));
+        this.renderRollingNumber(this.el.mid, Number(val||0), 1);
       }
       if (this.el.price && !this.el.price.disabled && !this.priceTouched) {
         if (!this.el.price.value) this.el.price.value = (this.getMark() || 0).toFixed(1);
@@ -1680,6 +1697,19 @@
           if (fr != null && isFinite(fr)) this.state.fundingRate = fr;
           const nft = (pi && (pi.nextFundingTime != null)) ? Number(pi.nextFundingTime) : null;
           if (nft != null && isFinite(nft)) this.state.nextFundingTime = nft;
+        } catch(_) {}
+        // 베스트 호가/미드 보정 (드롭다운/오더북 초기 구간 스프레드 0 방지)
+        try {
+          const tUrl = (CONFIG && CONFIG.tickerRest) ? CONFIG.tickerRest(sym) : `${(window.PT_CONFIG&&PT_CONFIG.binanceApiBase)||'https://fapi.binance.com'}/fapi/v1/ticker/bookTicker?symbol=${sym}`;
+          const t = await fetch(tUrl);
+          if (t && t.ok) {
+            const tb = await t.json();
+            const bid = Number(tb.bidPrice||tb.b);
+            const ask = Number(tb.askPrice||tb.a);
+            if (isFinite(bid)) this.state.bestBid = bid;
+            if (isFinite(ask)) this.state.bestAsk = ask;
+            if (isFinite(bid) && isFinite(ask) && Math.abs(ask-bid) > 1e-12) this.state.midPrice = (bid+ask)/2;
+          }
         } catch(_) {}
       } catch(_) {}
     }

@@ -49,6 +49,8 @@
           return;
         }
       } catch (_) {}
+      // 사운드 파일이 없으면 기본 액센트음을 사용
+      this.soundUrl = null;
       // Fallback 준비
       this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       this.prepared = true;

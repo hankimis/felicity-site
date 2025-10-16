@@ -3,7 +3,7 @@ class CommunityChat {
     constructor(options = {}) {
         // 채널 모드 지원
         this.channelId = CommunityChat.resolveChannelId(options.channelId);
-        this.mode = this.channelId ? 'channel' : 'community';
+        this.mode = 'channel'; // 단일 채널(onbit)로 통일
 
         this.messagesContainer = document.getElementById('chat-messages');
         this.messageForm = document.getElementById('chat-form');
@@ -43,7 +43,8 @@ class CommunityChat {
             }
             cid = (cid || '').toLowerCase().trim();
             if (cid && /^[a-z0-9_-]{1,64}$/.test(cid)) return cid;
-            return '';
+            // 기본 채널을 onbit로 강제 사용 (로컬/도메인 동일 경로)
+            return 'onbit';
         } catch(_) {
             return '';
         }
@@ -51,9 +52,7 @@ class CommunityChat {
 
     get collectionRef() {
         if (!window.db) return null;
-        return this.mode === 'channel'
-            ? window.db.collection('channels').doc(this.channelId).collection('messages')
-            : window.db.collection('community-chat');
+        return window.db.collection('channels').doc(this.channelId || 'onbit').collection('messages');
     }
 
     async init() {
@@ -454,19 +453,32 @@ class CommunityChat {
                 try {
                     const displayName = window.currentUser.displayName || window.currentUser.email || '사용자';
                     const photoURL = window.currentUser.photoURL || null;
-                    const fnName = (this.mode === 'channel') ? 'postChannelMessage' : 'postCommunityMessage';
-                    const postFn = firebase.app().functions('asia-northeast3').httpsCallable(fnName);
-                    const payload = { text: originalText, displayName, photoURL };
-                    if (this.mode === 'channel') payload.channelId = this.channelId;
+                    const payload = { text: originalText, displayName, photoURL, channelId: (this.channelId||'onbit') };
+                    let sent = false;
                     try {
-                        await postFn(payload);
-                    } catch (err) {
-                        // 배포 전이거나 CORS 실패 시 커뮤니티로 폴백
-                        if (this.mode === 'channel') {
-                            const fallback = firebase.app().functions('asia-northeast3').httpsCallable('postCommunityMessage');
-                            await fallback({ text: `[onbit] ${originalText}`, displayName, photoURL });
-                        } else {
-                            throw err;
+                        if (firebase && firebase.app && firebase.app().functions) {
+                            const postFn = firebase.app().functions('asia-northeast3').httpsCallable('postChannelMessage');
+                            await postFn(payload);
+                            sent = true;
+                        }
+                    } catch(err) {
+                        // functions 실패 시 Firestore로 직접 기록 (로컬/도메인 동일 경로)
+                        sent = false;
+                    }
+                    if (!sent) {
+                        try {
+                            const col = this.collectionRef;
+                            const ts = (window.firebase && window.firebase.firestore && window.firebase.firestore.FieldValue && window.firebase.firestore.FieldValue.serverTimestamp) ? window.firebase.firestore.FieldValue.serverTimestamp() : new Date();
+                            await col.add({
+                                text: originalText,
+                                displayName,
+                                photoURL,
+                                uid: window.currentUser.uid,
+                                timestamp: ts
+                            });
+                            sent = true;
+                        } catch(e) {
+                            throw e;
                         }
                     }
                 } catch (error) {

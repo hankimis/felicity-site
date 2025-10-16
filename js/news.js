@@ -180,6 +180,8 @@ function initializePage() {
     initializeInfiniteScroll();
     loadNewsImportanceData();
     loadNewsFeeds();
+    // 실시간 구독 시작
+    try { startRealtimeNews(); } catch(_) {}
     
     // 기본 탭을 뉴스로 설정
     switchTab('news');
@@ -529,6 +531,9 @@ async function loadFreshNews(isBackgroundUpdate = false) {
         const validatedNews = validateAndFixNewsDates(uniqueNews);
         validatedNews.sort((a, b) => new Date(b.pubDate) - new Date(a.pubDate));
         
+        // Firestore에 저장 (백그라운드와 무관하게 비동기 저장)
+        try { saveNewsItemsToFirestore(validatedNews).catch(()=>{}); } catch(_) {}
+
         // 캐시 저장
         const cacheData = {
             timestamp: Date.now(),
@@ -579,6 +584,9 @@ async function loadFreshNews(isBackgroundUpdate = false) {
         const validatedNews = validateAndFixNewsDates(uniqueNews);
         validatedNews.sort((a, b) => new Date(b.pubDate) - new Date(a.pubDate));
         
+        // Firestore에 저장 (배치)
+        try { saveNewsItemsToFirestore(validatedNews).catch(()=>{}); } catch(_) {}
+
         // 캐시 저장
         const cacheData = {
             timestamp: Date.now(),
@@ -1451,6 +1459,8 @@ async function loadNewsForMainPage() {
     
     // 캐시가 없으면 새 데이터 로드
     await loadFreshNewsForMainPage();
+    // 메인에서도 실시간 구독
+    try { startRealtimeNews(); } catch(_) {}
 }
 
 // 메인페이지용 새 뉴스 데이터 로드
@@ -1602,6 +1612,90 @@ window.updateHeaderBreakingTicker = function() {
     buildHeaderBreakingTickerItems();
     startHeaderTickerRollingVertical();
 };
+
+// =============================
+// Firestore 실시간 구독 (새로고침 없이 반영)
+// =============================
+let unsubscribeNewsRealtime = null;
+let realtimeRenderTimer = null;
+function startRealtimeNews(){
+    if (window.__newsRealtimeBound) return;
+    if (typeof firebase === 'undefined' || !firebase.firestore) return;
+    const db = firebase.firestore();
+    try {
+        const ref = db.collection('news').orderBy('pubDate', 'desc').limit(80);
+        unsubscribeNewsRealtime = ref.onSnapshot((snap)=>{
+            try {
+                const docs = [];
+                snap.forEach(d=>{ const v = d.data()||{}; if (v && (v.title||v.link)) docs.push(v); });
+                // 병합: 서버 최신 + 현재 캐시
+                const merged = removeDuplicateNews([...(docs||[]), ...((window.newsItems)||[])]);
+                const validated = validateAndFixNewsDates(merged).sort((a,b)=> new Date(b.pubDate) - new Date(a.pubDate));
+                window.newsItems = validated;
+                // 렌더/헤더 업데이트를 디바운스하여 과도한 리플로우 방지
+                clearTimeout(realtimeRenderTimer);
+                realtimeRenderTimer = setTimeout(()=>{
+                    try {
+                        // 뉴스 페이지면 현재 활성 탭 기준으로 즉시 갱신
+                        const activeTabBtn = document.querySelector('.tab-btn.active');
+                        const tab = activeTabBtn?.getAttribute('data-tab') || 'news';
+                        if (document.getElementById('newsGrid') || document.getElementById('breakingGrid')){
+                            resetInfiniteScroll();
+                            displayNews(window.newsItems, true, tab);
+                        }
+                        // 메인/헤더 속보 롤링바 갱신
+                        triggerBreakingNewsUpdate();
+                    } catch(_) {}
+                }, 150);
+            } catch(_) {}
+        });
+        window.__newsRealtimeBound = true;
+    } catch(_) {}
+}
+
+// ======================================
+// Firestore 저장 유틸 (뉴스 문서 저장)
+// ======================================
+async function saveNewsItemsToFirestore(items){
+    try {
+        if (!Array.isArray(items) || items.length === 0) return false;
+        if (typeof firebase === 'undefined' || !firebase.firestore) return false;
+        const db = firebase.firestore();
+        const col = db.collection('news');
+
+        // 400개 단위 배치 커밋 (Firebase 제한 500)
+        const CHUNK = 400;
+        for (let i=0; i<items.length; i+=CHUNK){
+            const batch = db.batch();
+            const slice = items.slice(i, i+CHUNK);
+            slice.forEach((n)=>{
+                try {
+                    const id = generateNewsId(n);
+                    if (!id) return;
+                    const pub = (function(){
+                        try { const d=new Date(n.pubDate); return isNaN(d.getTime())? new Date().toISOString() : d.toISOString(); } catch(_){ return new Date().toISOString(); }
+                    })();
+                    const importance = getNewsImportance(n);
+                    const doc = col.doc(id);
+                    batch.set(doc, {
+                        id,
+                        title: n.title||'',
+                        link: n.link||'',
+                        image: n.image||'',
+                        source: n.source||'',
+                        pubDate: pub,
+                        contentSnippet: n.contentSnippet||'',
+                        importance,
+                        updatedAt: new Date().toISOString(),
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    }, { merge: true });
+                } catch(_) {}
+            });
+            await batch.commit();
+        }
+        return true;
+    } catch(_) { return false; }
+}
 
 // =============================
 // 인기 뉴스 사이드바 (로컬 집계) - 일일 기준(오후 3시 리셋)
