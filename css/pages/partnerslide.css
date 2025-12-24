@@ -71,4 +71,39 @@
      opacity: 1;
  }
  
+/* TradingView 파트너십 안내 문구 (파트너 슬라이드 상단) */
+.tv-partnership-note {
+    max-width: 980px;
+    margin: 16px auto 34px;
+    padding: 14px 16px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    color: var(--text-color-secondary);
+    text-align: left;
+    line-height: 1.7;
+}
+
+.tv-partnership-note p {
+    margin: 0;
+}
+
+.tv-partnership-link {
+    color: var(--primary-color);
+    font-weight: 800;
+    text-decoration: none;
+}
+
+.tv-partnership-link:hover {
+    text-decoration: underline;
+}
+
+@media (max-width: 768px) {
+    .tv-partnership-note {
+        margin: 12px auto 22px;
+        padding: 12px 14px;
+        border-radius: 12px;
+    }
+}
+
 
